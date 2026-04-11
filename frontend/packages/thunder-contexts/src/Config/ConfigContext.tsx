@@ -79,6 +79,27 @@ export interface ConfigContextType {
    * @returns The client UUID string or undefined if not available
    */
   getClientUuid: () => string | undefined;
+
+  /**
+   * Gets the trusted issuer URL. When trusted_issuer is configured, returns
+   * the external issuer URL. Otherwise falls back to getServerUrl().
+   * @returns The trusted issuer URL (e.g., "https://auth.example.com:8090")
+   */
+  getTrustedIssuerUrl: () => string;
+
+  /**
+   * Gets the OAuth client ID for the trusted issuer. When trusted_issuer.client_id is
+   * configured, returns that. Otherwise falls back to getClientId().
+   * @returns The trusted issuer client ID string
+   */
+  getTrustedIssuerClientId: () => string;
+
+  /**
+   * Gets the OAuth scopes for the trusted issuer. When trusted_issuer.scopes is
+   * configured, returns those. Otherwise falls back to getScopes().
+   * @returns The trusted issuer scopes array
+   */
+  getTrustedIssuerScopes: () => string[];
 }
 
 /**

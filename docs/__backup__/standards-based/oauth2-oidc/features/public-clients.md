@@ -27,16 +27,16 @@ Run the following command, replacing `<application_id>` with your sample app ID 
 FLOW_RESPONSE=$(curl -k -s -X POST 'https://localhost:8090/flow/execute' \
   -d '{"applicationId":"<application_id>","flowType":"AUTHENTICATION"}')
 
-FLOW_ID=$(echo $FLOW_RESPONSE | jq -r '.flowId')
+EXECUTION_ID=$(echo $FLOW_RESPONSE | jq -r '.executionId')
 ```
 
 #### 1.2: Submit Admin Credentials
 
-Run the following command with the extracted `flowId`.
+Run the following command with the extracted `executionId`.
 
 ```bash
 ADMIN_TOKEN_RESPONSE=$(curl -k -s -X POST 'https://localhost:8090/flow/execute' \
-  -d '{"flowId":"'$FLOW_ID'","inputs":{"username":"admin","password":"admin","requested_permissions":"system"},"action":"action_001"}')
+  -d '{"executionId":"'$EXECUTION_ID'","inputs":{"username":"admin","password":"admin","requested_permissions":"system"},"action":"action_001"}')
 
 ADMIN_TOKEN=$(echo $ADMIN_TOKEN_RESPONSE | jq -r '.assertion')
 ```

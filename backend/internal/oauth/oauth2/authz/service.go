@@ -254,7 +254,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 		RuntimeData:   runtimeData,
 	}
 
-	flowID, flowErr := as.flowExecService.InitiateFlow(ctx, flowInitCtx)
+	executionID, flowErr := as.flowExecService.InitiateFlow(ctx, flowInitCtx)
 	if flowErr != nil {
 		as.logger.Error("Failed to initiate authentication flow",
 			log.String("error_code", flowErr.Code))
@@ -288,7 +288,7 @@ func (as *authorizeService) HandleInitialAuthorizationRequest(ctx context.Contex
 	queryParams := make(map[string]string)
 	queryParams[oauth2const.AuthID] = identifier
 	queryParams[oauth2const.AppID] = app.AppID
-	queryParams[oauth2const.FlowID] = flowID
+	queryParams[oauth2const.ExecutionID] = executionID
 
 	// Add insecure warning if the redirect URI is not using TLS.
 	// TODO: May require another redirection to a warn consent page when it directly goes to a federated IDP.

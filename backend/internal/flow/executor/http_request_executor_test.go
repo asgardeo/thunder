@@ -70,7 +70,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestResolvePlaceholdersInConfig() {
 	}))
 
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			"username": "testuser",
 			"email":    "test@example.com",
@@ -123,7 +123,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestResolvePlaceholderUserIDSpecialHa
 	}))
 
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			"userId": "input-user-id", // This should NOT be used for userId
 		},
@@ -162,7 +162,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestResolvePlaceholderRuntimeDataPrec
 	}))
 
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			"key": "user-input-value",
 		},
@@ -200,7 +200,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestResolvePlaceholderNonExistentKey(
 	}))
 
 	ctx := &core.NodeContext{
-		FlowID:      "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
 		NodeProperties: map[string]interface{}{
@@ -223,7 +223,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestResolvePlaceholderNonExistentKey(
 
 func (suite *HTTPRequestExecutorTestSuite) TestResolveMapPlaceholders() {
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			"username": "testuser",
 			"email":    "test@example.com",
@@ -292,7 +292,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestExecute_SuccessfulGETRequest() {
 	responseMappingJSON := `{"id": "response.data.id", "name": "response.data.name"}`
 
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		NodeProperties: map[string]interface{}{
 			"url":             suite.mockServer.URL + "/api/users/123",
 			"method":          "GET",
@@ -335,7 +335,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestExecute_SuccessfulPOSTRequest() {
 	responseMappingJSON := `{"status": "response.data.status", "userId": "response.data.userId"}`
 
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		NodeProperties: map[string]interface{}{
 			"url":             suite.mockServer.URL + "/api/users",
 			"method":          "POST",
@@ -387,7 +387,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestExecute_ResponseMapping() {
 	"profileUrl": "response.data.data.profileUrl", "timestamp": "response.data.metadata.timestamp"}`
 
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		NodeProperties: map[string]interface{}{
 			"url":             suite.mockServer.URL + "/api/data",
 			"responseMapping": responseMappingJSON,
@@ -414,7 +414,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestExecute_DefaultMethod() {
 	}))
 
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		NodeProperties: map[string]interface{}{
 			"url": suite.mockServer.URL + "/api/test",
 			// method not specified, should default to GET
@@ -437,7 +437,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestExecute_ErrorHandling_FailOnError
 	}))
 
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		NodeProperties: map[string]interface{}{
 			"url": suite.mockServer.URL + "/api/error",
 		},
@@ -462,7 +462,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestExecute_ErrorHandling_FailOnError
 	errorHandlingJSON := `{"failOnError": true}`
 
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		NodeProperties: map[string]interface{}{
 			"url":           suite.mockServer.URL + "/api/error",
 			"errorHandling": errorHandlingJSON,
@@ -480,7 +480,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestExecute_ErrorHandling_FailOnError
 
 func (suite *HTTPRequestExecutorTestSuite) TestExecute_MissingURL() {
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		NodeProperties: map[string]interface{}{
 			// URL is missing
 			"method": "GET",
@@ -499,7 +499,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestExecute_MissingURL() {
 
 func (suite *HTTPRequestExecutorTestSuite) TestExecute_InvalidHTTPMethod() {
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		NodeProperties: map[string]interface{}{
 			"url":    "https://example.com/api/test",
 			"method": "INVALID",
@@ -563,7 +563,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestExecute_AllHTTPMethods() {
 			defer suite.mockServer.Close()
 
 			ctx := &core.NodeContext{
-				FlowID: "test-flow",
+				ExecutionID: "test-flow",
 				NodeProperties: map[string]interface{}{
 					"url":    suite.mockServer.URL + "/api/test",
 					"method": method,
@@ -643,7 +643,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestExecute_NonJSONResponse() {
 	responseMappingJSON := `{"raw": "response.data.raw"}`
 
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		NodeProperties: map[string]interface{}{
 			"url":             suite.mockServer.URL + "/api/text",
 			"responseMapping": responseMappingJSON,
@@ -673,7 +673,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestExecute_ResponseStatusExtraction(
 	responseMappingJSON := `{"resourceId": "response.data.id", "statusCode": "response.status"}`
 
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		NodeProperties: map[string]interface{}{
 			"url":             suite.mockServer.URL + "/api/resource",
 			"method":          "POST",

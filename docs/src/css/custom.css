@@ -542,3 +542,135 @@ html[data-page='home'][data-theme='dark'] .dropdown>.navbar__link:after {
     animation-duration: 0.001ms !important;
   }
 }
+
+/* ======================================================= */
+/* Persona Dropdown                                        */
+/* ======================================================= */
+
+.persona-dropdown {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.persona-dropdown__trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  background: transparent;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ifm-navbar-link-color);
+  white-space: nowrap;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  line-height: 1.4;
+}
+
+.persona-dropdown__trigger:hover {
+  border-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary);
+  background: transparent;
+}
+
+.persona-dropdown--open .persona-dropdown__trigger {
+  border-color: var(--ifm-color-primary);
+  color: var(--ifm-color-primary);
+}
+
+.persona-dropdown__label {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.persona-dropdown__chevron {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.persona-dropdown__chevron--open {
+  transform: rotate(180deg);
+}
+
+.persona-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 230px;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  z-index: 200;
+  padding: 0.3rem;
+  list-style: none;
+  margin: 0;
+}
+
+[data-theme='dark'] .persona-dropdown__menu {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.persona-dropdown__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s ease;
+}
+
+.persona-dropdown__item:hover {
+  background: var(--ifm-color-emphasis-100);
+}
+
+.persona-dropdown__item--active {
+  background: var(--ifm-color-emphasis-100);
+}
+
+.persona-dropdown__item-label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ifm-font-color-base);
+  line-height: 1.3;
+}
+
+.persona-dropdown__item--active .persona-dropdown__item-label {
+  color: var(--ifm-color-primary);
+  font-weight: 600;
+}
+
+.persona-dropdown__item-desc {
+  font-size: 0.73rem;
+  color: var(--ifm-color-emphasis-600);
+  margin-top: 0.15rem;
+  line-height: 1.3;
+}
+
+/* ======================================================= */
+/* Sidebar Persona Filtering                               */
+/* ======================================================= */
+
+/* When IAM persona is active, hide app-developer-only sections */
+[data-persona='iam'] .sidebar-persona-app {
+  display: none;
+}
+
+/* When App persona is active, hide IAM-developer-only sections */
+[data-persona='app'] .sidebar-persona-iam {
+  display: none;
+}
+
+/* When DevOps persona is active, hide non-deployment sections */
+[data-persona='devops'] .sidebar-persona-not-devops {
+  display: none;
+}

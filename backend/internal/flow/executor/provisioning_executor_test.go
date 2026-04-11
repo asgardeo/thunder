@@ -112,8 +112,8 @@ func (suite *ProvisioningExecutorTestSuite) createMockProvisioningExecutor() cor
 
 func (suite *ProvisioningExecutorTestSuite) TestExecute_NonRegistrationFlow() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 	}
 
 	resp, err := suite.executor.Execute(ctx)
@@ -128,8 +128,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success() {
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"username": "newuser",
 			"email":    "new@example.com",
@@ -194,8 +194,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success() {
 
 func (suite *ProvisioningExecutorTestSuite) TestExecute_UserAlreadyExists() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"username": "existinguser",
 		},
@@ -218,10 +218,10 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_UserAlreadyExists() {
 
 func (suite *ProvisioningExecutorTestSuite) TestExecute_NoUserAttributes() {
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		FlowType:   common.FlowTypeRegistration,
-		UserInputs: map[string]string{},
-		NodeInputs: []common.Input{},
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
+		UserInputs:  map[string]string{},
+		NodeInputs:  []common.Input{},
 	}
 
 	resp, err := suite.executor.Execute(ctx)
@@ -234,8 +234,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_NoUserAttributes() {
 
 func (suite *ProvisioningExecutorTestSuite) TestExecute_CreateUserFails() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"username": "newuser",
 		},
@@ -262,8 +262,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CreateUserFails() {
 
 func (suite *ProvisioningExecutorTestSuite) TestHasRequiredInputs_AttributesFromAuthUser() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			Attributes: map[string]interface{}{"email": "test@example.com"},
 		},
@@ -461,8 +461,8 @@ func (suite *ProvisioningExecutorTestSuite) TestGetAttributesForProvisioning_Fil
 
 func (suite *ProvisioningExecutorTestSuite) TestExecute_SkipProvisioning_UserAlreadyExists() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"username": "existinguser",
 		},
@@ -494,8 +494,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_SkipProvisioning_UserAlr
 
 func (suite *ProvisioningExecutorTestSuite) TestExecute_SkipProvisioning_ProceedsNormally() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"username": "newuser",
 			"email":    "new@example.com",
@@ -552,8 +552,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_SkipProvisioning_Proceed
 
 func (suite *ProvisioningExecutorTestSuite) TestExecute_UserEligibleForProvisioning() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"username": "provisioneduser",
 			"email":    "provisioned@example.com",
@@ -604,8 +604,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_UserAutoProvisionedFlag_
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"username": "newuser",
 			"email":    "new@example.com",
@@ -708,8 +708,8 @@ func (suite *ProvisioningExecutorTestSuite) TestAppendNonIdentifyingAttributes()
 func (suite *ProvisioningExecutorTestSuite) TestExecute_RegistrationFlow_SkipProvisioningWithExistingUser() {
 	userID := "existing-user-id"
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"username": "existinguser",
 		},
@@ -759,8 +759,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_MissingInputs() {
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
 			ctx := &core.NodeContext{
-				FlowID:   "flow-123",
-				FlowType: common.FlowTypeRegistration,
+				ExecutionID: "flow-123",
+				FlowType:    common.FlowTypeRegistration,
 				UserInputs: map[string]string{
 					"username": "newuser",
 				},
@@ -827,8 +827,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CreateUserFailures() {
 			suite.mockUserProvider.ExpectedCalls = nil
 
 			ctx := &core.NodeContext{
-				FlowID:   "flow-123",
-				FlowType: common.FlowTypeRegistration,
+				ExecutionID: "flow-123",
+				FlowType:    common.FlowTypeRegistration,
 				UserInputs: map[string]string{
 					"username": "newuser",
 				},
@@ -941,8 +941,8 @@ func (suite *ProvisioningExecutorTestSuite) TestGetUserType() {
 
 func (suite *ProvisioningExecutorTestSuite) TestHasRequiredInputs_AllAttributesInRuntimeData() {
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		UserInputs: map[string]string{},
+		ExecutionID: "flow-123",
+		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
 			"email":    "user@example.com",
 			"username": "testuser",
@@ -973,8 +973,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_GroupAssignmentF
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"username": "newuser",
 		},
@@ -1028,8 +1028,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_BothGroupAndRole
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"username": "newuser",
 		},
@@ -1084,8 +1084,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Failure_RoleAssignmentFa
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"username": "newuser",
 		},
@@ -1141,8 +1141,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_GroupWithExistingMembers
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"username": "newuser",
 		},
@@ -1194,8 +1194,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_AuthFlow_AutoProvisionin
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"username": "provisioneduser",
 		},
@@ -1247,8 +1247,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success_WithGroupAndRole
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"username": "newuser",
 			"email":    "new@example.com",
@@ -1332,8 +1332,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CrossOU_Success() {
 	}
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"sub": "user-sub-123",
 		},
@@ -1366,8 +1366,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CrossOU_NotEnabled_Fails
 	existingUserID := testExistingUserID
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"sub": "user-sub-123",
 		},
@@ -1397,8 +1397,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CrossOU_SameOU_Fails() {
 	}
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"sub": "user-sub-123",
 		},
@@ -1427,8 +1427,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CrossOU_NoTargetOU_Fails
 	existingUserID := testExistingUserID
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"sub": "user-sub-123",
 		},
@@ -1456,8 +1456,8 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CrossOU_GetUserError() {
 	existingUserID := testExistingUserID
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"sub": "user-sub-123",
 		},

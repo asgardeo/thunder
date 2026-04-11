@@ -273,7 +273,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Su
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), testAuthID, result.QueryParams[oauth2const.AuthID])
 	assert.Equal(suite.T(), "test-app-id", result.QueryParams[oauth2const.AppID])
-	assert.Equal(suite.T(), "test-flow-id", result.QueryParams[oauth2const.FlowID])
+	assert.Equal(suite.T(), "test-flow-id", result.QueryParams[oauth2const.ExecutionID])
 }
 
 func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_InsecureRedirectURI() {
@@ -401,7 +401,7 @@ func (suite *AuthorizeServiceTestSuite) TestHandleInitialAuthorizationRequest_Se
 
 	assert.Nil(suite.T(), authErr)
 	assert.NotNil(suite.T(), result)
-	assert.Equal(suite.T(), "test-flow-id", result.QueryParams[oauth2const.FlowID])
+	assert.Equal(suite.T(), "test-flow-id", result.QueryParams[oauth2const.ExecutionID])
 }
 
 func (suite *AuthorizeServiceTestSuite) TestHandleAuthorizationCallback_InvalidAuthID() {

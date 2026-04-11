@@ -145,8 +145,8 @@ func (suite *BasicAuthExecutorTestSuite) TestNewBasicAuthExecutor() {
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "testuser",
 			userAttributePassword: "password123",
@@ -187,8 +187,8 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_AuthenticationFlow(
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"email":    "test@example.com",
 			"password": "password123",
@@ -237,8 +237,8 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithEmailAttribute(
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_RegistrationFlow() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			userAttributeUsername: "newuser",
 			userAttributePassword: "password123",
@@ -262,8 +262,8 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_RegistrationFlow() 
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttributes() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"email":    "test@example.com",
 			"phone":    "+1234567890",
@@ -316,7 +316,7 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_Success_WithMultipleAttribu
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_UserInputRequired() {
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeAuthentication,
 		UserInputs:  map[string]string{},
 		RuntimeData: make(map[string]string),
@@ -332,8 +332,8 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_UserInputRequired() {
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationFailed() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "testuser",
 			userAttributePassword: "wrongpassword",
@@ -362,8 +362,8 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationFailed() {
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_UserNotFound_AuthenticationFlow() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "nonexistent",
 			userAttributePassword: "password123",
@@ -394,8 +394,8 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_UserNotFound_Authentication
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_UserAlreadyExists_RegistrationFlow() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			userAttributeUsername: "existinguser",
 			userAttributePassword: "password123",
@@ -419,8 +419,8 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_UserAlreadyExists_Registrat
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_ServiceError() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "testuser",
 			userAttributePassword: "password123",
@@ -448,8 +448,8 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_ServiceError() {
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationServiceError() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "testuser",
 			userAttributePassword: "password123",
@@ -474,8 +474,8 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_AuthenticationServiceError(
 
 func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuthentication() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "testuser",
 			userAttributePassword: "password123",
@@ -523,8 +523,8 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_SuccessfulAuth
 
 func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Success_WithFetchedAttributes() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "testuser",
 			userAttributePassword: "password123",
@@ -579,8 +579,8 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Success_WithFe
 
 func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_AuthenticationFlow_NoRedundantIdentifyUser() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "testuser",
 			userAttributePassword: "password123",
@@ -626,8 +626,8 @@ func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_Authentication
 
 func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_RegistrationFlow_CallsIdentifyUser() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			userAttributeUsername: "newuser",
 			userAttributePassword: "password123",
@@ -686,8 +686,8 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_RetryableAuthenticationErro
 		suite.T().Run(tt.name, func(t *testing.T) {
 			suite.mockCredsService.ExpectedCalls = nil
 			ctx := &core.NodeContext{
-				FlowID:   "flow-123",
-				FlowType: common.FlowTypeAuthentication,
+				ExecutionID: "flow-123",
+				FlowType:    common.FlowTypeAuthentication,
 				UserInputs: map[string]string{
 					userAttributeUsername: tt.username,
 					userAttributePassword: tt.password,
@@ -719,8 +719,8 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_RetryableAuthenticationErro
 
 func (suite *BasicAuthExecutorTestSuite) TestGetAuthenticatedUser_ClientError_ReturnsInputsForRetry() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributeUsername: "testuser",
 			userAttributePassword: "password123",
@@ -926,9 +926,9 @@ func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithMixedInbound
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_PreResolvedUser_RequestsPassword() {
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		FlowType:   common.FlowTypeAuthentication,
-		UserInputs: map[string]string{},
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
+		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
 			userAttributeUserID: "pre-resolved-user-123",
 		},
@@ -945,8 +945,8 @@ func (suite *BasicAuthExecutorTestSuite) TestExecute_PreResolvedUser_RequestsPas
 
 func (suite *BasicAuthExecutorTestSuite) TestExecute_PreResolvedUser_WithPassword() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			userAttributePassword: "password123",
 		},

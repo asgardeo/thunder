@@ -98,7 +98,7 @@ func newHTTPRequestExecutor(
 
 // Execute executes the HTTP request logic.
 func (h *httpRequestExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := h.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := h.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing HTTP request executor")
 
 	execResp := &common.ExecutorResponse{
@@ -316,7 +316,7 @@ func (h *httpRequestExecutor) resolveMapPlaceholders(ctx *core.NodeContext, data
 // executeRequestWithRetry executes the HTTP request with retry logic.
 func (h *httpRequestExecutor) executeRequestWithRetry(ctx *core.NodeContext,
 	config *httpRequestConfig) (*http.Response, error) {
-	logger := h.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := h.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	retryCount := 0
 	retryDelay := 0
@@ -351,7 +351,7 @@ func (h *httpRequestExecutor) executeRequestWithRetry(ctx *core.NodeContext,
 // executeRequest executes a single HTTP request.
 func (h *httpRequestExecutor) executeRequest(ctx *core.NodeContext, config *httpRequestConfig,
 	httpClient httpservice.HTTPClientInterface) (*http.Response, error) {
-	logger := h.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := h.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	// Prepare request body
 	var bodyReader io.Reader
@@ -393,7 +393,7 @@ func (h *httpRequestExecutor) executeRequest(ctx *core.NodeContext, config *http
 // processResponse processes the HTTP response and extracts data based on response mapping.
 func (h *httpRequestExecutor) processResponse(ctx *core.NodeContext, config *httpRequestConfig,
 	response *http.Response, execResp *common.ExecutorResponse) error {
-	logger := h.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := h.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	defer func() {
 		if err := response.Body.Close(); err != nil {
 			logger.Error("Failed to close response body", log.Error(err))

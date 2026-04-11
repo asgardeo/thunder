@@ -74,7 +74,7 @@ func (suite *InviteExecutorTestSuite) TearDownTest() {
 
 func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		AppID:        "test-app-id",
 		ExecutorMode: ExecutorModeGenerate,
 		UserInputs:   make(map[string]string),
@@ -88,14 +88,14 @@ func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode() {
 	assert.NotEmpty(suite.T(), resp.RuntimeData[common.RuntimeKeyStoredInviteToken])
 	assert.NotEmpty(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink])
 	assert.Contains(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink], "inviteToken=")
-	assert.Contains(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink], "flowId=test-flow-id")
+	assert.Contains(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink], "executionId=test-flow-id")
 	assert.Contains(suite.T(), resp.RuntimeData[common.RuntimeKeyInviteLink], "applicationId=test-app-id")
 	assert.Empty(suite.T(), resp.AdditionalData[common.DataInviteLink])
 }
 
 func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_UserOnboarding_ExposesInviteLink() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		AppID:        "test-app-id",
 		FlowType:     common.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeGenerate,
@@ -114,7 +114,7 @@ func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_UserOnboarding_Ex
 func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_Idempotency() {
 	existingToken := "existing-token-123"
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeGenerate,
 		UserInputs:   make(map[string]string),
 		RuntimeData: map[string]string{
@@ -133,7 +133,7 @@ func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_Idempotency() {
 
 func (suite *InviteExecutorTestSuite) TestExecute_VerifyMode_NoTokenProvided() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeVerify,
 		UserInputs:   make(map[string]string),
 		RuntimeData: map[string]string{
@@ -153,7 +153,7 @@ func (suite *InviteExecutorTestSuite) TestExecute_VerifyMode_NoTokenProvided() {
 func (suite *InviteExecutorTestSuite) TestExecute_VerifyMode_ValidationSuccess() {
 	token := "valid-token"
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeVerify,
 		UserInputs: map[string]string{
 			userInputInviteToken: token,
@@ -174,7 +174,7 @@ func (suite *InviteExecutorTestSuite) TestExecute_VerifyMode_ValidationSuccess()
 
 func (suite *InviteExecutorTestSuite) TestExecute_VerifyMode_ValidationFailure_Mismatch() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeVerify,
 		UserInputs: map[string]string{
 			userInputInviteToken: "wrong-token",
@@ -196,7 +196,7 @@ func (suite *InviteExecutorTestSuite) TestExecute_VerifyMode_ValidationFailure_M
 
 func (suite *InviteExecutorTestSuite) TestExecute_VerifyMode_ValidationFailure_NoStoredToken() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeVerify,
 		UserInputs: map[string]string{
 			userInputInviteToken: "some-token",
@@ -216,7 +216,7 @@ func (suite *InviteExecutorTestSuite) TestExecute_VerifyMode_ValidationFailure_N
 
 func (suite *InviteExecutorTestSuite) TestExecute_InvalidMode() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: "invalid",
 		UserInputs:   make(map[string]string),
 		RuntimeData:  make(map[string]string),

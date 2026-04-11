@@ -59,8 +59,8 @@ func (suite *PermissionValidatorTestSuite) TestExecute_DefaultScopeCheck_Success
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
 	ctx := &core.NodeContext{
-		FlowID:  "test-flow",
-		Context: httpCtx,
+		ExecutionID: "test-flow",
+		Context:     httpCtx,
 	}
 
 	resp, err := suite.executor.Execute(ctx)
@@ -78,8 +78,8 @@ func (suite *PermissionValidatorTestSuite) TestExecute_DefaultScopeCheck_Failure
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
 	ctx := &core.NodeContext{
-		FlowID:  "test-flow",
-		Context: httpCtx,
+		ExecutionID: "test-flow",
+		Context:     httpCtx,
 	}
 
 	resp, err := suite.executor.Execute(ctx)
@@ -164,7 +164,7 @@ func (suite *PermissionValidatorTestSuite) TestExecute_CustomScopeCheck_Success(
 			httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
 			ctx := &core.NodeContext{
-				FlowID:         "test-flow",
+				ExecutionID:    "test-flow",
 				Context:        httpCtx,
 				NodeProperties: tc.nodeProps,
 			}
@@ -186,8 +186,8 @@ func (suite *PermissionValidatorTestSuite) TestExecute_MultipleRequiredScopes_OR
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
 	ctx := &core.NodeContext{
-		FlowID:  "test-flow",
-		Context: httpCtx,
+		ExecutionID: "test-flow",
+		Context:     httpCtx,
 		NodeProperties: map[string]interface{}{
 			propertyKeyRequiredScopes: []interface{}{"scopeA", "scopeB"},
 		},
@@ -208,8 +208,8 @@ func (suite *PermissionValidatorTestSuite) TestExecute_AuthorizedPermissionsChec
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
 	ctx := &core.NodeContext{
-		FlowID:  "test-flow",
-		Context: httpCtx,
+		ExecutionID: "test-flow",
+		Context:     httpCtx,
 		NodeProperties: map[string]interface{}{
 			propertyKeyRequiredScopes: []interface{}{"admin"},
 		},
@@ -223,8 +223,8 @@ func (suite *PermissionValidatorTestSuite) TestExecute_AuthorizedPermissionsChec
 
 func (suite *PermissionValidatorTestSuite) TestExecute_NoHTTPContext() {
 	ctx := &core.NodeContext{
-		FlowID:  "test-flow",
-		Context: nil,
+		ExecutionID: "test-flow",
+		Context:     nil,
 	}
 
 	resp, err := suite.executor.Execute(ctx)
@@ -243,8 +243,8 @@ func (suite *PermissionValidatorTestSuite) TestExecute_EmptyScopes() {
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
 	ctx := &core.NodeContext{
-		FlowID:  "test-flow",
-		Context: httpCtx,
+		ExecutionID: "test-flow",
+		Context:     httpCtx,
 	}
 
 	resp, err := suite.executor.Execute(ctx)
@@ -263,8 +263,8 @@ func (suite *PermissionValidatorTestSuite) TestExecute_NoScopesInContext() {
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
 	ctx := &core.NodeContext{
-		FlowID:  "test-flow",
-		Context: httpCtx,
+		ExecutionID: "test-flow",
+		Context:     httpCtx,
 	}
 
 	resp, err := suite.executor.Execute(ctx)
@@ -283,8 +283,8 @@ func (suite *PermissionValidatorTestSuite) TestExecute_ScopesWithUnexpectedType(
 	httpCtx = security.WithSecurityContextTest(httpCtx, authCtx)
 
 	ctx := &core.NodeContext{
-		FlowID:  "test-flow",
-		Context: httpCtx,
+		ExecutionID: "test-flow",
+		Context:     httpCtx,
 	}
 
 	resp, err := suite.executor.Execute(ctx)

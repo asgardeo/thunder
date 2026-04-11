@@ -1,0 +1,418 @@
+{
+  "item": [
+    {
+      "id": "7287b26c-1bed-40b0-9771-f0305cf30c69",
+      "name": "flow-meta",
+      "description": {
+        "content": "Operations for retrieving flow metadata",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "a9d79eff-1863-4093-bb65-aa1aefccefed",
+          "name": "Get flow metadata",
+          "request": {
+            "name": "Get flow metadata",
+            "description": {
+              "content": "Retrieves aggregated metadata for a flow, including:\n- Application or OU details based on type\n- Resolved design configuration (theme and layout)\n- i18n translations based on language and namespace filters\n- Registration flow enablement status\n\n**Note:** When `type=APP`, the OU metadata is only included in the response\nwhen the deployment has exactly one organization unit (i.e., `totalResults == 1`).\nFor deployments with multiple OUs, the OU metadata will be omitted from APP-type responses.\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "flow",
+                "meta"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "disabled": false,
+                  "key": "type",
+                  "value": "<string>",
+                  "description": "(Required) The type of entity to retrieve metadata for"
+                },
+                {
+                  "disabled": false,
+                  "key": "id",
+                  "value": "<uuid>",
+                  "description": "(Required) The UUID of the entity (application ID or organization unit ID)"
+                },
+                {
+                  "disabled": true,
+                  "key": "language",
+                  "value": "<string>",
+                  "description": "Language tag in BCP 47 format for i18n translations (e.g., `en`, `es`, `fr-CA`)"
+                },
+                {
+                  "disabled": true,
+                  "key": "namespace",
+                  "value": "<string>",
+                  "description": "Filter translations by namespace (e.g., `auth`, `errors`, `common`)"
+                }
+              ],
+              "variable": [
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{host}}",
+                  "key": "host"
+                },
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{port}}",
+                  "key": "port"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "response": [
+            {
+              "id": "38dfb06d-6d0b-4e84-9226-98d7a97b6e58",
+              "name": "Flow metadata retrieved successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flow",
+                    "meta"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "id",
+                      "value": "<uuid>"
+                    },
+                    {
+                      "key": "language",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "namespace",
+                      "value": "<string>"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"isRegistrationFlowEnabled\": \"<boolean>\",\n  \"design\": {\n    \"theme\": {\n      \"nostrud67\": false,\n      \"ine\": \"enim in irure\",\n      \"commodof5\": 66456615.75873166\n    },\n    \"layout\": {\n      \"occaecatc7\": 7941352.066798866,\n      \"dolore1c\": -92621795,\n      \"aute_44\": \"culpa exercita\",\n      \"aliqua82\": -9229374\n    }\n  },\n  \"i18n\": {\n    \"languages\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"language\": \"<string>\",\n    \"translations\": {\n      \"Ut_23\": {\n        \"qui_5\": \"<string>\"\n      }\n    },\n    \"totalResults\": \"<integer>\"\n  },\n  \"application\": {\n    \"id\": \"<uuid>\",\n    \"name\": \"<string>\",\n    \"description\": \"<string>\",\n    \"logoUrl\": \"<uri>\",\n    \"url\": \"<uri>\",\n    \"tosUri\": \"<uri>\",\n    \"policyUri\": \"<uri>\"\n  },\n  \"ou\": {\n    \"id\": \"<uuid>\",\n    \"handle\": \"<string>\",\n    \"name\": \"<string>\",\n    \"description\": \"<string>\",\n    \"logoUrl\": \"<uri>\",\n    \"tosUri\": \"<uri>\",\n    \"policyUri\": \"<uri>\",\n    \"cookiePolicyUri\": \"<uri>\"\n  }\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "eb0c57b6-a821-4e0f-a36f-a57666518b55",
+              "name": "Bad request - Invalid input",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flow",
+                    "meta"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "id",
+                      "value": "<uuid>"
+                    },
+                    {
+                      "key": "language",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "namespace",
+                      "value": "<string>"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "e4c5124e-0e5b-431f-93ef-743ca61e35e3",
+              "name": "Resource not found",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flow",
+                    "meta"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "id",
+                      "value": "<uuid>"
+                    },
+                    {
+                      "key": "language",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "namespace",
+                      "value": "<string>"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "fedf422e-a385-4003-8beb-26798ac9e863",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flow",
+                    "meta"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "type",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "id",
+                      "value": "<uuid>"
+                    },
+                    {
+                      "key": "language",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "namespace",
+                      "value": "<string>"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "description": {
+        "content": "",
+        "type": "text/plain"
+      },
+      "type": "any",
+      "value": "localhost",
+      "key": "host"
+    },
+    {
+      "description": {
+        "content": "",
+        "type": "text/plain"
+      },
+      "type": "any",
+      "value": "8090",
+      "key": "port"
+    },
+    {
+      "type": "string",
+      "value": "https://{{host}}:{{port}}",
+      "key": "baseUrl"
+    }
+  ],
+  "info": {
+    "_postman_id": "04a3557f-00a2-4637-84b6-9e16bb2c4526",
+    "name": "Flow Metadata API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": {
+      "content": "API to retrieve aggregated metadata for flows, including application details, organization unit information, design configuration, and i18n translations.",
+      "type": "text/plain"
+    }
+  }
+}

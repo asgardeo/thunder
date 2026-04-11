@@ -19,6 +19,7 @@
 import type * as Preset from '@docusaurus/preset-classic';
 import type {Config} from '@docusaurus/types';
 import {themes as prismThemes} from 'prism-react-renderer';
+import personaPlugin from './plugins/personaPlugin';
 import thunderConfig from './docusaurus.thunder.config';
 import webpackPlugin from './plugins/webpackPlugin';
 
@@ -49,7 +50,7 @@ const config: Config = {
   organizationName: thunderConfig.project.source.github.owner.name, // Usually your GitHub org/user name.
   projectName: thunderConfig.project.source.github.name, // Usually your repo name.
 
-  onBrokenLinks: 'log',
+  onBrokenLinks: 'throw',
 
   // Internationalization (i18n) configuration.
   // See: https://docusaurus.io/docs/i18n/introduction
@@ -66,7 +67,7 @@ const config: Config = {
     },
   },
 
-  plugins: [webpackPlugin],
+  plugins: [webpackPlugin, personaPlugin],
 
   presets: [
     [
@@ -115,6 +116,10 @@ const config: Config = {
         width: '101px',
       },
       items: [
+        {
+          type: 'custom-PersonaDropdown',
+          position: 'left',
+        },
         {
           type: 'docSidebar',
           sidebarId: 'docsSidebar',
@@ -192,11 +197,15 @@ const config: Config = {
             },
           ],
         },
-        thunderConfig.documentation.versioning.enabled && {
-          type: 'docsVersionDropdown',
-          position: 'right',
-        },
-      ].filter(Boolean),
+        ...(thunderConfig.documentation.versioning.enabled
+          ? [
+              {
+                type: 'docsVersionDropdown',
+                position: 'right' as const,
+              },
+            ]
+          : []),
+      ],
     },
     footer: {
       style: 'dark',

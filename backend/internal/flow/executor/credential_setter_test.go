@@ -64,7 +64,7 @@ func (suite *CredentialSetterTestSuite) TestExecute_Success() {
 	userID := testUserID
 	password := "securePass123!"
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			userAttributePassword: password,
 		},
@@ -95,8 +95,8 @@ func (suite *CredentialSetterTestSuite) TestExecute_Success() {
 
 func (suite *CredentialSetterTestSuite) TestExecute_MissingInput() {
 	ctx := &core.NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: make(map[string]string),
+		ExecutionID: "test-flow",
+		UserInputs:  make(map[string]string),
 	}
 
 	suite.mockBaseExecutor.On("HasRequiredInputs", ctx, mock.Anything).Return(false)
@@ -109,7 +109,7 @@ func (suite *CredentialSetterTestSuite) TestExecute_MissingInput() {
 
 func (suite *CredentialSetterTestSuite) TestExecute_MissingUserID() {
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			userAttributePassword: "password",
 		},
@@ -129,7 +129,7 @@ func (suite *CredentialSetterTestSuite) TestExecute_MissingUserID() {
 func (suite *CredentialSetterTestSuite) TestExecute_EmptyPassword() {
 	userID := testUserID
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			userAttributePassword: "",
 		},
@@ -157,7 +157,7 @@ func (suite *CredentialSetterTestSuite) TestExecute_ServiceError() {
 	userID := testUserID
 	password := "password"
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			userAttributePassword: password,
 		},
@@ -190,7 +190,7 @@ func (suite *CredentialSetterTestSuite) TestExecute_CustomAttribute() {
 	pinValue := "1234"
 
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			customAttr: pinValue,
 		},
@@ -226,7 +226,7 @@ func (suite *CredentialSetterTestSuite) TestExecute_CustomAttribute() {
 func (suite *CredentialSetterTestSuite) TestExecute_NoRequiredInputs() {
 	userID := testUserID
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			userAttributePassword: "password",
 		},
@@ -250,7 +250,7 @@ func (suite *CredentialSetterTestSuite) TestExecute_NoRequiredInputs() {
 func (suite *CredentialSetterTestSuite) TestExecute_EmptyInputIdentifier() {
 	userID := testUserID
 	ctx := &core.NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			userAttributePassword: "password",
 		},

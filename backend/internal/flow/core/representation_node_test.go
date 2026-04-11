@@ -67,7 +67,7 @@ func (s *RepresentationNodeTestSuite) TestExecuteWithOnSuccess() {
 	repNode.SetOnSuccess("next_node")
 
 	ctx := &NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 	}
 
 	resp, err := node.Execute(ctx)
@@ -84,7 +84,7 @@ func (s *RepresentationNodeTestSuite) TestExecuteWithoutOnSuccess() {
 	node := newRepresentationNode("end", common.NodeTypeEnd, nil, false, true)
 
 	ctx := &NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 	}
 
 	resp, err := node.Execute(ctx)
@@ -122,7 +122,7 @@ func (s *RepresentationNodeTestSuite) TestShouldExecuteWithoutCondition() {
 	node := newRepresentationNode("test", common.NodeTypeStart, nil, true, false)
 
 	ctx := &NodeContext{
-		FlowID:      "test-flow",
+		ExecutionID: "test-flow",
 		RuntimeData: map[string]string{},
 	}
 
@@ -138,7 +138,7 @@ func (s *RepresentationNodeTestSuite) TestShouldExecuteWithConditionMet() {
 	})
 
 	ctx := &NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		RuntimeData: map[string]string{
 			"key1": "value1",
 		},
@@ -156,7 +156,7 @@ func (s *RepresentationNodeTestSuite) TestShouldExecuteWithConditionNotMet() {
 	})
 
 	ctx := &NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		RuntimeData: map[string]string{
 			"key1": "different_value",
 		},

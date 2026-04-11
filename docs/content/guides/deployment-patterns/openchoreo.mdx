@@ -1,7 +1,285 @@
 ---
 title: OpenChoreo
 sidebar_position: 3
+persona: iam
+description: Deploy Thunder on the OpenChoreo platform using Helm, with PostgreSQL as the backing database.
 ---
 
-# 🚧 WIP
-## This page is under construction. Please check back later.
+# Deploy Thunder on OpenChoreo
+
+This guide walks you through deploying Thunder on OpenChoreo using Helm. It covers prerequisites, installation, database configuration, and the built-in environment management that OpenChoreo provides.
+
+## Prerequisites
+
+Before you begin, ensure the following are available:
+
+**Infrastructure:**
+- A running Kubernetes cluster (v1.19 or later) with OpenChoreo v0.3.2 installed and configured.
+- Proper RBAC permissions for OpenChoreo custom resources.
+- A PostgreSQL database, either in-cluster or external.
+
+**Required Tools:**
+
+| Tool | Installation Guide | Version Check |
+|------|--------------------|---------------|
+| Git | [Install Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) | `git --version` |
+| Helm | [Install Helm](https://helm.sh/docs/intro/install/) | `helm version` |
+| kubectl | [Install kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) | `kubectl version` |
+| OpenChoreo | [Install OpenChoreo](https://openchoreo.dev/docs/getting-started/quick-start-guide/) | `helm list -n openchoreo-control-plane -o json \| jq -r '.[] \| "\(.name) \(.app_version)"'` |
+
+Verify cluster access before proceeding:
+
+```bash
+kubectl cluster-info
+helm version
+kubectl get crd | grep openchoreo
+```
+
+## Install Thunder
+
+### Step 1: Configure Database Credentials
+
+Export your database connection details as environment variables:
+
+```bash
+export DB_HOST="postgres.default.svc.cluster.local"
+export DB_USER="thunder_user"
+export DB_PASS="<your-database-password>"
+```
+
+### Step 2: Install the Helm Chart
+
+Clone the Thunder repository if you have not already done so. Then install Thunder using the OpenChoreo Helm chart:
+
+```bash
+helm install thunder install/openchoreo/helm/ \
+  --namespace identity-platform \
+  --create-namespace \
+  --set database.host="$DB_HOST" \
+  --set database.config.username="$DB_USER" \
+  --set database.config.password="$DB_PASS" \
+  --set database.runtime.username="$DB_USER" \
+  --set database.runtime.password="$DB_PASS" \
+  --set organization.name="identity-platform"
+```
+
+### Step 3: Verify the Installation
+
+```bash
+# Check OpenChoreo resources
+kubectl get components,workloads,services -n identity-platform
+
+# Check pod status
+kubectl get pods -n identity-platform
+
+# Check organization and platform resources
+kubectl get organizations,projects,deploymentpipelines,environments
+```
+
+## Installation Options
+
+### Option 1: Inline Value Overrides
+
+Pass configuration values directly on the command line:
+
+```bash
+helm upgrade --install thunder install/openchoreo/helm/ \
+  --namespace identity-platform \
+  --create-namespace \
+  --set database.host="postgres.example.com" \
+  --set database.config.username="thunder_user" \
+  --set database.config.password="<config-db-password>" \
+  --set database.runtime.username="thunder_user" \
+  --set database.runtime.password="<runtime-db-password>" \
+  --set database.config.sslmode="require" \
+  --set database.runtime.sslmode="require" \
+  --set organization.name="my-organization"
+```
+
+### Option 2: Custom Values File
+
+For a repeatable deployment, use a values file:
+
+1. Create a `custom-values.yaml` file:
+
+    ```yaml
+    # Component configuration
+    componentName: thunder-identity
+    pipelineName: identity-platform-pipeline
+
+    # Container image configuration
+    image:
+      repository: ghcr.io/asgardeo/thunder
+      tag: "0.11.0"
+
+    # Database configuration
+    database:
+      host: postgres.example.com
+      port: 5432
+      identity:
+        database: configdb
+        username: thunder_user
+        password: <config-db-password>
+        type: postgres
+        sslmode: require
+      runtime:
+        database: runtimedb
+        username: thunder_user
+        password: <runtime-db-password>
+        type: postgres
+        sslmode: require
+      user:
+        database: userdb
+        username: thunder_user
+        password: <user-db-password>
+        type: postgres
+        sslmode: require
+
+    # JWT configuration
+    jwt:
+      issuer: thunder-identity-platform
+      validity: 7200
+
+    # OAuth configuration
+    oauth:
+      refresh_token_validity: 604800
+
+    # Cache configuration
+    cache:
+      type: memory
+      size: 50000
+      ttl: 7200
+
+    # CORS configuration
+    cors:
+      allowed_origins:
+        - "https://dev.your-domain.com"
+        - "https://staging.your-domain.com"
+        - "https://prod.your-domain.com"
+
+    # Gateway configuration
+    gateway:
+      dnsPrefixDev: dev
+      dnsPrefixStaging: staging
+      dnsPrefixProd: prod
+
+    # Platform resources
+    organization:
+      name: identity-platform
+      displayName: Identity Platform Organization
+      description: Thunder-powered identity management platform
+
+    # Cluster-scoped resources (only created in non-default namespaces)
+    serviceClass:
+      name: default
+      create: true
+
+    apiClass:
+      name: default
+      create: true
+    ```
+
+2. Install using the values file:
+
+    ```bash
+    helm upgrade --install thunder install/openchoreo/helm/ \
+      --namespace identity-platform \
+      --create-namespace \
+      -f custom-values.yaml
+    ```
+
+## Database Setup
+
+Thunder requires PostgreSQL for the identity, runtime, and user databases.
+
+Before deploying Thunder, prepare the PostgreSQL instance:
+
+1. Create the three required databases:
+
+    ```sql
+    CREATE DATABASE configdb;
+    CREATE DATABASE runtimedb;
+    CREATE DATABASE userdb;
+    ```
+
+2. Create a dedicated user:
+
+    ```sql
+    CREATE USER thunder_user WITH PASSWORD '<secure-password>';
+    ```
+
+3. Grant the required privileges in each database:
+
+    ```sql
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO thunder_user;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO thunder_user;
+    ```
+
+4. Run the initialization scripts from `backend/dbscripts` to create the schema.
+
+For a PostgreSQL setup using Helm, refer to the [Bitnami PostgreSQL Helm Chart](https://bitnami.com/stacks/postgresql).
+
+### External PostgreSQL
+
+```yaml
+database:
+  host: postgres.example.com
+  port: 5432
+  identity:
+    database: configdb
+    username: thunder_user
+    password: <config-db-password>
+    type: postgres
+    sslmode: require
+  runtime:
+    database: runtimedb
+    username: thunder_user
+    password: <runtime-db-password>
+    type: postgres
+    sslmode: require
+  user:
+    database: userdb
+    username: thunder_user
+    password: <user-db-password>
+    type: postgres
+    sslmode: require
+```
+
+### PostgreSQL Running in the Cluster
+
+```yaml
+database:
+  host: postgres.default.svc.cluster.local
+  port: 5432
+  identity:
+    database: configdb
+    username: thunder_user
+    password: <config-db-password>
+    type: postgres
+    sslmode: disable
+  runtime:
+    database: runtimedb
+    username: thunder_user
+    password: <runtime-db-password>
+    type: postgres
+    sslmode: disable
+  user:
+    database: userdb
+    username: thunder_user
+    password: <user-db-password>
+    type: postgres
+    sslmode: disable
+```
+
+## Environment Management
+
+OpenChoreo provides built-in environment management with promotion workflows. Three environments are available out of the box:
+
+1. **Development** — for active development and testing.
+2. **Staging** — for pre-production validation.
+3. **Production** — for live traffic.
+
+## Next Steps
+
+- [Deploy Thunder on Kubernetes](./kubernetes) — Deploy Thunder to Kubernetes without OpenChoreo.
+- [Deploy Thunder with Docker](./docker) — Run Thunder locally using Docker.

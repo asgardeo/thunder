@@ -332,7 +332,7 @@ func (ts *GoogleAuthFlowTestSuite) TestGoogleAuthFlowInitiation() {
 	// Verify flow status and type
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().Equal("REDIRECTION", flowStep.Type, "Expected flow type to be REDIRECT")
-	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
+	ts.Require().NotEmpty(flowStep.ExecutionID, "Execution ID should not be empty")
 
 	// Validate redirect information
 	ts.Require().NotEmpty(flowStep.Data, "Flow data should not be empty")
@@ -383,9 +383,9 @@ func (ts *GoogleAuthFlowTestSuite) TestGoogleAuthFlowCompleteSuccess() {
 	// Verify flow status and type
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().Equal("REDIRECTION", flowStep.Type, "Expected flow type to be REDIRECT")
-	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
+	ts.Require().NotEmpty(flowStep.ExecutionID, "Execution ID should not be empty")
 
-	flowID := flowStep.FlowID
+	ExecutionID := flowStep.ExecutionID
 	redirectURLStr := flowStep.Data.RedirectURL
 	ts.Require().NotEmpty(redirectURLStr, "Redirect URL should not be empty")
 
@@ -401,7 +401,7 @@ func (ts *GoogleAuthFlowTestSuite) TestGoogleAuthFlowCompleteSuccess() {
 		"code": authCode,
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowID, inputs, "")
+	completeFlowStep, err := common.CompleteFlow(ExecutionID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete Google authentication flow: %v", err)
 	}
@@ -430,14 +430,14 @@ func (ts *GoogleAuthFlowTestSuite) TestGoogleAuthFlowCompleteWithInvalidCode() {
 		ts.T().Fatalf("Failed to initiate Google authentication flow: %v", err)
 	}
 
-	flowID := flowStep.FlowID
+	ExecutionID := flowStep.ExecutionID
 
 	// Step 2: Try to complete with invalid authorization code
 	inputs := map[string]string{
 		"code": "invalid-auth-code-12345",
 	}
 
-	_, err = common.CompleteFlow(flowID, inputs, "")
+	_, err = common.CompleteFlow(ExecutionID, inputs, "")
 	ts.Require().Error(err, "Should fail with invalid authorization code")
 }
 
@@ -448,14 +448,14 @@ func (ts *GoogleAuthFlowTestSuite) TestGoogleAuthFlowCompleteWithMissingCode() {
 		ts.T().Fatalf("Failed to initiate Google authentication flow: %v", err)
 	}
 
-	flowID := flowStep.FlowID
+	ExecutionID := flowStep.ExecutionID
 
 	// Step 2: Try to complete without providing authorization code
 	inputs := map[string]string{}
 
 	// When required inputs are missing, the flow returns INCOMPLETE status (not an error)
 	// and asks for the missing inputs again
-	flowStep, err = common.CompleteFlow(flowID, inputs, "")
+	flowStep, err = common.CompleteFlow(ExecutionID, inputs, "")
 	ts.Require().NoError(err, "Should not return error when inputs are missing")
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus,
 		"Flow should remain INCOMPLETE when required inputs are missing")
@@ -483,7 +483,7 @@ func (ts *GoogleAuthFlowTestSuite) TestGoogleAuthFlowMultipleUsersSuccess() {
 		ts.T().Fatalf("Failed to initiate Google authentication flow: %v", err)
 	}
 
-	flowID := flowStep.FlowID
+	ExecutionID := flowStep.ExecutionID
 	redirectURLStr := flowStep.Data.RedirectURL
 
 	// Step 2: Simulate user authorization at Google
@@ -497,7 +497,7 @@ func (ts *GoogleAuthFlowTestSuite) TestGoogleAuthFlowMultipleUsersSuccess() {
 		"code": authCode,
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowID, inputs, "")
+	completeFlowStep, err := common.CompleteFlow(ExecutionID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete Google authentication flow: %v", err)
 	}

@@ -50,14 +50,14 @@ func (h *flowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 
 	// Sanitize the input to prevent injection attacks
 	appID := sysutils.SanitizeString(flowR.ApplicationID)
-	flowID := sysutils.SanitizeString(flowR.FlowID)
+	executionID := sysutils.SanitizeString(flowR.ExecutionID)
 	flowTypeStr := sysutils.SanitizeString(flowR.FlowType)
 	verbose := flowR.Verbose
 	action := sysutils.SanitizeString(flowR.Action)
 	inputs := sysutils.SanitizeStringMap(flowR.Inputs)
 
 	flowStep, flowErr := h.flowExecService.Execute(
-		r.Context(), appID, flowID, flowTypeStr, verbose, action, inputs)
+		r.Context(), appID, executionID, flowTypeStr, verbose, action, inputs)
 
 	if flowErr != nil {
 		handleFlowError(w, flowErr)
@@ -65,7 +65,7 @@ func (h *flowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 	}
 
 	flowResp := FlowResponse{
-		FlowID:        flowStep.FlowID,
+		ExecutionID:   flowStep.ExecutionID,
 		StepID:        flowStep.StepID,
 		FlowStatus:    string(flowStep.Status),
 		Type:          string(flowStep.Type),
@@ -76,7 +76,8 @@ func (h *flowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, flowResp)
 
-	logger.Debug("Flow execution request handled successfully", log.String("flowID", flowResp.FlowID))
+	logger.Debug("Flow execution request handled successfully",
+		log.String(log.LoggerKeyExecutionID, flowResp.ExecutionID))
 }
 
 // handleFlowError handles errors that occur during flow execution as an API error response.

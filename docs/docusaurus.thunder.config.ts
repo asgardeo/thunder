@@ -18,6 +18,7 @@
 
 export interface DocusaurusThunderConfig {
   project: {
+    emoji: string;
     name: string;
     description: string;
     source: {
@@ -38,6 +39,11 @@ export interface DocusaurusThunderConfig {
       };
     };
   };
+  postman: {
+    collection: {
+      output: string;
+    };
+  };
   documentation: {
     versioning: {
       enabled: boolean;
@@ -53,6 +59,7 @@ export interface DocusaurusThunderConfig {
 
 const docusaurusThunderConfig = {
   project: {
+    emoji: '⚡',
     name: 'Thunder',
     description:
       'Thunder is a modern, open-source identity management service designed for teams building secure, customizable authentication experiences across applications, services, and AI agents.',
@@ -72,6 +79,11 @@ const docusaurusThunderConfig = {
           name: 'asgardeo',
         },
       },
+    },
+  },
+  postman: {
+    collection: {
+      output: 'thunder-api-postman-collection.json',
     },
   },
   documentation: {

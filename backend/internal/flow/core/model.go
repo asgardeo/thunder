@@ -30,7 +30,7 @@ import (
 type NodeContext struct {
 	Context context.Context
 
-	FlowID        string
+	ExecutionID   string
 	FlowType      common.FlowType
 	AppID         string
 	Verbose       bool

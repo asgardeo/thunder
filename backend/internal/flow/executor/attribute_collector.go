@@ -72,7 +72,7 @@ func newAttributeCollector(
 
 // Execute executes the attribute collection logic.
 func (a *attributeCollector) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := a.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing attribute collect executor")
 
 	execResp := &common.ExecutorResponse{
@@ -122,7 +122,7 @@ func (a *attributeCollector) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 // missing inputs to the executor response. Returns true if required inputs are found, otherwise false.
 func (a *attributeCollector) HasRequiredInputs(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) bool {
-	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := a.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Checking inputs for the attribute collector")
 
 	if a.ExecutorInterface.HasRequiredInputs(ctx, execResp) {
@@ -225,7 +225,7 @@ func (a *attributeCollector) HasRequiredInputs(ctx *core.NodeContext,
 
 // getUserAttributes retrieves the user attributes from the user profile.
 func (a *attributeCollector) getUserAttributes(ctx *core.NodeContext) (map[string]interface{}, error) {
-	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := a.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Retrieving user attributes from the user profile")
 
 	user, err := a.getUserFromStore(ctx)
@@ -252,7 +252,7 @@ func (a *attributeCollector) getUserAttributes(ctx *core.NodeContext) (map[strin
 
 // updateUserInStore updates the user profile with the collected attributes.
 func (a *attributeCollector) updateUserInStore(ctx *core.NodeContext) error {
-	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := a.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Updating user attributes")
 
 	user, err := a.getUserFromStore(ctx)
@@ -302,7 +302,7 @@ func (a *attributeCollector) getUserFromStore(ctx *core.NodeContext) (*userprovi
 // getUpdatedUserObject creates a new user object with the updated attributes.
 func (a *attributeCollector) getUpdatedUserObject(ctx *core.NodeContext,
 	userData *userprovider.User) (bool, *userprovider.User, error) {
-	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := a.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	updatedUser := &userprovider.User{
 		UserID:   userData.UserID,

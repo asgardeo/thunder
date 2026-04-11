@@ -33,7 +33,7 @@ var DataKey = struct {
 	AppID    string
 
 	// Flow Execution Keys
-	FlowID        string
+	ExecutionID   string
 	FlowType      string
 	NodeID        string
 	NodeType      string
@@ -71,7 +71,7 @@ var DataKey = struct {
 	AppID:    "app_id",
 
 	// Flow Execution Keys
-	FlowID:        "flow_id",
+	ExecutionID:   "execution_id",
 	FlowType:      "flow_type",
 	NodeID:        "node_id",
 	NodeType:      "node_type",

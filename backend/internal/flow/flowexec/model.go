@@ -37,7 +37,7 @@ import (
 type EngineContext struct {
 	Context context.Context
 
-	FlowID         string
+	ExecutionID    string
 	FlowType       common.FlowType
 	AppID          string
 	Verbose        bool
@@ -61,7 +61,7 @@ type EngineContext struct {
 
 // FlowStep represents the outcome of a individual flow step
 type FlowStep struct {
-	FlowID        string
+	ExecutionID   string
 	StepID        string
 	Type          common.FlowStepType
 	Status        common.FlowStatus
@@ -81,7 +81,7 @@ type FlowData struct {
 
 // FlowResponse represents the flow execution API response body
 type FlowResponse struct {
-	FlowID        string   `json:"flowId"`
+	ExecutionID   string   `json:"executionId"`
 	StepID        string   `json:"stepId,omitempty"`
 	FlowStatus    string   `json:"flowStatus"`
 	Type          string   `json:"type,omitempty"`
@@ -95,7 +95,7 @@ type FlowRequest struct {
 	ApplicationID string            `json:"applicationId"`
 	FlowType      string            `json:"flowType"`
 	Verbose       bool              `json:"verbose,omitempty"`
-	FlowID        string            `json:"flowId"`
+	ExecutionID   string            `json:"executionId"`
 	Action        string            `json:"action"`
 	Inputs        map[string]string `json:"inputs"`
 }
@@ -109,11 +109,11 @@ type FlowInitContext struct {
 
 // FlowContextDB represents the database row for a flow context.
 type FlowContextDB struct {
-	FlowID     string
-	Context    string
-	ExpiryTime time.Time
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	ExecutionID string
+	Context     string
+	ExpiryTime  time.Time
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 // flowContextContent holds all flow state serialized into the CONTEXT JSON column.
@@ -244,7 +244,7 @@ func (f *FlowContextDB) ToEngineContext(graph core.GraphInterface) (EngineContex
 	}
 
 	return EngineContext{
-		FlowID:            f.FlowID,
+		ExecutionID:       f.ExecutionID,
 		TraceID:           "", // TraceID is transient and set from request context
 		FlowType:          graph.GetType(),
 		AppID:             content.AppID,
@@ -372,7 +372,7 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 	}
 
 	return &FlowContextDB{
-		FlowID:  ctx.FlowID,
-		Context: string(contextJSON),
+		ExecutionID: ctx.ExecutionID,
+		Context:     string(contextJSON),
 	}, nil
 }

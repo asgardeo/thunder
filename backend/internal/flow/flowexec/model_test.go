@@ -71,10 +71,10 @@ func (s *ModelTestSuite) TestFromEngineContext_WithToken() {
 	mockGraph.On("GetID").Return("test-graph-id")
 
 	ctx := EngineContext{
-		FlowID:   "test-flow-id",
-		AppID:    "test-app-id",
-		Verbose:  true,
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow-id",
+		AppID:       "test-app-id",
+		Verbose:     true,
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"username": "testuser",
 		},
@@ -99,7 +99,7 @@ func (s *ModelTestSuite) TestFromEngineContext_WithToken() {
 	// Verify
 	s.NoError(err)
 	s.NotNil(dbModel)
-	s.Equal("test-flow-id", dbModel.FlowID)
+	s.Equal("test-flow-id", dbModel.ExecutionID)
 
 	content := s.getContextContent(dbModel)
 	s.Equal("test-app-id", content.AppID)
@@ -122,10 +122,10 @@ func (s *ModelTestSuite) TestFromEngineContext_WithoutToken() {
 	mockGraph.On("GetID").Return("test-graph-id")
 
 	ctx := EngineContext{
-		FlowID:   "test-flow-id",
-		AppID:    "test-app-id",
-		Verbose:  false,
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow-id",
+		AppID:       "test-app-id",
+		Verbose:     false,
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"username": "testuser",
 		},
@@ -146,7 +146,7 @@ func (s *ModelTestSuite) TestFromEngineContext_WithoutToken() {
 	// Verify
 	s.NoError(err)
 	s.NotNil(dbModel)
-	s.Equal("test-flow-id", dbModel.FlowID)
+	s.Equal("test-flow-id", dbModel.ExecutionID)
 
 	content := s.getContextContent(dbModel)
 	s.True(content.IsAuthenticated)
@@ -161,7 +161,7 @@ func (s *ModelTestSuite) TestFromEngineContext_WithEmptyAuthenticatedUser() {
 	mockGraph.On("GetID").Return("test-graph-id")
 
 	ctx := EngineContext{
-		FlowID:            "test-flow-id",
+		ExecutionID:       "test-flow-id",
 		AppID:             "test-app-id",
 		Verbose:           false,
 		FlowType:          common.FlowTypeAuthentication,
@@ -194,9 +194,9 @@ func (s *ModelTestSuite) TestToEngineContext_WithToken() {
 
 	// Create the context and convert to DB model to get encrypted token
 	ctx := EngineContext{
-		FlowID:   "test-flow-id",
-		AppID:    "test-app-id",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow-id",
+		AppID:       "test-app-id",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-456",
@@ -221,7 +221,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithToken() {
 
 	// Verify
 	s.NoError(err)
-	s.Equal("test-flow-id", resultCtx.FlowID)
+	s.Equal("test-flow-id", resultCtx.ExecutionID)
 	s.Equal("test-app-id", resultCtx.AppID)
 	s.True(resultCtx.AuthenticatedUser.IsAuthenticated)
 	s.Equal("user-456", resultCtx.AuthenticatedUser.UserID)
@@ -255,8 +255,8 @@ func (s *ModelTestSuite) TestToEngineContext_WithoutToken() {
 	}
 	contextJSON, _ := json.Marshal(content)
 	dbModel := &FlowContextDB{
-		FlowID:  "test-flow-id",
-		Context: string(contextJSON),
+		ExecutionID: "test-flow-id",
+		Context:     string(contextJSON),
 	}
 
 	// Execute
@@ -264,7 +264,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithoutToken() {
 
 	// Verify
 	s.NoError(err)
-	s.Equal("test-flow-id", resultCtx.FlowID)
+	s.Equal("test-flow-id", resultCtx.ExecutionID)
 	s.True(resultCtx.AuthenticatedUser.IsAuthenticated)
 	s.Equal(testUserID789, resultCtx.AuthenticatedUser.UserID)
 
@@ -289,9 +289,9 @@ func (s *ModelTestSuite) TestTokenEncryptionDecryptionRoundTrip() {
 		s.Run("Token: "+testToken[:min(20, len(testToken))], func() {
 			// Create context with token
 			ctx := EngineContext{
-				FlowID:   "test-flow-id",
-				AppID:    "test-app-id",
-				FlowType: common.FlowTypeAuthentication,
+				ExecutionID: "test-flow-id",
+				AppID:       "test-app-id",
+				FlowType:    common.FlowTypeAuthentication,
 				AuthenticatedUser: authncm.AuthenticatedUser{
 					IsAuthenticated: true,
 					UserID:          "user-123",
@@ -345,8 +345,8 @@ func (s *ModelTestSuite) TestToEngineContext_WithInvalidEncryptedToken() {
 	}
 	contextJSON, _ := json.Marshal(content)
 	dbModel := &FlowContextDB{
-		FlowID:  "test-flow-id",
-		Context: string(contextJSON),
+		ExecutionID: "test-flow-id",
+		Context:     string(contextJSON),
 	}
 
 	// Execute
@@ -364,7 +364,7 @@ func (s *ModelTestSuite) TestFromEngineContext_PreservesOtherFields() {
 
 	currentAction := "test-action"
 	ctx := EngineContext{
-		FlowID:        "flow-123",
+		ExecutionID:   "flow-123",
 		AppID:         "app-123",
 		Verbose:       true,
 		FlowType:      common.FlowTypeAuthentication,
@@ -397,7 +397,7 @@ func (s *ModelTestSuite) TestFromEngineContext_PreservesOtherFields() {
 
 	// Verify all fields are preserved
 	s.NoError(err)
-	s.Equal("flow-123", dbModel.FlowID)
+	s.Equal("flow-123", dbModel.ExecutionID)
 
 	content := s.getContextContent(dbModel)
 	s.Equal("app-123", content.AppID)
@@ -440,10 +440,10 @@ func (s *ModelTestSuite) TestFromEngineContext_WithAvailableAttributes() {
 	mockGraph.On("GetID").Return("test-graph-id")
 
 	ctx := EngineContext{
-		FlowID:   "test-flow-id",
-		AppID:    "test-app-id",
-		Verbose:  true,
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow-id",
+		AppID:       "test-app-id",
+		Verbose:     true,
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"username": "testuser",
 		},
@@ -468,7 +468,7 @@ func (s *ModelTestSuite) TestFromEngineContext_WithAvailableAttributes() {
 	// Verify
 	s.NoError(err)
 	s.NotNil(dbModel)
-	s.Equal("test-flow-id", dbModel.FlowID)
+	s.Equal("test-flow-id", dbModel.ExecutionID)
 
 	content := s.getContextContent(dbModel)
 	s.Equal("test-app-id", content.AppID)
@@ -492,10 +492,10 @@ func (s *ModelTestSuite) TestFromEngineContext_WithoutAvailableAttributes() {
 	mockGraph.On("GetID").Return("test-graph-id")
 
 	ctx := EngineContext{
-		FlowID:   "test-flow-id",
-		AppID:    "test-app-id",
-		Verbose:  false,
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow-id",
+		AppID:       "test-app-id",
+		Verbose:     false,
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"username": "testuser",
 		},
@@ -516,7 +516,7 @@ func (s *ModelTestSuite) TestFromEngineContext_WithoutAvailableAttributes() {
 	// Verify
 	s.NoError(err)
 	s.NotNil(dbModel)
-	s.Equal("test-flow-id", dbModel.FlowID)
+	s.Equal("test-flow-id", dbModel.ExecutionID)
 
 	content := s.getContextContent(dbModel)
 	s.True(content.IsAuthenticated)
@@ -548,9 +548,9 @@ func (s *ModelTestSuite) TestToEngineContext_WithAvailableAttributes() {
 
 	// Create the context and convert to DB model to get serialized available attributes
 	ctx := EngineContext{
-		FlowID:   "test-flow-id",
-		AppID:    "test-app-id",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow-id",
+		AppID:       "test-app-id",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated:     true,
 			UserID:              "user-456",
@@ -575,7 +575,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithAvailableAttributes() {
 
 	// Verify
 	s.NoError(err)
-	s.Equal("test-flow-id", resultCtx.FlowID)
+	s.Equal("test-flow-id", resultCtx.ExecutionID)
 	s.Equal("test-app-id", resultCtx.AppID)
 	s.True(resultCtx.AuthenticatedUser.IsAuthenticated)
 	s.Equal("user-456", resultCtx.AuthenticatedUser.UserID)
@@ -614,8 +614,8 @@ func (s *ModelTestSuite) TestToEngineContext_WithoutAvailableAttributes() {
 	}
 	contextJSON, _ := json.Marshal(content)
 	dbModel := &FlowContextDB{
-		FlowID:  "test-flow-id",
-		Context: string(contextJSON),
+		ExecutionID: "test-flow-id",
+		Context:     string(contextJSON),
 	}
 
 	// Execute
@@ -623,7 +623,7 @@ func (s *ModelTestSuite) TestToEngineContext_WithoutAvailableAttributes() {
 
 	// Verify
 	s.NoError(err)
-	s.Equal("test-flow-id", resultCtx.FlowID)
+	s.Equal("test-flow-id", resultCtx.ExecutionID)
 	s.True(resultCtx.AuthenticatedUser.IsAuthenticated)
 	s.Equal("user-987", resultCtx.AuthenticatedUser.UserID)
 
@@ -701,9 +701,9 @@ func (s *ModelTestSuite) TestAvailableAttributesSerializationRoundTrip() {
 		s.Run(tc.name, func() {
 			// Create context with available attributes
 			ctx := EngineContext{
-				FlowID:   "test-flow-id",
-				AppID:    "test-app-id",
-				FlowType: common.FlowTypeAuthentication,
+				ExecutionID: "test-flow-id",
+				AppID:       "test-app-id",
+				FlowType:    common.FlowTypeAuthentication,
 				AuthenticatedUser: authncm.AuthenticatedUser{
 					IsAuthenticated:     true,
 					UserID:              "user-123",

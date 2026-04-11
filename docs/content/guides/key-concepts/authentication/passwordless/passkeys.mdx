@@ -184,7 +184,7 @@ curl -k -X POST https://localhost:8090/flow/execute \
   }'
 ```
 
-- The response includes a `flowId` and a step `action` for passkeys. `data.additionalData.passkeyChallenge` contains the WebAuthn request options. The passkey session token is stored server-side in the flow context runtime data and is managed by the server; the client does not need to read or send it.
+- The response includes an `executionId` and a step `action` for passkeys. `data.additionalData.passkeyChallenge` contains the WebAuthn request options. The passkey session token is stored server-side in the flow context runtime data and is managed by the server; the client does not need to read or send it.
 
 2) **Run WebAuthn in the browser** – call `navigator.credentials.get()` with the decoded `passkeyChallenge`.
 
@@ -194,7 +194,7 @@ curl -k -X POST https://localhost:8090/flow/execute \
 curl -k -X POST https://localhost:8090/flow/execute \
   -H "Content-Type: application/json" \
   -d '{
-    "flowId": "<flow-id-from-step>",
+    "executionId": "<execution-id-from-step>",
     "action": "<action-ref-from-step>",
     "inputs": {
       "credentialId": "<credential-id>",
@@ -225,7 +225,7 @@ curl -k -X POST https://localhost:8090/flow/execute \
 
 > Reminder: Calling `/flow/execute` with a flow that only runs the passkey registration executor is impractical; the flow must first provision or resolve the user so registration has a valid subject.
 
-- The response includes a `flowId`, a registration step `action`, and `data.additionalData.passkeyCreationOptions` with the WebAuthn creation options. The passkey session state is maintained server-side and associated with the flow, so clients only need to carry `flowId` (and the step `action`) between calls. Ensure the flow has already collected the user identifier before this step because registration requires a user ID.
+- The response includes an `executionId`, a registration step `action`, and `data.additionalData.passkeyCreationOptions` with the WebAuthn creation options. The passkey session state is maintained server-side and associated with the flow, so clients only need to carry `executionId` (and the step `action`) between calls. Ensure the flow has already collected the user identifier before this step because registration requires a user ID.
 
 2) **Run WebAuthn in the browser** – call `navigator.credentials.create()` with the decoded `passkeyCreationOptions`.
 
@@ -235,7 +235,7 @@ curl -k -X POST https://localhost:8090/flow/execute \
 curl -k -X POST https://localhost:8090/flow/execute \
   -H "Content-Type: application/json" \
   -d '{
-    "flowId": "<flow-id-from-step>",
+    "executionId": "<execution-id-from-step>",
     "action": "<action-ref-from-step>",
     "inputs": {
       "credentialId": "<credential-id>",

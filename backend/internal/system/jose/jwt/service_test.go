@@ -34,6 +34,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -1418,6 +1419,87 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKS() {
 
 	err = suite.jwtService.VerifyJWTSignatureWithJWKS(token, testServer.URL)
 	assert.Nil(suite.T(), err)
+}
+
+func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSUsesCache() {
+	// Verifies the in-process JWKS cache contract:
+	//   1. First fetch for a given URL hits the network.
+	//   2. Subsequent fetches for the same URL hit the cache and do NOT re-fetch.
+	//   3. A different URL is keyed independently — fetching it does NOT consume the
+	//      cached entry from another URL, and asking for the original URL again still
+	//      returns its own cached value (one fetch each).
+	//
+	// Point 3 catches a buggy cache that stores or returns entries without keying by
+	// URL — without it, a single shared `cached` slot would still pass points 1 and 2.
+	//
+	// The default SetupTest config has SecurityConfig.JWKSCacheTTL == 0, which would
+	// cause the cache to expire instantly (Now().Before(Now()) == false). Re-initialize
+	// the runtime here with a positive TTL so the cache actually retains entries.
+	config.ResetThunderRuntime()
+	defer config.ResetThunderRuntime()
+	testConfig := &config.Config{
+		JWT: config.JWTConfig{
+			Issuer:         testIssuer,
+			ValidityPeriod: 3600,
+			Leeway:         30,
+		},
+		Server: config.ServerConfig{
+			SecurityConfig: config.SecurityConfig{
+				JWKSCacheTTL: 300,
+			},
+		},
+	}
+	err := config.InitializeThunderRuntime("", testConfig)
+	assert.NoError(suite.T(), err)
+
+	jwksData := suite.createMockJWKSData()
+	makeServer := func(counter *int32) *httptest.Server {
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			atomic.AddInt32(counter, 1)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			if _, writeErr := fmt.Fprintln(w, jwksData); writeErr != nil {
+				suite.T().Errorf("Failed to write JWKS response: %v", writeErr)
+			}
+		}))
+	}
+
+	var fetchCountA, fetchCountB int32
+	serverA := makeServer(&fetchCountA)
+	defer serverA.Close()
+	serverB := makeServer(&fetchCountB)
+	defer serverB.Close()
+
+	token, _, genErr := suite.jwtService.GenerateJWT(
+		"test-subject", testAudience, testIssuer, 3600, nil, TokenTypeJWT)
+	assert.Nil(suite.T(), genErr)
+
+	// 1. First call against serverA — cache miss, one fetch.
+	assert.Nil(suite.T(), suite.jwtService.VerifyJWTSignatureWithJWKS(token, serverA.URL))
+	assert.Equal(suite.T(), int32(1), atomic.LoadInt32(&fetchCountA),
+		"first call to serverA should fetch JWKS once")
+	assert.Equal(suite.T(), int32(0), atomic.LoadInt32(&fetchCountB),
+		"serverB should not have been touched yet")
+
+	// 2. Second call against serverA — cache hit, no additional fetch.
+	assert.Nil(suite.T(), suite.jwtService.VerifyJWTSignatureWithJWKS(token, serverA.URL))
+	assert.Equal(suite.T(), int32(1), atomic.LoadInt32(&fetchCountA),
+		"second call to serverA should hit the cache, not re-fetch")
+
+	// 3a. First call against serverB — must miss the cache (different URL key) and
+	//     fetch independently. A buggy cache that returns any entry would skip this
+	//     fetch and the count would stay at 0.
+	assert.Nil(suite.T(), suite.jwtService.VerifyJWTSignatureWithJWKS(token, serverB.URL))
+	assert.Equal(suite.T(), int32(1), atomic.LoadInt32(&fetchCountB),
+		"first call to serverB should fetch independently (cache is keyed by URL)")
+	assert.Equal(suite.T(), int32(1), atomic.LoadInt32(&fetchCountA),
+		"fetching serverB must not provoke a re-fetch of serverA")
+
+	// 3b. Going back to serverA must STILL be a cache hit — the serverB fetch must
+	//     not have evicted or overwritten serverA's cache entry.
+	assert.Nil(suite.T(), suite.jwtService.VerifyJWTSignatureWithJWKS(token, serverA.URL))
+	assert.Equal(suite.T(), int32(1), atomic.LoadInt32(&fetchCountA),
+		"serverA's cache entry must survive an unrelated fetch of serverB")
 }
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSInvalidToken() {

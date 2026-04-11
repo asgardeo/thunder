@@ -32,9 +32,9 @@ import (
 // flowStoreInterface defines the methods for flow context storage operations.
 type flowStoreInterface interface {
 	StoreFlowContext(ctx context.Context, engineCtx EngineContext, expirySeconds int64) error
-	GetFlowContext(ctx context.Context, flowID string) (*FlowContextDB, error)
+	GetFlowContext(ctx context.Context, executionID string) (*FlowContextDB, error)
 	UpdateFlowContext(ctx context.Context, engineCtx EngineContext) error
-	DeleteFlowContext(ctx context.Context, flowID string) error
+	DeleteFlowContext(ctx context.Context, executionID string) error
 }
 
 // flowStore implements the FlowStoreInterface for managing flow contexts.
@@ -62,18 +62,18 @@ func (s *flowStore) StoreFlowContext(ctx context.Context, engineCtx EngineContex
 
 	return withRuntimeDBClientContext(ctx, s.dbProvider, func(dbClient provider.DBClientInterface) error {
 		_, err := dbClient.ExecuteContext(ctx, QueryCreateFlowContext,
-			dbModel.FlowID, s.deploymentID, dbModel.Context, expiryTime)
+			dbModel.ExecutionID, s.deploymentID, dbModel.Context, expiryTime)
 		return err
 	})
 }
 
 // GetFlowContext retrieves the flow context from the database.
-func (s *flowStore) GetFlowContext(ctx context.Context, flowID string) (*FlowContextDB, error) {
+func (s *flowStore) GetFlowContext(ctx context.Context, executionID string) (*FlowContextDB, error) {
 	var result *FlowContextDB
 
 	err := withRuntimeDBClientContext(ctx, s.dbProvider, func(dbClient provider.DBClientInterface) error {
 		results, err := dbClient.QueryContext(ctx, QueryGetFlowContext,
-			flowID, s.deploymentID, time.Now().UTC())
+			executionID, s.deploymentID, time.Now().UTC())
 		if err != nil {
 			return fmt.Errorf("failed to execute query: %w", err)
 		}
@@ -107,15 +107,15 @@ func (s *flowStore) UpdateFlowContext(ctx context.Context, engineCtx EngineConte
 
 	return withRuntimeDBClientContext(ctx, s.dbProvider, func(dbClient provider.DBClientInterface) error {
 		_, err := dbClient.ExecuteContext(ctx, QueryUpdateFlowContext,
-			dbModel.FlowID, dbModel.Context, s.deploymentID)
+			dbModel.ExecutionID, dbModel.Context, s.deploymentID)
 		return err
 	})
 }
 
 // DeleteFlowContext removes the flow context from the database.
-func (s *flowStore) DeleteFlowContext(ctx context.Context, flowID string) error {
+func (s *flowStore) DeleteFlowContext(ctx context.Context, executionID string) error {
 	return withRuntimeDBClientContext(ctx, s.dbProvider, func(dbClient provider.DBClientInterface) error {
-		_, err := dbClient.ExecuteContext(ctx, QueryDeleteFlowContext, flowID, s.deploymentID)
+		_, err := dbClient.ExecuteContext(ctx, QueryDeleteFlowContext, executionID, s.deploymentID)
 		return err
 	})
 }
@@ -148,9 +148,9 @@ func (s *flowStore) buildFlowContextFromResultRow(row map[string]interface{}) (*
 	}
 
 	return &FlowContextDB{
-		FlowID:     id,
-		Context:    *contextStr,
-		ExpiryTime: expiryTime,
+		ExecutionID: id,
+		Context:     *contextStr,
+		ExpiryTime:  expiryTime,
 	}, nil
 }
 

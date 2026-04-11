@@ -312,7 +312,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccess() {
 
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().Equal("VIEW", flowStep.Type, "Expected flow type to be VIEW")
-	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
+	ts.Require().NotEmpty(flowStep.ExecutionID, "Execution ID should not be empty")
 
 	// Validate that the required inputs are returned
 	ts.Require().NotEmpty(flowStep.Data, "Flow data should not be empty")
@@ -334,7 +334,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccess() {
 		"password": userAttrs["password"].(string),
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
+	completeFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow: %v", err)
 	}
@@ -409,7 +409,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowWithTwoStepInput() {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
 
-	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
+	ts.Require().NotEmpty(flowStep.ExecutionID, "Execution ID should not be empty")
 
 	var userAttrs map[string]interface{}
 	err = json.Unmarshal(testUser.Attributes, &userAttrs)
@@ -420,14 +420,14 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowWithTwoStepInput() {
 		"username": userAttrs["username"].(string),
 	}
 
-	intermediateFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
+	intermediateFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with missing credentials: %v", err)
 	}
 
 	ts.Require().Equal("INCOMPLETE", intermediateFlowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().Equal("VIEW", intermediateFlowStep.Type, "Expected flow type to be VIEW")
-	ts.Require().NotEmpty(intermediateFlowStep.FlowID, "Flow ID should not be empty")
+	ts.Require().NotEmpty(intermediateFlowStep.ExecutionID, "Execution ID should not be empty")
 
 	// Validate that the required inputs are returned
 	ts.Require().NotEmpty(intermediateFlowStep.Data, "Flow data should not be empty")
@@ -441,7 +441,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowWithTwoStepInput() {
 		"password": userAttrs["password"].(string),
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
+	completeFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow: %v", err)
 	}
@@ -476,7 +476,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidCredentials() {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
 
-	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
+	ts.Require().NotEmpty(flowStep.ExecutionID, "Execution ID should not be empty")
 
 	// Step 2: Continue with invalid credentials
 	inputs := map[string]string{
@@ -484,7 +484,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidCredentials() {
 		"password": "wrong_password",
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
+	completeFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with invalid credentials: %v", err)
 	}
@@ -513,7 +513,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowRetryAfterInvalidCredentials(
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
-	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
+	ts.Require().NotEmpty(flowStep.ExecutionID, "Execution ID should not be empty")
 
 	// Step 2: Submit invalid credentials
 	invalidInputs := map[string]string{
@@ -521,7 +521,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowRetryAfterInvalidCredentials(
 		"password": "wrong_password",
 	}
 
-	retryFlowStep, err := common.CompleteFlow(flowStep.FlowID, invalidInputs, "action_001")
+	retryFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, invalidInputs, "action_001")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow with invalid credentials: %v", err)
 	}
@@ -536,7 +536,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowRetryAfterInvalidCredentials(
 		"password": "testpassword",
 	}
 
-	successFlowStep, err := common.CompleteFlow(flowStep.FlowID, validInputs, "action_001")
+	successFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, validInputs, "action_001")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete authentication flow after retry: %v", err)
 	}
@@ -571,7 +571,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidFlowID() {
 
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().Equal("VIEW", flowStep.Type, "Expected flow type to be VIEW")
-	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
+	ts.Require().NotEmpty(flowStep.ExecutionID, "Execution ID should not be empty")
 	ts.Require().NotEmpty(flowStep.Data, "Flow data should not be empty")
 	ts.Require().NotEmpty(flowStep.Data.Inputs, "Flow should require inputs")
 
@@ -589,7 +589,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowInvalidFlowID() {
 	// Verify the error response
 	ts.Require().Equal("FES-1004", errorResp.Code, "Expected error code for invalid flow ID")
 	ts.Require().Equal("Invalid request", errorResp.Message, "Expected error message for invalid request")
-	ts.Require().Equal("Invalid flow ID provided in the request", errorResp.Description,
+	ts.Require().Equal("Invalid flow execution ID provided in the request", errorResp.Description,
 		"Expected error description for invalid flow ID")
 }
 

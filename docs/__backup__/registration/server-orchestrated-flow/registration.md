@@ -51,7 +51,7 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
 
     ```json
     {
-        "flowId": "db93a19e-c23f-4cfc-a45f-0e0bc157f6d5",
+        "executionId": "db93a19e-c23f-4cfc-a45f-0e0bc157f6d5",
         "flowStatus": "PROMPT_ONLY",
         "type": "VIEW",
         "data": {
@@ -81,12 +81,12 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
 
 4. **Continue the Registration Flow**
 
-    Make the second cURL request to continue the registration flow. Make sure to replace `<flow_id>` with the `flowId` received in the previous response. Also, replace the `username` and `password` with the desired credentials for the new user.
+    Make the second cURL request to continue the registration flow. Make sure to replace `<execution_id>` with the `executionId` received in the previous response. Also, replace the `username` and `password` with the desired credentials for the new user.
 
     ```bash
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
-        "flowId": "<flow_id>",
+        "executionId": "<execution_id>",
         "action": "<action_ref>",
         "inputs": {
             "username": "thor",
@@ -99,7 +99,7 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
 
     ```json
     {
-        "flowId": "db93a19e-c23f-4cfc-a45f-0e0bc157f6d5",
+        "executionId": "db93a19e-c23f-4cfc-a45f-0e0bc157f6d5",
         "flowStatus": "PROMPT_ONLY",
         "type": "VIEW",
         "data": {
@@ -126,12 +126,12 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
 
 5. **Complete the Registration Flow**
 
-    Make the third cURL request to complete the registration flow. Make sure to replace `<flow_id>` with the `flowId` received in the previous response.
+    Make the third cURL request to complete the registration flow. Make sure to replace `<execution_id>` with the `executionId` received in the previous response.
 
     ```bash
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
-        "flowId": "<flow_id>",
+        "executionId": "<execution_id>",
         "action": "<action_ref>",
         "inputs": {
             "email": "thor@thunder.sky",
@@ -216,7 +216,7 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
 
     ```json
     {
-        "flowId": "db93a19e-c23f-4cfc-a45f-0e0bc157f6d5",
+        "executionId": "db93a19e-c23f-4cfc-a45f-0e0bc157f6d5",
         "flowStatus": "PROMPT_ONLY",
         "type": "VIEW",
         "data": {
@@ -233,12 +233,12 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
 
 6. **Continue the Registration Flow**
 
-    Make the second cURL request to continue the registration flow. Make sure to replace `<flow_id>` with the `flowId` received in the previous response. Also, replace the `mobileNumber` with the desired mobile number for the new user.
+    Make the second cURL request to continue the registration flow. Make sure to replace `<execution_id>` with the `executionId` received in the previous response. Also, replace the `mobileNumber` with the desired mobile number for the new user.
 
     ```bash
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
-        "flowId": "<flow_id>",
+        "executionId": "<execution_id>",
         "action": "<action_ref>",
         "inputs": {
             "mobileNumber": "+94xxxxxxxxx"
@@ -255,7 +255,7 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
     ```bash
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
-        "flowId": "<flow_id>",
+        "executionId": "<execution_id>",
         "action": "<action_ref>",
         "inputs": {
             "otp": "696546"
@@ -267,7 +267,7 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
 
     ```json
     {
-        "flowId": "db93a19e-c23f-4cfc-a45f-0e0bc157f6d5",
+        "executionId": "db93a19e-c23f-4cfc-a45f-0e0bc157f6d5",
         "flowStatus": "PROMPT_ONLY",
         "type": "VIEW",
         "data": {
@@ -294,12 +294,12 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
 
 8. **Complete the Registration Flow**
 
-    Make the third cURL request to complete the registration flow. Make sure to replace `<flow_id>` with the `flowId` received in the previous response.
+    Make the third cURL request to complete the registration flow. Make sure to replace `<execution_id>` with the `executionId` received in the previous response.
 
     ```bash
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
-        "flowId": "<flow_id>",
+        "executionId": "<execution_id>",
         "action": "<action_ref>",
         "inputs": {
             "email": "thor@thunder.sky",
@@ -393,7 +393,7 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
 
     ```json
     {
-        "flowId": "db93a19e-c23f-4cfc-a45f-0e0bc157f6d5",
+        "executionId": "db93a19e-c23f-4cfc-a45f-0e0bc157f6d5",
         "flowStatus": "PROMPT_ONLY",
         "type": "REDIRECTION",
         "data": {
@@ -429,12 +429,12 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
 
 7. **Complete the Registration Flow**
 
-    Copy the authorization code and make the second cURL request to complete the registration flow. Make sure to replace `<flow_id>` with the `flowId` received in the previous response.
+    Copy the authorization code and make the second cURL request to complete the registration flow. Make sure to replace `<execution_id>` with the `executionId` received in the previous response.
 
     ```bash
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
-        "flowId": "<flow_id>",
+        "executionId": "<execution_id>",
         "inputs": {
             "code": "<code>"
         }
@@ -527,7 +527,7 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
 
     ```json
     {
-        "flowId": "db93a19e-c23f-4cfc-a45f-0e0bc157f6d5",
+        "executionId": "db93a19e-c23f-4cfc-a45f-0e0bc157f6d5",
         "flowStatus": "PROMPT_ONLY",
         "type": "REDIRECTION",
         "data": {
@@ -558,12 +558,12 @@ To enable self-registration, set the `is_registration_flow_enabled` property to 
 
 7. **Complete the Registration Flow**
 
-    Copy the authorization code and make the second cURL request to complete the registration flow. Make sure to replace `<flow_id>` with the `flowId` received in the previous response.
+    Copy the authorization code and make the second cURL request to complete the registration flow. Make sure to replace `<execution_id>` with the `executionId` received in the previous response.
 
     ```bash
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
-        "flowId": "<flow_id>",
+        "executionId": "<execution_id>",
         "inputs": {
             "code": "<code>"
         }

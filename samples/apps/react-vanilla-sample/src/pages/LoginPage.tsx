@@ -85,7 +85,7 @@ interface AuthResponse {
             passkeyChallenge?: string;
         };
     };
-    flowId?: string;
+    executionId?: string;
 }
 
 // Define the interface for the submission error
@@ -101,7 +101,7 @@ interface SubmissionError {
 const LoginPage = () => {
 
     const START_INIT_KEY = 'startInit';
-    const FLOW_ID_KEY = 'flowId';
+    const EXECUTION_ID_KEY = 'executionId';
 
     const isComponentReMount = useRef(false);
     const { setToken, clearToken } = useAuth();
@@ -114,7 +114,7 @@ const LoginPage = () => {
 
     const [loading, setLoading] = useState<boolean>(true);
     const [retryCount, setRetryCount] = useState<number>(0);
-    const [flowId, setFlowId] = useState<string>(sessionStorage.getItem(FLOW_ID_KEY) || '');
+    const [executionId, setExecutionId] = useState<string>(sessionStorage.getItem(EXECUTION_ID_KEY) || '');
     const [startInit] = useState<boolean>(JSON.parse(sessionStorage.getItem(START_INIT_KEY) || 'true'));
 
     // Unified form data state
@@ -253,17 +253,17 @@ const LoginPage = () => {
 
     const handleSocialLoginClick = useCallback((redirectURL: string) => {
         setLoading(true);
-        sessionStorage.setItem(FLOW_ID_KEY, flowId);
+        sessionStorage.setItem(EXECUTION_ID_KEY, executionId);
         sessionStorage.setItem(START_INIT_KEY, "false");
         window.location.href = redirectURL;
-    }, [flowId]);
+    }, [executionId]);
 
     // Process authentication response
     const processAuthResponse = useCallback((data: AuthResponse, selectedAction?: string) => {
         const isCameFromDecision = needsDecision;
         const isMobileLogin = selectedAction && selectedAction.includes('mobile');
 
-        setFlowId(data.flowId || '');
+        setExecutionId(data.executionId || '');
         if (data.flowStatus && data.flowStatus == 'ERROR') {
             if (isMobileLogin && data?.failureReason && data.failureReason.includes("User not found")) {
                 console.log("User not found, prompting registration");
@@ -343,7 +343,7 @@ const LoginPage = () => {
                 // This handles intermediate steps like "send_sms" that don't need user input
                 const singleAction = data.data.actions[0];
                 setLoading(true);
-                submitAuthDecision(flowId, singleAction.ref)
+                submitAuthDecision(executionId, singleAction.ref)
                     .then((result) => {
                         processAuthResponse(result.data, singleAction.ref);
                     })
@@ -381,7 +381,7 @@ const LoginPage = () => {
         setLoading(true);
         setSelectedAction(actionId);
         
-        submitAuthDecision(flowId, actionId)
+        submitAuthDecision(executionId, actionId)
             .then((result) => {
                 processAuthResponse(result.data);
             })
@@ -450,7 +450,7 @@ const LoginPage = () => {
                     } else if (data.data?.actions && data.data.actions.length === 1) {
                         // Single action without inputs - auto-execute it
                         const singleAction = data.data.actions[0];
-                        submitAuthDecision(data.flowId, singleAction.ref)
+                        submitAuthDecision(data.executionId, singleAction.ref)
                             .then((result) => {
                                 processAuthResponse(result.data, singleAction.ref);
                             })
@@ -474,7 +474,7 @@ const LoginPage = () => {
                     }
                 }
 
-                setFlowId(data.flowId);
+                setExecutionId(data.executionId);
                 setLoading(false);
             }).catch((error) => {
                 const errorType = isSignupMode ? "registration" : "auth";
@@ -546,7 +546,7 @@ const LoginPage = () => {
                     } else if (data.data?.actions && data.data.actions.length === 1) {
                         // Single action without inputs - auto-execute it
                         const singleAction = data.data.actions[0];
-                        submitAuthDecision(data.flowId, singleAction.ref)
+                        submitAuthDecision(data.executionId, singleAction.ref)
                             .then((result) => {
                                 processAuthResponse(result.data, singleAction.ref);
                             })
@@ -570,7 +570,7 @@ const LoginPage = () => {
                     }
                 }
 
-                setFlowId(data.flowId);
+                setExecutionId(data.executionId);
                 setLoading(false);
             }).catch((error) => {
                 console.error(`Error during user registration:`, error);
@@ -600,7 +600,7 @@ const LoginPage = () => {
             const formAction = event.currentTarget.getAttribute('data-action-id');
             if (formAction) {
                 setSelectedAction(formAction);
-                submitAuthDecision(flowId, formAction, completeFormData)
+                submitAuthDecision(executionId, formAction, completeFormData)
                     .then((result) => {
                         processAuthResponse(result.data, formAction);
                     })
@@ -612,7 +612,7 @@ const LoginPage = () => {
         } else {
             // This is a direct input submission - include action if available
             const actionRef = availableActions.length > 0 ? availableActions[0].ref : undefined;
-            submitNativeAuth(flowId, completeFormData, actionRef)
+            submitNativeAuth(executionId, completeFormData, actionRef)
                 .then((result) => {
                     if (isMobileInput) {
                         processAuthResponse(result.data, "mobile");
@@ -651,7 +651,7 @@ const LoginPage = () => {
         };
 
         const actionRef = availableActions.length > 0 ? availableActions[0].ref : undefined;
-        submitNativeAuth(flowId, passkeyInputs, actionRef)
+        submitNativeAuth(executionId, passkeyInputs, actionRef)
             .then((result) => {
                 processAuthResponse(result.data);
             })
@@ -687,7 +687,7 @@ const LoginPage = () => {
 
         // Include action ref if available (consistent with other direct submissions)
         const actionRef = availableActions.length > 0 ? availableActions[0].ref : undefined;
-        submitNativeAuth(flowId, passkeyInputs, actionRef)
+        submitNativeAuth(executionId, passkeyInputs, actionRef)
             .then((result) => {
                 processAuthResponse(result.data);
             })
@@ -757,7 +757,7 @@ const LoginPage = () => {
                 // Clear query parameters to avoid re-submission
                 window.history.replaceState({}, document.title, window.location.pathname);
 
-                submitNativeAuth(flowId, { type: NativeAuthSubmitType.SOCIAL, code: code })
+                submitNativeAuth(executionId, { type: NativeAuthSubmitType.SOCIAL, code: code })
                     .then((result) => {
                         processAuthResponse(result.data);
                     }).catch((error) => {
@@ -771,7 +771,7 @@ const LoginPage = () => {
 
             sessionStorage.setItem(START_INIT_KEY, "true");
         }
-    },[startInit, init, flowId, setToken, processAuthResponse]);
+    },[startInit, init, executionId, setToken, processAuthResponse]);
 
     // Render input fields based on the current inputs array
     const renderInputFields = () => {

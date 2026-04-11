@@ -104,8 +104,8 @@ func (suite *AttributeCollectorTestSuite) TestNewAttributeCollector() {
 
 func (suite *AttributeCollectorTestSuite) TestExecute_RegistrationFlow() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 	}
 
 	resp, err := suite.executor.Execute(ctx)
@@ -117,7 +117,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_RegistrationFlow() {
 
 func (suite *AttributeCollectorTestSuite) TestExecute_UserNotAuthenticated() {
 	ctx := &core.NodeContext{
-		FlowID:            "flow-123",
+		ExecutionID:       "flow-123",
 		FlowType:          common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{IsAuthenticated: false},
 	}
@@ -132,7 +132,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UserNotAuthenticated() {
 
 func (suite *AttributeCollectorTestSuite) TestExecute_PrerequisitesNotMet() {
 	ctx := &core.NodeContext{
-		FlowID:            "flow-123",
+		ExecutionID:       "flow-123",
 		FlowType:          common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{IsAuthenticated: true},
 		RuntimeData:       map[string]string{},
@@ -157,7 +157,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UserInputRequired() {
 	suite.mockUserProvider.On("GetUser", testUserID).Return(existingUser, nil)
 
 	ctx := &core.NodeContext{
-		FlowID:            "flow-123",
+		ExecutionID:       "flow-123",
 		FlowType:          common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{IsAuthenticated: true},
 		RuntimeData:       map[string]string{userAttributeUserID: testUserID},
@@ -176,7 +176,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UserInputRequired() {
 
 func (suite *AttributeCollectorTestSuite) TestExecute_Success() {
 	ctx := &core.NodeContext{
-		FlowID:            "flow-123",
+		ExecutionID:       "flow-123",
 		FlowType:          common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{IsAuthenticated: true},
 		RuntimeData:       map[string]string{userAttributeUserID: testUserID},
@@ -215,7 +215,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_Success() {
 
 func (suite *AttributeCollectorTestSuite) TestExecute_UpdateUserFails() {
 	ctx := &core.NodeContext{
-		FlowID:            "flow-123",
+		ExecutionID:       "flow-123",
 		FlowType:          common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{IsAuthenticated: true},
 		RuntimeData:       map[string]string{userAttributeUserID: testUserID},
@@ -245,8 +245,8 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UpdateUserFails() {
 
 func (suite *AttributeCollectorTestSuite) TestHasRequiredInputs_AttributesInAuthenticatedUser() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			Attributes:      map[string]interface{}{"email": "test@example.com"},
@@ -272,7 +272,7 @@ func (suite *AttributeCollectorTestSuite) TestHasRequiredInputs_AttributesInUser
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:            "flow-123",
+		ExecutionID:       "flow-123",
 		FlowType:          common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{IsAuthenticated: true},
 		RuntimeData:       map[string]string{userAttributeUserID: testUserID},

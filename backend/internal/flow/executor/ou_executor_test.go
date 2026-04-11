@@ -210,7 +210,7 @@ func (suite *OUExecutorTestSuite) TestExecute_Success() {
 			suite.SetupTest()
 
 			ctx := &core.NodeContext{
-				FlowID:      "flow-123",
+				ExecutionID: "flow-123",
 				FlowType:    common.FlowTypeRegistration,
 				UserInputs:  tc.userInputs,
 				RuntimeData: map[string]string{},
@@ -248,8 +248,8 @@ func (suite *OUExecutorTestSuite) TestExecute_NonRegistrationFlow() {
 			suite.SetupTest()
 
 			ctx := &core.NodeContext{
-				FlowID:   "flow-123",
-				FlowType: tc.flowType,
+				ExecutionID: "flow-123",
+				FlowType:    tc.flowType,
 			}
 
 			result, err := suite.executor.Execute(ctx)
@@ -318,7 +318,7 @@ func (suite *OUExecutorTestSuite) TestExecute_PrerequisitesFailure() {
 		{
 			name: "Missing prerequisite field",
 			ctx: &core.NodeContext{
-				FlowID:      "flow-123",
+				ExecutionID: "flow-123",
 				FlowType:    common.FlowTypeRegistration,
 				UserInputs:  map[string]string{},
 				RuntimeData: map[string]string{},
@@ -370,9 +370,9 @@ func (suite *OUExecutorTestSuite) TestExecute_UserInputRequired() {
 			suite.SetupTest()
 
 			ctx := &core.NodeContext{
-				FlowID:     "flow-123",
-				FlowType:   common.FlowTypeRegistration,
-				UserInputs: tc.userInputs,
+				ExecutionID: "flow-123",
+				FlowType:    common.FlowTypeRegistration,
+				UserInputs:  tc.userInputs,
 			}
 
 			result, err := suite.executor.Execute(ctx)
@@ -468,7 +468,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ErrorScenarios() {
 			suite.SetupTest()
 
 			ctx := &core.NodeContext{
-				FlowID:      "flow-123",
+				ExecutionID: "flow-123",
 				FlowType:    common.FlowTypeRegistration,
 				UserInputs:  tc.userInputs,
 				RuntimeData: map[string]string{},
@@ -503,8 +503,8 @@ func (suite *OUExecutorTestSuite) TestExecute_EmptyOUID() {
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			userInputOuName:   "Engineering",
 			userInputOuHandle: "engineering",

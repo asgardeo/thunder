@@ -78,8 +78,8 @@ func TestAuthorizationExecutor_Execute_Success(t *testing.T) {
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
-		FlowID:   "test-flow",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user123",
@@ -127,8 +127,8 @@ func TestAuthorizationExecutor_Execute_PartialPermissions(t *testing.T) {
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
-		FlowID:   "test-flow",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user123",
@@ -165,8 +165,8 @@ func TestAuthorizationExecutor_Execute_NoPermissions(t *testing.T) {
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
-		FlowID:   "test-flow",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user123",
@@ -202,8 +202,8 @@ func TestAuthorizationExecutor_Execute_NotAuthenticated(t *testing.T) {
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
-		FlowID:   "test-flow",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: false,
 		},
@@ -229,8 +229,8 @@ func TestAuthorizationExecutor_Execute_ServiceError(t *testing.T) {
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
-		FlowID:   "test-flow",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user123",
@@ -263,8 +263,8 @@ func TestAuthorizationExecutor_Execute_GroupExtractionError(t *testing.T) {
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
-		FlowID:   "test-flow",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user123",
@@ -301,8 +301,8 @@ func TestAuthorizationExecutor_Execute_NoRequestedPermissions(t *testing.T) {
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
-		FlowID:   "test-flow",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user123",
@@ -489,8 +489,8 @@ func TestAuthorizationExecutor_Execute_WithMultipleGroups(t *testing.T) {
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
-		FlowID:   "test-flow",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user123",
@@ -568,8 +568,8 @@ func TestAuthorizationExecutor_Execute_RegistrationFlow_UnauthenticatedWithoutPe
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
-		FlowID:   "test-registration-flow",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "test-registration-flow",
+		FlowType:    common.FlowTypeRegistration,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: false,
 		},
@@ -595,8 +595,8 @@ func TestAuthorizationExecutor_Execute_RegistrationFlow_UnauthenticatedWithPermi
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
-		FlowID:   "test-registration-flow",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "test-registration-flow",
+		FlowType:    common.FlowTypeRegistration,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: false,
 			UserID:          "", // No user ID yet in registration
@@ -624,8 +624,8 @@ func TestAuthorizationExecutor_Execute_RegistrationFlow_AuthenticatedWithPermiss
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockUserProvider)
 
 	ctx := &core.NodeContext{
-		FlowID:   "test-registration-flow",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "test-registration-flow",
+		FlowType:    common.FlowTypeRegistration,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "existing-user-123",
@@ -684,8 +684,8 @@ func TestAuthorizationExecutor_Execute_NonRegistrationFlow_UnauthenticatedShould
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := &core.NodeContext{
-				FlowID:   "test-flow",
-				FlowType: tc.flowType,
+				ExecutionID: "test-flow",
+				FlowType:    tc.flowType,
 				AuthenticatedUser: authncm.AuthenticatedUser{
 					IsAuthenticated: false,
 				},

@@ -139,7 +139,7 @@ Common data keys used across events (defined in `event.DataKey`).
 |-----|------------|-------------|
 | `UserID` | `user_id` | Unique identifier for the user. |
 | `ClientID` | `client_id` | Unique identifier for the OAuth client/app. |
-| `FlowID` | `flow_id` | Correlation ID for a specific flow execution session. |
+| `executionId` | `execution_id` | Correlation ID for a specific flow execution session. |
 | `TraceParent` | `trace_parent` | Used for linking spans in distributed tracing. |
 | `Error` | `error` | Technical error description or stack trace. |
 | `FailureReason` | `failure_reason` | Functional reason for a failure. |

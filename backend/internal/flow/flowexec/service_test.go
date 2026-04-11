@@ -50,11 +50,11 @@ func TestInitiateFlowNilContext(t *testing.T) {
 	service := &flowExecService{}
 
 	// Execute
-	flowID, err := service.InitiateFlow(context.Background(), nil)
+	executionID, err := service.InitiateFlow(context.Background(), nil)
 
 	// Assert
 	assert.NotNil(t, err)
-	assert.Empty(t, flowID)
+	assert.Empty(t, executionID)
 	assert.Equal(t, "FES-1008", err.Code)
 }
 
@@ -69,11 +69,11 @@ func TestInitiateFlowEmptyApplicationID(t *testing.T) {
 	}
 
 	// Execute
-	flowID, err := service.InitiateFlow(context.Background(), initContext)
+	executionID, err := service.InitiateFlow(context.Background(), initContext)
 
 	// Assert
 	assert.NotNil(t, err)
-	assert.Empty(t, flowID)
+	assert.Empty(t, executionID)
 	assert.Equal(t, "FES-1008", err.Code)
 }
 
@@ -88,11 +88,11 @@ func TestInitiateFlowEmptyFlowType(t *testing.T) {
 	}
 
 	// Execute
-	flowID, err := service.InitiateFlow(context.Background(), initContext)
+	executionID, err := service.InitiateFlow(context.Background(), initContext)
 
 	// Assert
 	assert.NotNil(t, err)
-	assert.Empty(t, flowID)
+	assert.Empty(t, executionID)
 	assert.Equal(t, "FES-1008", err.Code)
 }
 
@@ -107,11 +107,11 @@ func TestInitiateFlowInvalidFlowType(t *testing.T) {
 	}
 
 	// Execute
-	flowID, err := service.InitiateFlow(context.Background(), initContext)
+	executionID, err := service.InitiateFlow(context.Background(), initContext)
 
 	// Assert
 	assert.NotNil(t, err)
-	assert.Empty(t, flowID)
+	assert.Empty(t, executionID)
 	assert.Equal(t, "FES-1005", err.Code) // ErrorInvalidFlowType
 }
 
@@ -235,8 +235,8 @@ func TestInitiateFlowSuccessScenarios(t *testing.T) {
 				mockStore.EXPECT().StoreFlowContext(mock.MatchedBy(func(ctx context.Context) bool {
 					return ctx.Value(txMarkerKey{}) == "tx"
 				}), mock.MatchedBy(func(ctx EngineContext) bool {
-					// Verify flowID is generated
-					if ctx.FlowID == "" {
+					// Verify executionID is generated
+					if ctx.ExecutionID == "" {
 						return false
 					}
 					// Verify runtime data according to test case expectation
@@ -258,8 +258,8 @@ func TestInitiateFlowSuccessScenarios(t *testing.T) {
 				mockStore.EXPECT().StoreFlowContext(mock.MatchedBy(func(ctx context.Context) bool {
 					return ctx.Value(txMarkerKey{}) == "tx"
 				}), mock.MatchedBy(func(ctx EngineContext) bool {
-					// Verify flowID is generated
-					if ctx.FlowID == "" {
+					// Verify executionID is generated
+					if ctx.ExecutionID == "" {
 						return false
 					}
 					// Verify runtime data according to test case expectation
@@ -278,10 +278,10 @@ func TestInitiateFlowSuccessScenarios(t *testing.T) {
 			}
 
 			// Execute
-			flowID, svcErr := service.InitiateFlow(context.Background(), initContext)
+			executionID, svcErr := service.InitiateFlow(context.Background(), initContext)
 
 			// Assert
-			assert.NotEmpty(t, flowID)
+			assert.NotEmpty(t, executionID)
 			assert.Nil(t, svcErr)
 
 			// All mocks automatically verified by mockery
@@ -418,10 +418,10 @@ func TestInitiateFlowErrorScenarios(t *testing.T) {
 			tt.setupMocks(mockStore, mockAppService, mockFlowMgtSvc)
 
 			// Execute
-			flowID, svcErr := service.InitiateFlow(context.Background(), initContext)
+			executionID, svcErr := service.InitiateFlow(context.Background(), initContext)
 
 			// Assert
-			assert.Empty(t, flowID)
+			assert.Empty(t, executionID)
 			assert.NotNil(t, svcErr)
 			assert.Equal(t, tt.expectedErrorCode, svcErr.Code)
 

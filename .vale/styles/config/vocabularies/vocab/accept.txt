@@ -5,6 +5,7 @@ OAuth
 OAuth2
 OpenID
 IAM
+[Ii][Aa][Mm]
 IdP
 PKCE
 Thunder
@@ -43,6 +44,7 @@ DTOs
 [Vv]itest
 ESLint
 templated
+OTPs
 [Bb]reakpoint[s]?
 DBeaver
 [Rr]ebase
@@ -52,3 +54,4 @@ VSCode
 PascalCase
 Rolldown
 [Rr]edirect-?[Uu][Rr][Ii]s
+[Ee]xecution[Ii][Dd]

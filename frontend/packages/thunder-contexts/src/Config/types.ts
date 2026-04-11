@@ -114,6 +114,52 @@ export interface BrandConfig {
 }
 
 /**
+ * Trusted issuer configuration interface that defines connection parameters
+ * for an external authentication server separate from the resource server.
+ *
+ * When provided, the application authenticates against this server (OAuth/OIDC)
+ * while using the main `server` config for API resource calls.
+ *
+ * @public
+ */
+export interface TrustedIssuerConfig {
+  /**
+   * Trusted issuer hostname or IP address
+   * @example "auth.example.com", "localhost"
+   */
+  hostname: string;
+
+  /**
+   * Trusted issuer port number
+   * @example 8090, 443
+   */
+  port: number;
+
+  /**
+   * Whether to use HTTP only (no HTTPS)
+   */
+  http_only: boolean;
+
+  /**
+   * Optional public URL for the trusted issuer
+   * @example "https://auth.example.com"
+   */
+  public_url?: string;
+
+  /**
+   * OAuth client ID registered on the trusted issuer for this application
+   * @example "FEDERATED_CONSOLE"
+   */
+  client_id?: string;
+
+  /**
+   * OAuth2/OIDC scopes to request from the trusted issuer
+   * @example ["openid", "profile", "email", "system"]
+   */
+  scopes?: string[];
+}
+
+/**
  * Thunder runtime configuration interface that contains all configuration
  * settings for Thunder applications.
  *
@@ -130,8 +176,11 @@ export interface ThunderConfig {
   /** Client-specific configuration including authentication settings */
   client: ClientConfig;
 
-  /** Server connection configuration */
+  /** Server connection configuration for API resource calls */
   server: ServerConfig;
+
+  /** Optional trusted issuer configuration for external token validation */
+  trusted_issuer?: TrustedIssuerConfig;
 }
 
 /**

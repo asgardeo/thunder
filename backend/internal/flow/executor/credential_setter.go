@@ -67,7 +67,7 @@ func newCredentialSetter(
 
 // Execute sets the password for the user identified by userID in RuntimeData.
 func (e *credentialSetter) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := e.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing credential set")
 
 	execResp := &common.ExecutorResponse{

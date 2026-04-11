@@ -461,7 +461,7 @@ export default function GetStartedSection(): JSX.Element {
         <Stack direction={{xs: 'column', sm: 'row'}} spacing={2} justifyContent="center" sx={{mt: 6}}>
           <Button
             component={Link}
-            href="/docs/guides/introduction"
+            href="/docs/next/guides/getting-started/what-is-thunder"
             variant="outlined"
             size="large"
             sx={{
@@ -500,7 +500,7 @@ export default function GetStartedSection(): JSX.Element {
           </Button>
           <Button
             component={Link}
-            href="/docs/sdks/overview"
+            href="/docs/next/sdks/overview"
             variant="outlined"
             size="large"
             sx={{

@@ -82,7 +82,7 @@ func newOUResolverExecutor(
 //   - "prompt": checks for child OUs and prompts the user to select one if applicable.
 //   - "promptAll": shows the full OU tree from root, independent of UserTypeResolver.
 func (e *ouResolverExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := e.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	execResp := &common.ExecutorResponse{
 		Status:      common.ExecComplete,

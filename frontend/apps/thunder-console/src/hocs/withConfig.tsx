@@ -22,14 +22,20 @@ import type {JSX, ComponentType} from 'react';
 
 export default function withConfig<P extends object>(WrappedComponent: ComponentType<P>) {
   return function WithConfig(props: P): JSX.Element {
-    const {getClientId, getServerUrl, getClientUrl, getScopes} = useConfig();
+    const {getTrustedIssuerUrl, getTrustedIssuerClientId, getClientUrl, getTrustedIssuerScopes, getServerUrl, config} =
+      useConfig();
+
+    const signInOptions: Record<string, string> | undefined = config.trusted_issuer
+      ? {resource: getServerUrl()}
+      : undefined;
 
     return (
       <AsgardeoProvider
-        baseUrl={getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string)}
-        clientId={getClientId() ?? (import.meta.env.VITE_ASGARDEO_CLIENT_ID as string)}
+        baseUrl={getTrustedIssuerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string)}
+        clientId={getTrustedIssuerClientId() ?? (import.meta.env.VITE_ASGARDEO_CLIENT_ID as string)}
         afterSignInUrl={getClientUrl() ?? (import.meta.env.VITE_ASGARDEO_AFTER_SIGN_IN_URL as string)}
-        scopes={getScopes().length > 0 ? getScopes() : undefined}
+        scopes={getTrustedIssuerScopes().length > 0 ? getTrustedIssuerScopes() : undefined}
+        signInOptions={signInOptions}
         platform="AsgardeoV2"
         discovery={{
           wellKnown: {

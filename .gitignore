@@ -40,6 +40,12 @@ Thumbs.db
 *.key
 *.crt
 *.cert
+# Exception: test fixtures checked into testdata/ directories must be tracked.
+# See tests/integration/testutils/testdata/mock_google_oidc_key.pem for rationale.
+!**/testdata/*.pem
+!**/testdata/*.key
+!**/testdata/*.crt
+!**/testdata/*.cert
 
 # IDE settings, swap files, and temporary artifacts
 .idea

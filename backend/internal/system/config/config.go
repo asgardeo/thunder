@@ -22,6 +22,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	urlpath "path"
 	"path/filepath"
@@ -34,13 +35,36 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
+// SecurityConfig holds the security-related configuration details.
+//
+// JWKSCacheTTL controls how long fetched JWKS responses are reused from the in-process
+// cache before being re-fetched. It is not specific to trusted_issuer: the same cache
+// backs every JWKS consumer in the server (trusted issuer validation, federated OIDC
+// authenticators such as Google, etc.), so the setting lives at the security level
+// rather than nested under any particular consumer. Value is in seconds; zero disables
+// the cache; negative values are rejected at load time.
+type SecurityConfig struct {
+	JWKSCacheTTL  int                 `yaml:"jwks_cache_ttl" json:"jwks_cache_ttl"`
+	TrustedIssuer TrustedIssuerConfig `yaml:"trusted_issuer" json:"trusted_issuer"`
+}
+
+// Validate checks the security configuration for correctness, including any nested
+// sections that expose their own Validate method.
+func (c *SecurityConfig) Validate() error {
+	if c.JWKSCacheTTL < 0 {
+		return fmt.Errorf("server.security.jwks_cache_ttl must be non-negative (got %d)", c.JWKSCacheTTL)
+	}
+	return c.TrustedIssuer.Validate()
+}
+
 // ServerConfig holds the server configuration details.
 type ServerConfig struct {
-	Hostname   string `yaml:"hostname" json:"hostname"`
-	Port       int    `yaml:"port" json:"port"`
-	HTTPOnly   bool   `yaml:"http_only" json:"http_only"`
-	PublicURL  string `yaml:"public_url" json:"public_url"`
-	Identifier string `yaml:"identifier" json:"identifier"`
+	Hostname       string         `yaml:"hostname" json:"hostname"`
+	Port           int            `yaml:"port" json:"port"`
+	HTTPOnly       bool           `yaml:"http_only" json:"http_only"`
+	PublicURL      string         `yaml:"public_url" json:"public_url"`
+	Identifier     string         `yaml:"identifier" json:"identifier"`
+	SecurityConfig SecurityConfig `yaml:"security" json:"security"`
 }
 
 // GateClientConfig holds the client configuration details.
@@ -406,6 +430,74 @@ type ConsentConfig struct {
 	MaxRetries int    `yaml:"max_retries" json:"max_retries"` // Max retry attempts for transient errors. Default: 3
 }
 
+// RequiredClaim defines a claim name and expected value that must be present in the token.
+type RequiredClaim struct {
+	Claim string `yaml:"claim" json:"claim"`
+	Value string `yaml:"value" json:"value"`
+}
+
+// TrustedIssuerConfig holds configuration for trusted external issuer authentication.
+// Setting Issuer activates the feature: the server trusts tokens carrying that iss claim
+// and validates them via the external authentication server's JWKS endpoint. When Issuer
+// is set, JWKSURL and Audience are required and the server fails to start if either is
+// missing.
+//
+// Per RFC 9068 §2.2 and RFC 8707, the Audience field must be set to this server's own
+// identifier (typically its public URL). The frontend must include a matching "resource"
+// parameter in the authorization request so the auth server sets the token's "aud" claim
+// to this server's identifier.
+//
+// RequiredClaims enforces that incoming tokens contain specific claims with expected values.
+// Each entry specifies a claim name and the value it must hold. If any required claim is
+// missing or does not match, the token is rejected.
+type TrustedIssuerConfig struct {
+	Issuer         string          `yaml:"issuer" json:"issuer"`
+	JWKSURL        string          `yaml:"jwks_url" json:"jwks_url"`
+	Audience       string          `yaml:"audience" json:"audience"`
+	RequiredClaims []RequiredClaim `yaml:"required_claims" json:"required_claims"`
+}
+
+// IsConfigured reports whether the trusted issuer feature is configured and active.
+// Setting issuer is the activation signal; jwks_url and audience are then required.
+func (c *TrustedIssuerConfig) IsConfigured() bool {
+	return c.Issuer != ""
+}
+
+// Validate checks the trusted issuer configuration for correctness.
+// When issuer is set, jwks_url and audience must also be set.
+// JWKS URL must use HTTPS to prevent MITM attacks on public key retrieval.
+// HTTP is allowed only for localhost/127.0.0.1 to support local development and tests.
+func (c *TrustedIssuerConfig) Validate() error {
+	if !c.IsConfigured() {
+		return nil
+	}
+	if c.JWKSURL == "" {
+		return fmt.Errorf("trusted_issuer.jwks_url must be set when trusted_issuer.issuer is set")
+	}
+	if c.Audience == "" {
+		return fmt.Errorf("trusted_issuer.audience must be set when trusted_issuer.issuer is set")
+	}
+
+	parsed, err := url.Parse(c.JWKSURL)
+	if err != nil {
+		return fmt.Errorf("trusted_issuer.jwks_url is not a valid URL: %w", err)
+	}
+	switch parsed.Scheme {
+	case "https":
+		return nil
+	case "http":
+		host := parsed.Hostname()
+		if host == "localhost" || host == "127.0.0.1" || host == "::1" {
+			return nil
+		}
+		return fmt.Errorf(
+			"trusted_issuer.jwks_url must use https (got http://%s); "+
+				"http is only allowed for localhost", host)
+	default:
+		return fmt.Errorf("trusted_issuer.jwks_url must use https scheme (got %q)", parsed.Scheme)
+	}
+}
+
 // Config holds the complete configuration details of the server.
 type Config struct {
 	Server               ServerConfig           `yaml:"server" json:"server"`
@@ -472,6 +564,10 @@ func LoadConfig(configPath string, defaultPath string, thunderHome string) (*Con
 	// Derive JWT issuer from server config if not set
 	if cfg.JWT.Issuer == "" {
 		cfg.JWT.Issuer = GetServerURL(&cfg.Server)
+	}
+
+	if err := cfg.Server.SecurityConfig.Validate(); err != nil {
+		return nil, err
 	}
 
 	return &cfg, nil

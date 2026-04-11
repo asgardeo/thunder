@@ -95,7 +95,7 @@ func (suite *SMSAuthExecutorTestSuite) SetupTest() {
 
 func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlow_PromptsMobileNumber() {
 	ctx := &core.NodeContext{
-		FlowID:      "test-flow-123",
+		ExecutionID: "test-flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		UserInputs:  make(map[string]string),
 		RuntimeData: make(map[string]string),
@@ -123,8 +123,8 @@ func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlo
 
 func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlow_CustomPhoneAttr() {
 	ctx := &core.NodeContext{
-		FlowID:   "test-flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "test-flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		NodeInputs: []common.Input{
 			{Ref: "phone_input", Identifier: "phoneNumber", Type: common.InputTypePhone, Required: true},
 		},
@@ -148,8 +148,8 @@ func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlo
 
 func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlow_PrerequisitesMet() {
 	ctx := &core.NodeContext{
-		FlowID:   "test-flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "test-flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+1234567890",
 		},
@@ -176,7 +176,7 @@ func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_AuthenticationF
 	suite.executor.ExecutorInterface = mockExec
 
 	ctx := &core.NodeContext{
-		FlowID:      "test-flow-123",
+		ExecutionID: "test-flow-123",
 		FlowType:    common.FlowTypeAuthentication, // Authentication flow, NOT registration
 		UserInputs:  make(map[string]string),
 		RuntimeData: make(map[string]string),
@@ -196,8 +196,8 @@ func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_AuthenticationF
 // TestGetAuthenticatedUser_MFA_AddsMobileNumberToAttributes verifies that when user is already authenticated
 func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_MFA_AddsMobileNumberToAttributes() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		RuntimeData: map[string]string{
 			runtimeKeySMSOTPMobileNumber: "+1234567890",
 		},
@@ -238,8 +238,8 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_A
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		RuntimeData: map[string]string{
 			userAttributeUserID:          "user-123",
 			runtimeKeySMSOTPMobileNumber: "+1234567890", // Mobile from RuntimeData
@@ -284,8 +284,8 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_P
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		RuntimeData: map[string]string{
 			userAttributeUserID:          "user-123",
 			runtimeKeySMSOTPMobileNumber: "+1234567890", // Different mobile in RuntimeData
@@ -329,8 +329,8 @@ func (suite *SMSAuthExecutorTestSuite) TestGetUserMobileNumber_NotFoundInAttribu
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		// No mobile number in UserInputs or RuntimeData
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -362,8 +362,8 @@ func (suite *SMSAuthExecutorTestSuite) TestGetUserMobileNumber_NotFoundInAttribu
 // phone value in UserInputs is not treated as a met prerequisite.
 func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlow_EmptyPhoneInUserInputs() {
 	ctx := &core.NodeContext{
-		FlowID:   "test-flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "test-flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "",
 		},
@@ -384,9 +384,9 @@ func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlo
 // phone value in RuntimeData is not treated as a met prerequisite.
 func (suite *SMSAuthExecutorTestSuite) TestValidatePrerequisites_RegistrationFlow_EmptyPhoneInRuntimeData() {
 	ctx := &core.NodeContext{
-		FlowID:     "test-flow-123",
-		FlowType:   common.FlowTypeRegistration,
-		UserInputs: make(map[string]string),
+		ExecutionID: "test-flow-123",
+		FlowType:    common.FlowTypeRegistration,
+		UserInputs:  make(map[string]string),
 		RuntimeData: map[string]string{
 			common.AttributeMobileNumber: "",
 		},
@@ -411,7 +411,7 @@ func (suite *SMSAuthExecutorTestSuite) TestGetUserMobileNumber_NonStringAttribut
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeAuthentication,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -442,8 +442,8 @@ func (suite *SMSAuthExecutorTestSuite) TestGetUserMobileNumber_NonStringAttribut
 // has nil Attributes map, it is initialized before adding mobile number.
 func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_MFA_NilAttributes() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		RuntimeData: map[string]string{
 			runtimeKeySMSOTPMobileNumber: "+1234567890",
 		},
@@ -476,8 +476,8 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_N
 	attrsJSON := []byte("null")
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		RuntimeData: map[string]string{
 			userAttributeUserID:          "user-123",
 			runtimeKeySMSOTPMobileNumber: "+1234567890",

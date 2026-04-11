@@ -21,18 +21,22 @@ import type {ReactNode} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import AppWithDecorators from '../AppWithDecorators';
 
-const mockGetClientId = vi.fn();
-const mockGetServerUrl = vi.fn();
+const mockGetTrustedIssuerUrl = vi.fn();
+const mockGetTrustedIssuerClientId = vi.fn();
+const mockGetTrustedIssuerScopes = vi.fn();
 const mockGetClientUrl = vi.fn();
-const mockGetScopes = vi.fn();
+const mockGetServerUrl = vi.fn();
+const mockConfig: Record<string, unknown> = {};
 
 // Mock the useConfig hook
 vi.mock('@thunder/contexts', () => ({
   useConfig: () => ({
-    getClientId: mockGetClientId,
-    getServerUrl: mockGetServerUrl,
+    getTrustedIssuerUrl: mockGetTrustedIssuerUrl,
+    getTrustedIssuerClientId: mockGetTrustedIssuerClientId,
+    getTrustedIssuerScopes: mockGetTrustedIssuerScopes,
     getClientUrl: mockGetClientUrl,
-    getScopes: mockGetScopes,
+    getServerUrl: mockGetServerUrl,
+    config: mockConfig,
   }),
 }));
 
@@ -100,17 +104,19 @@ vi.mock('../App', () => ({
 describe('AppWithDecorators', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset the mock config object (preserving the same reference so the vi.mock closure keeps working).
+    Object.keys(mockConfig).forEach((key) => delete mockConfig[key]);
     // Set up default environment variables
     import.meta.env.VITE_ASGARDEO_BASE_URL = 'https://default-base.example.com';
     import.meta.env.VITE_ASGARDEO_CLIENT_ID = 'default-client-id';
     import.meta.env.VITE_ASGARDEO_AFTER_SIGN_IN_URL = 'https://default-signin.example.com';
     // Default to empty scopes
-    mockGetScopes.mockReturnValue([]);
+    mockGetTrustedIssuerScopes.mockReturnValue([]);
   });
 
   it('renders AsgardeoProvider with config values', () => {
-    mockGetClientId.mockReturnValue('test-client-id');
-    mockGetServerUrl.mockReturnValue('https://test-server.example.com');
+    mockGetTrustedIssuerClientId.mockReturnValue('test-client-id');
+    mockGetTrustedIssuerUrl.mockReturnValue('https://test-server.example.com');
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');
 
     render(<AppWithDecorators />);
@@ -122,8 +128,8 @@ describe('AppWithDecorators', () => {
   });
 
   it('falls back to environment variables when config returns null', () => {
-    mockGetClientId.mockReturnValue(null);
-    mockGetServerUrl.mockReturnValue(null);
+    mockGetTrustedIssuerClientId.mockReturnValue(null);
+    mockGetTrustedIssuerUrl.mockReturnValue(null);
     mockGetClientUrl.mockReturnValue(null);
 
     render(<AppWithDecorators />);
@@ -135,8 +141,8 @@ describe('AppWithDecorators', () => {
   });
 
   it('renders App component', () => {
-    mockGetClientId.mockReturnValue('test-client-id');
-    mockGetServerUrl.mockReturnValue('https://test-server.example.com');
+    mockGetTrustedIssuerClientId.mockReturnValue('test-client-id');
+    mockGetTrustedIssuerUrl.mockReturnValue('https://test-server.example.com');
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');
 
     render(<AppWithDecorators />);
@@ -145,8 +151,8 @@ describe('AppWithDecorators', () => {
   });
 
   it('uses config value for baseUrl when available', () => {
-    mockGetServerUrl.mockReturnValue('https://config-server.example.com');
-    mockGetClientId.mockReturnValue(null);
+    mockGetTrustedIssuerUrl.mockReturnValue('https://config-server.example.com');
+    mockGetTrustedIssuerClientId.mockReturnValue(null);
     mockGetClientUrl.mockReturnValue(null);
 
     render(<AppWithDecorators />);
@@ -156,8 +162,8 @@ describe('AppWithDecorators', () => {
   });
 
   it('uses config value for clientId when available', () => {
-    mockGetClientId.mockReturnValue('config-client-id');
-    mockGetServerUrl.mockReturnValue(null);
+    mockGetTrustedIssuerClientId.mockReturnValue('config-client-id');
+    mockGetTrustedIssuerUrl.mockReturnValue(null);
     mockGetClientUrl.mockReturnValue(null);
 
     render(<AppWithDecorators />);
@@ -168,8 +174,8 @@ describe('AppWithDecorators', () => {
 
   it('uses config value for afterSignInUrl when available', () => {
     mockGetClientUrl.mockReturnValue('https://config-client.example.com');
-    mockGetServerUrl.mockReturnValue(null);
-    mockGetClientId.mockReturnValue(null);
+    mockGetTrustedIssuerUrl.mockReturnValue(null);
+    mockGetTrustedIssuerClientId.mockReturnValue(null);
 
     render(<AppWithDecorators />);
 
@@ -178,8 +184,8 @@ describe('AppWithDecorators', () => {
   });
 
   it('falls back to environment variables when config returns undefined', () => {
-    mockGetClientId.mockReturnValue(undefined);
-    mockGetServerUrl.mockReturnValue(undefined);
+    mockGetTrustedIssuerClientId.mockReturnValue(undefined);
+    mockGetTrustedIssuerUrl.mockReturnValue(undefined);
     mockGetClientUrl.mockReturnValue(undefined);
 
     render(<AppWithDecorators />);
@@ -191,8 +197,8 @@ describe('AppWithDecorators', () => {
   });
 
   it('handles mixed config values and fallbacks - scenario 1', () => {
-    mockGetServerUrl.mockReturnValue('https://config-server.example.com');
-    mockGetClientId.mockReturnValue(undefined);
+    mockGetTrustedIssuerUrl.mockReturnValue('https://config-server.example.com');
+    mockGetTrustedIssuerClientId.mockReturnValue(undefined);
     mockGetClientUrl.mockReturnValue('https://config-client.example.com');
 
     render(<AppWithDecorators />);
@@ -204,8 +210,8 @@ describe('AppWithDecorators', () => {
   });
 
   it('handles mixed config values and fallbacks - scenario 2', () => {
-    mockGetServerUrl.mockReturnValue(null);
-    mockGetClientId.mockReturnValue('config-client-id');
+    mockGetTrustedIssuerUrl.mockReturnValue(null);
+    mockGetTrustedIssuerClientId.mockReturnValue('config-client-id');
     mockGetClientUrl.mockReturnValue(null);
 
     render(<AppWithDecorators />);
@@ -217,10 +223,10 @@ describe('AppWithDecorators', () => {
   });
 
   it('uses config value for scopes when available', () => {
-    mockGetClientId.mockReturnValue('test-client-id');
-    mockGetServerUrl.mockReturnValue('https://test-server.example.com');
+    mockGetTrustedIssuerClientId.mockReturnValue('test-client-id');
+    mockGetTrustedIssuerUrl.mockReturnValue('https://test-server.example.com');
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');
-    mockGetScopes.mockReturnValue(['openid', 'profile', 'email', 'system']);
+    mockGetTrustedIssuerScopes.mockReturnValue(['openid', 'profile', 'email', 'system']);
 
     render(<AppWithDecorators />);
 
@@ -229,10 +235,10 @@ describe('AppWithDecorators', () => {
   });
 
   it('does not pass scopes prop when config returns empty array', () => {
-    mockGetClientId.mockReturnValue('test-client-id');
-    mockGetServerUrl.mockReturnValue('https://test-server.example.com');
+    mockGetTrustedIssuerClientId.mockReturnValue('test-client-id');
+    mockGetTrustedIssuerUrl.mockReturnValue('https://test-server.example.com');
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');
-    mockGetScopes.mockReturnValue([]);
+    mockGetTrustedIssuerScopes.mockReturnValue([]);
 
     render(<AppWithDecorators />);
 
@@ -241,10 +247,10 @@ describe('AppWithDecorators', () => {
   });
 
   it('passes scopes when config has scopes', () => {
-    mockGetClientId.mockReturnValue('test-client-id');
-    mockGetServerUrl.mockReturnValue('https://test-server.example.com');
+    mockGetTrustedIssuerClientId.mockReturnValue('test-client-id');
+    mockGetTrustedIssuerUrl.mockReturnValue('https://test-server.example.com');
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');
-    mockGetScopes.mockReturnValue(['openid', 'profile']);
+    mockGetTrustedIssuerScopes.mockReturnValue(['openid', 'profile']);
 
     render(<AppWithDecorators />);
 
@@ -253,10 +259,10 @@ describe('AppWithDecorators', () => {
   });
 
   it('handles scopes from config with other fallbacks', () => {
-    mockGetClientId.mockReturnValue(null);
-    mockGetServerUrl.mockReturnValue(null);
+    mockGetTrustedIssuerClientId.mockReturnValue(null);
+    mockGetTrustedIssuerUrl.mockReturnValue(null);
     mockGetClientUrl.mockReturnValue(null);
-    mockGetScopes.mockReturnValue(['openid', 'profile', 'email']);
+    mockGetTrustedIssuerScopes.mockReturnValue(['openid', 'profile', 'email']);
 
     render(<AppWithDecorators />);
 
@@ -270,10 +276,10 @@ describe('AppWithDecorators', () => {
   it('properly evaluates falsy values for config options', () => {
     // Test that falsy values (null, undefined, empty string, etc.) are properly handled
     // Empty strings are truthy in JavaScript, so they will be used as-is
-    mockGetClientId.mockReturnValue('');
-    mockGetServerUrl.mockReturnValue('');
+    mockGetTrustedIssuerClientId.mockReturnValue('');
+    mockGetTrustedIssuerUrl.mockReturnValue('');
     mockGetClientUrl.mockReturnValue('');
-    mockGetScopes.mockReturnValue([]);
+    mockGetTrustedIssuerScopes.mockReturnValue([]);
 
     render(<AppWithDecorators />);
 
@@ -286,10 +292,10 @@ describe('AppWithDecorators', () => {
   });
 
   it('handles all config values as truthy strings', () => {
-    mockGetClientId.mockReturnValue('client-123');
-    mockGetServerUrl.mockReturnValue('https://server.test');
+    mockGetTrustedIssuerClientId.mockReturnValue('client-123');
+    mockGetTrustedIssuerUrl.mockReturnValue('https://server.test');
     mockGetClientUrl.mockReturnValue('https://client.test');
-    mockGetScopes.mockReturnValue(['scope1', 'scope2', 'scope3']);
+    mockGetTrustedIssuerScopes.mockReturnValue(['scope1', 'scope2', 'scope3']);
 
     render(<AppWithDecorators />);
 

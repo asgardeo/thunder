@@ -479,7 +479,7 @@ func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowInitiation(
 	// Verify flow status and type
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().Equal("REDIRECTION", flowStep.Type, "Expected flow type to be REDIRECT")
-	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
+	ts.Require().NotEmpty(flowStep.ExecutionID, "Execution ID should not be empty")
 
 	// Validate redirect information
 	ts.Require().NotEmpty(flowStep.Data, "Flow data should not be empty")
@@ -515,9 +515,9 @@ func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowCompleteSuc
 	// Verify flow status and type
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().Equal("REDIRECTION", flowStep.Type, "Expected flow type to be REDIRECT")
-	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
+	ts.Require().NotEmpty(flowStep.ExecutionID, "Execution ID should not be empty")
 
-	flowID := flowStep.FlowID
+	flowID := flowStep.ExecutionID
 	redirectURLStr := flowStep.Data.RedirectURL
 	ts.Require().NotEmpty(redirectURLStr, "Redirect URL should not be empty")
 
@@ -582,7 +582,7 @@ func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowCompleteWit
 		ts.T().Fatalf("Failed to initiate GitHub registration flow: %v", err)
 	}
 
-	flowID := flowStep.FlowID
+	flowID := flowStep.ExecutionID
 
 	// Step 2: Try to complete with invalid authorization code
 	inputs := map[string]string{
@@ -600,7 +600,7 @@ func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowCompleteWit
 		ts.T().Fatalf("Failed to initiate GitHub registration flow: %v", err)
 	}
 
-	flowID := flowStep.FlowID
+	flowID := flowStep.ExecutionID
 
 	// Step 2: Try to complete without providing authorization code
 	inputs := map[string]string{}
@@ -642,7 +642,7 @@ func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowDuplicateUs
 		"code": authCode,
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "")
+	completeFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete first GitHub registration flow: %v", err)
 	}
@@ -671,7 +671,7 @@ func (ts *GithubRegistrationFlowTestSuite) TestGithubRegistrationFlowDuplicateUs
 		"code": authCode2,
 	}
 
-	completeFlowStep2, err := common.CompleteFlow(flowStep2.FlowID, inputs2, "")
+	completeFlowStep2, err := common.CompleteFlow(flowStep2.ExecutionID, inputs2, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete second GitHub registration flow: %v", err)
 	}

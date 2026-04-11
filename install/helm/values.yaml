@@ -155,6 +155,24 @@ configuration:
     port: 8090
     httpOnly: false
     publicUrl: "https://thunder.local"
+    # Security configuration.
+    # jwksCacheTtl controls how long fetched JWKS responses are cached in-process for
+    # every JWKS consumer in the server (trusted issuer validation, federated OIDC
+    # authenticators such as Google, etc.). Value is in seconds; default: 300.
+    #
+    # Trusted Issuer configuration (for federated/DP deployments). Setting `issuer`
+    # activates the feature; jwksUrl and audience are then required. The server accepts
+    # tokens from the external authentication server and validates them via its JWKS
+    # endpoint. Add the CP origin to cors.allowedOrigins when using this feature.
+    # security:
+    #   jwksCacheTtl: 300
+    #   trustedIssuer:
+    #     issuer: "https://cp.example.com"
+    #     jwksUrl: "https://cp.example.com/oauth2/jwks"
+    #     audience: "FEDERATED_CONSOLE"
+    #     requiredClaims:
+    #       - claim: "ouId"
+    #         value: "<tenant-ou-id>"
 
   # Gate client configuration
   gateClient:
@@ -168,6 +186,16 @@ configuration:
     path: "/console"
     clientId: "CONSOLE"
     scopes: "['openid', 'profile', 'email', 'ou', 'system', 'system:user', 'system:group', 'system:ou:view', 'system:userschema:view']"
+    # Trusted issuer for console authentication (for federated/DP deployments).
+    # When set, the console authenticates against this external server instead of
+    # the local server.
+    # trustedIssuer:
+    #   hostname: "cp.example.com"
+    #   port: 443
+    #   httpOnly: false
+    #   publicUrl: "https://cp.example.com"
+    #   clientId: "FEDERATED_CONSOLE"
+    #   scopes: "['openid', 'profile', 'email', 'group', 'ou', 'system', 'system:user', 'system:group', 'system:ou:view', 'system:userschema:view']"
 
   # TLS configuration
   tls:
@@ -325,6 +353,7 @@ configuration:
       max_open_conns: 500
       max_idle_conns: 100
       conn_max_lifetime: "3600s"
+
 
 # Persistence configuration for SQLite databases
 # Only relevant when using SQLite as the database type

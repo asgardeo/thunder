@@ -66,7 +66,7 @@ func (s *ExecutorTestSuite) TestGetType() {
 
 func (s *ExecutorTestSuite) TestExecute() {
 	exec := newExecutor(testExecutorName, common.ExecutorTypeAuthentication, nil, nil)
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{ExecutionID: "test-flow"}
 
 	resp, err := exec.Execute(ctx)
 
@@ -188,7 +188,7 @@ func (s *ExecutorTestSuite) TestHasRequiredInputs() {
 		s.Run(tt.name, func() {
 			exec := newExecutor(testExecutorName, common.ExecutorTypeAuthentication, tt.defaultInputs, nil)
 			ctx := &NodeContext{
-				FlowID:      "test-flow",
+				ExecutionID: "test-flow",
 				UserInputs:  tt.userInputs,
 				RuntimeData: tt.runtimeData,
 			}
@@ -327,7 +327,7 @@ func (s *ExecutorTestSuite) TestValidatePrerequisites() {
 		s.Run(tt.name, func() {
 			exec := newExecutor(testExecutorName, common.ExecutorTypeAuthentication, nil, tt.prerequisites)
 			ctx := &NodeContext{
-				FlowID:            "test-flow",
+				ExecutionID:       "test-flow",
 				AuthenticatedUser: tt.authenticatedUser,
 				UserInputs:        tt.userInputs,
 				RuntimeData:       tt.runtimeData,
@@ -450,7 +450,7 @@ func (s *ExecutorTestSuite) TestGetRequiredInputs() {
 	for _, tt := range tests {
 		s.Run(tt.name, func() {
 			exec := newExecutor(testExecutorName, common.ExecutorTypeAuthentication, tt.defaultInputs, nil)
-			ctx := &NodeContext{FlowID: "test-flow", NodeInputs: tt.nodeInputs}
+			ctx := &NodeContext{ExecutionID: "test-flow", NodeInputs: tt.nodeInputs}
 
 			result := exec.GetRequiredInputs(ctx)
 

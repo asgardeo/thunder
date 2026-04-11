@@ -397,10 +397,10 @@ func (ts *AuthzTestSuite) TestBasicAuthorizationRequest() {
 					err := testutils.ValidateOAuth2ErrorRedirect(location, tc.ExpectedError, "")
 					ts.NoError(err, "OAuth2 error redirect validation failed")
 				} else {
-					authId, flowId, err := testutils.ExtractAuthData(location)
+					authId, executionId, err := testutils.ExtractAuthData(location)
 					ts.NoError(err, "Failed to extract auth ID")
 					ts.NotEmpty(authId, "authId should be present")
-					ts.NotEmpty(flowId, "flowId should be present")
+					ts.NotEmpty(executionId, "executionId should be present")
 				}
 			} else {
 				bodyBytes, _ := io.ReadAll(resp.Body)
@@ -626,15 +626,15 @@ func initiateAuthorizeFlowAndRetrieveAuthzCode(ts *AuthzTestSuite, username stri
 
 	ts.Equal(http.StatusFound, resp.StatusCode, "Expected redirect status")
 	location := resp.Header.Get("Location")
-	authId, flowId, err := testutils.ExtractAuthData(location)
+	authId, executionId, err := testutils.ExtractAuthData(location)
 	ts.NoError(err, "Failed to extract auth ID")
 
 	// Initiate authentication flow
-	_, err = testutils.ExecuteAuthenticationFlow(flowId, nil, "")
+	_, err = testutils.ExecuteAuthenticationFlow(executionId, nil, "")
 	ts.NoError(err, "Failed to initiate authentication flow")
 
 	// Execute authentication flow
-	flowStep, err := testutils.ExecuteAuthenticationFlow(flowId, map[string]string{
+	flowStep, err := testutils.ExecuteAuthenticationFlow(executionId, map[string]string{
 		"username": username,
 		"password": password,
 	}, "action_001")
@@ -748,10 +748,10 @@ func (ts *AuthzTestSuite) TestRedirectURIValidation() {
 					ts.NoError(err, "OAuth2 error redirect validation failed")
 
 				} else {
-					authId, flowId, err := testutils.ExtractAuthData(location)
+					authId, executionId, err := testutils.ExtractAuthData(location)
 					ts.NoError(err, "Failed to extract auth ID")
 					ts.NotEmpty(authId, "authId should be present")
-					ts.NotEmpty(flowId, "flowId should be present")
+					ts.NotEmpty(executionId, "executionId should be present")
 				}
 			}
 		})
@@ -811,8 +811,8 @@ func (ts *AuthzTestSuite) TestCompleteAuthorizationCodeFlow() {
 			location := resp.Header.Get("Location")
 			ts.NotEmpty(location, "Expected redirect location header")
 
-			// Extract auth ID and flow ID
-			authId, flowId, err := testutils.ExtractAuthData(location)
+			// Extract auth ID and execution ID
+			authId, executionId, err := testutils.ExtractAuthData(location)
 			if err != nil {
 				ts.T().Fatalf("Failed to extract auth ID: %v", err)
 			}
@@ -821,13 +821,13 @@ func (ts *AuthzTestSuite) TestCompleteAuthorizationCodeFlow() {
 			}
 
 			// Initiate authentication flow
-			_, err = testutils.ExecuteAuthenticationFlow(flowId, nil, "")
+			_, err = testutils.ExecuteAuthenticationFlow(executionId, nil, "")
 			if err != nil {
 				ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 			}
 
 			// Execute authentication flow
-			flowStep, err := testutils.ExecuteAuthenticationFlow(flowId, map[string]string{
+			flowStep, err := testutils.ExecuteAuthenticationFlow(executionId, map[string]string{
 				"username": tc.Username,
 				"password": tc.Password,
 			}, "action_001")
@@ -838,8 +838,8 @@ func (ts *AuthzTestSuite) TestCompleteAuthorizationCodeFlow() {
 				ts.T().Fatalf("Expected flow step, got nil")
 			}
 
-			if flowStep.FlowID == "" {
-				ts.T().Fatalf("Expected flow ID, got empty string")
+			if flowStep.ExecutionID == "" {
+				ts.T().Fatalf("Expected execution ID, got empty string")
 			}
 			if flowStep.FlowStatus != "COMPLETE" {
 				ts.T().Fatalf("Expected flow status COMPLETE, got %s", flowStep.FlowStatus)
@@ -934,17 +934,17 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeErrorScenarios() {
 			location := resp.Header.Get("Location")
 			ts.NotEmpty(location, "Expected redirect location header")
 
-			authId, flowId, err := testutils.ExtractAuthData(location)
+			authId, executionId, err := testutils.ExtractAuthData(location)
 			ts.NoError(err, "Failed to extract auth ID")
 
 			// Initiate authentication flow
-			_, err = testutils.ExecuteAuthenticationFlow(flowId, nil, "")
+			_, err = testutils.ExecuteAuthenticationFlow(executionId, nil, "")
 			if err != nil {
 				ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 			}
 
 			// Execute authentication flow
-			flowStep, err := testutils.ExecuteAuthenticationFlow(flowId, map[string]string{
+			flowStep, err := testutils.ExecuteAuthenticationFlow(executionId, map[string]string{
 				"username": tc.Username,
 				"password": tc.Password,
 			}, "action_001")
@@ -1025,15 +1025,15 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithResourceParameter() {
 	location := resp.Header.Get("Location")
 	ts.NotEmpty(location, "Expected redirect location header")
 
-	authId, flowId, err := testutils.ExtractAuthData(location)
+	authId, executionId, err := testutils.ExtractAuthData(location)
 	ts.NoError(err, "Failed to extract auth ID")
 
 	// Initiate authentication flow
-	_, err = testutils.ExecuteAuthenticationFlow(flowId, nil, "")
+	_, err = testutils.ExecuteAuthenticationFlow(executionId, nil, "")
 	ts.NoError(err, "Failed to initiate authentication flow")
 
 	// Execute authentication flow
-	flowStep, err := testutils.ExecuteAuthenticationFlow(flowId, map[string]string{
+	flowStep, err := testutils.ExecuteAuthenticationFlow(executionId, map[string]string{
 		"username": "resourcetest",
 		"password": "testpass123",
 	}, "action_001")
@@ -1133,15 +1133,15 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithClaimsLocales() {
 	location := resp.Header.Get("Location")
 	ts.NotEmpty(location, "Expected redirect location header")
 
-	authId, flowId, err := testutils.ExtractAuthData(location)
+	authId, executionId, err := testutils.ExtractAuthData(location)
 	ts.NoError(err, "Failed to extract auth ID")
 
 	// Initiate authentication flow
-	_, err = testutils.ExecuteAuthenticationFlow(flowId, nil, "")
+	_, err = testutils.ExecuteAuthenticationFlow(executionId, nil, "")
 	ts.NoError(err, "Failed to initiate authentication flow")
 
 	// Execute authentication flow
-	flowStep, err := testutils.ExecuteAuthenticationFlow(flowId, map[string]string{
+	flowStep, err := testutils.ExecuteAuthenticationFlow(executionId, map[string]string{
 		"username": "localestest",
 		"password": "testpass123",
 	}, "action_001")
@@ -1225,15 +1225,15 @@ func (ts *AuthzTestSuite) TestAuthorizationCodeFlowWithNonce() {
 	ts.Equal(http.StatusFound, resp.StatusCode)
 
 	location := resp.Header.Get("Location")
-	authId, flowId, err := testutils.ExtractAuthData(location)
+	authId, executionId, err := testutils.ExtractAuthData(location)
 	ts.NoError(err)
 
 	// Initiate auth flow
-	_, err = testutils.ExecuteAuthenticationFlow(flowId, nil, "")
+	_, err = testutils.ExecuteAuthenticationFlow(executionId, nil, "")
 	ts.NoError(err)
 
 	// Execute credentials
-	flowStep, err := testutils.ExecuteAuthenticationFlow(flowId, map[string]string{
+	flowStep, err := testutils.ExecuteAuthenticationFlow(executionId, map[string]string{
 		"username": "noncetest",
 		"password": "testpass123",
 	}, "action_001")
@@ -1316,14 +1316,14 @@ func (ts *AuthzTestSuite) TestNonceIgnoredWithoutOpenIDScope() {
 	ts.Equal(http.StatusFound, resp.StatusCode)
 
 	location := resp.Header.Get("Location")
-	authId, flowId, err := testutils.ExtractAuthData(location)
+	authId, executionId, err := testutils.ExtractAuthData(location)
 	ts.NoError(err)
 
 	// Execute authentication flow
-	_, err = testutils.ExecuteAuthenticationFlow(flowId, nil, "")
+	_, err = testutils.ExecuteAuthenticationFlow(executionId, nil, "")
 	ts.NoError(err)
 
-	flowStep, err := testutils.ExecuteAuthenticationFlow(flowId, map[string]string{
+	flowStep, err := testutils.ExecuteAuthenticationFlow(executionId, map[string]string{
 		"username": "nonopeniduser",
 		"password": "testpass123",
 	}, "action_001")

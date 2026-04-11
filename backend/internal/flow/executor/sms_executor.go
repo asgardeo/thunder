@@ -68,7 +68,7 @@ func newSMSExecutor(flowFactory core.FlowFactoryInterface,
 // Execute resolves the recipient from user inputs or runtime data and the sender ID from node properties,
 // then renders the SMS body from a template and sends it.
 func (e *smsExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := e.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing SMS executor")
 
 	execResp := &common.ExecutorResponse{

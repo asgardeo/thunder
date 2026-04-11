@@ -197,9 +197,9 @@ func (suite *AuthorizeHandlerTestSuite) TestGetOAuthMessage_NilResponseWriter() 
 func (suite *AuthorizeHandlerTestSuite) TestHandleAuthorizeGetRequest_Success() {
 	result := &AuthorizationInitResult{
 		QueryParams: map[string]string{
-			oauth2const.AuthID: testAuthID,
-			oauth2const.AppID:  "test-app-id",
-			oauth2const.FlowID: "test-flow-id",
+			oauth2const.AuthID:      testAuthID,
+			oauth2const.AppID:       "test-app-id",
+			oauth2const.ExecutionID: "test-flow-id",
 		},
 	}
 	suite.mockAuthzService.EXPECT().HandleInitialAuthorizationRequest(mock.Anything, mock.Anything).Return(result, nil)

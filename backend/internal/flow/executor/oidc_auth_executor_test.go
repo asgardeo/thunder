@@ -74,10 +74,10 @@ func (suite *OIDCAuthExecutorTestSuite) TestNewOIDCAuthExecutor() {
 
 func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeNotProvided_BuildsAuthorizeURL() {
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		FlowType:   common.FlowTypeAuthentication,
-		UserInputs: map[string]string{},
-		NodeInputs: []common.Input{{Identifier: "code", Type: "string", Required: true}},
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
+		UserInputs:  map[string]string{},
+		NodeInputs:  []common.Input{{Identifier: "code", Type: "string", Required: true}},
 		NodeProperties: map[string]interface{}{
 			"idpId": "idp-123",
 		},
@@ -102,8 +102,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeNotProvided_BuildsAuthor
 
 func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeProvided_ValidIDToken_AuthenticatesUser() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -163,8 +163,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestExecute_CodeProvided_ValidIDToken_Au
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_ValidIDToken_Success() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -222,8 +222,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_ValidIDToken
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_InvalidNonce() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code":  "auth_code_123",
 			"nonce": "expected_nonce_123",
@@ -266,8 +266,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_InvalidNonce
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoSubClaim() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -309,8 +309,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoSubClaim()
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_RegistrationFlow_UserNotFound() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -365,8 +365,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_Registration
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AuthFlow_UserNotFound() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -412,8 +412,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AuthFlow_Use
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_UserAlreadyExists_RegistrationFlow() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -547,8 +547,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestGetIDTokenClaims_Errors() {
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_WithAdditionalScopes_FetchesUserInfo() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -614,9 +614,9 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_WithAddition
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoCodeProvided() {
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		FlowType:   common.FlowTypeAuthentication,
-		UserInputs: map[string]string{},
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
+		UserInputs:  map[string]string{},
 		NodeProperties: map[string]interface{}{
 			"idpId": "idp-123",
 		},
@@ -635,8 +635,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoCodeProvid
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_FiltersNonUserClaimsFromIDToken() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -707,8 +707,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_FiltersNonUs
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDToken() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -768,8 +768,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDTok
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoEmailInIDToken() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -829,8 +829,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NoEmailInIDT
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmptyEmailInIDToken() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -890,8 +890,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmptyEmailIn
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_RegistrationFlow_WithEmail() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -950,8 +950,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_Registration
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailFromUserInfo() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -1019,8 +1019,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailFromUse
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDToken_NilRuntimeData() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -1081,8 +1081,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailInIDTok
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWithoutLocalUser() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -1154,8 +1154,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWit
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthWithoutLocalUser() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -1206,8 +1206,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthW
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistrationWithExistingUser() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -1271,8 +1271,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowRegistr
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventRegistrationWithExistingUser() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},
@@ -1372,7 +1372,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestGetContextUserAttributes_OAuthClient
 			suite.mockOIDCService.ExpectedCalls = nil
 
 			ctx := &core.NodeContext{
-				FlowID: "flow-123",
+				ExecutionID: "flow-123",
 				NodeProperties: map[string]interface{}{
 					"idpId": "idp-123",
 				},
@@ -1406,7 +1406,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestGetContextUserAttributes_OAuthClient
 
 func (suite *OIDCAuthExecutorTestSuite) TestGetContextUserAttributes_OnlyOpenIDScope_NoUserInfoCall() {
 	ctx := &core.NodeContext{
-		FlowID: "flow-123",
+		ExecutionID: "flow-123",
 		NodeProperties: map[string]interface{}{
 			"idpId": "idp-123",
 		},
@@ -1459,8 +1459,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestGetContextUserAttributes_OnlyOpenIDS
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_NonStringSubClaim() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		UserInputs: map[string]string{
 			"code": "auth_code_123",
 		},

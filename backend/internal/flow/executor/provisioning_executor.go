@@ -75,7 +75,7 @@ func newProvisioningExecutor(
 
 // Execute executes the user provisioning logic based on the inputs provided.
 func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := p.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := p.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing user provisioning executor")
 
 	execResp := &common.ExecutorResponse{
@@ -232,7 +232,7 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 // missing inputs to the executor response. Returns true if required inputs are found, otherwise false.
 func (p *provisioningExecutor) HasRequiredInputs(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) bool {
-	logger := p.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := p.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Checking inputs for the provisioning executor")
 
 	if p.ExecutorInterface.HasRequiredInputs(ctx, execResp) {
@@ -337,7 +337,7 @@ func (p *provisioningExecutor) appendNonIdentifyingAttributes(ctx *core.NodeCont
 // createUserInStore creates a new user in the user store with the provided attributes.
 func (p *provisioningExecutor) createUserInStore(nodeCtx *core.NodeContext,
 	userAttributes map[string]interface{}) (*userprovider.User, error) {
-	logger := p.logger.With(log.String(log.LoggerKeyFlowID, nodeCtx.FlowID))
+	logger := p.logger.With(log.String(log.LoggerKeyExecutionID, nodeCtx.ExecutionID))
 	logger.Debug("Creating the user account")
 
 	ouID := p.getOUID(nodeCtx)
@@ -403,7 +403,7 @@ func (p *provisioningExecutor) assignGroupsAndRoles(
 	ctx *core.NodeContext,
 	userID string,
 ) error {
-	logger := p.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := p.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	// Get configured group and role from properties
 	groupID := p.getGroupToAssign(ctx)

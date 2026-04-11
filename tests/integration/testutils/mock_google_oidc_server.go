@@ -23,8 +23,11 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/x509"
+	_ "embed"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"log"
 	"math/big"
@@ -34,6 +37,39 @@ import (
 	"sync"
 	"time"
 )
+
+// mockGoogleOIDCSharedKeyPEM is a throwaway RSA-2048 private key used by every
+// MockGoogleOIDCServer instance across every integration test package. Real OIDC
+// issuers honor the contract that a given `kid` maps to exactly one key forever;
+// when they rotate they publish a new `kid` alongside the old one. The test mock
+// always advertises the same `kid` ("mock-key-id"), so it must also always advertise
+// the same underlying key material across every process that spins up the mock.
+// Embedding a single PEM via go:embed keeps the JWKS response byte-identical across
+// every mock instance in every test package, so Thunder's process-wide JWKS cache
+// stays coherent when mocks are torn down and restarted on the same URL (e.g.
+// port 8093, which is reused by the conditional-exec, google-auth and
+// google-registration suites). Not a secret; must only be used by the test mock.
+//
+//go:embed testdata/mock_google_oidc_key.pem
+var mockGoogleOIDCSharedKeyPEM []byte
+
+var (
+	mockGoogleOIDCSharedKeyOnce sync.Once
+	mockGoogleOIDCSharedKey     *rsa.PrivateKey
+	mockGoogleOIDCSharedKeyErr  error
+)
+
+func getMockGoogleOIDCSharedKey() (*rsa.PrivateKey, error) {
+	mockGoogleOIDCSharedKeyOnce.Do(func() {
+		block, _ := pem.Decode(mockGoogleOIDCSharedKeyPEM)
+		if block == nil {
+			mockGoogleOIDCSharedKeyErr = fmt.Errorf("failed to decode mock Google OIDC test key PEM")
+			return
+		}
+		mockGoogleOIDCSharedKey, mockGoogleOIDCSharedKeyErr = x509.ParsePKCS1PrivateKey(block.Bytes)
+	})
+	return mockGoogleOIDCSharedKey, mockGoogleOIDCSharedKeyErr
+}
 
 // MockGoogleOIDCServer provides a mock Google OIDC server for testing
 type MockGoogleOIDCServer struct {
@@ -117,7 +153,7 @@ type JWK struct {
 
 // NewMockGoogleOIDCServer creates a new mock Google OIDC server
 func NewMockGoogleOIDCServer(port int, clientID, clientSecret string) (*MockGoogleOIDCServer, error) {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	privateKey, err := getMockGoogleOIDCSharedKey()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate RSA key: %w", err)
 	}

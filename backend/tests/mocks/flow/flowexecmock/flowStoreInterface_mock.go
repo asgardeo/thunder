@@ -39,8 +39,8 @@ func (_m *flowStoreInterfaceMock) EXPECT() *flowStoreInterfaceMock_Expecter {
 }
 
 // DeleteFlowContext provides a mock function for the type flowStoreInterfaceMock
-func (_mock *flowStoreInterfaceMock) DeleteFlowContext(ctx context.Context, flowID string) error {
-	ret := _mock.Called(ctx, flowID)
+func (_mock *flowStoreInterfaceMock) DeleteFlowContext(ctx context.Context, executionID string) error {
+	ret := _mock.Called(ctx, executionID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for DeleteFlowContext")
@@ -48,7 +48,7 @@ func (_mock *flowStoreInterfaceMock) DeleteFlowContext(ctx context.Context, flow
 
 	var r0 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = returnFunc(ctx, flowID)
+		r0 = returnFunc(ctx, executionID)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -62,12 +62,12 @@ type flowStoreInterfaceMock_DeleteFlowContext_Call struct {
 
 // DeleteFlowContext is a helper method to define mock.On call
 //   - ctx context.Context
-//   - flowID string
-func (_e *flowStoreInterfaceMock_Expecter) DeleteFlowContext(ctx interface{}, flowID interface{}) *flowStoreInterfaceMock_DeleteFlowContext_Call {
-	return &flowStoreInterfaceMock_DeleteFlowContext_Call{Call: _e.mock.On("DeleteFlowContext", ctx, flowID)}
+//   - executionID string
+func (_e *flowStoreInterfaceMock_Expecter) DeleteFlowContext(ctx interface{}, executionID interface{}) *flowStoreInterfaceMock_DeleteFlowContext_Call {
+	return &flowStoreInterfaceMock_DeleteFlowContext_Call{Call: _e.mock.On("DeleteFlowContext", ctx, executionID)}
 }
 
-func (_c *flowStoreInterfaceMock_DeleteFlowContext_Call) Run(run func(ctx context.Context, flowID string)) *flowStoreInterfaceMock_DeleteFlowContext_Call {
+func (_c *flowStoreInterfaceMock_DeleteFlowContext_Call) Run(run func(ctx context.Context, executionID string)) *flowStoreInterfaceMock_DeleteFlowContext_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -90,14 +90,14 @@ func (_c *flowStoreInterfaceMock_DeleteFlowContext_Call) Return(err error) *flow
 	return _c
 }
 
-func (_c *flowStoreInterfaceMock_DeleteFlowContext_Call) RunAndReturn(run func(ctx context.Context, flowID string) error) *flowStoreInterfaceMock_DeleteFlowContext_Call {
+func (_c *flowStoreInterfaceMock_DeleteFlowContext_Call) RunAndReturn(run func(ctx context.Context, executionID string) error) *flowStoreInterfaceMock_DeleteFlowContext_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetFlowContext provides a mock function for the type flowStoreInterfaceMock
-func (_mock *flowStoreInterfaceMock) GetFlowContext(ctx context.Context, flowID string) (*flowexec.FlowContextDB, error) {
-	ret := _mock.Called(ctx, flowID)
+func (_mock *flowStoreInterfaceMock) GetFlowContext(ctx context.Context, executionID string) (*flowexec.FlowContextDB, error) {
+	ret := _mock.Called(ctx, executionID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetFlowContext")
@@ -106,17 +106,17 @@ func (_mock *flowStoreInterfaceMock) GetFlowContext(ctx context.Context, flowID 
 	var r0 *flowexec.FlowContextDB
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*flowexec.FlowContextDB, error)); ok {
-		return returnFunc(ctx, flowID)
+		return returnFunc(ctx, executionID)
 	}
 	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *flowexec.FlowContextDB); ok {
-		r0 = returnFunc(ctx, flowID)
+		r0 = returnFunc(ctx, executionID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*flowexec.FlowContextDB)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = returnFunc(ctx, flowID)
+		r1 = returnFunc(ctx, executionID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -130,12 +130,12 @@ type flowStoreInterfaceMock_GetFlowContext_Call struct {
 
 // GetFlowContext is a helper method to define mock.On call
 //   - ctx context.Context
-//   - flowID string
-func (_e *flowStoreInterfaceMock_Expecter) GetFlowContext(ctx interface{}, flowID interface{}) *flowStoreInterfaceMock_GetFlowContext_Call {
-	return &flowStoreInterfaceMock_GetFlowContext_Call{Call: _e.mock.On("GetFlowContext", ctx, flowID)}
+//   - executionID string
+func (_e *flowStoreInterfaceMock_Expecter) GetFlowContext(ctx interface{}, executionID interface{}) *flowStoreInterfaceMock_GetFlowContext_Call {
+	return &flowStoreInterfaceMock_GetFlowContext_Call{Call: _e.mock.On("GetFlowContext", ctx, executionID)}
 }
 
-func (_c *flowStoreInterfaceMock_GetFlowContext_Call) Run(run func(ctx context.Context, flowID string)) *flowStoreInterfaceMock_GetFlowContext_Call {
+func (_c *flowStoreInterfaceMock_GetFlowContext_Call) Run(run func(ctx context.Context, executionID string)) *flowStoreInterfaceMock_GetFlowContext_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -158,7 +158,7 @@ func (_c *flowStoreInterfaceMock_GetFlowContext_Call) Return(flowContextDB *flow
 	return _c
 }
 
-func (_c *flowStoreInterfaceMock_GetFlowContext_Call) RunAndReturn(run func(ctx context.Context, flowID string) (*flowexec.FlowContextDB, error)) *flowStoreInterfaceMock_GetFlowContext_Call {
+func (_c *flowStoreInterfaceMock_GetFlowContext_Call) RunAndReturn(run func(ctx context.Context, executionID string) (*flowexec.FlowContextDB, error)) *flowStoreInterfaceMock_GetFlowContext_Call {
 	_c.Call.Return(run)
 	return _c
 }

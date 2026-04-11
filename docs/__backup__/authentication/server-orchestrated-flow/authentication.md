@@ -87,7 +87,7 @@ Follow the steps below to configure and execute a login flow using username and 
 
     ```json
     {
-        "flowId": "db93a19e-c23f-4cfc-a45f-0e0bc157f6d5",
+        "executionId": "db93a19e-c23f-4cfc-a45f-0e0bc157f6d5",
         "flowStatus": "PROMPT_ONLY",
         "type": "VIEW",
         "data": {
@@ -117,12 +117,12 @@ Follow the steps below to configure and execute a login flow using username and 
 
 5. **Complete the Login Flow**
 
-    Make the second cURL request to complete the login flow. Make sure to replace `<flow_id>` with the `flowId` received in the previous response. Also, replace the `username` and `password` with the credentials of the user you created in the first step.
+    Make the second cURL request to complete the login flow. Make sure to replace `<execution_id>` with the `executionId` received in the previous response. Also, replace the `username` and `password` with the credentials of the user you created in the first step.
 
     ```bash
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
-        "flowId": "<flow_id>",
+        "executionId": "<execution_id>",
         "action": "<action_ref>",
         "inputs": {
             "username": "thor",
@@ -243,7 +243,7 @@ Follow the steps below to configure and execute a login flow using username and 
     ```bash
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
-        "flowId": "<flow_id>",
+        "executionId": "<execution_id>",
         "action": "<action_ref>",
         "inputs": {
             "mobileNumber": "+1234567890"
@@ -260,7 +260,7 @@ Follow the steps below to configure and execute a login flow using username and 
     ```bash
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
-        "flowId": "<flow_id>",
+        "executionId": "<execution_id>",
         "action": "<action_ref>",
         "inputs": {
             "otp": "696546"
@@ -354,7 +354,7 @@ Follow the steps below to configure and execute a login flow using Google OAuth 
 
     ```json
     {
-        "flowId": "80d57e64-8082-4096-bb0e-22b2187f8265",
+        "executionId": "80d57e64-8082-4096-bb0e-22b2187f8265",
         "flowStatus": "INCOMPLETE",
         "type": "REDIRECTION",
         "data": {
@@ -390,12 +390,12 @@ Follow the steps below to configure and execute a login flow using Google OAuth 
 
 7. **Complete the Login Flow**
 
-    Copy the authorization code and make the second cURL request to complete the login flow. Make sure to replace `<flow_id>` with the `flowId` received in the previous response.
+    Copy the authorization code and make the second cURL request to complete the login flow. Make sure to replace `<execution_id>` with the `executionId` received in the previous response.
 
     ```bash
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
-        "flowId": "<flow_id>",
+        "executionId": "<execution_id>",
         "inputs": {
             "code": "<code>"
         }
@@ -487,7 +487,7 @@ Follow the steps below to configure and execute a login flow using GitHub OAuth 
 
     ```json
     {
-        "flowId": "80d57e64-8082-4096-bb0e-22b2187f8265",
+        "executionId": "80d57e64-8082-4096-bb0e-22b2187f8265",
         "flowStatus": "INCOMPLETE",
         "type": "REDIRECTION",
         "data": {
@@ -518,12 +518,12 @@ Follow the steps below to configure and execute a login flow using GitHub OAuth 
 
 7. **Complete the Login Flow**
 
-    Copy the authorization code and make the second cURL request to complete the login flow. Make sure to replace `<flow_id>` with the `flowId` received in the previous response.
+    Copy the authorization code and make the second cURL request to complete the login flow. Make sure to replace `<execution_id>` with the `executionId` received in the previous response.
 
     ```bash
     curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
     -d '{
-        "flowId": "<flow_id>",
+        "executionId": "<execution_id>",
         "inputs": {
             "code": "<code>"
         }

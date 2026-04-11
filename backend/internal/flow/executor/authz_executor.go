@@ -70,7 +70,7 @@ func newAuthorizationExecutor(
 // Execute executes the authorization logic by determining required permissions based on context,
 // calling the authorization service, and storing authorized permissions in runtime data.
 func (a *authorizationExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := a.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing authorization executor")
 
 	execResp := &common.ExecutorResponse{

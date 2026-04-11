@@ -88,7 +88,7 @@ func newOIDCAuthExecutor(
 
 // Execute executes the OIDC authentication logic.
 func (o *oidcAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing OIDC authentication executor")
 
 	execResp := &common.ExecutorResponse{
@@ -119,7 +119,7 @@ func (o *oidcAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 // ProcessAuthFlowResponse processes the response from the OIDC authentication flow and authenticates the user.
 func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) error {
-	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Processing OIDC authentication response")
 
 	code, ok := ctx.UserInputs[userInputCode]
@@ -229,7 +229,7 @@ func (o *oidcAuthExecutor) GetIDTokenClaims(execResp *common.ExecutorResponse,
 // TODO: Need to convert attributes as per the IDP to local attribute mapping when the support is implemented.
 func (o *oidcAuthExecutor) getContextUserAttributes(ctx *core.NodeContext, execResp *common.ExecutorResponse,
 	idTokenClaims map[string]interface{}, accessToken string) (map[string]interface{}, error) {
-	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	userClaims := make(map[string]interface{})
 
 	// Resolve and add ID token claims

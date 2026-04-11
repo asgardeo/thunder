@@ -55,7 +55,7 @@ func newPermissionValidator(flowFactory core.FlowFactoryInterface) *permissionVa
 
 // Execute validates that the request has the required permission/scope to access the next node.
 func (e *permissionValidator) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := e.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	execResp := &common.ExecutorResponse{
 		AdditionalData: make(map[string]string),

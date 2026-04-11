@@ -33,4 +33,20 @@ window.__THUNDER_RUNTIME_CONFIG__ = {
     public_url: {{ .Values.configuration.server.publicUrl | quote }},
     {{- end }}
   },
+  {{- if .Values.configuration.consoleClient.trustedIssuer }}
+  trusted_issuer: {
+    hostname: {{ .Values.configuration.consoleClient.trustedIssuer.hostname | quote }},
+    port: {{ .Values.configuration.consoleClient.trustedIssuer.port }},
+    http_only: {{ .Values.configuration.consoleClient.trustedIssuer.httpOnly }},
+    {{- if .Values.configuration.consoleClient.trustedIssuer.publicUrl }}
+    public_url: {{ .Values.configuration.consoleClient.trustedIssuer.publicUrl | quote }},
+    {{- end }}
+    {{- if .Values.configuration.consoleClient.trustedIssuer.clientId }}
+    client_id: {{ .Values.configuration.consoleClient.trustedIssuer.clientId | quote }},
+    {{- end }}
+    {{- if .Values.configuration.consoleClient.trustedIssuer.scopes }}
+    scopes: {{ .Values.configuration.consoleClient.trustedIssuer.scopes }},
+    {{- end }}
+  },
+  {{- end }}
 };

@@ -61,7 +61,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowEngine"))
 
 	flowStep := FlowStep{
-		FlowID: ctx.FlowID,
+		ExecutionID: ctx.ExecutionID,
 	}
 
 	// Track flow execution start time
@@ -86,7 +86,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 
 		nodeCtx := &core.NodeContext{
 			Context:           ctx.Context,
-			FlowID:            ctx.FlowID,
+			ExecutionID:       ctx.ExecutionID,
 			FlowType:          ctx.FlowType,
 			AppID:             ctx.AppID,
 			CurrentAction:     ctx.CurrentAction,
@@ -820,12 +820,12 @@ func publishNodeExecutionStartedEvent(
 	}
 
 	evt := event.NewEvent(
-		ctx.FlowID, // Use FlowID as TraceID
+		ctx.ExecutionID, // Use ExecutionID as TraceID
 		string(event.EventTypeFlowNodeExecutionStarted),
 		event.ComponentFlowEngine,
 	).
 		WithStatus(event.StatusInProgress).
-		WithData(event.DataKey.FlowID, ctx.FlowID).
+		WithData(event.DataKey.ExecutionID, ctx.ExecutionID).
 		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
 		WithData(event.DataKey.NodeID, node.GetID()).
 		WithData(event.DataKey.NodeType, string(node.GetType())).
@@ -891,12 +891,12 @@ func publishNodeExecutionCompletedEvent(ctx *EngineContext, node core.NodeInterf
 	durationMs := executionEndTime - executionStartTime
 
 	evt := event.NewEvent(
-		ctx.FlowID, // Use FlowID as TraceID
+		ctx.ExecutionID, // Use ExecutionID as TraceID
 		string(eventType),
 		event.ComponentFlowEngine,
 	).
 		WithStatus(status).
-		WithData(event.DataKey.FlowID, ctx.FlowID).
+		WithData(event.DataKey.ExecutionID, ctx.ExecutionID).
 		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
 		WithData(event.DataKey.NodeID, node.GetID()).
 		WithData(event.DataKey.NodeType, string(node.GetType())).
@@ -938,7 +938,7 @@ func publishFlowStartedEvent(ctx *EngineContext, obsSvc observability.Observabil
 		event.ComponentFlowEngine,
 	).
 		WithStatus(event.StatusInProgress).
-		WithData(event.DataKey.FlowID, ctx.FlowID).
+		WithData(event.DataKey.ExecutionID, ctx.ExecutionID).
 		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
 		WithData(event.DataKey.AppID, ctx.AppID)
 
@@ -965,12 +965,12 @@ func publishFlowCompletedEvent(
 	durationMs := flowEndTime - flowStartTime
 
 	evt := event.NewEvent(
-		ctx.FlowID, // Use FlowID as TraceID
+		ctx.ExecutionID, // Use ExecutionID as TraceID
 		string(event.EventTypeFlowCompleted),
 		event.ComponentFlowEngine,
 	).
 		WithStatus(event.StatusSuccess).
-		WithData(event.DataKey.FlowID, ctx.FlowID).
+		WithData(event.DataKey.ExecutionID, ctx.ExecutionID).
 		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
 		WithData(event.DataKey.AppID, ctx.AppID).
 		WithData(event.DataKey.DurationMs, fmt.Sprintf("%d", durationMs))
@@ -999,7 +999,7 @@ func publishFlowFailedEvent(ctx *EngineContext, svcErr *serviceerror.ServiceErro
 		event.ComponentFlowEngine,
 	).
 		WithStatus(event.StatusFailure).
-		WithData(event.DataKey.FlowID, ctx.FlowID).
+		WithData(event.DataKey.ExecutionID, ctx.ExecutionID).
 		WithData(event.DataKey.FlowType, string(ctx.FlowType)).
 		WithData(event.DataKey.AppID, ctx.AppID).
 		WithData(event.DataKey.DurationMs, fmt.Sprintf("%d", durationMs))

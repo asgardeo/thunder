@@ -206,7 +206,7 @@ type ResourcePermissions struct {
 
 // FlowResponse represents the response from flow execution
 type FlowResponse struct {
-	FlowID        string    `json:"flowId"`
+	ExecutionID   string    `json:"executionId"`
 	FlowStatus    string    `json:"flowStatus"`
 	Type          string    `json:"type"`
 	Data          *FlowData `json:"data,omitempty"`
@@ -239,7 +239,7 @@ type FlowAction struct {
 
 // FlowStep represents a single step in a flow execution
 type FlowStep struct {
-	FlowID        string    `json:"flowId"`
+	ExecutionID   string    `json:"executionId"`
 	FlowStatus    string    `json:"flowStatus"`
 	Type          string    `json:"type"`
 	Data          *FlowData `json:"data,omitempty"`

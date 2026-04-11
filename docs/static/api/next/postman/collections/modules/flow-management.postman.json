@@ -1,0 +1,2630 @@
+{
+  "item": [
+    {
+      "id": "fb864d98-e4b2-4128-a8cf-f76adcdc3b0a",
+      "name": "Flow Management",
+      "description": {
+        "content": "",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "f0dd2936-1a0e-4ff4-b260-c146a06b3281",
+          "name": "List all flows",
+          "request": {
+            "name": "List all flows",
+            "description": {
+              "content": "Retrieves a paginated list of all flow definitions",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "flows"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "disabled": true,
+                  "key": "flowType",
+                  "value": "<string>",
+                  "description": "Filter by flow type"
+                },
+                {
+                  "disabled": true,
+                  "key": "limit",
+                  "value": "30",
+                  "description": "Maximum number of flows to return"
+                },
+                {
+                  "disabled": true,
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Number of flows to skip"
+                }
+              ],
+              "variable": [
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{host}}",
+                  "key": "host"
+                },
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{port}}",
+                  "key": "port"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "response": [
+            {
+              "id": "a3238767-02db-4a2d-966f-c234c82589cc",
+              "name": "List of flows retrieved successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "flowType",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "30"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"totalResults\": \"<integer>\",\n  \"startIndex\": \"<integer>\",\n  \"count\": \"<integer>\",\n  \"flows\": [\n    {\n      \"id\": \"<string>\",\n      \"flowType\": \"<string>\",\n      \"name\": \"<string>\",\n      \"handle\": \"<string>\",\n      \"activeVersion\": \"<integer>\",\n      \"createdAt\": \"<dateTime>\",\n      \"updatedAt\": \"<dateTime>\"\n    },\n    {\n      \"id\": \"<string>\",\n      \"flowType\": \"<string>\",\n      \"name\": \"<string>\",\n      \"handle\": \"<string>\",\n      \"activeVersion\": \"<integer>\",\n      \"createdAt\": \"<dateTime>\",\n      \"updatedAt\": \"<dateTime>\"\n    }\n  ],\n  \"links\": [\n    {\n      \"href\": \"<string>\",\n      \"rel\": \"<string>\"\n    },\n    {\n      \"href\": \"<string>\",\n      \"rel\": \"<string>\"\n    }\n  ]\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "a799198d-6e6c-4e1c-a546-a0d991348397",
+              "name": "Invalid query parameters",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "flowType",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "30"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "fe5ddcbc-2d39-493e-8bf6-7790e60a90b2",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "flowType",
+                      "value": "<string>"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "30"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ],
+                  "variable": [
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "b5320020-8db0-49ec-95bd-47c30ca8a68f",
+          "name": "Create a new flow",
+          "request": {
+            "name": "Create a new flow",
+            "description": {
+              "content": "Creates a new flow definition\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "flows"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{host}}",
+                  "key": "host"
+                },
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{port}}",
+                  "key": "port"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": null,
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"<string>\",\n  \"flowType\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"nodes\": [\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"officiad\": false,\n        \"aliquip_f\": 19003546.202288076,\n        \"deserunt__b\": 51235224\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    },\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"id_e\": 67152731,\n        \"exercitation_d\": 38586217.41463369\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "id": "50e44608-af21-4b90-b650-76f70f842a36",
+              "name": "Flow created successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"<string>\",\n  \"flowType\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"nodes\": [\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"officiad\": false,\n        \"aliquip_f\": 19003546.202288076,\n        \"deserunt__b\": 51235224\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    },\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"id_e\": 67152731,\n        \"exercitation_d\": 38586217.41463369\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"<string>\",\n  \"name\": \"<string>\",\n  \"flowType\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"activeVersion\": \"<integer>\",\n  \"nodes\": [\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"do1_\": 34737819.91175696\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    },\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"consectetur43\": 75868546,\n        \"aliquip1\": -24012927,\n        \"enimeb1\": false\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    }\n  ],\n  \"createdAt\": \"<dateTime>\",\n  \"updatedAt\": \"<dateTime>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "1dec1fc7-8fe2-4dd7-a9e3-b5582819b50a",
+              "name": "Invalid flow definition",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"<string>\",\n  \"flowType\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"nodes\": [\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"officiad\": false,\n        \"aliquip_f\": 19003546.202288076,\n        \"deserunt__b\": 51235224\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    },\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"id_e\": 67152731,\n        \"exercitation_d\": 38586217.41463369\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "64f39a21-9726-481f-8fd0-be7bf9c8bc87",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"<string>\",\n  \"flowType\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"nodes\": [\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"officiad\": false,\n        \"aliquip_f\": 19003546.202288076,\n        \"deserunt__b\": 51235224\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    },\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"id_e\": 67152731,\n        \"exercitation_d\": 38586217.41463369\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "ecb17abd-e65d-4310-83be-2e44ebe7f590",
+          "name": "Get flow by ID",
+          "request": {
+            "name": "Get flow by ID",
+            "description": {
+              "content": "Retrieves a specific flow definition by its unique identifier",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "flows",
+                ":flowId"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "flowId",
+                  "description": "(Required) Unique identifier of the flow"
+                },
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{host}}",
+                  "key": "host"
+                },
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{port}}",
+                  "key": "port"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "response": [
+            {
+              "id": "20c7cb08-ab0d-45b4-96bc-d6c349f6d167",
+              "name": "Flow retrieved successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"<string>\",\n  \"name\": \"<string>\",\n  \"flowType\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"activeVersion\": \"<integer>\",\n  \"nodes\": [\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"do1_\": 34737819.91175696\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    },\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"consectetur43\": 75868546,\n        \"aliquip1\": -24012927,\n        \"enimeb1\": false\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    }\n  ],\n  \"createdAt\": \"<dateTime>\",\n  \"updatedAt\": \"<dateTime>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "c965931d-bb77-4faa-a166-13b974f7535d",
+              "name": "Flow not found",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "a006c231-f985-426c-b106-344c94b904ef",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "f14adec9-660f-4348-8023-732f9886abcd",
+          "name": "Update flow",
+          "request": {
+            "name": "Update flow",
+            "description": {
+              "content": "Updates an existing flow definition by its unique identifier",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "flows",
+                ":flowId"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "flowId",
+                  "description": "(Required) Unique identifier of the flow to update"
+                },
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{host}}",
+                  "key": "host"
+                },
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{port}}",
+                  "key": "port"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "auth": null,
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"<string>\",\n  \"flowType\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"nodes\": [\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"officiad\": false,\n        \"aliquip_f\": 19003546.202288076,\n        \"deserunt__b\": 51235224\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    },\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"id_e\": 67152731,\n        \"exercitation_d\": 38586217.41463369\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "id": "58646058-2c8f-4811-8870-d5138eeca033",
+              "name": "Flow updated successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow to update"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"<string>\",\n  \"flowType\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"nodes\": [\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"officiad\": false,\n        \"aliquip_f\": 19003546.202288076,\n        \"deserunt__b\": 51235224\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    },\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"id_e\": 67152731,\n        \"exercitation_d\": 38586217.41463369\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"<string>\",\n  \"name\": \"<string>\",\n  \"flowType\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"activeVersion\": \"<integer>\",\n  \"nodes\": [\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"do1_\": 34737819.91175696\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    },\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"consectetur43\": 75868546,\n        \"aliquip1\": -24012927,\n        \"enimeb1\": false\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    }\n  ],\n  \"createdAt\": \"<dateTime>\",\n  \"updatedAt\": \"<dateTime>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "487d3900-8261-44fc-91a4-5b9616b924fa",
+              "name": "Invalid flow definition",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow to update"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"<string>\",\n  \"flowType\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"nodes\": [\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"officiad\": false,\n        \"aliquip_f\": 19003546.202288076,\n        \"deserunt__b\": 51235224\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    },\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"id_e\": 67152731,\n        \"exercitation_d\": 38586217.41463369\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "595618fc-2790-4f32-9607-a3f5e24af9b9",
+              "name": "Flow not found",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow to update"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"<string>\",\n  \"flowType\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"nodes\": [\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"officiad\": false,\n        \"aliquip_f\": 19003546.202288076,\n        \"deserunt__b\": 51235224\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    },\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"id_e\": 67152731,\n        \"exercitation_d\": 38586217.41463369\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "161e23f1-429d-4559-92ba-f92b04dcd103",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow to update"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"<string>\",\n  \"flowType\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"nodes\": [\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"officiad\": false,\n        \"aliquip_f\": 19003546.202288076,\n        \"deserunt__b\": 51235224\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    },\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"id_e\": 67152731,\n        \"exercitation_d\": 38586217.41463369\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "6eef3b72-b685-44fa-b657-dae971d135a6",
+          "name": "Delete flow",
+          "request": {
+            "name": "Delete flow",
+            "description": {
+              "content": "Deletes an existing flow definition by its unique identifier",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "flows",
+                ":flowId"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "flowId",
+                  "description": "(Required) Unique identifier of the flow to delete"
+                },
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{host}}",
+                  "key": "host"
+                },
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{port}}",
+                  "key": "port"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE",
+            "auth": null
+          },
+          "response": [
+            {
+              "id": "5d6a6568-1fbb-4b96-8555-f993ee802ea7",
+              "name": "Flow deleted successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow to delete"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  }
+                ],
+                "method": "DELETE",
+                "body": {}
+              },
+              "status": "No Content",
+              "code": 204,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/plain"
+                }
+              ],
+              "body": "",
+              "cookie": [],
+              "_postman_previewlanguage": "text"
+            },
+            {
+              "id": "da953aae-6009-499c-8a52-48a141cb91d9",
+              "name": "Bad request",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow to delete"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "DELETE",
+                "body": {}
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "e2efb080-e492-466a-a222-12078705d0f9",
+              "name": "Flow cannot be deleted (e.g., it's a default flow or currently in use)",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow to delete"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "DELETE",
+                "body": {}
+              },
+              "status": "Conflict",
+              "code": 409,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "970a15b4-b8f7-4cdf-86cf-e4fe5f6e6f51",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow to delete"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "DELETE",
+                "body": {}
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    },
+    {
+      "id": "57bd39ff-b27a-4654-8299-6d98796c8719",
+      "name": "Flow Versioning",
+      "description": {
+        "content": "",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "a543cdb5-5154-440f-a6fc-ab3e90353bc1",
+          "name": "Get flow version history",
+          "request": {
+            "name": "Get flow version history",
+            "description": {
+              "content": "Retrieves the complete version history of a specific flow.\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "flows",
+                ":flowId",
+                "versions"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "flowId",
+                  "description": "(Required) Unique identifier of the flow"
+                },
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{host}}",
+                  "key": "host"
+                },
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{port}}",
+                  "key": "port"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "response": [
+            {
+              "id": "b6850844-ffd8-4979-b37d-a2ca672a1fd4",
+              "name": "Flow version history retrieved successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId",
+                    "versions"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"totalVersions\": \"<integer>\",\n  \"versions\": [\n    {\n      \"version\": \"<integer>\",\n      \"createdAt\": \"<dateTime>\",\n      \"isActive\": \"<boolean>\"\n    },\n    {\n      \"version\": \"<integer>\",\n      \"createdAt\": \"<dateTime>\",\n      \"isActive\": \"<boolean>\"\n    }\n  ]\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "d1add141-024c-4436-881c-6e1d54d49133",
+              "name": "Flow not found",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId",
+                    "versions"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "1679b7b7-919d-44df-86c1-45d77741e7b9",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId",
+                    "versions"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "1c67c60b-ce26-4793-81d2-d67a18c00cfd",
+          "name": "Get specific flow version",
+          "request": {
+            "name": "Get specific flow version",
+            "description": {
+              "content": "Retrieves a specific version of a flow by version number",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "flows",
+                ":flowId",
+                "versions",
+                ":version"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "flowId",
+                  "description": "(Required) Unique identifier of the flow"
+                },
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<integer>",
+                  "key": "version",
+                  "description": "(Required) Version number to retrieve"
+                },
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{host}}",
+                  "key": "host"
+                },
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{port}}",
+                  "key": "port"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "auth": null
+          },
+          "response": [
+            {
+              "id": "04ee9caa-b2f8-4e41-a937-340938157930",
+              "name": "Flow version retrieved successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId",
+                    "versions",
+                    ":version"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow"
+                    },
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<integer>",
+                      "key": "version",
+                      "description": "(Required) Version number to retrieve"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"<string>\",\n  \"name\": \"<string>\",\n  \"flowType\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"version\": \"<integer>\",\n  \"isActive\": \"<boolean>\",\n  \"nodes\": [\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"do_3\": 56792738.22574416\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    },\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"nostrud_1\": \"ut\",\n        \"cupidatata\": -24234877,\n        \"cupidatatd0\": 85027821\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    }\n  ],\n  \"createdAt\": \"<dateTime>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "2e982c70-98c4-483b-a88b-62c82336f59f",
+              "name": "Flow or version not found",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId",
+                    "versions",
+                    ":version"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow"
+                    },
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<integer>",
+                      "key": "version",
+                      "description": "(Required) Version number to retrieve"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "ffb52cbf-a0d6-4739-87b5-b4ba09e62aa8",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId",
+                    "versions",
+                    ":version"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow"
+                    },
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<integer>",
+                      "key": "version",
+                      "description": "(Required) Version number to retrieve"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "body": {}
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        },
+        {
+          "id": "eae64315-8a28-4dc2-9470-de3c86f27118",
+          "name": "Restore flow to a previous version",
+          "request": {
+            "name": "Restore flow to a previous version",
+            "description": {
+              "content": "Restores a flow to a specific previous version. This creates a new version \nwith the content from the specified version.\n",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "flows",
+                ":flowId",
+                "restore"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "disabled": false,
+                  "type": "any",
+                  "value": "<string>",
+                  "key": "flowId",
+                  "description": "(Required) Unique identifier of the flow"
+                },
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{host}}",
+                  "key": "host"
+                },
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{port}}",
+                  "key": "port"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": null,
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"<integer>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "id": "a0779e50-2e07-4728-a8f7-d8c88d91edb3",
+              "name": "Flow restored successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId",
+                    "restore"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"version\": \"<integer>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"<string>\",\n  \"name\": \"<string>\",\n  \"flowType\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"version\": \"<integer>\",\n  \"isActive\": \"<boolean>\",\n  \"nodes\": [\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"Excepteur59_\": 65884614,\n        \"ad_7f\": 9904059.7646572,\n        \"consecteturf\": -69109627.21024725\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    },\n    {\n      \"id\": \"<string>\",\n      \"type\": \"<string>\",\n      \"layout\": {\n        \"size\": {\n          \"width\": \"<number>\",\n          \"height\": \"<number>\"\n        },\n        \"position\": {\n          \"x\": \"<number>\",\n          \"y\": \"<number>\"\n        }\n      },\n      \"meta\": {\n        \"components\": [\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          },\n          {\n            \"id\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"type\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"label\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"variant\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"required\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"placeholder\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"length\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            },\n            \"components\": {\n              \"value\": \"<Error: Too many levels of nesting to fake this schema>\"\n            }\n          }\n        ]\n      },\n      \"inputs\": [\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        },\n        {\n          \"type\": \"<string>\",\n          \"identifier\": \"<string>\",\n          \"required\": \"<boolean>\",\n          \"ref\": \"<string>\"\n        }\n      ],\n      \"actions\": [\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        },\n        {\n          \"ref\": \"<string>\",\n          \"nextNode\": \"<string>\",\n          \"type\": \"<string>\"\n        }\n      ],\n      \"properties\": {\n        \"nulla_7\": true\n      },\n      \"executor\": {\n        \"name\": \"<string>\"\n      },\n      \"onSuccess\": \"<string>\",\n      \"onFailure\": \"<string>\",\n      \"onIncomplete\": \"<string>\",\n      \"next\": \"<string>\",\n      \"message\": \"<string>\"\n    }\n  ],\n  \"createdAt\": \"<dateTime>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "5afb46a7-3d67-4f4d-919d-1a2522ba8521",
+              "name": "Invalid request",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId",
+                    "restore"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"version\": \"<integer>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "c45d1a02-002c-4b92-bf8c-ff41ae23732f",
+              "name": "Flow or version not found",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId",
+                    "restore"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"version\": \"<integer>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "7fc301b9-b1c5-4e17-9b7d-d13f45d91fb5",
+              "name": "Internal server error",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flows",
+                    ":flowId",
+                    "restore"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "disabled": false,
+                      "type": "any",
+                      "value": "<string>",
+                      "key": "flowId",
+                      "description": "(Required) Unique identifier of the flow"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "description": {
+                      "content": "Added as a part of security scheme: oauth2",
+                      "type": "text/plain"
+                    },
+                    "key": "Authorization",
+                    "value": "<token>"
+                  },
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"version\": \"<integer>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "description": {
+        "content": "",
+        "type": "text/plain"
+      },
+      "type": "any",
+      "value": "localhost",
+      "key": "host"
+    },
+    {
+      "description": {
+        "content": "",
+        "type": "text/plain"
+      },
+      "type": "any",
+      "value": "8090",
+      "key": "port"
+    },
+    {
+      "type": "string",
+      "value": "https://{{host}}:{{port}}",
+      "key": "baseUrl"
+    }
+  ],
+  "auth": {
+    "type": "oauth2",
+    "oauth2": [
+      {
+        "key": "scope",
+        "value": "system"
+      },
+      {
+        "key": "accessTokenUrl",
+        "value": "{{baseUrl}}/oauth2/token"
+      },
+      {
+        "key": "authUrl",
+        "value": "{{baseUrl}}/oauth2/authorize"
+      },
+      {
+        "key": "grant_type",
+        "value": "authorization_code"
+      }
+    ]
+  },
+  "info": {
+    "_postman_id": "327a0e6e-0953-43f8-bbac-b2776ebc10fa",
+    "name": "Flow Management API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": {
+      "content": "This API is used to manage flow definitions such as authentication and registration flows.\n\nFlows are defined using a **node-based graph representation** where each node represents \na specific action or interaction in the flow. Nodes are connected through explicit \nreferences (actions, onSuccess, onFailure) to define the flow logic.\n\n## Flow Types\n- **AUTHENTICATION**: User login flows\n- **REGISTRATION**: User registration/signup flows\n\n## Node Types\n- **START**: Initial node indicating the starting point of the flow. Must be present in all flows.\n- **PROMPT**: Interactive UI node that displays components and collects user input.\n  Contains optional UI metadata for rendering (verbose mode).\n- **TASK_EXECUTION**: Background executor node that performs server-side operations\n  (authentication, authorization, provisioning, etc.). Uses onSuccess/onFailure for navigation.\n  Can optionally have inputs for executors that need user input references.\n- **END**: Terminal node indicating the end of the flow.\n\n## Representation Modes\n- **Verbose Mode**: Includes full UI metadata (components, layouts, labels) for visual flow composer and runtime rendering\n- **Non-Verbose Mode**: Contains only logical flow structure without UI metadata\n\n## Internationalization\nUser-facing text (labels, placeholders, hints, button text, etc.) can be:\n- **i18n keys**: Use the format `{{ t(namespace:key) }}` (e.g., `{{ t(signin:heading.label) }}`)\n- **Plain text**: Any string without the `{{ t() }}` wrapper is treated as literal text\n\nThe frontend resolves i18n keys from language-specific resource bundles based on the \nnamespace and key structure.\n",
+      "type": "text/plain"
+    }
+  }
+}

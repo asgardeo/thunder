@@ -77,7 +77,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) SetupTest() {
 
 func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_NoUserType_SkipsCheck() {
 	ctx := &core.NodeContext{
-		FlowID:      "flow-1",
+		ExecutionID: "flow-1",
 		UserInputs:  map[string]string{"email": "test@example.com"},
 		RuntimeData: map[string]string{},
 	}
@@ -91,8 +91,8 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_NoUserType_Skips
 
 func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_NoConflict_ReturnsComplete() {
 	ctx := &core.NodeContext{
-		FlowID:     "flow-1",
-		UserInputs: map[string]string{"email": "free@example.com", "username": "newuser"},
+		ExecutionID: "flow-1",
+		UserInputs:  map[string]string{"email": "free@example.com", "username": "newuser"},
 		RuntimeData: map[string]string{
 			userTypeKey: testUniquenessUserType,
 		},
@@ -127,8 +127,8 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_AttributeConflic
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
 			ctx := &core.NodeContext{
-				FlowID:     "flow-1",
-				UserInputs: map[string]string{tt.attribute: tt.value},
+				ExecutionID: "flow-1",
+				UserInputs:  map[string]string{tt.attribute: tt.value},
 				RuntimeData: map[string]string{
 					userTypeKey: testUniquenessUserType,
 				},
@@ -155,8 +155,8 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_AttributeConflic
 func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_UniqueAttrNotInInputs_Skipped() {
 	// Schema says "email" is unique, but the user hasn't provided it yet — skip the check.
 	ctx := &core.NodeContext{
-		FlowID:     "flow-1",
-		UserInputs: map[string]string{"username": "newuser"},
+		ExecutionID: "flow-1",
+		UserInputs:  map[string]string{"username": "newuser"},
 		RuntimeData: map[string]string{
 			userTypeKey: testUniquenessUserType,
 		},
@@ -180,8 +180,8 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_UniqueAttrNotInI
 
 func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_SchemaServiceError_ReturnsFailure() {
 	ctx := &core.NodeContext{
-		FlowID:     "flow-1",
-		UserInputs: map[string]string{"email": "test@example.com"},
+		ExecutionID: "flow-1",
+		UserInputs:  map[string]string{"email": "test@example.com"},
 		RuntimeData: map[string]string{
 			userTypeKey: testUniquenessUserType,
 		},
@@ -199,8 +199,8 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_SchemaServiceErr
 
 func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_IdentifyUserSystemError_ReturnsFailure() {
 	ctx := &core.NodeContext{
-		FlowID:     "flow-1",
-		UserInputs: map[string]string{"email": "test@example.com"},
+		ExecutionID: "flow-1",
+		UserInputs:  map[string]string{"email": "test@example.com"},
 		RuntimeData: map[string]string{
 			userTypeKey: testUniquenessUserType,
 		},
@@ -221,8 +221,8 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_IdentifyUserSyst
 
 func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_NoUniqueAttributesInSchema_ReturnsComplete() {
 	ctx := &core.NodeContext{
-		FlowID:     "flow-1",
-		UserInputs: map[string]string{"given_name": "John"},
+		ExecutionID: "flow-1",
+		UserInputs:  map[string]string{"given_name": "John"},
 		RuntimeData: map[string]string{
 			userTypeKey: testUniquenessUserType,
 		},

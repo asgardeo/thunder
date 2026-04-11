@@ -91,10 +91,10 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithToken() {
 
 	expirySeconds := int64(1800) // 30 minutes
 	ctx := EngineContext{
-		FlowID:   "test-flow-id",
-		AppID:    "test-app-id",
-		Verbose:  false,
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow-id",
+		AppID:       "test-app-id",
+		Verbose:     false,
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -137,10 +137,10 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithoutToken() {
 	}
 
 	ctx := EngineContext{
-		FlowID:   "test-flow-id",
-		AppID:    "test-app-id",
-		Verbose:  false,
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow-id",
+		AppID:       "test-app-id",
+		Verbose:     false,
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: false,
 			Token:           "", // No token
@@ -181,9 +181,9 @@ func (s *StoreTestSuite) TestUpdateFlowContext_WithToken() {
 	}
 
 	ctx := EngineContext{
-		FlowID:   "test-flow-id",
-		AppID:    "test-app-id",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow-id",
+		AppID:       "test-app-id",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-456",
@@ -216,9 +216,9 @@ func (s *StoreTestSuite) TestGetFlowContext_WithToken() {
 
 	// Create encrypted token
 	ctx := EngineContext{
-		FlowID:   "test-flow-id",
-		AppID:    "test-app-id",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow-id",
+		AppID:       "test-app-id",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-789",
@@ -264,7 +264,7 @@ func (s *StoreTestSuite) TestGetFlowContext_WithToken() {
 	// Verify
 	s.NoError(err)
 	s.NotNil(result)
-	s.Equal("test-flow-id", result.FlowID)
+	s.Equal("test-flow-id", result.ExecutionID)
 
 	content = s.getContextContent(result)
 	s.True(content.IsAuthenticated)
@@ -318,7 +318,7 @@ func (s *StoreTestSuite) TestGetFlowContext_WithoutToken() {
 	// Verify
 	s.NoError(err)
 	s.NotNil(result)
-	s.Equal("test-flow-id", result.FlowID)
+	s.Equal("test-flow-id", result.ExecutionID)
 
 	content := s.getContextContent(result)
 	s.False(content.IsAuthenticated)
@@ -339,10 +339,10 @@ func (s *StoreTestSuite) TestStoreAndRetrieve_TokenRoundTrip() {
 	mockGraph.On("GetType").Return(common.FlowTypeAuthentication)
 
 	originalCtx := EngineContext{
-		FlowID:   "integration-flow-id",
-		AppID:    "integration-app-id",
-		Verbose:  true,
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "integration-flow-id",
+		AppID:       "integration-app-id",
+		Verbose:     true,
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "integration-user-123",
@@ -385,7 +385,7 @@ func (s *StoreTestSuite) TestStoreAndRetrieve_TokenRoundTrip() {
 	s.NoError(err)
 
 	// Step 4: Verify all data is preserved correctly
-	s.Equal(originalCtx.FlowID, retrievedCtx.FlowID)
+	s.Equal(originalCtx.ExecutionID, retrievedCtx.ExecutionID)
 	s.Equal(originalCtx.AppID, retrievedCtx.AppID)
 	s.Equal(originalCtx.Verbose, retrievedCtx.Verbose)
 	s.Equal(originalCtx.AuthenticatedUser.IsAuthenticated, retrievedCtx.AuthenticatedUser.IsAuthenticated)
@@ -411,9 +411,9 @@ func (s *StoreTestSuite) TestBuildFlowContextFromResultRow_WithToken() {
 	expiryTime := time.Now().Add(30 * time.Minute)
 
 	ctx := EngineContext{
-		FlowID:   "test-flow-id",
-		AppID:    "test-app-id",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow-id",
+		AppID:       "test-app-id",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			Token:      testToken,
 			Attributes: map[string]interface{}{},
@@ -456,9 +456,9 @@ func (s *StoreTestSuite) TestBuildFlowContextFromResultRow_WithByteToken() {
 	expiryTime := time.Now().Add(30 * time.Minute)
 
 	ctx := EngineContext{
-		FlowID:   "test-flow-id",
-		AppID:    "test-app-id",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow-id",
+		AppID:       "test-app-id",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			Token:      testToken,
 			Attributes: map[string]interface{}{},
@@ -525,7 +525,7 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithAvailableAttributes() {
 
 	expirySeconds := int64(1800) // 30 minutes
 	ctx := EngineContext{
-		FlowID:      "test-flow-id",
+		ExecutionID: "test-flow-id",
 		AppID:       "test-app-id",
 		Verbose:     false,
 		FlowType:    common.FlowTypeAuthentication,
@@ -582,9 +582,9 @@ func (s *StoreTestSuite) TestUpdateFlowContext_WithAvailableAttributes() {
 	}
 
 	ctx := EngineContext{
-		FlowID:   "test-flow-id",
-		AppID:    "test-app-id",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow-id",
+		AppID:       "test-app-id",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated:     true,
 			UserID:              "user-456",
@@ -631,9 +631,9 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 
 	// Create serialized available attributes
 	ctx := EngineContext{
-		FlowID:   "test-flow-id",
-		AppID:    "test-app-id",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "test-flow-id",
+		AppID:       "test-app-id",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated:     true,
 			UserID:              "user-789",
@@ -679,7 +679,7 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 	// Verify
 	s.NoError(err)
 	s.NotNil(result)
-	s.Equal("test-flow-id", result.FlowID)
+	s.Equal("test-flow-id", result.ExecutionID)
 
 	content = s.getContextContent(result)
 	s.True(content.IsAuthenticated)

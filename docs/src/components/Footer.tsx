@@ -132,9 +132,9 @@ export default function Footer(): JSX.Element {
             title="Pages"
             links={[
               {label: 'Home', href: '/'},
-              {label: 'Docs', href: '/docs/guides/introduction'},
-              {label: 'APIs', href: '/apis'},
-              {label: 'SDKs', href: '/docs/sdks/overview'},
+              {label: 'Docs', href: '/docs/next/guides/getting-started/what-is-thunder'},
+              {label: 'APIs', href: '/docs/next/apis'},
+              {label: 'SDKs', href: '/docs/next/sdks/overview'},
             ]}
           />
 
@@ -142,7 +142,7 @@ export default function Footer(): JSX.Element {
           <FooterColumn
             title="Resources"
             links={[
-              {label: 'Community', href: '/docs/community/overview'},
+              {label: 'Community', href: '/docs/next/community/overview'},
               {label: 'Releases', href: 'https://github.com/asgardeo/thunder/releases'},
               {label: 'Discussions', href: 'https://github.com/asgardeo/thunder/discussions'},
               {label: 'Report an Issue', href: 'https://github.com/asgardeo/thunder/issues'},

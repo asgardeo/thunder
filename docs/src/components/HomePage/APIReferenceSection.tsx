@@ -56,7 +56,7 @@ export default function APIReferenceSection(): JSX.Element {
               our comprehensive REST APIs. Manage users, applications, flows, and more programmatically.
             </Typography>
             <Link
-              href="/apis"
+              href="/docs/next/apis"
               style={{
                 color: '#FF8C00',
                 fontWeight: 500,
@@ -69,7 +69,7 @@ export default function APIReferenceSection(): JSX.Element {
             <Stack spacing={2} sx={{mt: 5, textAlign: 'left'}}>
               <Box>
                 <Link
-                  href="/api/application.yaml"
+                  href="pathname:///api/next/combined.yaml"
                   style={{
                     color: isDark ? '#ffffff' : '#1a1a2e',
                     fontWeight: 600,
@@ -103,7 +103,7 @@ export default function APIReferenceSection(): JSX.Element {
 
               <Box>
                 <Link
-                  href="/api/flow-management.yaml"
+                  href="pathname:///api/next/combined.yaml"
                   style={{
                     color: isDark ? '#ffffff' : '#1a1a2e',
                     fontWeight: 600,
@@ -137,7 +137,7 @@ export default function APIReferenceSection(): JSX.Element {
 
               <Box>
                 <Link
-                  href="/api/user.yaml"
+                  href="pathname:///api/next/combined.yaml"
                   style={{
                     color: isDark ? '#ffffff' : '#1a1a2e',
                     fontWeight: 600,

@@ -95,7 +95,7 @@ func newAuthAssertExecutor(
 
 // Execute executes the authentication assertion logic.
 func (a *authAssertExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := a.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing authentication assertion executor")
 
 	execResp := &common.ExecutorResponse{
@@ -263,7 +263,7 @@ func (a *authAssertExecutor) extractAuthenticatorReferences(
 // getRequiredUserAttributes determines the list of user attribute keys that should be included in the
 // assertion based on runtime and application configuration.
 func (a *authAssertExecutor) getRequiredUserAttributes(ctx *core.NodeContext) (userAttributes []string) {
-	logger := a.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := a.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	// Check if consent was recorded in this flow. If recorded, we should only include consented attributes
 	// We check RuntimeKeyConsentID to determine if the consent executor ran and recorded a consent.

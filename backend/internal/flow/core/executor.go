@@ -93,7 +93,7 @@ func (e *executor) GetPrerequisites() []common.Input {
 func (e *executor) HasRequiredInputs(ctx *NodeContext, execResp *common.ExecutorResponse) bool {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "Executor"),
 		log.String(log.LoggerKeyExecutorName, e.GetName()),
-		log.String(log.LoggerKeyFlowID, ctx.FlowID))
+		log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Checking inputs for the executor")
 
 	requiredData := e.GetRequiredInputs(ctx)
@@ -114,7 +114,7 @@ func (e *executor) HasRequiredInputs(ctx *NodeContext, execResp *common.Executor
 func (e *executor) ValidatePrerequisites(ctx *NodeContext, execResp *common.ExecutorResponse) bool {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "Executor"),
 		log.String(log.LoggerKeyExecutorName, e.GetName()),
-		log.String(log.LoggerKeyFlowID, ctx.FlowID))
+		log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	prerequisites := e.GetPrerequisites()
 	if len(prerequisites) == 0 {
@@ -185,7 +185,7 @@ func (e *executor) appendMissingInputs(ctx *NodeContext, execResp *common.Execut
 	requiredInputs []common.Input) bool {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "Executor"),
 		log.String(log.LoggerKeyExecutorName, e.GetName()),
-		log.String(log.LoggerKeyFlowID, ctx.FlowID))
+		log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	requireData := false
 	for _, input := range requiredInputs {

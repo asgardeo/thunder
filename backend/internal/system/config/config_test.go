@@ -588,6 +588,111 @@ server:
 	assert.Equal(suite.T(), "test-host", config.Server.Hostname)
 }
 
+func (suite *ConfigTestSuite) TestLoadConfig_SecurityValidation() {
+	// LoadConfig must surface validation errors from SecurityConfig.Validate, not just
+	// from individual fields. SecurityConfig.Validate has two error sources — its own
+	// JWKSCacheTTL check and the delegated TrustedIssuer.Validate — and both must
+	// propagate out of LoadConfig. A positive case ensures a fully-valid security
+	// block loads end-to-end without false positives.
+	tests := []struct {
+		name        string
+		content     string
+		expectError bool
+		errSubstr   string
+	}{
+		{
+			name: "NegativeJWKSCacheTTL",
+			content: `
+server:
+  hostname: "test-host"
+  port: 8080
+  security:
+    jwks_cache_ttl: -1
+`,
+			expectError: true,
+			errSubstr:   "jwks_cache_ttl",
+		},
+		{
+			// Trusted issuer is configured (issuer set) but jwks_url is missing —
+			// TrustedIssuer.Validate returns an error. SecurityConfig.Validate must
+			// delegate to it, and LoadConfig must surface the error.
+			name: "TrustedIssuerMissingJWKSURL",
+			content: `
+server:
+  hostname: "test-host"
+  port: 8080
+  security:
+    trusted_issuer:
+      issuer: "https://auth.example.com"
+      audience: "https://thunder.example.com"
+`,
+			expectError: true,
+			errSubstr:   "trusted_issuer.jwks_url",
+		},
+		{
+			// Trusted issuer set with insecure http://non-localhost JWKS URL — must
+			// be rejected by TrustedIssuer.Validate's HTTPS-only enforcement.
+			name: "TrustedIssuerInsecureJWKSURL",
+			content: `
+server:
+  hostname: "test-host"
+  port: 8080
+  security:
+    trusted_issuer:
+      issuer: "https://auth.example.com"
+      jwks_url: "http://auth.example.com/oauth2/jwks"
+      audience: "https://thunder.example.com"
+`,
+			expectError: true,
+			errSubstr:   "https",
+		},
+		{
+			// Fully valid security block with non-zero TTL and a properly configured
+			// trusted issuer — must load without error and round-trip the values.
+			name: "ValidConfig",
+			content: `
+server:
+  hostname: "test-host"
+  port: 8080
+  security:
+    jwks_cache_ttl: 600
+    trusted_issuer:
+      issuer: "https://auth.example.com"
+      jwks_url: "https://auth.example.com/oauth2/jwks"
+      audience: "https://thunder.example.com"
+`,
+			expectError: false,
+		},
+	}
+
+	for _, tc := range tests {
+		suite.Run(tc.name, func() {
+			tempDir := suite.T().TempDir()
+			userFile := suite.createTempFile(tempDir, "security-validation*.yaml", tc.content)
+
+			cfg, err := LoadConfig(userFile, "", tempDir)
+			if tc.expectError {
+				assert.Error(suite.T(), err)
+				assert.Nil(suite.T(), cfg)
+				if tc.errSubstr != "" {
+					assert.Contains(suite.T(), err.Error(), tc.errSubstr)
+				}
+			} else {
+				assert.NoError(suite.T(), err)
+				assert.NotNil(suite.T(), cfg)
+				// Round-trip checks: the values we set must actually reach the loaded config.
+				assert.Equal(suite.T(), 600, cfg.Server.SecurityConfig.JWKSCacheTTL)
+				assert.Equal(suite.T(), "https://auth.example.com",
+					cfg.Server.SecurityConfig.TrustedIssuer.Issuer)
+				assert.Equal(suite.T(), "https://auth.example.com/oauth2/jwks",
+					cfg.Server.SecurityConfig.TrustedIssuer.JWKSURL)
+				assert.Equal(suite.T(), "https://thunder.example.com",
+					cfg.Server.SecurityConfig.TrustedIssuer.Audience)
+			}
+		})
+	}
+}
+
 func (suite *ConfigTestSuite) TestLoadConfig_InvalidYAML() {
 	// Test YAML decode error - using a simple syntax error
 	invalidYAMLContent := "invalid: yaml: content"
@@ -735,6 +840,137 @@ gate_client:
 	assert.Equal(suite.T(), "/newapp", config5.GateClient.Path)
 	assert.Equal(suite.T(), "/newapp/signin", config5.GateClient.LoginPath)
 	assert.Equal(suite.T(), "/newapp/error", config5.GateClient.ErrorPath)
+}
+
+func (suite *ConfigTestSuite) TestTrustedIssuerConfig_IsConfigured() {
+	assert.False(suite.T(), (&TrustedIssuerConfig{}).IsConfigured())
+	assert.False(suite.T(), (&TrustedIssuerConfig{
+		JWKSURL:  "https://a/jwks",
+		Audience: "https://b",
+	}).IsConfigured(),
+		"jwks_url and audience without issuer should not activate the feature")
+	assert.True(suite.T(), (&TrustedIssuerConfig{Issuer: "https://a"}).IsConfigured())
+}
+
+func (suite *ConfigTestSuite) TestTrustedIssuerConfig_Validate_NotConfigured() {
+	// Empty config — feature is off, no validation errors.
+	assert.NoError(suite.T(), (&TrustedIssuerConfig{}).Validate())
+	// jwks_url/audience set without issuer is also "not configured" and silently ignored.
+	cfg := &TrustedIssuerConfig{
+		JWKSURL:  "https://auth.example.com/jwks",
+		Audience: "https://thunder.example.com",
+	}
+	assert.NoError(suite.T(), cfg.Validate())
+}
+
+func (suite *ConfigTestSuite) TestTrustedIssuerConfig_Validate_PartiallyConfigured_MissingJWKSURL() {
+	cfg := &TrustedIssuerConfig{
+		Issuer:   "https://auth.example.com",
+		Audience: "https://thunder.example.com",
+	}
+	err := cfg.Validate()
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "jwks_url")
+}
+
+func (suite *ConfigTestSuite) TestTrustedIssuerConfig_Validate_PartiallyConfigured_MissingAudience() {
+	cfg := &TrustedIssuerConfig{
+		Issuer:  "https://auth.example.com",
+		JWKSURL: "https://auth.example.com/jwks",
+	}
+	err := cfg.Validate()
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "audience")
+}
+
+func (suite *ConfigTestSuite) TestTrustedIssuerConfig_Validate_HTTPS() {
+	cfg := &TrustedIssuerConfig{
+		Issuer:   "https://auth.example.com",
+		JWKSURL:  "https://auth.example.com/.well-known/jwks.json",
+		Audience: "https://thunder.example.com",
+	}
+	assert.NoError(suite.T(), cfg.Validate())
+}
+
+func (suite *ConfigTestSuite) TestTrustedIssuerConfig_Validate_HTTPRejected() {
+	cfg := &TrustedIssuerConfig{
+		Issuer:   "https://auth.example.com",
+		JWKSURL:  "http://auth.example.com/jwks",
+		Audience: "https://thunder.example.com",
+	}
+	err := cfg.Validate()
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "must use https")
+}
+
+func (suite *ConfigTestSuite) TestTrustedIssuerConfig_Validate_HTTPLocalhostAllowed() {
+	hosts := []string{
+		"http://localhost:8090/oauth2/jwks",
+		"http://127.0.0.1:8090/oauth2/jwks",
+		"http://[::1]:8090/oauth2/jwks",
+	}
+	for _, h := range hosts {
+		cfg := &TrustedIssuerConfig{
+			Issuer:   "https://auth.example.com",
+			JWKSURL:  h,
+			Audience: "https://thunder.example.com",
+		}
+		assert.NoError(suite.T(), cfg.Validate(), "expected %s to be allowed", h)
+	}
+}
+
+func (suite *ConfigTestSuite) TestTrustedIssuerConfig_Validate_InvalidScheme() {
+	cfg := &TrustedIssuerConfig{
+		Issuer:   "https://auth.example.com",
+		JWKSURL:  "ftp://auth.example.com/jwks",
+		Audience: "https://thunder.example.com",
+	}
+	err := cfg.Validate()
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "https")
+}
+
+func (suite *ConfigTestSuite) TestTrustedIssuerConfig_Validate_InvalidURL() {
+	cfg := &TrustedIssuerConfig{
+		Issuer:   "https://auth.example.com",
+		JWKSURL:  "://bad-url",
+		Audience: "https://thunder.example.com",
+	}
+	err := cfg.Validate()
+	assert.Error(suite.T(), err)
+}
+
+func (suite *ConfigTestSuite) TestSecurityConfig_Validate_NegativeJWKSCacheTTL() {
+	cfg := &SecurityConfig{
+		JWKSCacheTTL: -1,
+	}
+	err := cfg.Validate()
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "jwks_cache_ttl")
+}
+
+func (suite *ConfigTestSuite) TestSecurityConfig_Validate_ZeroJWKSCacheTTL() {
+	cfg := &SecurityConfig{
+		JWKSCacheTTL: 0,
+	}
+	err := cfg.Validate()
+	assert.NoError(suite.T(), err)
+}
+
+func (suite *ConfigTestSuite) TestSecurityConfig_Validate_DelegatesToTrustedIssuer() {
+	// A security config with a misconfigured trusted issuer must surface that error
+	// through SecurityConfig.Validate, since the parent is now the entry point.
+	cfg := &SecurityConfig{
+		JWKSCacheTTL: 300,
+		TrustedIssuer: TrustedIssuerConfig{
+			Issuer:   "https://auth.example.com",
+			JWKSURL:  "", // missing, should fail validation
+			Audience: "https://thunder.example.com",
+		},
+	}
+	err := cfg.Validate()
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "trusted_issuer.jwks_url")
 }
 
 func (suite *ConfigTestSuite) createTempFile(dir, pattern, content string) string {

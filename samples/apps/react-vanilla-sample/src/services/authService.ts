@@ -367,18 +367,18 @@ export const initiateNativeAuthFlowWithData = async (flowType: 'LOGIN' | 'REGIST
 /**
  * Submits the user's selected authentication option when multiple options are available.
  * 
- * @param {string} flowId - The flow ID received from the initiateNativeAuth response.
+ * @param {string} executionId - The flow ID received from the initiateNativeAuth response.
  * @param {string} actionId - The ID of the selected authentication action.
  * @param {object} inputs - Optional input data to submit with the decision.
  * @returns {Promise<object>} - A promise that resolves to the response data from the server.
  */
-export const submitAuthDecision = async (flowId: string, actionId: string, inputs?: Record<string, unknown>) => {
+export const submitAuthDecision = async (executionId: string, actionId: string, inputs?: Record<string, unknown>) => {
     const headers = {
         'Content-Type': 'application/json'
     };
 
     const data: Record<string, unknown> = {
-        flowId: flowId,
+        executionId: executionId,
         action: actionId
     };
 
@@ -407,13 +407,13 @@ export const submitAuthDecision = async (flowId: string, actionId: string, input
 /**
  * Submits the native authentication form data to the server.
  * 
- * @param {string} flowId - The flow ID received from the initiateNativeAuth response.
+ * @param {string} executionId - The flow ID received from the initiateNativeAuth response.
  * @param {object} payload - The payload containing the form data or other required information.
  * @param {string} action - Optional action ref to include in the request.
  * @returns {Promise<object>} - A promise that resolves to the response data from the server.
  */
 export const submitNativeAuth = async (
-    flowId: string,
+    executionId: string,
     payload: Record<string, unknown> | NativeAuthSubmitPayload,
     action?: string
 ) => {
@@ -422,7 +422,7 @@ export const submitNativeAuth = async (
     };
 
     const data: Record<string, unknown> = {
-        flowId: flowId
+        executionId: executionId
     };
 
     // Include action if provided

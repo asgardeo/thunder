@@ -1,0 +1,307 @@
+{
+  "item": [
+    {
+      "id": "3aded318-bd07-47bc-98df-21b3140c687b",
+      "name": "Execute a flow step",
+      "description": {
+        "content": "",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "691ef329-9b82-4db4-b0aa-6418e4b07f96",
+          "name": "Execute a flow step",
+          "request": {
+            "name": "Execute a flow step",
+            "description": {
+              "content": "Execute a step in an authentication flow.",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "flow",
+                "execute"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{host}}",
+                  "key": "host"
+                },
+                {
+                  "description": {
+                    "content": "",
+                    "type": "text/plain"
+                  },
+                  "type": "any",
+                  "value": "{{port}}",
+                  "key": "port"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "auth": null,
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"applicationId\": \"<string>\",\n  \"flowType\": \"<string>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "id": "edd6c88e-13c5-413e-88d3-c11f6b52f318",
+              "name": "Flow step executed successfully",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flow",
+                    "execute"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"applicationId\": \"<string>\",\n  \"flowType\": \"<string>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"flowId\": \"<string>\",\n  \"flowStatus\": \"<string>\",\n  \"stepId\": \"<string>\",\n  \"type\": \"<string>\",\n  \"data\": {\n    \"inputs\": [\n      {\n        \"ref\": \"<string>\",\n        \"identifier\": \"<string>\",\n        \"type\": \"<string>\",\n        \"required\": \"<boolean>\"\n      },\n      {\n        \"ref\": \"<string>\",\n        \"identifier\": \"<string>\",\n        \"type\": \"<string>\",\n        \"required\": \"<boolean>\"\n      }\n    ],\n    \"redirectURL\": \"<string>\",\n    \"additionalData\": {\n      \"dolorc\": \"<string>\",\n      \"tempor9\": \"<string>\",\n      \"Ut_6_\": \"<string>\",\n      \"consequat_a34\": \"<string>\",\n      \"eaa1\": \"<string>\"\n    },\n    \"actions\": [\n      {\n        \"ref\": \"<string>\",\n        \"nextNode\": \"<string>\",\n        \"type\": \"<string>\"\n      },\n      {\n        \"ref\": \"<string>\",\n        \"nextNode\": \"<string>\",\n        \"type\": \"<string>\"\n      }\n    ],\n    \"meta\": \"<object>\"\n  }\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "432ec7cc-3f06-43c4-87dd-03914dfaff38",
+              "name": "Bad Request: The request body is malformed or contains invalid data",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flow",
+                    "execute"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"applicationId\": \"<string>\",\n  \"flowType\": \"<string>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "id": "067e4bd7-d746-478f-8d6d-327a0fa46a83",
+              "name": "Internal Server Error: An unexpected error occurred while processing the request",
+              "originalRequest": {
+                "url": {
+                  "path": [
+                    "flow",
+                    "execute"
+                  ],
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "query": [],
+                  "variable": [
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{host}}",
+                      "key": "host"
+                    },
+                    {
+                      "description": {
+                        "content": "",
+                        "type": "text/plain"
+                      },
+                      "type": "any",
+                      "value": "{{port}}",
+                      "key": "port"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"applicationId\": \"<string>\",\n  \"flowType\": \"<string>\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+              "cookie": [],
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          }
+        }
+      ],
+      "event": []
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "description": {
+        "content": "",
+        "type": "text/plain"
+      },
+      "type": "any",
+      "value": "localhost",
+      "key": "host"
+    },
+    {
+      "description": {
+        "content": "",
+        "type": "text/plain"
+      },
+      "type": "any",
+      "value": "8090",
+      "key": "port"
+    },
+    {
+      "type": "string",
+      "value": "https://{{host}}:{{port}}",
+      "key": "baseUrl"
+    }
+  ],
+  "info": {
+    "_postman_id": "cdb3e0d6-0b0f-4331-a5e4-e0d9ca89f8eb",
+    "name": "Flow Execution API for App Native Authentication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": {
+      "content": "This API is used to execute app native authentication flows.",
+      "type": "text/plain"
+    }
+  }
+}

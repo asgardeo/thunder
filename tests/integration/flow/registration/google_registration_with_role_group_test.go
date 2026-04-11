@@ -437,7 +437,7 @@ func (ts *GoogleRegistrationGroupRoleTestSuite) TestGoogleRegistrationWithGroupA
 	// Verify flow status and type
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().Equal("REDIRECTION", flowStep.Type, "Expected flow type to be REDIRECT")
-	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
+	ts.Require().NotEmpty(flowStep.ExecutionID, "Execution ID should not be empty")
 
 	redirectURLStr := flowStep.Data.RedirectURL
 	ts.Require().NotEmpty(redirectURLStr, "Redirect URL should not be empty")
@@ -449,7 +449,7 @@ func (ts *GoogleRegistrationGroupRoleTestSuite) TestGoogleRegistrationWithGroupA
 
 	// Step 3: Complete the flow
 	inputs := map[string]string{"code": authCode}
-	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "")
+	completeFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "")
 	ts.Require().NoError(err, "Failed to complete flow")
 
 	// Verify flow completion

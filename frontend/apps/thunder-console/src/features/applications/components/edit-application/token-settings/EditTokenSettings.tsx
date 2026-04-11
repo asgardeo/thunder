@@ -18,11 +18,11 @@
 
 import {useAsgardeo} from '@asgardeo/react';
 import {zodResolver} from '@hookform/resolvers/zod';
-import {useLogger} from '@thunder/logger';
 import {useConfig} from '@thunder/contexts';
+import {useLogger} from '@thunder/logger';
 import {Stack} from '@wso2/oxygen-ui';
 import {useState, useEffect, useMemo, useRef} from 'react';
-import {useForm} from 'react-hook-form';
+import {useForm, useWatch} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 import {z} from 'zod';
 import ScopeSection from './ScopeSection';
@@ -51,21 +51,24 @@ interface EditTokenSettingsProps {
    * @param value - The new value for the field
    */
   onFieldChange: (field: keyof Application, value: unknown) => void;
+  onValidationChange?: (hasErrors: boolean) => void;
 }
 
-const createTokenConfigSchema = (t: (key: string) => string) =>
-  z.object({
-    validityPeriod: z.number().min(1, t('applications:edit.token.validity.error')),
-    accessTokenValidity: z.number().min(1, t('applications:edit.token.validity.error')),
-    idTokenValidity: z.number().min(1, t('applications:edit.token.validity.error')),
+const createTokenConfigSchema = (t: (key: string) => string) => {
+  const validityField = z
+    .number({error: t('applications:edit.token.validity.error')})
+    .min(1, t('applications:edit.token.validity.error'));
+
+  return z.object({
+    validityPeriod: validityField,
+    accessTokenValidity: validityField,
+    idTokenValidity: validityField,
   });
+};
 
 type TokenConfigFormData = z.infer<ReturnType<typeof createTokenConfigSchema>>;
 
 type TokenAttributeScope = 'shared' | 'access' | 'id' | 'userinfo';
-type OAuthTokenAttributeScope = Exclude<TokenAttributeScope, 'shared'>;
-
-const OAUTH_TOKEN_SCOPES: OAuthTokenAttributeScope[] = ['access', 'id', 'userinfo'];
 
 const createEmptyAttributeSetState = (): Record<TokenAttributeScope, Set<string>> => ({
   shared: new Set(),
@@ -112,13 +115,13 @@ export default function EditTokenSettings({
   application,
   oauth2Config = undefined,
   onFieldChange,
+  onValidationChange = undefined,
 }: EditTokenSettingsProps) {
   const logger = useLogger('EditTokenSettings');
   const {t} = useTranslation();
   const {http} = useAsgardeo();
   const {getServerUrl} = useConfig();
 
-  const applyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [userSchemas, setUserSchemas] = useState<ApiUserSchema[]>([]);
 
   const {data: userTypesData, isLoading: userTypesLoading} = useGetUserTypes();
@@ -155,9 +158,8 @@ export default function EditTokenSettings({
 
   const {
     control,
-    formState: {errors},
-    setValue,
-    watch,
+    trigger,
+    formState: {errors, isValid},
   } = useForm<TokenConfigFormData>({
     resolver: zodResolver(tokenConfigSchema),
     mode: 'onChange',
@@ -168,95 +170,79 @@ export default function EditTokenSettings({
     },
   });
 
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const validityPeriod = watch('validityPeriod');
-  const accessTokenValidity = watch('accessTokenValidity');
-  const idTokenValidity = watch('idTokenValidity');
+  const [validityPeriod, accessTokenValidity, idTokenValidity] = useWatch({
+    control,
+    name: ['validityPeriod', 'accessTokenValidity', 'idTokenValidity'],
+  });
 
-  /**
-   * Sync form values when the OAuth2 configuration or application token configuration changes.
-   */
   useEffect(() => {
-    if (isOAuthMode) {
-      setValue('accessTokenValidity', oauth2Config?.token?.accessToken?.validityPeriod ?? 3600);
-      setValue('idTokenValidity', oauth2Config?.token?.idToken?.validityPeriod ?? 3600);
-    } else {
-      setValue('validityPeriod', oauth2Config?.token?.validityPeriod ?? application.assertion?.validityPeriod ?? 3600);
-    }
-  }, [isOAuthMode, oauth2Config, application.assertion?.validityPeriod, setValue]);
+    onValidationChange?.(!isValid);
+  }, [isValid, onValidationChange]);
 
-  /**
-   * Effect to sync form changes back to the parent component.
-   */
+  // Refs to read latest config/application inside the validity effect without
+  // adding them as dependencies (which would cause infinite re-trigger loops).
+  const oauth2ConfigRef = useRef(oauth2Config);
+  const applicationRef = useRef(application);
+  const isFirstRenderRef = useRef(true);
+
   useEffect(() => {
-    if (isOAuthMode && oauth2Config) {
-      const currentAccessTokenValidity = oauth2Config.token?.accessToken?.validityPeriod ?? 3600;
-      const currentIdTokenValidity = oauth2Config.token?.idToken?.validityPeriod ?? 3600;
+    oauth2ConfigRef.current = oauth2Config;
+  }, [oauth2Config]);
 
-      if (accessTokenValidity === currentAccessTokenValidity && idTokenValidity === currentIdTokenValidity) {
-        return;
-      }
+  useEffect(() => {
+    applicationRef.current = application;
+  }, [application]);
 
-      // OAuth mode: update separate access and ID token configs
-      const updatedConfig = {
-        ...oauth2Config,
-        token: {
-          ...oauth2Config.token,
-          accessToken: {
-            ...oauth2Config.token?.accessToken,
-            validityPeriod: accessTokenValidity,
-          },
-          idToken: {
-            ...oauth2Config.token?.idToken,
-            validityPeriod: idTokenValidity,
-          },
-        },
-      };
-
-      const updatedInboundAuth = application.inboundAuthConfig?.map((config) => {
-        if (config.type === 'oauth2') {
-          return {...config, config: updatedConfig};
-        }
-
-        return config;
-      });
-
-      onFieldChange('inboundAuthConfig', updatedInboundAuth);
-    } else if (!isOAuthMode) {
-      const currentValidityPeriod =
-        oauth2Config?.token?.validityPeriod ?? application.assertion?.validityPeriod ?? 3600;
-
-      if (validityPeriod === currentValidityPeriod) {
-        return;
-      }
-
-      // Native mode: update root-level assertion config
-      const updatedAssertion = {
-        ...application.assertion,
-        validityPeriod,
-      };
-
-      onFieldChange('assertion', updatedAssertion);
+  useEffect(() => {
+    if (isFirstRenderRef.current) {
+      isFirstRenderRef.current = false;
+      return;
     }
-  }, [
-    validityPeriod,
-    accessTokenValidity,
-    idTokenValidity,
-    isOAuthMode,
-    oauth2Config,
-    application.inboundAuthConfig,
-    application.assertion,
-    onFieldChange,
-  ]);
+
+    let cancelled = false;
+
+    const applyIfValid = async () => {
+      const valid = await trigger();
+      if (cancelled || !valid) return;
+
+      if (isOAuthMode) {
+        const config = oauth2ConfigRef.current;
+        const updatedConfig = {
+          ...config,
+          token: {
+            ...config?.token,
+            accessToken: {
+              ...config?.token?.accessToken,
+              validityPeriod: accessTokenValidity,
+            },
+            idToken: {
+              ...config?.token?.idToken,
+              validityPeriod: idTokenValidity,
+            },
+          },
+        };
+
+        const updatedInboundAuth = applicationRef.current.inboundAuthConfig?.map((c) =>
+          c.type === 'oauth2' ? {...c, config: updatedConfig} : c,
+        );
+        onFieldChange('inboundAuthConfig', updatedInboundAuth);
+      } else {
+        onFieldChange('assertion', {...applicationRef.current.assertion, validityPeriod});
+      }
+    };
+
+    applyIfValid().catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [validityPeriod, accessTokenValidity, idTokenValidity, trigger, isOAuthMode, onFieldChange]);
 
   /**
    * Fetch user schemas for all allowed user types
    */
   useEffect(() => {
-    if (schemaIds.length === 0) {
-      setUserSchemas([]);
-      return;
-    }
+    if (schemaIds.length === 0) return;
 
     const fetchSchemas = async () => {
       const serverUrl = getServerUrl();
@@ -335,9 +321,6 @@ export default function EditTokenSettings({
     return oauth2Config?.token?.userAttributes ?? application.assertion?.userAttributes ?? [];
   }, [isOAuthMode, oauth2Config, application]);
 
-  const [isUserInfoCustomAttributes, setIsUserInfoCustomAttributes] = useState<boolean>(false);
-  const [currentUserInfoAttributes, setCurrentUserInfoAttributes] = useState<string[]>([]);
-
   const currentAccessTokenAttributes = useMemo(
     () => oauth2Config?.token?.accessToken?.userAttributes ?? [],
     [oauth2Config],
@@ -345,37 +328,23 @@ export default function EditTokenSettings({
 
   const currentIdTokenAttributes = useMemo(() => oauth2Config?.token?.idToken?.userAttributes ?? [], [oauth2Config]);
 
-  // Initialize userinfoEnabled based on config presence and difference from ID token
-  useEffect(() => {
-    if (!isOAuthMode || !oauth2Config) return;
+  const currentUserInfoAttributes = useMemo(() => {
+    if (!isOAuthMode || !oauth2Config) return [];
 
+    return oauth2Config.userInfo?.userAttributes ?? oauth2Config.token?.idToken?.userAttributes ?? [];
+  }, [isOAuthMode, oauth2Config]);
+
+  const isUserInfoCustomAttributes = useMemo(() => {
+    if (!isOAuthMode || !oauth2Config?.userInfo) return false;
+
+    const userInfoAttrs = oauth2Config.userInfo.userAttributes ?? [];
     const idTokenAttrs = oauth2Config.token?.idToken?.userAttributes ?? [];
 
-    const userInfoConfig = oauth2Config.userInfo;
-
-    if (userInfoConfig) {
-      const userInfoAttrs = userInfoConfig.userAttributes || [];
-      const idTokenAttrsRef = idTokenAttrs || [];
-      setCurrentUserInfoAttributes(userInfoAttrs);
-      // Enable toggle only if attributes differ from ID token attributes
-      const isDifferent = !areAttributesEqual(userInfoAttrs, idTokenAttrsRef);
-      setIsUserInfoCustomAttributes(isDifferent);
-    } else {
-      // If userInfo is undefined, fallback logic applies, so toggle is OFF
-      setIsUserInfoCustomAttributes(false);
-      setCurrentUserInfoAttributes(idTokenAttrs);
-    }
-  }, [isOAuthMode, oauth2Config]); // Run when config structure changes
+    return !areAttributesEqual(userInfoAttrs, idTokenAttrs);
+  }, [isOAuthMode, oauth2Config]);
 
   const handleToggleUserInfo = (checked: boolean) => {
-    setIsUserInfoCustomAttributes(checked);
-
     if (!checked && activeTokenType === 'userinfo') {
-      // Cancel any pending changes when disabling explicit configuration
-      if (applyTimeoutRef.current) {
-        clearTimeout(applyTimeoutRef.current);
-        applyTimeoutRef.current = null;
-      }
       setPendingAdditionsByToken((prev) => ({...prev, userinfo: new Set()}));
       setPendingRemovalsByToken((prev) => ({...prev, userinfo: new Set()}));
       setHighlightedAttributesByToken((prev) => ({...prev, userinfo: new Set()}));
@@ -384,9 +353,6 @@ export default function EditTokenSettings({
     if (checked) {
       // When enabling, start with ID token attributes if current UserInfo attrs are empty/undefined
       if (!oauth2Config?.userInfo) {
-        setCurrentUserInfoAttributes([...currentIdTokenAttributes]);
-
-        // Update config immediately to initialize the structure
         const updatedConfig = {
           ...oauth2Config,
           userInfo: {
@@ -443,243 +409,132 @@ export default function EditTokenSettings({
     onFieldChange('inboundAuthConfig', updatedInboundAuth);
   };
 
-  /**
-   * Effect to apply pending additions and removals after a debounce period.
-   */
-  useEffect(() => {
-    const hasPendingChanges =
-      Object.values(pendingAdditionsByToken).some((set) => set.size > 0) ||
-      Object.values(pendingRemovalsByToken).some((set) => set.size > 0);
-
-    if (!hasPendingChanges) {
-      return undefined;
-    }
-
-    // Clear existing timeout
-    if (applyTimeoutRef.current) {
-      clearTimeout(applyTimeoutRef.current);
-    }
-
-    // Set new timeout to apply changes
-    applyTimeoutRef.current = setTimeout(() => {
-      if (isOAuthMode && oauth2Config) {
-        let updatedConfig = oauth2Config;
-        let hasConfigChanges = false;
-
-        const currentAttributesByToken: Record<OAuthTokenAttributeScope, string[]> = {
-          access: currentAccessTokenAttributes,
-          id: currentIdTokenAttributes,
-          userinfo: currentUserInfoAttributes,
-        };
-
-        OAUTH_TOKEN_SCOPES.forEach((tokenType) => {
-          const additionsArray = Array.from(pendingAdditionsByToken[tokenType]);
-          const removalsArray = Array.from(pendingRemovalsByToken[tokenType]);
-
-          if (additionsArray.length === 0 && removalsArray.length === 0) {
-            return;
-          }
-
-          const currentAttrs = currentAttributesByToken[tokenType];
-          const nextAttrs = [...currentAttrs, ...additionsArray.filter((attr) => !currentAttrs.includes(attr))].filter(
-            (attr) => !removalsArray.includes(attr),
-          );
-
-          if (areAttributesEqual(nextAttrs, currentAttrs)) {
-            return;
-          }
-
-          hasConfigChanges = true;
-
-          if (tokenType === 'access') {
-            const currentAccessConfig = updatedConfig.token?.accessToken ?? {
-              validityPeriod: accessTokenValidity,
-              userAttributes: currentAccessTokenAttributes,
-            };
-            const currentIdConfig = updatedConfig.token?.idToken ?? {
-              validityPeriod: idTokenValidity,
-              userAttributes: currentIdTokenAttributes,
-            };
-
-            updatedConfig = {
-              ...updatedConfig,
-              token: {
-                accessToken: {
-                  ...currentAccessConfig,
-                  userAttributes: nextAttrs,
-                },
-                idToken: currentIdConfig,
-              },
-            };
-          } else if (tokenType === 'id') {
-            const currentAccessConfig = updatedConfig.token?.accessToken ?? {
-              validityPeriod: accessTokenValidity,
-              userAttributes: currentAccessTokenAttributes,
-            };
-            const currentIdConfig = updatedConfig.token?.idToken ?? {
-              validityPeriod: idTokenValidity,
-              userAttributes: currentIdTokenAttributes,
-            };
-
-            updatedConfig = {
-              ...updatedConfig,
-              token: {
-                accessToken: currentAccessConfig,
-                idToken: {
-                  ...currentIdConfig,
-                  userAttributes: nextAttrs,
-                },
-              },
-            };
-          } else {
-            updatedConfig = {
-              ...updatedConfig,
-              userInfo: {
-                userAttributes: nextAttrs,
-              },
-            };
-          }
-        });
-
-        if (hasConfigChanges) {
-          const updatedInboundAuth = application.inboundAuthConfig?.map((config) => {
-            if (config.type === 'oauth2') {
-              return {...config, config: updatedConfig};
-            }
-
-            return config;
-          });
-
-          onFieldChange('inboundAuthConfig', updatedInboundAuth);
-        }
-
-        return;
-      }
-
-      const sharedAdditions = Array.from(pendingAdditionsByToken.shared);
-      const sharedRemovals = Array.from(pendingRemovalsByToken.shared);
-
-      if (sharedAdditions.length === 0 && sharedRemovals.length === 0) {
-        return;
-      }
-
-      const nextSharedAttributes = [
-        ...sharedUserAttributes,
-        ...sharedAdditions.filter((attr) => !sharedUserAttributes.includes(attr)),
-      ].filter((attr) => !sharedRemovals.includes(attr));
-
-      if (areAttributesEqual(nextSharedAttributes, sharedUserAttributes)) {
-        return;
-      }
-
-      const updatedAssertion = {
-        ...application.assertion,
-        userAttributes: nextSharedAttributes,
-      };
-      onFieldChange('assertion', updatedAssertion);
-
-      // Don't clear pending changes immediately - let the next effect clean them up
-      // when the config actually updates
-    }, 800);
-
-    // Cleanup timeout on unmount
-    return () => {
-      if (applyTimeoutRef.current) {
-        clearTimeout(applyTimeoutRef.current);
-      }
-    };
-  }, [
-    pendingAdditionsByToken,
-    pendingRemovalsByToken,
-    isOAuthMode,
-    oauth2Config,
-    accessTokenValidity,
-    idTokenValidity,
-    currentAccessTokenAttributes,
-    currentIdTokenAttributes,
-    currentUserInfoAttributes,
-    sharedUserAttributes,
-    application.inboundAuthConfig,
-    application.assertion,
-    onFieldChange,
-  ]);
-
-  // Clean up pending additions/removals once they're reflected in the actual config
-  useEffect(() => {
-    const currentAttributesByToken: Record<TokenAttributeScope, string[]> = {
+  const currentAttributesByToken = useMemo<Record<TokenAttributeScope, string[]>>(
+    () => ({
       shared: sharedUserAttributes,
       access: currentAccessTokenAttributes,
       id: currentIdTokenAttributes,
       userinfo: currentUserInfoAttributes,
-    };
+    }),
+    [sharedUserAttributes, currentAccessTokenAttributes, currentIdTokenAttributes, currentUserInfoAttributes],
+  );
 
+  // Derive effective pending sets by filtering out stale entries
+  const effectivePendingAdditions = useMemo(() => {
+    let hasChanges = false;
+    const result = {...pendingAdditionsByToken};
     const allScopes: TokenAttributeScope[] = ['shared', 'access', 'id', 'userinfo'];
 
-    setPendingAdditionsByToken((prev) => {
-      let hasUpdates = false;
-      const next = {...prev};
+    allScopes.forEach((scope) => {
+      const remaining = new Set(
+        Array.from(pendingAdditionsByToken[scope]).filter((attr) => !currentAttributesByToken[scope].includes(attr)),
+      );
 
-      allScopes.forEach((scope) => {
-        const remaining = new Set(
-          Array.from(prev[scope]).filter((attr) => !currentAttributesByToken[scope].includes(attr)),
-        );
-
-        if (!areSetsEqual(prev[scope], remaining)) {
-          next[scope] = remaining;
-          hasUpdates = true;
-        }
-      });
-
-      return hasUpdates ? next : prev;
+      if (!areSetsEqual(pendingAdditionsByToken[scope], remaining)) {
+        result[scope] = remaining;
+        hasChanges = true;
+      }
     });
 
-    setPendingRemovalsByToken((prev) => {
-      let hasUpdates = false;
-      const next = {...prev};
-      const clearedScopes: TokenAttributeScope[] = [];
+    return hasChanges ? result : pendingAdditionsByToken;
+  }, [pendingAdditionsByToken, currentAttributesByToken]);
 
-      allScopes.forEach((scope) => {
-        const remaining = new Set(
-          Array.from(prev[scope]).filter((attr) => currentAttributesByToken[scope].includes(attr)),
-        );
+  const effectivePendingRemovals = useMemo(() => {
+    let hasChanges = false;
+    const result = {...pendingRemovalsByToken};
+    const allScopes: TokenAttributeScope[] = ['shared', 'access', 'id', 'userinfo'];
 
-        if (!areSetsEqual(prev[scope], remaining)) {
-          next[scope] = remaining;
-          hasUpdates = true;
-        }
+    allScopes.forEach((scope) => {
+      const remaining = new Set(
+        Array.from(pendingRemovalsByToken[scope]).filter((attr) => currentAttributesByToken[scope].includes(attr)),
+      );
 
-        if (prev[scope].size > 0 && remaining.size === 0 && pendingAdditionsByToken[scope].size === 0) {
-          clearedScopes.push(scope);
-        }
+      if (!areSetsEqual(pendingRemovalsByToken[scope], remaining)) {
+        result[scope] = remaining;
+        hasChanges = true;
+      }
+    });
+
+    return hasChanges ? result : pendingRemovalsByToken;
+  }, [pendingRemovalsByToken, currentAttributesByToken]);
+
+  // Clear highlights when all pending changes for a scope have been applied
+  useEffect(() => {
+    const allScopes: TokenAttributeScope[] = ['shared', 'access', 'id', 'userinfo'];
+    const clearedScopes = allScopes.filter(
+      (scope) =>
+        (pendingRemovalsByToken[scope].size > 0 || pendingAdditionsByToken[scope].size > 0) &&
+        effectivePendingRemovals[scope].size === 0 &&
+        effectivePendingAdditions[scope].size === 0,
+    );
+
+    if (clearedScopes.length === 0) return;
+
+    const timeout = setTimeout(() => {
+      setHighlightedAttributesByToken((prev) => {
+        let hasUpdates = false;
+        const next = {...prev};
+
+        clearedScopes.forEach((scope) => {
+          if (next[scope].size > 0) {
+            next[scope] = new Set();
+            hasUpdates = true;
+          }
+        });
+
+        return hasUpdates ? next : prev;
       });
+    }, 500);
 
-      if (clearedScopes.length > 0) {
-        setTimeout(() => {
-          setHighlightedAttributesByToken((prevHighlights) => {
-            let hasHighlightUpdates = false;
-            const nextHighlights = {...prevHighlights};
+    return () => clearTimeout(timeout);
+  }, [effectivePendingAdditions, effectivePendingRemovals, pendingAdditionsByToken, pendingRemovalsByToken]);
 
-            clearedScopes.forEach((scope) => {
-              if (nextHighlights[scope].size > 0) {
-                nextHighlights[scope] = new Set();
-                hasHighlightUpdates = true;
-              }
-            });
+  const applyAttributeChange = (scope: TokenAttributeScope, nextAttrs: string[]) => {
+    if (isOAuthMode && oauth2Config) {
+      let updatedConfig = {...oauth2Config};
 
-            return hasHighlightUpdates ? nextHighlights : prevHighlights;
-          });
-        }, 500);
+      const defaultTokenConfig = {validityPeriod: 3600, userAttributes: [] as string[]};
+      const currentAccessToken = updatedConfig.token?.accessToken ?? defaultTokenConfig;
+      const currentIdToken = updatedConfig.token?.idToken ?? defaultTokenConfig;
+
+      if (scope === 'access') {
+        updatedConfig = {
+          ...updatedConfig,
+          token: {
+            ...updatedConfig.token,
+            accessToken: {...currentAccessToken, userAttributes: nextAttrs},
+            idToken: currentIdToken,
+          },
+        };
+      } else if (scope === 'id') {
+        updatedConfig = {
+          ...updatedConfig,
+          token: {
+            ...updatedConfig.token,
+            accessToken: currentAccessToken,
+            idToken: {...currentIdToken, userAttributes: nextAttrs},
+          },
+        };
+      } else if (scope === 'userinfo') {
+        updatedConfig = {
+          ...updatedConfig,
+          userInfo: {
+            userAttributes: nextAttrs,
+          },
+        };
       }
 
-      return hasUpdates ? next : prev;
-    });
-  }, [
-    currentAccessTokenAttributes,
-    currentIdTokenAttributes,
-    currentUserInfoAttributes,
-    sharedUserAttributes,
-    pendingAdditionsByToken,
-  ]);
+      const updatedInboundAuth = application.inboundAuthConfig?.map((config) => {
+        if (config.type === 'oauth2') {
+          return {...config, config: updatedConfig};
+        }
+        return config;
+      });
+      onFieldChange('inboundAuthConfig', updatedInboundAuth);
+    } else if (scope === 'shared') {
+      onFieldChange('assertion', {...application.assertion, userAttributes: nextAttrs});
+    }
+  };
 
   // Handle attribute click
   const handleAttributeClick = (attr: string, tokenType: 'shared' | 'access' | 'id' | 'userinfo') => {
@@ -695,10 +550,8 @@ export default function EditTokenSettings({
     }
 
     const isAdded = currentAttributes.includes(attr);
-    const tokenPendingAdditions = pendingAdditionsByToken[tokenType];
-    const tokenPendingRemovals = pendingRemovalsByToken[tokenType];
-    const isPendingAddition = tokenPendingAdditions.has(attr);
-    const isPendingRemoval = tokenPendingRemovals.has(attr);
+    const isPendingAddition = effectivePendingAdditions[tokenType].has(attr);
+    const isPendingRemoval = effectivePendingRemovals[tokenType].has(attr);
 
     setHighlightedAttributesByToken((prev) => ({
       ...prev,
@@ -707,7 +560,10 @@ export default function EditTokenSettings({
 
     const currentlyActive = (isAdded && !isPendingRemoval) || isPendingAddition;
 
+    let nextAttrs: string[];
     if (currentlyActive) {
+      // Removing the attribute
+      nextAttrs = currentAttributes.filter((a) => a !== attr);
       if (isPendingAddition) {
         setPendingAdditionsByToken((prev) => {
           const newSet = new Set(prev[tokenType]);
@@ -720,23 +576,29 @@ export default function EditTokenSettings({
           [tokenType]: new Set([...prev[tokenType], attr]),
         }));
       }
-    } else if (isPendingRemoval) {
-      setPendingRemovalsByToken((prev) => {
-        const newSet = new Set(prev[tokenType]);
-        newSet.delete(attr);
-        return {...prev, [tokenType]: newSet};
-      });
     } else {
-      setPendingAdditionsByToken((prev) => ({
-        ...prev,
-        [tokenType]: new Set([...prev[tokenType], attr]),
-      }));
+      // Adding the attribute
+      nextAttrs = [...currentAttributes, attr];
+      if (isPendingRemoval) {
+        setPendingRemovalsByToken((prev) => {
+          const newSet = new Set(prev[tokenType]);
+          newSet.delete(attr);
+          return {...prev, [tokenType]: newSet};
+        });
+      } else {
+        setPendingAdditionsByToken((prev) => ({
+          ...prev,
+          [tokenType]: new Set([...prev[tokenType], attr]),
+        }));
+      }
     }
+
+    applyAttributeChange(tokenType, nextAttrs);
   };
 
   const visibleScope: TokenAttributeScope = isOAuthMode ? activeTokenType : 'shared';
-  const visiblePendingAdditions = pendingAdditionsByToken[visibleScope];
-  const visiblePendingRemovals = pendingRemovalsByToken[visibleScope];
+  const visiblePendingAdditions = effectivePendingAdditions[visibleScope];
+  const visiblePendingRemovals = effectivePendingRemovals[visibleScope];
   const visibleHighlightedAttributes = highlightedAttributesByToken[visibleScope];
 
   return (

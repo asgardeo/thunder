@@ -119,7 +119,7 @@ func newOAuthExecutor(
 
 // Execute executes the OAuth authentication flow.
 func (o *oAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing OAuth authentication executor")
 
 	execResp := &common.ExecutorResponse{
@@ -155,7 +155,7 @@ func (o *oAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse
 
 // BuildAuthorizeFlow constructs the redirection to the external OAuth provider for user authentication.
 func (o *oAuthExecutor) BuildAuthorizeFlow(ctx *core.NodeContext, execResp *common.ExecutorResponse) error {
-	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Initiating OAuth authentication flow")
 
 	idpID, err := o.GetIdpID(ctx)
@@ -195,7 +195,7 @@ func (o *oAuthExecutor) BuildAuthorizeFlow(ctx *core.NodeContext, execResp *comm
 // ProcessAuthFlowResponse processes the response from the OAuth authentication flow and authenticates the user.
 func (o *oAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) error {
-	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Processing OAuth authentication response")
 
 	code, ok := ctx.UserInputs[userInputCode]
@@ -278,7 +278,7 @@ func (o *oAuthExecutor) HasRequiredInputs(ctx *core.NodeContext, execResp *commo
 // ExchangeCodeForToken exchanges the authorization code for an access token.
 func (o *oAuthExecutor) ExchangeCodeForToken(ctx *core.NodeContext, execResp *common.ExecutorResponse,
 	code string) (*OAuthTokenResponse, error) {
-	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Exchanging authorization code for a token")
 
 	idpID, err := o.GetIdpID(ctx)
@@ -312,7 +312,7 @@ func (o *oAuthExecutor) ExchangeCodeForToken(ctx *core.NodeContext, execResp *co
 // GetUserInfo fetches user information from the OAuth provider using the access token.
 func (o *oAuthExecutor) GetUserInfo(ctx *core.NodeContext, execResp *common.ExecutorResponse,
 	accessToken string) (map[string]string, error) {
-	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Fetching user info from OAuth provider")
 
 	idpID, err := o.GetIdpID(ctx)
@@ -419,7 +419,7 @@ func (o *oAuthExecutor) ResolveContextUser(ctx *core.NodeContext,
 func (o *oAuthExecutor) getContextUserForAuthentication(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse, sub string, internalUser *userprovider.User) (
 	*authncm.AuthenticatedUser, error) {
-	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	// If no local user is found, check if authentication without local user is allowed
 	if internalUser == nil {
@@ -496,7 +496,7 @@ func (o *oAuthExecutor) getContextUserForAuthentication(ctx *core.NodeContext,
 func (o *oAuthExecutor) getContextUserForRegistration(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse, sub string, internalUser *userprovider.User) (
 	*authncm.AuthenticatedUser, error) {
-	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	// If no local user is found, proceed with registration
 	if internalUser == nil {
@@ -564,7 +564,7 @@ func (o *oAuthExecutor) getContextUserForRegistration(ctx *core.NodeContext,
 // resolveUserTypeForAutoProvisioning resolves the user type for auto provisioning in authentication flows.
 func (o *oAuthExecutor) resolveUserTypeForAutoProvisioning(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) error {
-	logger := o.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := o.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Resolving user type for automatic provisioning")
 
 	if len(ctx.Application.AllowedUserTypes) == 0 {

@@ -125,9 +125,9 @@ func (suite *AuthAssertExecutorTestSuite) TestNewAuthAssertExecutor() {
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -174,8 +174,8 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_UserNotAuthenticated() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: false,
 		},
@@ -191,9 +191,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserNotAuthenticated() {
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAuthorizedPermissions() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -225,9 +225,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -263,9 +263,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_JWTGenerationFails() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -291,9 +291,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_JWTGenerationFails() {
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_AssertionGenerationFails_ServerError() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -516,9 +516,9 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributesFromAuthnProvider
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -552,9 +552,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
 	// App-level assertion config (validity period only — issuer always comes from Thunder config)
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -580,9 +580,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -624,9 +624,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -688,9 +688,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFails() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -719,9 +719,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFai
 
 func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserAttributesFails() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -750,9 +750,9 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserA
 
 func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganizationUnitFails() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -785,9 +785,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -827,9 +827,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -871,9 +871,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -906,9 +906,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_GetUserGroupsFails() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -1107,7 +1107,7 @@ func (suite *AuthAssertExecutorTestSuite) TestBuildGetAttributesMetadata_WithEmp
 
 func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_ConsentRecordedWithoutConsentedKey() {
 	ctx := &core.NodeContext{
-		FlowID: "flow-123",
+		ExecutionID: "flow-123",
 		RuntimeData: map[string]string{
 			common.RuntimeKeyConsentID: "consent-123",
 		},
@@ -1120,7 +1120,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_ConsentR
 
 func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_ConsentRecordedWithConsentedKey() {
 	ctx := &core.NodeContext{
-		FlowID: "flow-123",
+		ExecutionID: "flow-123",
 		RuntimeData: map[string]string{
 			common.RuntimeKeyConsentID:           "consent-123",
 			common.RuntimeKeyConsentedAttributes: "email name",
@@ -1134,7 +1134,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_ConsentR
 
 func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_RuntimeEssentialOnly() {
 	ctx := &core.NodeContext{
-		FlowID: "flow-123",
+		ExecutionID: "flow-123",
 		RuntimeData: map[string]string{
 			common.RuntimeKeyRequiredEssentialAttributes: "email name",
 		},
@@ -1147,7 +1147,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_RuntimeE
 
 func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_RuntimeOptionalOnly() {
 	ctx := &core.NodeContext{
-		FlowID: "flow-123",
+		ExecutionID: "flow-123",
 		RuntimeData: map[string]string{
 			common.RuntimeKeyRequiredOptionalAttributes: "email phone",
 		},
@@ -1160,7 +1160,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_RuntimeO
 
 func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_RuntimeEssentialAndOptional() {
 	ctx := &core.NodeContext{
-		FlowID: "flow-123",
+		ExecutionID: "flow-123",
 		RuntimeData: map[string]string{
 			common.RuntimeKeyRequiredEssentialAttributes: "email",
 			common.RuntimeKeyRequiredOptionalAttributes:  "phone name",
@@ -1174,7 +1174,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_RuntimeE
 
 func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_FallbackToAssertion() {
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		RuntimeData: map[string]string{},
 		Application: appmodel.Application{
 			Assertion: &appmodel.AssertionConfig{UserAttributes: []string{"email", "phone"}},
@@ -1188,7 +1188,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_Fallback
 
 func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_NoRuntimeOrAssertion() {
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		RuntimeData: map[string]string{},
 		Application: appmodel.Application{},
 	}
@@ -1205,9 +1205,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConsentedAttributes_Fi
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -1250,9 +1250,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConsentedAttributes_Fi
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithEmptyConsentedAttributes() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -1277,9 +1277,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithEmptyConsentedAttribut
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithoutConsentedAttributes() {
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -1306,9 +1306,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_AttrsSt
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:  "flow-123",
-		AppID:   "app-123",
-		Context: context.Background(),
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -1361,9 +1361,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_NilUser
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:  "flow-123",
-		AppID:   "app-123",
-		Context: context.Background(),
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -1410,9 +1410,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_OnlyRes
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:  "flow-123",
-		AppID:   "app-123",
-		Context: context.Background(),
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -1464,9 +1464,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_NilAsse
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:  "flow-123",
-		AppID:   "app-123",
-		Context: context.Background(),
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -1508,8 +1508,8 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_NilAsse
 
 func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithGroups() {
 	ctx := &core.NodeContext{
-		FlowID:  "flow-123",
-		Context: context.Background(),
+		ExecutionID: "flow-123",
+		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			UserID: "user-123",
 		},
@@ -1536,8 +1536,8 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithGroups()
 
 func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithGroups_FetchError() {
 	ctx := &core.NodeContext{
-		FlowID:  "flow-123",
-		Context: context.Background(),
+		ExecutionID: "flow-123",
+		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			UserID: "user-123",
 		},
@@ -1557,8 +1557,8 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithGroups_F
 
 func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithGroups_EmptyUserID_GroupsSkipped() {
 	ctx := &core.NodeContext{
-		FlowID:  "flow-123",
-		Context: context.Background(),
+		ExecutionID: "flow-123",
+		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			UserID: "",
 		},
@@ -1576,8 +1576,8 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithGroups_E
 
 func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithUserType() {
 	ctx := &core.NodeContext{
-		FlowID:  "flow-123",
-		Context: context.Background(),
+		ExecutionID: "flow-123",
+		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			UserID:   "user-123",
 			UserType: "INTERNAL",
@@ -1594,8 +1594,8 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithUserType
 
 func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithEmptyUserType_NotAdded() {
 	ctx := &core.NodeContext{
-		FlowID:  "flow-123",
-		Context: context.Background(),
+		ExecutionID: "flow-123",
+		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			UserID:   "user-123",
 			UserType: "",
@@ -1612,8 +1612,8 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithEmptyUse
 
 func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithOUDetails() {
 	ctx := &core.NodeContext{
-		FlowID:  "flow-123",
-		Context: context.Background(),
+		ExecutionID: "flow-123",
+		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			UserID: "user-123",
 			OUID:   testAuthOUID,
@@ -1637,8 +1637,8 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithOUDetail
 
 func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithOUDetails_FetchError() {
 	ctx := &core.NodeContext{
-		FlowID:  "flow-123",
-		Context: context.Background(),
+		ExecutionID: "flow-123",
+		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			UserID: "user-123",
 			OUID:   "ou-invalid",
@@ -1662,8 +1662,8 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithOUDetail
 
 func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithOUDetails_EmptyOUID_OUDetailsSkipped() {
 	ctx := &core.NodeContext{
-		FlowID:  "flow-123",
-		Context: context.Background(),
+		ExecutionID: "flow-123",
+		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			UserID: "user-123",
 			OUID:   "",
@@ -1683,9 +1683,9 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithOUDetail
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_GroupsIncludedInCache() {
 	ctx := &core.NodeContext{
-		FlowID:  "flow-123",
-		AppID:   "app-123",
-		Context: context.Background(),
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -1731,9 +1731,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_GroupsI
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_UserTypeIncludedInCache() {
 	ctx := &core.NodeContext{
-		FlowID:  "flow-123",
-		AppID:   "app-123",
-		Context: context.Background(),
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -1771,9 +1771,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_UserTyp
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_OUDetailsIncludedInCache() {
 	ctx := &core.NodeContext{
-		FlowID:  "flow-123",
-		AppID:   "app-123",
-		Context: context.Background(),
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",
@@ -1818,9 +1818,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithRuntimeRequiredEssenti
 	attrsJSON, _ := json.Marshal(attrs)
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		AppID:    "app-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
+		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-123",

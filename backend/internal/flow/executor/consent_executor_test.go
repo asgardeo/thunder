@@ -87,9 +87,9 @@ func createMockExecutorWithInputs(t *testing.T) *coremock.ExecutorInterfaceMock 
 
 func buildConsentNodeContext() *core.NodeContext {
 	return &core.NodeContext{
-		Context: context.Background(),
-		FlowID:  "flow-123",
-		AppID:   "app-123",
+		Context:     context.Background(),
+		ExecutionID: "flow-123",
+		AppID:       "app-123",
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          testUserID,

@@ -3,7 +3,16 @@
     "hostname": "localhost",
     "port": 8090,
     "http_only": false,
-    "identifier": "default-deployment"
+    "identifier": "default-deployment",
+    "security": {
+      "jwks_cache_ttl": 300,
+      "trusted_issuer": {
+        "issuer": "",
+        "jwks_url": "",
+        "audience": "",
+        "required_claims": []
+      }
+    }
   },
   "gate_client": {
     "hostname": "localhost",

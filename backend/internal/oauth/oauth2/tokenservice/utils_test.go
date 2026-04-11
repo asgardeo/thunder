@@ -51,10 +51,11 @@ func TestUtilsTestSuite(t *testing.T) {
 }
 
 func (suite *UtilsTestSuite) SetupTest() {
-	// Initialize Thunder Runtime for tests
+	config.ResetThunderRuntime()
+
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://default.thunder.io",
+			Issuer:         "https://thunder.io",
 			ValidityPeriod: 3600,
 		},
 	}

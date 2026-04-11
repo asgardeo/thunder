@@ -52,7 +52,7 @@ async function fetchReleases() {
         return releases;
     } catch (error) {
         logger.error('Error fetching releases:', error);
-        return [];
+        throw error;
     }
 }
 
@@ -307,8 +307,7 @@ async function generate() {
         writeFileSync(OUTPUT_FILE, markdown, 'utf8');
         logger.info(`✅ Changelog generated at ${OUTPUT_FILE}`);
     } catch (error) {
-        logger.error('❌ Failed to generate changelog:', error);
-        process.exit(1);
+        logger.error('❌ Failed to generate changelog — keeping existing file:', error);
     }
 }
 

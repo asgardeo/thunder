@@ -415,7 +415,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlow() {
 
 	ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus, "Expected flow status to be INCOMPLETE")
 	ts.Require().Equal("VIEW", flowStep.Type, "Expected flow type to be VIEW")
-	ts.Require().NotEmpty(flowStep.FlowID, "Flow ID should not be empty")
+	ts.Require().NotEmpty(flowStep.ExecutionID, "Execution ID should not be empty")
 
 	// Validate that mobile number input is required
 	ts.Require().NotEmpty(flowStep.Data, "Flow data should not be empty")
@@ -431,7 +431,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlow() {
 		"mobileNumber": mobileNumber,
 	}
 
-	otpFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
+	otpFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow with mobile number: %v", err)
 	}
@@ -456,7 +456,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlow() {
 		"otp": lastMessage.OTP,
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, otpInputs, "action_otp")
+	completeFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, otpInputs, "action_otp")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow with OTP: %v", err)
 	}
@@ -484,7 +484,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlow() {
 	}
 	fillInputs = append(fillInputs, completeFlowStep.Data.Inputs...)
 	attrInputs := fillRequiredRegistrationAttributes(fillInputs, mobileNumber)
-	completeFlowStep, err = common.CompleteFlow(flowStep.FlowID, attrInputs, "")
+	completeFlowStep, err = common.CompleteFlow(flowStep.ExecutionID, attrInputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow with attributes: %v", err)
 	}
@@ -547,7 +547,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowInvalidOTP() {
 	ts.mockServer.ClearMessages()
 
 	// Continue flow to trigger OTP sending
-	otpFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
+	otpFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow with mobile number: %v", err)
 	}
@@ -562,7 +562,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowInvalidOTP() {
 		"otp": "000000",
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, invalidOTPInputs, "action_otp")
+	completeFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, invalidOTPInputs, "action_otp")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow with invalid OTP: %v", err)
 	}
@@ -603,7 +603,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWith
 		"mobileNumber": mobileNumber,
 	}
 
-	otpStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
+	otpStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001")
 	if err != nil {
 		ts.T().Fatalf("Failed to provide mobile number: %v", err)
 	}
@@ -625,7 +625,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWith
 		"otp": lastMessage.OTP,
 	}
 
-	provisionStep, err := common.CompleteFlow(otpStep.FlowID, otpInputs, "action_otp")
+	provisionStep, err := common.CompleteFlow(otpStep.ExecutionID, otpInputs, "action_otp")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration flow with OTP: %v", err)
 	}
@@ -641,7 +641,7 @@ func (ts *SMSRegistrationFlowTestSuite) TestSMSRegistrationFlowSingleRequestWith
 		"mobileNumber": mobileNumber,
 	}
 
-	completeFlowStep, err := common.CompleteFlow(provisionStep.FlowID, userInputs, "")
+	completeFlowStep, err := common.CompleteFlow(provisionStep.ExecutionID, userInputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to complete registration with user attributes: %v", err)
 	}

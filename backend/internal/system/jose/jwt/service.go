@@ -30,6 +30,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -55,6 +56,12 @@ type JWTServiceInterface interface {
 	VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string) *serviceerror.ServiceError
 }
 
+// jwksCacheEntry holds a cached JWKS response with its expiry time.
+type jwksCacheEntry struct {
+	keys      []map[string]interface{}
+	expiresAt time.Time
+}
+
 // jwtService implements the JWTServiceInterface for generating and managing JWT tokens.
 type jwtService struct {
 	privateKey crypto.PrivateKey
@@ -62,6 +69,7 @@ type jwtService struct {
 	jwsAlg     jws.Algorithm
 	kid        string
 	logger     *log.Logger
+	jwksCache  sync.Map
 }
 
 // newJWTService creates a new JWT service instance.
@@ -348,41 +356,15 @@ func (js *jwtService) VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string
 		return &ErrorDecodingJWTHeader
 	}
 
-	// Fetch the JWK Set from the JWKS endpoint
-	client := httpservice.NewHTTPClientWithTimeout(10 * time.Second)
-	resp, err := client.Get(jwksURL)
-	if err != nil {
-		js.logger.Debug("Failed to fetch JWKS from URL: " + err.Error())
-		return &ErrorFailedToGetJWKS
-	}
-	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			js.logger.Error("Failed to close response body", log.Error(closeErr))
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		js.logger.Debug("Failed to fetch JWKS, HTTP status: " + resp.Status)
-		return &ErrorFailedToGetJWKS
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		js.logger.Debug("Failed to read JWKS response body: " + err.Error())
-		return &ErrorFailedToParseJWKS
-	}
-
-	var jwks struct {
-		Keys []map[string]interface{} `json:"keys"`
-	}
-	if err := json.Unmarshal(body, &jwks); err != nil {
-		js.logger.Debug("Failed to parse JWKS JSON: " + err.Error())
-		return &ErrorFailedToParseJWKS
+	// Get JWKS keys (from cache or fetch)
+	keys, svcErr := js.getJWKSKeys(jwksURL)
+	if svcErr != nil {
+		return svcErr
 	}
 
 	// Find the key with matching kid
 	var jwk map[string]interface{}
-	for _, key := range jwks.Keys {
+	for _, key := range keys {
 		if keyID, ok := key["kid"].(string); ok && keyID == kid {
 			jwk = key
 			break
@@ -405,6 +387,55 @@ func (js *jwtService) VerifyJWTSignatureWithJWKS(jwtToken string, jwksURL string
 	}
 
 	return nil
+}
+
+// getJWKSKeys returns JWKS keys for the given URL, using a TTL-based cache.
+func (js *jwtService) getJWKSKeys(jwksURL string) ([]map[string]interface{}, *serviceerror.ServiceError) {
+	if cached, ok := js.jwksCache.Load(jwksURL); ok {
+		entry := cached.(*jwksCacheEntry)
+		if time.Now().Before(entry.expiresAt) {
+			return entry.keys, nil
+		}
+	}
+
+	client := httpservice.NewHTTPClientWithTimeout(10 * time.Second)
+	resp, err := client.Get(jwksURL)
+	if err != nil {
+		js.logger.Debug("Failed to fetch JWKS from URL: " + err.Error())
+		return nil, &ErrorFailedToGetJWKS
+	}
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			js.logger.Error("Failed to close response body", log.Error(closeErr))
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		js.logger.Debug("Failed to fetch JWKS, HTTP status: " + resp.Status)
+		return nil, &ErrorFailedToGetJWKS
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		js.logger.Debug("Failed to read JWKS response body: " + err.Error())
+		return nil, &ErrorFailedToParseJWKS
+	}
+
+	var jwks struct {
+		Keys []map[string]interface{} `json:"keys"`
+	}
+	if err := json.Unmarshal(body, &jwks); err != nil {
+		js.logger.Debug("Failed to parse JWKS JSON: " + err.Error())
+		return nil, &ErrorFailedToParseJWKS
+	}
+
+	ttl := time.Duration(config.GetThunderRuntime().Config.Server.SecurityConfig.JWKSCacheTTL) * time.Second
+	js.jwksCache.Store(jwksURL, &jwksCacheEntry{
+		keys:      jwks.Keys,
+		expiresAt: time.Now().Add(ttl),
+	})
+
+	return jwks.Keys, nil
 }
 
 // verifyJWTClaims verifies the standard claims of a JWT token.

@@ -82,7 +82,7 @@ func newUserTypeResolver(
 
 // Execute resolves the user type from inputs or prompts the user to select one.
 func (u *userTypeResolver) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := u.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := u.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing user type resolver")
 
 	execResp := &common.ExecutorResponse{
@@ -109,7 +109,7 @@ func (u *userTypeResolver) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 // handleAuthenticationFlows handles user type resolution for authentication flows.
 func (u *userTypeResolver) handleAuthenticationFlows(ctx *core.NodeContext, execResp *common.ExecutorResponse) (
 	*common.ExecutorResponse, error) {
-	logger := u.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := u.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	// Validate that allowed user types are defined
 	if len(ctx.Application.AllowedUserTypes) == 0 {
@@ -127,7 +127,7 @@ func (u *userTypeResolver) handleAuthenticationFlows(ctx *core.NodeContext, exec
 func (u *userTypeResolver) handleRegistrationFlows(ctx *core.NodeContext, execResp *common.ExecutorResponse) (
 	*common.ExecutorResponse, error) {
 	reqCtx := ctx.Context
-	logger := u.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := u.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	allowed := ctx.Application.AllowedUserTypes
 
 	// Check for allowed user types to decide next steps
@@ -184,7 +184,7 @@ func (u *userTypeResolver) handleRegistrationFlows(ctx *core.NodeContext, execRe
 // handleUserOnboardingFlows handles user type resolution for user onboarding flows.
 func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
-	logger := u.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := u.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	// Read optional allowedUserTypes from node properties
 	allowedUserTypes := u.getAllowedUserTypesFromProperties(ctx)

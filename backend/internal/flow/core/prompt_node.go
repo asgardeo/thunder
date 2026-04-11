@@ -69,7 +69,7 @@ func newPromptNode(id string, properties map[string]interface{},
 
 // Execute executes the prompt node logic based on the current context.
 func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceerror.ServiceError) {
-	logger := n.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := n.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing prompt node")
 
 	nodeResp := &common.NodeResponse{
@@ -227,7 +227,7 @@ func (n *promptNode) resolvePromptInputs(ctx *NodeContext, nodeResp *common.Node
 // hasRequiredInputs checks if all required inputs are available in the context. Adds missing
 // inputs to the node response. Returns true if all required inputs are available, otherwise false.
 func (n *promptNode) hasRequiredInputs(ctx *NodeContext, nodeResp *common.NodeResponse) bool {
-	logger := n.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := n.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	if nodeResp.Inputs == nil {
 		nodeResp.Inputs = make([]common.Input, 0)
@@ -255,7 +255,7 @@ func (n *promptNode) hasRequiredInputs(ctx *NodeContext, nodeResp *common.NodeRe
 // Returns true if any required data is found missing, otherwise false.
 func (n *promptNode) appendMissingInputs(ctx *NodeContext, nodeResp *common.NodeResponse,
 	requiredInputs []common.Input) bool {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := log.GetLogger().With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	requireInputs := false
 	for _, input := range requiredInputs {
@@ -349,7 +349,7 @@ func (n *promptNode) tryAutoSelectSingleAction(ctx *NodeContext) bool {
 	// Skip auto-select for confirmation prompts (no inputs) - they should wait for explicit action
 	if len(actions) == 1 && ctx.CurrentAction == "" && len(allInputs) > 0 {
 		ctx.CurrentAction = actions[0].Ref
-		n.logger.Debug("Auto-selected single action", log.String(log.LoggerKeyFlowID, ctx.FlowID),
+		n.logger.Debug("Auto-selected single action", log.String(log.LoggerKeyExecutionID, ctx.ExecutionID),
 			log.String("actionRef", actions[0].Ref))
 		return true
 	}

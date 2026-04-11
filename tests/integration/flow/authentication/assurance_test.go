@@ -501,7 +501,7 @@ func (ts *AssuranceTestSuite) TestAssurance_SMSOTPOnly() {
 		"mobileNumber": userAttrs["mobileNumber"].(string),
 	}
 
-	otpFlowStep, err := common.CompleteFlow(flowStep.FlowID, inputs, "action_001")
+	otpFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001")
 	ts.Require().NoError(err)
 	ts.Require().Equal("INCOMPLETE", otpFlowStep.FlowStatus)
 
@@ -515,7 +515,7 @@ func (ts *AssuranceTestSuite) TestAssurance_SMSOTPOnly() {
 
 	// Step 3: Submit OTP
 	otpInputs := map[string]string{"otp": lastMessage.OTP}
-	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, otpInputs, "action_002")
+	completeFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, otpInputs, "action_002")
 	ts.Require().NoError(err)
 	ts.Require().Equal("COMPLETE", completeFlowStep.FlowStatus)
 	ts.Require().NotEmpty(completeFlowStep.Assertion)
@@ -555,7 +555,7 @@ func (ts *AssuranceTestSuite) TestAssurance_CredentialsPlusSMSOTP() {
 		"password": userAttrs["password"].(string),
 	}
 
-	otpFlowStep, err := common.CompleteFlow(flowStep.FlowID, credInputs, "action_001")
+	otpFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, credInputs, "action_001")
 	ts.Require().NoError(err)
 	ts.Require().Equal("INCOMPLETE", otpFlowStep.FlowStatus)
 
@@ -569,7 +569,7 @@ func (ts *AssuranceTestSuite) TestAssurance_CredentialsPlusSMSOTP() {
 
 	// Step 3: Submit OTP
 	otpInputs := map[string]string{"otp": lastMessage.OTP}
-	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, otpInputs, "action_002")
+	completeFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, otpInputs, "action_002")
 	ts.Require().NoError(err)
 	ts.Require().Equal("COMPLETE", completeFlowStep.FlowStatus)
 	ts.Require().NotEmpty(completeFlowStep.Assertion)
@@ -606,7 +606,7 @@ func (ts *AssuranceTestSuite) TestAssurance_BasicAuthOnly() {
 		"password": userAttrs["password"].(string),
 	}
 
-	completeFlowStep, err := common.CompleteFlow(flowStep.FlowID, credInputs, "action_001")
+	completeFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, credInputs, "action_001")
 	ts.Require().NoError(err)
 	ts.Require().Equal("COMPLETE", completeFlowStep.FlowStatus)
 	ts.Require().NotEmpty(completeFlowStep.Assertion)

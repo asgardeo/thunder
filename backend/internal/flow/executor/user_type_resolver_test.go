@@ -126,8 +126,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_AuthenticationFlow_WithAllow
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee", "customer"},
 		},
@@ -147,8 +147,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_AuthenticationFlow_NoAllowed
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeAuthentication,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeAuthentication,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{},
 		},
@@ -184,8 +184,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UnsupportedFlowType() {
 			suite.SetupTest()
 
 			ctx := &core.NodeContext{
-				FlowID:   "flow-123",
-				FlowType: tc.flowType,
+				ExecutionID: "flow-123",
+				FlowType:    tc.flowType,
 				Application: appmodel.Application{
 					AllowedUserTypes: []string{"employee"},
 				},
@@ -223,8 +223,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Succ
 			suite.SetupTest()
 
 			ctx := &core.NodeContext{
-				FlowID:   "flow-123",
-				FlowType: common.FlowTypeRegistration,
+				ExecutionID: "flow-123",
+				FlowType:    common.FlowTypeRegistration,
 				Application: appmodel.Application{
 					AllowedUserTypes: tc.allowedUserTypes,
 				},
@@ -260,8 +260,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_NoOU
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee", "customer"},
 		},
@@ -292,8 +292,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_NotA
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee", "customer"},
 		},
@@ -316,8 +316,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_OURe
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee"},
 		},
@@ -348,8 +348,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_NoAllowedUserTypes() {
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{},
 		},
@@ -370,8 +370,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_Succes
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee"},
 		},
@@ -403,8 +403,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_NoOU()
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee"},
 		},
@@ -433,8 +433,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_OUReso
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee"},
 		},
@@ -463,8 +463,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Pro
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee", "customer", "partner"},
 		},
@@ -506,8 +506,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_EmptyUserTypeInput() {
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee", "customer"},
 		},
@@ -548,8 +548,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Self
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee"},
 		},
@@ -581,8 +581,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_SelfRe
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee"},
 		},
@@ -612,8 +612,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Onl
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee", "customer", "partner"},
 		},
@@ -662,8 +662,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_NoS
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee", "customer"},
 		},
@@ -703,8 +703,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Sch
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee", "customer"},
 		},
@@ -743,8 +743,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_RegistrationFlow_NodeAllowed
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee", "customer", "partner"},
 		},
@@ -774,8 +774,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_RegistrationFlow_NodeAllowed
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee", "customer", "partner"},
 		},
@@ -802,8 +802,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_RegistrationFlow_NodeAllowed
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee", "customer"},
 		},
@@ -826,8 +826,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_RegistrationFlow_NodeAllowed
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeRegistration,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
 			AllowedUserTypes: []string{"employee", "customer", "partner"},
 		},
@@ -915,8 +915,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeP
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeUserOnboarding, // User Onboarding Flow
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeUserOnboarding, // User Onboarding Flow
 		UserInputs: map[string]string{
 			userTypeKey: "employee",
 		},
@@ -946,8 +946,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_UserTypeP
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeUserOnboarding,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeUserOnboarding,
 		UserInputs: map[string]string{
 			userTypeKey: "invalid_user",
 		},
@@ -978,7 +978,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -1003,7 +1003,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -1028,7 +1028,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -1056,7 +1056,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -1089,7 +1089,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_AllowedUs
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -1122,7 +1122,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_AllowedUs
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -1157,7 +1157,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_AllowedUs
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -1188,7 +1188,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_AllowedUs
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{userTypeKey: "partner"},
 		RuntimeData: map[string]string{},
@@ -1209,7 +1209,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_AllowedUs
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeUserOnboarding,
 		UserInputs:  map[string]string{userTypeKey: "employee"},
 		RuntimeData: map[string]string{},
@@ -1313,8 +1313,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_UserT
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeUserOnboarding,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeUserOnboarding,
 		UserInputs: map[string]string{
 			userTypeKey: "employee",
 		},
@@ -1347,8 +1347,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_UserT
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeUserOnboarding,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeUserOnboarding,
 		UserInputs: map[string]string{
 			userTypeKey: "employee",
 		},
@@ -1380,8 +1380,8 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_IsPar
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:   "flow-123",
-		FlowType: common.FlowTypeUserOnboarding,
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeUserOnboarding,
 		UserInputs: map[string]string{
 			userTypeKey: "employee",
 		},
@@ -1416,9 +1416,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_Filte
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		FlowType:   common.FlowTypeUserOnboarding,
-		UserInputs: map[string]string{},
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeUserOnboarding,
+		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
 			ouIDKey: "child-ou-456",
 		},
@@ -1456,9 +1456,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_Filte
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		FlowType:   common.FlowTypeUserOnboarding,
-		UserInputs: map[string]string{},
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeUserOnboarding,
+		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
 			ouIDKey: "child-ou-456",
 		},
@@ -1492,9 +1492,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_AllSc
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		FlowType:   common.FlowTypeUserOnboarding,
-		UserInputs: map[string]string{},
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeUserOnboarding,
+		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
 			ouIDKey: "unrelated-ou-999",
 		},
@@ -1527,9 +1527,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_IsPar
 	suite.SetupTest()
 
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		FlowType:   common.FlowTypeUserOnboarding,
-		UserInputs: map[string]string{},
+		ExecutionID: "flow-123",
+		FlowType:    common.FlowTypeUserOnboarding,
+		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
 			ouIDKey: "child-ou-456",
 		},

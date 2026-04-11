@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/utils"
@@ -59,9 +60,18 @@ func (h *jwtAuthenticator) Authenticate(r *http.Request) (*SecurityContext, erro
 		return nil, errInvalidToken
 	}
 
-	// Step 2: Verify JWT signature
-	if err := h.jwtService.VerifyJWTSignature(token); err != nil {
-		return nil, errInvalidToken
+	// Step 2: Verify JWT signature.
+	// If a trusted issuer is configured, the server delegates token issuance to it
+	// and verifies tokens exclusively against its JWKS. Otherwise, verify with the
+	// server's own signing key.
+	if config.GetThunderRuntime().Config.Server.SecurityConfig.TrustedIssuer.IsConfigured() {
+		if !h.verifyFederatedToken(token) {
+			return nil, errInvalidToken
+		}
+	} else {
+		if err := h.jwtService.VerifyJWTSignature(token); err != nil {
+			return nil, errInvalidToken
+		}
 	}
 
 	// Step 3: Decode JWT payload to extract attributes
@@ -83,6 +93,46 @@ func (h *jwtAuthenticator) Authenticate(r *http.Request) (*SecurityContext, erro
 
 	// Create immutable SecurityContext
 	return newSecurityContext(subject, ouID, token, scopes, attributes), nil
+}
+
+// verifyFederatedToken checks if the token is from a trusted external issuer and verifies it via JWKS.
+// Per RFC 9068 §2.2 and RFC 8707, this validates:
+//   - iss: matches the configured trusted issuer
+//   - aud: matches this server's own identifier (the resource server)
+//   - signature: verified via the auth server's JWKS endpoint
+//   - required_claims: each configured claim must match the expected value
+func (h *jwtAuthenticator) verifyFederatedToken(token string) (verified bool) {
+	trustedIssuer := config.GetThunderRuntime().Config.Server.SecurityConfig.TrustedIssuer
+	if !trustedIssuer.IsConfigured() {
+		return false
+	}
+
+	attributes, err := jwt.DecodeJWTPayload(token)
+	if err != nil {
+		return false
+	}
+
+	iss, ok := attributes["iss"].(string)
+	if !ok || iss != trustedIssuer.Issuer {
+		return false
+	}
+
+	// VerifyJWTWithJWKS validates signature, aud (resource server identity), iss, and time claims.
+	if svcErr := h.jwtService.VerifyJWTWithJWKS(
+		token, trustedIssuer.JWKSURL, trustedIssuer.Audience, trustedIssuer.Issuer,
+	); svcErr != nil {
+		return false
+	}
+
+	// Validate required claims — each configured claim must be present with the expected value.
+	for _, rc := range trustedIssuer.RequiredClaims {
+		val, ok := attributes[rc.Claim].(string)
+		if !ok || val != rc.Value {
+			return false
+		}
+	}
+
+	return true
 }
 
 // extractToken extracts the Bearer token from the Authorization header.

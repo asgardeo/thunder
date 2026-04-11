@@ -19,6 +19,25 @@ server:
   port: {{ .Values.configuration.server.port }}
   http_only: {{ .Values.configuration.server.httpOnly }}
   public_url: {{ .Values.configuration.server.publicUrl | quote }}
+  {{- if .Values.configuration.server.security }}
+  security:
+    {{- if .Values.configuration.server.security.jwksCacheTtl }}
+    jwks_cache_ttl: {{ .Values.configuration.server.security.jwksCacheTtl }}
+    {{- end }}
+    {{- if .Values.configuration.server.security.trustedIssuer }}
+    trusted_issuer:
+      issuer: {{ .Values.configuration.server.security.trustedIssuer.issuer | quote }}
+      jwks_url: {{ .Values.configuration.server.security.trustedIssuer.jwksUrl | quote }}
+      audience: {{ .Values.configuration.server.security.trustedIssuer.audience | quote }}
+      {{- if .Values.configuration.server.security.trustedIssuer.requiredClaims }}
+      required_claims:
+        {{- range .Values.configuration.server.security.trustedIssuer.requiredClaims }}
+        - claim: {{ .claim | quote }}
+          value: {{ .value | quote }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
 
 gate_client:
   hostname: {{ .Values.configuration.gateClient.hostname | quote }}

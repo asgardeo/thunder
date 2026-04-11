@@ -46,7 +46,7 @@ func (s *PromptOnlyNodeTestSuite) TestNewPromptOnlyNode() {
 
 func (s *PromptOnlyNodeTestSuite) TestExecuteNoInputs() {
 	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
-	ctx := &NodeContext{FlowID: "test-flow", UserInputs: map[string]string{}}
+	ctx := &NodeContext{ExecutionID: "test-flow", UserInputs: map[string]string{}}
 
 	resp, err := node.Execute(ctx)
 
@@ -87,7 +87,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithRequiredData() {
 				},
 			})
 
-			ctx := &NodeContext{FlowID: "test-flow", CurrentAction: "submit", UserInputs: tt.userInputs}
+			ctx := &NodeContext{ExecutionID: "test-flow", CurrentAction: "submit", UserInputs: tt.userInputs}
 			resp, err := node.Execute(ctx)
 
 			s.Nil(err)
@@ -119,7 +119,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithOptionalData() {
 	})
 
 	ctx := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "submit",
 		UserInputs:    map[string]string{"username": "testuser"},
 	}
@@ -145,7 +145,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteMissingRequiredOnly() {
 	})
 
 	ctx := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "submit",
 		UserInputs:    map[string]string{"nickname": "testnick"},
 	}
@@ -191,9 +191,9 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithVerboseModeEnabled() {
 
 	// Test with verbose mode enabled
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{},
-		Verbose:    true,
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{},
+		Verbose:     true,
 	}
 	resp, err := node.Execute(ctx)
 
@@ -230,9 +230,9 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithVerboseModeDisabled() {
 
 	// Test with verbose mode disabled (default)
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{},
-		Verbose:    false,
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{},
+		Verbose:     false,
 	}
 	resp, err := node.Execute(ctx)
 
@@ -257,9 +257,9 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteVerboseModeNoMeta() {
 
 	// Test with verbose mode enabled but no meta defined
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{},
-		Verbose:    true,
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{},
+		Verbose:     true,
 	}
 	resp, err := node.Execute(ctx)
 
@@ -289,7 +289,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithSets_ActionWithInputs() {
 
 	// Select action_001 but don't provide inputs
 	ctx := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "action_001",
 		UserInputs:    map[string]string{},
 	}
@@ -320,7 +320,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithSets_ActionWithoutInputs() {
 
 	// Select action_002 which has no inputs
 	ctx := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "action_002",
 		UserInputs:    map[string]string{},
 	}
@@ -348,7 +348,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithSets_ActionWithInputsProvided()
 
 	// Select action_001 with all inputs provided
 	ctx := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "action_001",
 		UserInputs: map[string]string{
 			"username": "testuser",
@@ -378,7 +378,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithSets_NoActionSelected() {
 	})
 
 	ctx := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "",
 		UserInputs:    map[string]string{},
 	}
@@ -407,7 +407,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithInvalidAction() {
 
 	// Select an action that doesn't exist
 	ctx := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "unknown_action",
 		UserInputs:    map[string]string{},
 	}
@@ -435,7 +435,7 @@ func (s *PromptOnlyNodeTestSuite) TestAutoSelectSingleAction_NoInputs() {
 	})
 
 	ctx := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "", // No action selected
 		UserInputs:    map[string]string{},
 	}
@@ -465,7 +465,7 @@ func (s *PromptOnlyNodeTestSuite) TestAutoSelectSingleAction_WithInputsProvided(
 	})
 
 	ctx := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "", // No action selected
 		UserInputs: map[string]string{
 			"username": "testuser",
@@ -498,7 +498,7 @@ func (s *PromptOnlyNodeTestSuite) TestAutoSelectSingleAction_WithMissingInputs()
 	})
 
 	ctx := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "",                  // No action selected
 		UserInputs:    map[string]string{}, // No inputs
 	}
@@ -529,7 +529,7 @@ func (s *PromptOnlyNodeTestSuite) TestAutoSelectSingleAction_MultipleActionsNoAu
 	})
 
 	ctx := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "", // No action selected
 		UserInputs:    map[string]string{},
 	}
@@ -556,8 +556,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason() {
 
 	// Context with failure reason in runtime data
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{},
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
 			"failureReason": "Authentication failed",
 		},
@@ -586,7 +586,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason_ClearsUserInputs(
 
 	// User submitted inputs, but downstream task failed - routed back with failureReason
 	ctx := &NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			"username": "takenuser",
 			"password": "secret",
@@ -618,7 +618,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason_ClearsCurrentActi
 	})
 
 	ctx := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "submit",
 		UserInputs: map[string]string{
 			"email": "existing@example.com",
@@ -650,8 +650,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithEmptyFailureReason() {
 
 	// Context with empty failure reason
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{},
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
 			"failureReason": "",
 		},
@@ -679,7 +679,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithNilRuntimeData() {
 
 	// Context with nil runtime data
 	ctx := &NodeContext{
-		FlowID:      "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs:  map[string]string{},
 		RuntimeData: nil,
 	}
@@ -709,7 +709,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteInvalidActionReturnsFailure() {
 	// Provide all required inputs but with an action that matches but has no nextNode
 	// This simulates when getNextNodeForActionRef returns empty string
 	ctx := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "valid_action",
 		UserInputs: map[string]string{
 			"username": "testuser",
@@ -959,7 +959,7 @@ func (s *PromptOnlyNodeTestSuite) TestAutoSelectClearsActionsFromResponse() {
 	})
 
 	ctx := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "", // No action selected
 		UserInputs: map[string]string{
 			"username": "testuser",
@@ -989,8 +989,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureAndRecovery() {
 
 	// First execution with failure
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{},
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
 			"failureReason": "Invalid credentials",
 			"otherData":     "should remain",
@@ -1040,8 +1040,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithForwardedDataOptions() {
 
 	// Execute with ForwardedData containing inputs with options
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{},
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{},
 		ForwardedData: map[string]interface{}{
 			common.ForwardedDataKeyInputs: []common.Input{
 				{
@@ -1083,8 +1083,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithForwardedDataNoMatch() {
 
 	// ForwardedData has inputs but different Identifier
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{},
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{},
 		ForwardedData: map[string]interface{}{
 			common.ForwardedDataKeyInputs: []common.Input{
 				{
@@ -1120,8 +1120,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithNoForwardedData() {
 
 	// No ForwardedData
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{},
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{},
 	}
 	resp, err := node.Execute(ctx)
 
@@ -1151,8 +1151,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithForwardedDataMultipleInputs() {
 
 	// ForwardedData has options for only userType
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{},
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{},
 		ForwardedData: map[string]interface{}{
 			common.ForwardedDataKeyInputs: []common.Input{
 				{
@@ -1205,8 +1205,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithForwardedDataNonInputType() {
 
 	// ForwardedData has wrong type (string instead of []common.Input)
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{},
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{},
 		ForwardedData: map[string]interface{}{
 			common.ForwardedDataKeyInputs: "not-an-input-slice",
 		},
@@ -1242,8 +1242,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithForwardedDataPreservesPromptFie
 
 	// ForwardedData has different Ref and Type (should NOT overwrite)
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{},
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{},
 		ForwardedData: map[string]interface{}{
 			common.ForwardedDataKeyInputs: []common.Input{
 				{
@@ -1285,8 +1285,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithForwardedDataEmptyOptions() {
 
 	// ForwardedData has matching input but with empty options
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{},
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{},
 		ForwardedData: map[string]interface{}{
 			common.ForwardedDataKeyInputs: []common.Input{
 				{
@@ -1390,9 +1390,9 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteDisplayOnlyPrompt_WithMessage() {
 
 	// Execute with verbose mode to get meta
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{},
-		Verbose:    true,
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{},
+		Verbose:     true,
 	}
 	resp, err := node.Execute(ctx)
 
@@ -1413,8 +1413,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteDisplayOnlyPrompt_WithoutMessage() 
 	promptNode.SetPrompts([]common.Prompt{})
 
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{},
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{},
 	}
 	resp, err := node.Execute(ctx)
 
@@ -1438,8 +1438,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteDisplayOnlyPrompt_IgnoresUserInputs
 
 	// Even though user inputs are provided, display-only prompt should ignore them
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{"username": "user123"},
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{"username": "user123"},
 	}
 	resp, err := node.Execute(ctx)
 
@@ -1467,9 +1467,9 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteDisplayOnlyPrompt_WithVerboseModeDi
 
 	// Execute with verbose mode disabled
 	ctx := &NodeContext{
-		FlowID:     "test-flow",
-		UserInputs: map[string]string{},
-		Verbose:    false,
+		ExecutionID: "test-flow",
+		UserInputs:  map[string]string{},
+		Verbose:     false,
 	}
 	resp, err := node.Execute(ctx)
 
@@ -1510,7 +1510,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteActionTypeForwarding() {
 	})
 
 	ctx := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "login_action",
 		UserInputs:    map[string]string{"username": "testuser"},
 	}
@@ -1539,7 +1539,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteActionTypeForwarding_MultipleAction
 
 	// Test with google action
 	ctx1 := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "google",
 		UserInputs:    map[string]string{},
 	}
@@ -1552,7 +1552,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteActionTypeForwarding_MultipleAction
 
 	// Test with github action
 	ctx2 := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "github",
 		UserInputs:    map[string]string{},
 	}
@@ -1579,7 +1579,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteActionTypeForwarding_NoTypeField() 
 	})
 
 	ctx := &NodeContext{
-		FlowID:        "test-flow",
+		ExecutionID:   "test-flow",
 		CurrentAction: "submit",
 		UserInputs:    map[string]string{"username": "testuser"},
 	}

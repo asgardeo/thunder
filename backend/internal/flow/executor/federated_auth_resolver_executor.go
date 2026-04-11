@@ -69,7 +69,7 @@ func newFederatedAuthResolverExecutor(
 // It filters candidates generically against all user inputs (e.g., ouHandle, userType, or any
 // attribute), matching the same pattern used by the IdentifyingExecutor's filterUsersByAttributes.
 func (f *federatedAuthResolverExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := f.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := f.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing federated auth resolver")
 
 	execResp := &common.ExecutorResponse{

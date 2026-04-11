@@ -86,7 +86,7 @@ const (
 	SessionDataKeyConsent string = "sessionDataKeyConsent"
 	ShowInsecureWarning   string = "showInsecureWarning"
 	AppID                 string = "applicationId"
-	FlowID                string = "flowId"
+	ExecutionID           string = "executionId"
 	Assertion             string = "assertion"
 )
 

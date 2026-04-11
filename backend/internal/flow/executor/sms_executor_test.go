@@ -65,7 +65,7 @@ func (suite *SMSExecutorTestSuite) SetupTest() {
 
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_Success() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+94714627887",
@@ -97,7 +97,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_Success() {
 
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_RecipientFromRuntimeData() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs:   make(map[string]string),
 		RuntimeData: map[string]string{
@@ -129,7 +129,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_RecipientFromRuntimeData
 
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserInputOverridesRuntimeData() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+94714627887",
@@ -163,7 +163,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserInputOverridesRuntim
 
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_CustomPhoneAttribute() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"phoneNumber": "+94714627887",
@@ -198,7 +198,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_CustomPhoneAttribute() {
 
 func (suite *SMSExecutorTestSuite) TestExecute_PrerequisiteNotMet_ReturnsFailure() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs:   make(map[string]string),
 		RuntimeData:  make(map[string]string),
@@ -219,7 +219,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_PrerequisiteNotMet_ReturnsFailure
 
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_MissingRecipient() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs:   make(map[string]string),
 		RuntimeData:  make(map[string]string),
@@ -243,7 +243,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_MissingRecipient() {
 
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_MissingSenderID() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+94714627887",
@@ -267,7 +267,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_MissingSenderID() {
 
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_InvalidSenderIDType() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+94714627887",
@@ -291,7 +291,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_InvalidSenderIDType() {
 
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_InvalidPhoneNumber() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "not-a-phone",
@@ -330,7 +330,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_NilSMSSenderService_Retu
 	noServiceExecutor := newSMSExecutor(mockFactory, nil, suite.mockTemplateService)
 
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+94714627887",
@@ -350,7 +350,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_NilSMSSenderService_Retu
 
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_ClientError() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+94714627887",
@@ -386,7 +386,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_ClientError() {
 
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_ServerError() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+94714627887",
@@ -421,7 +421,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_ServerError() {
 
 func (suite *SMSExecutorTestSuite) TestExecute_NoSMSTemplateProperty_ReturnsFlowError() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+94714627887",
@@ -448,7 +448,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_NoSMSTemplateProperty_ReturnsFlow
 
 func (suite *SMSExecutorTestSuite) TestExecute_EmptySMSTemplateProperty_ReturnsFlowError() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+94714627887",
@@ -476,7 +476,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_EmptySMSTemplateProperty_ReturnsF
 
 func (suite *SMSExecutorTestSuite) TestExecute_SMSTemplatePropertySet_UsesCustomScenario() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+94714627887",
@@ -509,7 +509,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SMSTemplatePropertySet_UsesCustom
 
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_TemplateRenderFailure_ReturnsError() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			common.AttributeMobileNumber: "+94714627887",

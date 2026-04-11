@@ -23,8 +23,8 @@ import AcceptInviteBox from '../components/AcceptInvite/AcceptInviteBox';
 /**
  * AcceptInvitePage - Page for end users to accept an invite and set their password.
  *
- * This page is accessed via an invite link containing flowId and inviteToken query parameters.
- * Example: /invite?flowId=xxx&inviteToken=yyy
+ * This page is accessed via an invite link containing executionId and inviteToken query parameters.
+ * Example: /invite?executionId=xxx&inviteToken=yyy
  */
 export default function AcceptInvitePage(): JSX.Element {
   return (

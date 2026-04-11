@@ -31,7 +31,7 @@ type TestSuiteConfig struct {
 }
 
 type FlowStep struct {
-	FlowID        string   `json:"flowId"`
+	ExecutionID   string   `json:"executionId"`
 	FlowStatus    string   `json:"flowStatus"`
 	Type          string   `json:"type,omitempty"`
 	Data          FlowData `json:"data,omitempty"`

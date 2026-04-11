@@ -23,8 +23,8 @@ const (
 	LoggerKeyComponentName = "component"
 	// LoggerKeyExecutorName is the key used to identify the executor ID in the logger.
 	LoggerKeyExecutorName = "executorName"
-	// LoggerKeyFlowID is the key used to identify the flow ID in the logger.
-	LoggerKeyFlowID = "flowId"
+	// LoggerKeyExecutionID is the key used to identify the flow execution ID in the logger.
+	LoggerKeyExecutionID = "executionID"
 	// LoggerKeyNodeID is the key used to identify the node ID in the logger.
 	LoggerKeyNodeID = "nodeId"
 	// LoggerKeyTraceID is the key used to identify the trace ID (correlation ID) in the logger.

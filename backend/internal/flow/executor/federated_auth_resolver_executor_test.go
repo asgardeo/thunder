@@ -66,8 +66,8 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_SingleCandidateMatch() 
 	candidatesJSON, _ := json.Marshal(candidates)
 
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		UserInputs: map[string]string{"ouHandle": "org-alpha"},
+		ExecutionID: "flow-123",
+		UserInputs:  map[string]string{"ouHandle": "org-alpha"},
 		RuntimeData: map[string]string{
 			common.RuntimeKeyCandidateUsers: string(candidatesJSON),
 			"sub":                           "sub-123",
@@ -92,7 +92,7 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_SingleCandidateMatch() 
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_NoCandidatesInRuntimeData() {
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		UserInputs:  map[string]string{"ouHandle": "org-alpha"},
 		RuntimeData: map[string]string{},
 	}
@@ -111,8 +111,8 @@ func (suite *FederatedAuthResolverTestSuite) executeWithCandidatesAndInput(
 	candidatesJSON, _ := json.Marshal(candidates)
 
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		UserInputs: inputs,
+		ExecutionID: "flow-123",
+		UserInputs:  inputs,
 		RuntimeData: map[string]string{
 			common.RuntimeKeyCandidateUsers: string(candidatesJSON),
 		},
@@ -169,7 +169,7 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_IndistinguishableCandid
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_RequiredInputsMissing() {
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
 	}
@@ -185,8 +185,8 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_RequiredInputsMissing()
 
 func (suite *FederatedAuthResolverTestSuite) TestExecute_InvalidCandidatesJSON() {
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		UserInputs: map[string]string{"ouHandle": "org-alpha"},
+		ExecutionID: "flow-123",
+		UserInputs:  map[string]string{"ouHandle": "org-alpha"},
 		RuntimeData: map[string]string{
 			common.RuntimeKeyCandidateUsers: "invalid-json",
 		},
@@ -208,8 +208,8 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_PreservesSubInRuntimeDa
 	candidatesJSON, _ := json.Marshal(candidates)
 
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		UserInputs: map[string]string{"ouHandle": "org-alpha"},
+		ExecutionID: "flow-123",
+		UserInputs:  map[string]string{"ouHandle": "org-alpha"},
 		RuntimeData: map[string]string{
 			common.RuntimeKeyCandidateUsers: string(candidatesJSON),
 			"sub":                           "federated-sub-123",
@@ -236,8 +236,8 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_FailsWithoutFederatedSu
 	candidatesJSON, _ := json.Marshal(candidates)
 
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		UserInputs: map[string]string{"ouHandle": "org-alpha"},
+		ExecutionID: "flow-123",
+		UserInputs:  map[string]string{"ouHandle": "org-alpha"},
 		RuntimeData: map[string]string{
 			common.RuntimeKeyCandidateUsers: string(candidatesJSON),
 		},
@@ -265,7 +265,7 @@ func (suite *FederatedAuthResolverTestSuite) TestExecute_IgnoresUnexpectedInputK
 
 	// Malicious client sends userID as an extra input
 	ctx := &core.NodeContext{
-		FlowID: "flow-123",
+		ExecutionID: "flow-123",
 		UserInputs: map[string]string{
 			"ouHandle": "org-alpha",
 			"userID":   "user-2", // should be ignored

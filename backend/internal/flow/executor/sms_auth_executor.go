@@ -88,7 +88,7 @@ func newSMSOTPAuthExecutor(
 
 // Execute executes the SMS OTP authentication logic.
 func (s *smsOTPAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing SMS OTP authentication executor")
 
 	execResp := &common.ExecutorResponse{
@@ -114,7 +114,7 @@ func (s *smsOTPAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 // executeSend executes the OTP sending step.
 func (s *smsOTPAuthExecutor) executeSend(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	err := s.InitiateOTP(ctx, execResp)
 	if err != nil {
@@ -129,7 +129,7 @@ func (s *smsOTPAuthExecutor) executeSend(ctx *core.NodeContext,
 // executeVerify executes the OTP verification step.
 func (s *smsOTPAuthExecutor) executeVerify(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	if !s.HasRequiredInputs(ctx, execResp) {
 		logger.Debug("Required inputs for SMS OTP verification are not provided")
@@ -152,7 +152,7 @@ func (s *smsOTPAuthExecutor) executeVerify(ctx *core.NodeContext,
 // InitiateOTP initiates the OTP sending process to the user's mobile number.
 func (s *smsOTPAuthExecutor) InitiateOTP(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) error {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Sending SMS OTP to user")
 
 	phoneAttr := s.resolvePhoneInput(ctx, mobileNumberInput).Identifier
@@ -225,7 +225,7 @@ func (s *smsOTPAuthExecutor) InitiateOTP(ctx *core.NodeContext,
 // ProcessAuthFlowResponse processes the authentication flow response for SMS OTP.
 func (s *smsOTPAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) error {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Processing authentication flow response for SMS OTP")
 
 	err := s.validateOTP(ctx, execResp, logger)
@@ -256,7 +256,7 @@ func (s *smsOTPAuthExecutor) ValidatePrerequisites(ctx *core.NodeContext,
 		return true
 	}
 
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	if ctx.FlowType == common.FlowTypeRegistration {
 		logger.Debug("Prerequisites not met for registration flow, prompting for mobile number")
@@ -328,7 +328,7 @@ func (s *smsOTPAuthExecutor) getUserMobileFromContext(ctx *core.NodeContext, pho
 // satisfyPrerequisites tries to satisfy the prerequisites for the SMSOTPAuthExecutor.
 func (s *smsOTPAuthExecutor) satisfyPrerequisites(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	execResp.Status = ""
 	execResp.FailureReason = ""
@@ -376,7 +376,7 @@ func (s *smsOTPAuthExecutor) satisfyPrerequisites(ctx *core.NodeContext,
 // resolveUserID resolves the user ID from the context based on various attributes.
 // TODO: Move to a separate resolver when the support is added.
 func (s *smsOTPAuthExecutor) resolveUserID(ctx *core.NodeContext) (bool, error) {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	// First, check if the user ID is already available in the context.
 	userID := s.GetUserIDFromContext(ctx)
@@ -455,7 +455,8 @@ func (s *smsOTPAuthExecutor) resolveUserIDFromAttribute(ctx *core.NodeContext,
 // getUserMobileNumber retrieves the mobile number for the given user ID.
 func (s *smsOTPAuthExecutor) getUserMobileNumber(userID string, ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (string, error) {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID), log.String("userID", userID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID),
+		log.String("userID", userID))
 	logger.Debug("Retrieving user mobile number")
 
 	// Try to get mobile number from context
@@ -627,7 +628,7 @@ func (s *smsOTPAuthExecutor) validateOTP(ctx *core.NodeContext, execResp *common
 // getAuthenticatedUser returns the authenticated user details for the given user ID.
 func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*authncm.AuthenticatedUser, error) {
-	logger := s.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	phoneAttr := ctx.RuntimeData[runtimeKeySMSOTPPhoneAttr]
 	if phoneAttr == "" {

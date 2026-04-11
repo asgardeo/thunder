@@ -62,14 +62,14 @@ func (suite *EmailExecutorTestSuite) SetupTest() {
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Success() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		FlowType:     common.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
 		},
 		RuntimeData: map[string]string{
-			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 		},
 		NodeProperties: map[string]interface{}{
 			"emailTemplate": "USER_INVITE",
@@ -81,7 +81,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Suc
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
 		template.TemplateData{
-			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 			"appName":    "",
 		},
 	).Return(&template.RenderedTemplate{
@@ -108,14 +108,14 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Suc
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_InviteLinkNotExposed() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		FlowType:     common.FlowTypeRegistration,
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
 		},
 		RuntimeData: map[string]string{
-			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 		},
 		NodeProperties: map[string]interface{}{
 			"emailTemplate": "SELF_REGISTRATION",
@@ -127,7 +127,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_Invit
 		template.ScenarioSelfRegistration,
 		template.TemplateTypeEmail,
 		template.TemplateData{
-			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 			"appName":    "",
 		},
 	).Return(&template.RenderedTemplate{
@@ -149,14 +149,14 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_Invit
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UsesUserInputOverRuntimeRecipient() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
 		},
 		RuntimeData: map[string]string{
 			"email":                     "runtime@example.com",
-			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 		},
 		NodeProperties: map[string]interface{}{
 			"emailTemplate": "USER_INVITE",
@@ -168,7 +168,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UsesUserInputOverRunti
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
 		template.TemplateData{
-			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 			"appName":    "",
 		},
 	).Return(&template.RenderedTemplate{
@@ -191,12 +191,12 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UsesUserInputOverRunti
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailFromRuntimeData() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs:   make(map[string]string),
 		RuntimeData: map[string]string{
 			"email":                     "runtime@example.com",
-			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 		},
 		NodeProperties: map[string]interface{}{
 			"emailTemplate": "USER_INVITE",
@@ -208,7 +208,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailFromRuntimeData()
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
 		template.TemplateData{
-			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 			"appName":    "",
 		},
 	).Return(&template.RenderedTemplate{
@@ -231,11 +231,11 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailFromRuntimeData()
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingRecipient() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs:   make(map[string]string),
 		RuntimeData: map[string]string{
-			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 		},
 		NodeProperties: map[string]interface{}{
 			"emailTemplate": "USER_INVITE",
@@ -252,7 +252,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingRecipient() {
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingInviteLink() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
@@ -273,7 +273,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingInviteLink() {
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_MissingInviteLink() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		FlowType:     common.FlowTypeRegistration,
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
@@ -295,13 +295,13 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_Missi
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingTemplateProperty_DefaultsToUserInvite() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
 		},
 		RuntimeData: map[string]string{
-			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 		},
 		NodeProperties: map[string]interface{}{},
 	}
@@ -312,7 +312,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingTemplatePropert
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
 		template.TemplateData{
-			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 			"appName":    "",
 		},
 	).Return(&template.RenderedTemplate{
@@ -335,13 +335,13 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingTemplatePropert
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmptyTemplateString_DefaultsToUserInvite() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
 		},
 		RuntimeData: map[string]string{
-			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 		},
 		NodeProperties: map[string]interface{}{
 			"emailTemplate": "",
@@ -353,7 +353,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmptyTemplateString_De
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
 		template.TemplateData{
-			"inviteLink": "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 			"appName":    "",
 		},
 	).Return(&template.RenderedTemplate{
@@ -376,13 +376,13 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmptyTemplateString_De
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_InvalidTemplateType_ReturnsError() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
 		},
 		RuntimeData: map[string]string{
-			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 		},
 		NodeProperties: map[string]interface{}{
 			"emailTemplate": 123,
@@ -398,13 +398,13 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_InvalidTemplateType_Re
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_TemplateRenderError() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
 		},
 		RuntimeData: map[string]string{
-			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 		},
 		NodeProperties: map[string]interface{}{
 			"emailTemplate": "USER_INVITE",
@@ -441,13 +441,13 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilTemplateService() {
 	noServiceExecutor := newEmailExecutor(mockFactory, suite.mockEmailClient, nil)
 
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
 		},
 		RuntimeData: map[string]string{
-			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 		},
 		NodeProperties: map[string]interface{}{
 			"emailTemplate": "USER_INVITE",
@@ -463,13 +463,13 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilTemplateService() {
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ClientError() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
 		},
 		RuntimeData: map[string]string{
-			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 		},
 		NodeProperties: map[string]interface{}{
 			"emailTemplate": "USER_INVITE",
@@ -498,13 +498,13 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ClientError() {
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ServerError() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
 		},
 		RuntimeData: map[string]string{
-			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 		},
 		NodeProperties: map[string]interface{}{
 			"emailTemplate": "USER_INVITE",
@@ -546,14 +546,14 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_NoOp() 
 	noEmailExecutor := newEmailExecutor(mockFactory, nil, suite.mockTemplateService)
 
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		FlowType:     common.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
 		},
 		RuntimeData: map[string]string{
-			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 		},
 		NodeProperties: map[string]interface{}{
 			"emailTemplate": "USER_INVITE",
@@ -571,14 +571,14 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_SelfReg
 	noEmailExecutor := newEmailExecutor(suite.mockFlowFactory, nil, suite.mockTemplateService)
 
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		FlowType:     common.FlowTypeRegistration,
 		ExecutorMode: ExecutorModeSend,
 		UserInputs: map[string]string{
 			"email": "user@example.com",
 		},
 		RuntimeData: map[string]string{
-			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?flowId=test&inviteToken=abc",
+			common.RuntimeKeyInviteLink: "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
 		},
 		NodeProperties: map[string]interface{}{
 			"emailTemplate": "SELF_REGISTRATION",
@@ -595,7 +595,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEmailClient_SelfReg
 
 func (suite *EmailExecutorTestSuite) TestExecute_InvalidMode() {
 	ctx := &core.NodeContext{
-		FlowID:       "test-flow-id",
+		ExecutionID:  "test-flow-id",
 		ExecutorMode: "invalid",
 		UserInputs:   make(map[string]string),
 		RuntimeData:  make(map[string]string),

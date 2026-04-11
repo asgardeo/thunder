@@ -377,13 +377,13 @@ func (ts *UserInfoTestSuite) getAuthorizationCodeToken(scope string) (string, er
 	}
 
 	// Step 2: Extract auth ID and flow ID
-	authId, flowID, err := testutils.ExtractAuthData(location)
+	authId, executionId, err := testutils.ExtractAuthData(location)
 	if err != nil {
 		return "", fmt.Errorf("failed to extract auth ID: %w", err)
 	}
 
 	// Step 3: Initiate authentication flow
-	_, err = testutils.ExecuteAuthenticationFlow(flowID, nil, "")
+	_, err = testutils.ExecuteAuthenticationFlow(executionId, nil, "")
 	if err != nil {
 		return "", fmt.Errorf("failed to initiate authentication flow: %w", err)
 	}
@@ -393,7 +393,7 @@ func (ts *UserInfoTestSuite) getAuthorizationCodeToken(scope string) (string, er
 		"username": "userinfo_test_user",
 		"password": "SecurePass123!",
 	}
-	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, authInputs, "action_001")
+	flowStep, err := testutils.ExecuteAuthenticationFlow(executionId, authInputs, "action_001")
 	if err != nil {
 		return "", fmt.Errorf("failed to execute authentication flow: %w", err)
 	}
@@ -447,13 +447,13 @@ func (ts *UserInfoTestSuite) getRefreshToken(scope string) (string, error) {
 	}
 
 	// Step 2: Extract auth ID and flow ID
-	authId, flowID, err := testutils.ExtractAuthData(location)
+	authId, executionId, err := testutils.ExtractAuthData(location)
 	if err != nil {
 		return "", fmt.Errorf("failed to extract auth ID: %w", err)
 	}
 
 	// Step 3: Initiate authentication flow
-	_, err = testutils.ExecuteAuthenticationFlow(flowID, map[string]string{}, "")
+	_, err = testutils.ExecuteAuthenticationFlow(executionId, map[string]string{}, "")
 	if err != nil {
 		return "", fmt.Errorf("failed to initiate authentication flow: %w", err)
 	}
@@ -463,7 +463,7 @@ func (ts *UserInfoTestSuite) getRefreshToken(scope string) (string, error) {
 		"username": "userinfo_test_user",
 		"password": "SecurePass123!",
 	}
-	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, authInputs, "action_001")
+	flowStep, err := testutils.ExecuteAuthenticationFlow(executionId, authInputs, "action_001")
 	if err != nil {
 		return "", fmt.Errorf("failed to execute authentication flow: %w", err)
 	}
@@ -951,13 +951,13 @@ func (ts *UserInfoTestSuite) getAuthorizationCodeTokenWithClient(scope, cID, cSe
 	location := authzResp.Header.Get("Location")
 
 	// 2. Extract
-	authId, flowID, err := testutils.ExtractAuthData(location)
+	authId, executionId, err := testutils.ExtractAuthData(location)
 	if err != nil {
 		return "", err
 	}
 
 	// 3. Initiate Auth
-	_, err = testutils.ExecuteAuthenticationFlow(flowID, nil, "")
+	_, err = testutils.ExecuteAuthenticationFlow(executionId, nil, "")
 	if err != nil {
 		return "", err
 	}
@@ -967,7 +967,7 @@ func (ts *UserInfoTestSuite) getAuthorizationCodeTokenWithClient(scope, cID, cSe
 		"username": "userinfo_test_user",
 		"password": "SecurePass123!",
 	}
-	flowStep, err := testutils.ExecuteAuthenticationFlow(flowID, authInputs, "action_001")
+	flowStep, err := testutils.ExecuteAuthenticationFlow(executionId, authInputs, "action_001")
 	if err != nil {
 		return "", err
 	}

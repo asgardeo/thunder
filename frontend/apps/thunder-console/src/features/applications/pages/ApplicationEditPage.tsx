@@ -89,6 +89,7 @@ export default function ApplicationEditPage() {
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [tempName, setTempName] = useState('');
   const [tempDescription, setTempDescription] = useState('');
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
 
   const handleBack = async () => {
     await navigate('/applications');
@@ -420,7 +421,12 @@ export default function ApplicationEditPage() {
 
         {/* Token Tab */}
         <TabPanel value={activeTab} index={hasIntegrationGuides ? 4 : 3}>
-          <EditTokenSettings application={application} oauth2Config={oauth2Config} onFieldChange={handleFieldChange} />
+          <EditTokenSettings
+            application={application}
+            oauth2Config={oauth2Config}
+            onFieldChange={handleFieldChange}
+            onValidationChange={setHasValidationErrors}
+          />
         </TabPanel>
 
         {/* Advanced Settings Tab */}
@@ -443,6 +449,7 @@ export default function ApplicationEditPage() {
           saveLabel={t('applications:edit.page.save')}
           savingLabel={t('applications:edit.page.saving')}
           isSaving={updateApplication.isPending}
+          saveDisabled={hasValidationErrors}
           onReset={() => setEditedApp({})}
           onSave={() => {
             handleSave().catch(() => null);

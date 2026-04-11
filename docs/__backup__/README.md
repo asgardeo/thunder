@@ -19,19 +19,19 @@ System APIs of Thunder are secured by default. You need to obtain an access toke
      -d '{"applicationId":"<application_id>","flowType":"AUTHENTICATION"}'
    ```
 
-2. **Extract the flowId from the response:**
+2. **Extract the executionId from the response:**
 
    ```json
-   {"flowId":"<flow_id>","flowStatus":"INCOMPLETE", ...}
+   {"executionId":"<execution_id>","flowStatus":"INCOMPLETE", ...}
    ```
 
 3. **Submit credentials:**
 
-   Run the following command, replacing `<flow_id>` with the `flowId` value you extracted above.
+   Run the following command, replacing `<execution_id>` with the `executionId` value you extracted above.
 
    ```bash
    curl -k -X POST 'https://localhost:8090/flow/execute' \
-     -d '{"flowId":"<flow_id>", "inputs":{"username":"admin","password":"admin","requested_permissions":"system"},"action":"action_001"}'
+     -d '{"executionId":"<execution_id>", "inputs":{"username":"admin","password":"admin","requested_permissions":"system"},"action":"action_001"}'
    ```
 
 4. **Extract the assertion from the response:**
@@ -39,7 +39,7 @@ System APIs of Thunder are secured by default. You need to obtain an access toke
    Obtain the system API token by extracting the `assertion` value from the response.
 
    ```json
-   {"flowId":"<flow_id>","flowStatus":"COMPLETE","data":{},"assertion":"<assertion>"}
+   {"executionId":"<execution_id>","flowStatus":"COMPLETE","data":{},"assertion":"<assertion>"}
    ```
 
 3. **Use the assertion as a Bearer token:**

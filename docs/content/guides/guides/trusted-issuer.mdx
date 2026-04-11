@@ -1,0 +1,140 @@
+---
+title: Trusted Issuer
+---
+
+# Trusted Issuer
+
+Thunder can accept access tokens issued by an external authorization server and validate them locally using that server's JWKS endpoint. This enables federated authentication scenarios. An authorized user base can live on a separate central authorization server and still access a Thunder instance that acts purely as a resource server. The resource-server Thunder instance does not issue its own tokens for those users.
+
+You can enable this by adding a `server.security.trusted_issuer` block to `repository/conf/deployment.yaml`.
+
+## When to Enable
+
+Enable `trusted_issuer` on a Thunder instance when:
+
+- You run a multi-tenant deployment with one central Thunder acting as the identity provider and other Thunder instances acting as resource servers.
+- You want tenant instances to delegate login to the central Thunder rather than duplicate user directories.
+- Bearer tokens arriving at the tenant instance are signed by the central Thunder and carry an `iss` claim that identifies it.
+
+If a Thunder instance only serves its own users and issues its own tokens, omit the `server.security.trusted_issuer` block. Trusted issuer validation activates as soon as `server.security.trusted_issuer.issuer` is set; `jwks_url` and `audience` are then required and Thunder fails to start if either is missing.
+
+## Configuration
+
+Add a `server.security.trusted_issuer` block to the tenant instance's `deployment.yaml`:
+
+```yaml
+server:
+  security:
+    trusted_issuer:
+      issuer: "https://cloud.example.com"
+      jwks_url: "https://cloud.example.com/oauth2/jwks"
+      audience: "https://tenant.example.com"
+      required_claims:
+        - claim: "ouId"
+          value: "tenant-123"
+```
+
+| Field | Description |
+|-------|-------------|
+| `issuer` | The exact value of the `iss` claim that incoming tokens must carry. This should match the central authorization server's issuer URL. |
+| `jwks_url` | The JWKS endpoint on the central server. Thunder uses it to fetch the signing keys needed to verify token signatures. |
+| `audience` | The expected `aud` claim on incoming tokens. Set this to the resource-server Thunder instance's own public URL. The client at the central authorization server must send a matching `resource` parameter in the authorization request so the issued token's `aud` points at this instance. |
+| `required_claims` | Optional list of claims that every accepted token must contain, each with an expected value. Tokens missing a required claim, or carrying a different value, are rejected. Use this to enforce any additional constraints on accepted tokens. |
+
+The JWKS cache TTL is configured at `server.security.jwks_cache_ttl`, not inside this block. The same cache backs every JWKS consumer in the server, including trusted issuer validation and federated OIDC authenticators. See [Security Configuration](/docs/next/guides/getting-started/configuration#security-configuration) for details.
+
+## Console Portal Configuration
+
+The `server.security.trusted_issuer` block on the server only controls how Thunder validates incoming tokens. Thunder's console portal still authenticates against this Thunder instance unless you also delegate its login to the external authorization server. To delegate console login, add a `trusted_issuer` entry to the console's runtime configuration at `apps/console/config.js`:
+
+```js
+window.__THUNDER_RUNTIME_CONFIG__ = {
+  // ...existing client, server, brand entries...
+  trusted_issuer: {
+    hostname: "auth.example.com",
+    port: 443,
+    http_only: false,
+    public_url: "https://auth.example.com",
+    client_id: "FEDERATED_CONSOLE",
+    scopes: ['openid', 'profile', 'email', 'group', 'ou', 'system', 'system:user', 'system:group', 'system:ou:view', 'system:userschema:view'],
+  },
+};
+```
+
+| Field | Description |
+|-------|-------------|
+| `hostname` | The hostname of the external authorization server the console redirects users to for login. |
+| `port` | Port on the external authorization server. |
+| `http_only` | Set to `true` only for local or development authorization servers served over HTTP. |
+| `public_url` | Fully-qualified URL of the external authorization server. Used by the console to build authorization requests. |
+| `client_id` | OAuth client ID registered on the external authorization server for this Thunder instance's console. |
+| `scopes` | Scopes the console requests from the external authorization server. Must include every scope Thunder's APIs require. |
+
+When this block is present, the console delegates login to the external authorization server. When omitted, the console authenticates against this Thunder instance normally.
+
+:::note
+The external authorization server must permit this Thunder instance's origin in its CORS allowed-origins configuration. Otherwise, browser calls from the console to the authorization server's `/oauth2/token`, `/oauth2/jwks`, and related endpoints are blocked.
+:::
+
+## How Validation Works
+
+When trusted issuer is configured and a request carries a bearer token, Thunder:
+
+1. Parses the JWT and confirms its `iss` claim matches `trusted_issuer.issuer`.
+2. Fetches signing keys from `trusted_issuer.jwks_url` and verifies the signature.
+3. Confirms the `aud` claim matches `trusted_issuer.audience`.
+4. Checks that every entry in `required_claims` is present with the expected value.
+
+If any step fails, the token is rejected.
+
+Thunder picks the verification method based on the token's `iss` claim. If `iss` matches `trusted_issuer.issuer`, the token is verified against the configured JWKS endpoint. Otherwise, if `iss` matches one of this server's own issuers, Thunder verifies it with its local signing key. Any other `iss` is rejected.
+
+Each `required_claims` entry is matched by exact string equality: the claim must be present on the token and its value must match the configured `value` exactly.
+
+Thunder accepts tokens signed with `RS256`, `RS512`, `ES256`, `ES384`, `ES512`, or `EdDSA`. Tokens using any other algorithm are rejected. JWKS responses are cached in-process for `server.security.jwks_cache_ttl` seconds (default: 300), so plan external-server key rotations with at least that much overlap.
+
+## Helm Configuration
+
+When installing Thunder with the Helm chart at `install/helm`, the same settings are available under the `configuration` key using camelCase field names.
+
+```yaml
+configuration:
+  server:
+    security:
+      trustedIssuer:
+        issuer: "https://auth.example.com"
+        jwksUrl: "https://auth.example.com/oauth2/jwks"
+        audience: "https://thunder.example.com"
+        requiredClaims:
+          - claim: "ouId"
+            value: "tenant-123"
+```
+
+To configure the console portal instead of editing `apps/console/config.js` directly, set `configuration.consoleClient.trustedIssuer` in the chart values. The fields mirror those described in [Console Portal Configuration](#console-portal-configuration) but use camelCase (`httpOnly`, `publicUrl`, `clientId`):
+
+```yaml
+configuration:
+  consoleClient:
+    trustedIssuer:
+      hostname: "auth.example.com"
+      port: 443
+      httpOnly: false
+      publicUrl: "https://auth.example.com"
+      clientId: "FEDERATED_CONSOLE"
+      scopes: "['openid', 'profile', 'email', 'group', 'ou', 'system', 'system:user', 'system:group', 'system:ou:view', 'system:userschema:view']"
+```
+
+## Troubleshooting
+
+| Symptom | Likely Cause | Fix |
+|---------|--------------|-----|
+| Login redirect hangs or the token exchange fails with a CORS error in the browser console | Thunder's origin is not permitted by the external authorization server's CORS configuration | Add Thunder's origin to the authorization server's CORS allowed-origins configuration. |
+| Tokens rejected with "issuer mismatch" | `trusted_issuer.issuer` does not exactly match the `iss` claim on incoming tokens | Set `trusted_issuer.issuer` to match exactly (scheme, host, port, trailing slash). |
+| Tokens rejected with "audience mismatch" | The authorization server is not sending a `resource` parameter, so `aud` defaults to the client ID instead of Thunder's URL | Either set `trusted_issuer.audience` to the client ID, or configure the client to send `resource=<thunder-url>` in the authorization request. |
+| Tokens rejected with "required claim missing" | A claim listed under `required_claims` is not present on the token, or its value differs | Remove the claim from `required_claims`, or configure the authorization server to include it with the expected value. |
+| JWKS fetch fails | `trusted_issuer.jwks_url` cannot be reached from Thunder, or the authorization server uses a certificate Thunder does not trust | Check that the network allows the request, and install the authorization server's CA certificate on Thunder if needed. |
+| Console never redirects to the external authorization server | `consoleClient.trustedIssuer` not set, or `publicUrl`/`hostname` still point at Thunder | Verify the `consoleClient.trustedIssuer` block and re-render the chart. |
+
+## Reference
+
+- Configuration reference: [Trusted Issuer Configuration](/docs/next/guides/getting-started/configuration#trusted-issuer-configuration)

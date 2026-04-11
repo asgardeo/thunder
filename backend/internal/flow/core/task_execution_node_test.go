@@ -71,7 +71,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecutorMethods() {
 
 func (s *TaskExecutionNodeTestSuite) TestExecuteNoExecutor() {
 	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{ExecutionID: "test-flow"}
 
 	resp, err := node.Execute(ctx)
 
@@ -154,7 +154,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteSuccess() {
 			tt.setupMock(mockExec)
 			execNode.SetExecutor(mockExec)
 
-			ctx := &NodeContext{FlowID: "test-flow"}
+			ctx := &NodeContext{ExecutionID: "test-flow"}
 			resp, err := node.Execute(ctx)
 
 			s.Nil(err)
@@ -176,7 +176,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailure() {
 	execNode, _ := node.(ExecutorBackedNodeInterface)
 	execNode.SetExecutor(s.mockExecutor)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{ExecutionID: "test-flow"}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -197,7 +197,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureHandler() {
 	execNode.SetOnFailure("error-prompt")
 	execNode.SetExecutor(s.mockExecutor)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{ExecutionID: "test-flow"}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -217,7 +217,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteExecutorError() {
 	execNode, _ := node.(ExecutorBackedNodeInterface)
 	execNode.SetExecutor(s.mockExecutor)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{ExecutionID: "test-flow"}
 	resp, err := node.Execute(ctx)
 
 	s.NotNil(err)
@@ -232,7 +232,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteNilExecutorResponse() {
 	s.mockExecutor.On("Execute", mock.Anything).Return(nil, nil).Once()
 	execNode.SetExecutor(s.mockExecutor)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{ExecutionID: "test-flow"}
 	resp, err := node.Execute(ctx)
 
 	s.NotNil(err)
@@ -253,7 +253,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecutePopulatedNodeProperties() {
 
 	execNode.SetExecutor(mockExec)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{ExecutionID: "test-flow"}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -330,7 +330,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteWithMode() {
 
 	execNode.SetExecutor(mockExec)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{ExecutionID: "test-flow"}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -359,7 +359,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteEnrichesRuntimeData() {
 	execNode.SetExecutor(mockExec)
 
 	ctx := &NodeContext{
-		FlowID:      "test-flow",
+		ExecutionID: "test-flow",
 		AppID:       "app-789",
 		RuntimeData: map[string]string{"existing": "value"},
 	}
@@ -424,7 +424,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteWithOnSuccess() {
 
 	execNode.SetExecutor(mockExec)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{ExecutionID: "test-flow"}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -448,7 +448,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteWithEmptyNodeProperties() {
 
 	execNode.SetExecutor(mockExec)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{ExecutionID: "test-flow"}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -471,7 +471,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithoutOnFailureHandler()
 
 	execNode.SetExecutor(mockExec)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{ExecutionID: "test-flow"}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -493,7 +493,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteCompleteWithoutOnSuccess() {
 
 	execNode.SetExecutor(mockExec)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{ExecutionID: "test-flow"}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -576,7 +576,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureStoresFailur
 
 	execNode.SetExecutor(mockExec)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{ExecutionID: "test-flow"}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -607,7 +607,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureInitializesR
 
 	execNode.SetExecutor(mockExec)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{ExecutionID: "test-flow"}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -637,7 +637,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithEmptyFailureReasonAnd
 
 	execNode.SetExecutor(mockExec)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{ExecutionID: "test-flow"}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -671,7 +671,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureClearsNodeIn
 	execNode.SetExecutor(mockExec)
 
 	ctx := &NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			"email": "existing@example.com",
 		},
@@ -706,7 +706,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureNoNodeInputs
 	execNode.SetExecutor(mockExec)
 
 	ctx := &NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			"email": "user@example.com",
 		},
@@ -755,7 +755,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteHandle
 
 	execNode.SetExecutor(mockExec)
 
-	ctx := &NodeContext{FlowID: "test-flow"}
+	ctx := &NodeContext{ExecutionID: "test-flow"}
 	resp, err := node.Execute(ctx)
 
 	s.Nil(err)
@@ -791,7 +791,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteAndFai
 	execNode.SetExecutor(mockExec)
 
 	ctx := &NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			"username": "testuser",
 			"password": "wrongpassword",
@@ -839,7 +839,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteAndFai
 	execNode.SetExecutor(mockExec)
 
 	ctx := &NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			"username": "nonexistent",
 		},
@@ -878,7 +878,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteNoFail
 	execNode.SetExecutor(mockExec)
 
 	ctx := &NodeContext{
-		FlowID: "test-flow",
+		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
 			"username": "testuser",
 		},

@@ -48,12 +48,12 @@ var ErrorInvalidAppID = serviceerror.ServiceError{
 	ErrorDescription: "Invalid app ID provided in the request",
 }
 
-// ErrorInvalidFlowID defines the error response for invalid flow ID errors.
-var ErrorInvalidFlowID = serviceerror.ServiceError{
+// ErrorInvalidExecutionID defines the error response for invalid execution ID errors.
+var ErrorInvalidExecutionID = serviceerror.ServiceError{
 	Code:             "FES-1004",
 	Type:             serviceerror.ClientErrorType,
 	Error:            "Invalid request",
-	ErrorDescription: "Invalid flow ID provided in the request",
+	ErrorDescription: "Invalid flow execution ID provided in the request",
 }
 
 // ErrorInvalidFlowType defines the error response for invalid flow type errors.

@@ -129,9 +129,9 @@ func initiateAuthorizationFlow(clientID, redirectURI, responseType, scope, state
 }
 
 // ExecuteAuthenticationFlow executes an authentication flow and returns the flow step
-func ExecuteAuthenticationFlow(flowID string, inputs map[string]string, action string) (*FlowStep, error) {
+func ExecuteAuthenticationFlow(executionId string, inputs map[string]string, action string) (*FlowStep, error) {
 	flowData := map[string]interface{}{
-		"flowId": flowID,
+		"executionId": executionId,
 	}
 
 	if len(inputs) > 0 {
@@ -333,12 +333,12 @@ func ExtractAuthData(location string) (string, string, error) {
 		return "", "", fmt.Errorf("authId not found in redirect")
 	}
 
-	flowId := redirectURL.Query().Get("flowId")
-	if flowId == "" {
-		return "", "", fmt.Errorf("flowId not found in redirect")
+	executionId := redirectURL.Query().Get("executionId")
+	if executionId == "" {
+		return "", "", fmt.Errorf("executionId not found in redirect")
 	}
 
-	return authID, flowId, nil
+	return authID, executionId, nil
 }
 
 // ValidateOAuth2ErrorRedirect validates OAuth2 error redirect responses
@@ -437,19 +437,19 @@ func ObtainAccessTokenWithPassword(clientID, redirectURI, scope, username, passw
 
 	log.Printf("Authorization redirect location: %s", location)
 	// Step 2: Extract auth ID and flow ID
-	authID, flowID, err := ExtractAuthData(location)
+	authID, executionId, err := ExtractAuthData(location)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract auth ID: %w", err)
 	}
 
 	// Step 3: Execute initial authentication flow step (to get to the login prompt)
-	_, err = ExecuteAuthenticationFlow(flowID, nil, "")
+	_, err = ExecuteAuthenticationFlow(executionId, nil, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute initial authentication flow: %w", err)
 	}
 
 	// Step 4: Execute authentication flow with credentials
-	flowStep, err := ExecuteAuthenticationFlow(flowID, map[string]string{
+	flowStep, err := ExecuteAuthenticationFlow(executionId, map[string]string{
 		"username": username,
 		"password": password,
 	}, "action_001")

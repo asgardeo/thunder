@@ -195,7 +195,7 @@ These variables are used to manage tokens and authentication state. These will b
 | `codeVerifier` | PKCE code verifier |
 | `codeChallenge` | PKCE code challenge |
 | `authId` | Authentication session ID |
-| `flowId` | Flow execution ID |
+| `executionId` | Flow execution ID |
 | `assertion` | Authentication assertion |
 | `authCode` | Authorization code |
 

@@ -1,7 +1,251 @@
 ---
 title: Kubernetes
 sidebar_position: 2
+persona: iam
+description: Deploy Thunder to a Kubernetes cluster using Helm, with support for SQLite for development and PostgreSQL for production.
 ---
 
-# 🚧 WIP
-## This page is under construction. Please check back later.
+# Deploy Thunder on Kubernetes
+
+This guide walks you through deploying Thunder to a Kubernetes cluster using Helm charts. It covers a quick single-command install for development and a production-ready setup with external PostgreSQL.
+
+## Architecture Overview
+
+![Thunder Kubernetes Architecture](/assets/images/thunder-kubernetes-diagram.png)
+
+The diagram above shows the Thunder deployment in Kubernetes, including the application pods, ingress controller, and database configuration.
+
+## Prerequisites
+
+Before you begin, ensure the following are available:
+
+**Infrastructure:**
+- A running Kubernetes cluster (v1.19 or later). You can use [minikube](https://kubernetes.io/docs/tasks/tools/#minikube) or [kind](https://kind.sigs.k8s.io/) locally, or a managed service such as EKS, GKE, or AKS for production.
+- An NGINX Ingress Controller or a compatible alternative.
+- Valid TLS certificates for production deployments.
+
+**Required Tools:**
+
+| Tool | Installation Guide | Version Check |
+|------|--------------------|---------------|
+| Git | [Install Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) | `git --version` |
+| Helm | [Install Helm](https://helm.sh/docs/intro/install/) | `helm version` |
+| kubectl | [Install kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) | `kubectl version` |
+| Docker | [Install Docker](https://docs.docker.com/engine/install/) | `docker --version` |
+
+Verify cluster access before proceeding:
+
+```bash
+kubectl cluster-info
+helm version
+kubectl get pods -n ingress-nginx
+```
+
+## Install Thunder
+
+### Step 1: Install the Helm Chart
+
+Install Thunder from the GitHub Container Registry:
+
+```bash
+helm install thunder oci://ghcr.io/asgardeo/helm-charts/thunder
+```
+
+To install a specific version:
+
+```bash
+helm install thunder oci://ghcr.io/asgardeo/helm-charts/thunder --version 0.11.0
+```
+
+### Step 2: Verify the Installation
+
+```bash
+# Check pod status
+kubectl get pods -l app.kubernetes.io/name=thunder
+
+# Check services
+kubectl get services -l app.kubernetes.io/name=thunder
+
+# Check ingress
+kubectl get ingress
+```
+
+### Step 3: Access Thunder
+
+1. Get the external IP address of your NGINX Ingress Controller.
+2. Add an entry to your `/etc/hosts` file that maps the IP address to `thunder.local`.
+3. Open Thunder at `http://thunder.local`.
+
+If you are using a cloud provider, the load balancer assigns the external IP automatically.
+
+## Installation Options
+
+### Option 1: Inline Value Overrides
+
+Pass configuration values directly on the command line. The following example installs Thunder with SQLite for development or testing:
+
+```bash
+helm install thunder oci://ghcr.io/asgardeo/helm-charts/thunder \
+  --set configuration.database.config.type=sqlite \
+  --set configuration.database.runtime.type=sqlite
+```
+
+### Option 2: Custom Values File
+
+For production deployments, use a values file to manage configuration:
+
+1. Create a `custom-values.yaml` file:
+
+    ```yaml
+    deployment:
+      replicaCount: 3
+      resources:
+        requests:
+          cpu: 500m
+          memory: 512Mi
+        limits:
+          cpu: 2
+          memory: 1Gi
+
+    ingress:
+      hostname: thunder.example.com
+
+    configuration:
+      database:
+        config:
+          type: postgres
+          host: postgres.default.svc.cluster.local
+          port: 5432
+          name: configdb
+          username: thunder_user
+          password: <config-db-password>
+          sslmode: require
+        runtime:
+          type: postgres
+          host: postgres.default.svc.cluster.local
+          port: 5432
+          name: runtimedb
+          username: thunder_user
+          password: <runtime-db-password>
+          sslmode: require
+        user:
+          type: postgres
+          host: postgres.default.svc.cluster.local
+          port: 5432
+          name: userdb
+          username: thunder_user
+          password: <user-db-password>
+          sslmode: require
+    ```
+
+2. Install using the values file:
+
+    ```bash
+    helm install thunder oci://ghcr.io/asgardeo/helm-charts/thunder -f custom-values.yaml
+    ```
+
+## Database Setup
+
+Thunder supports both PostgreSQL and SQLite. PostgreSQL is recommended for production.
+
+### PostgreSQL
+
+Before deploying Thunder, prepare the PostgreSQL instance:
+
+1. Create the three required databases:
+
+    ```sql
+    CREATE DATABASE configdb;
+    CREATE DATABASE runtimedb;
+    CREATE DATABASE userdb;
+    ```
+
+2. Create a dedicated user:
+
+    ```sql
+    CREATE USER thunder_user WITH PASSWORD '<secure-password>';
+    ```
+
+3. Grant the required privileges in each database:
+
+    ```sql
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO thunder_user;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO thunder_user;
+    ```
+
+4. Run the initialization scripts from `backend/dbscripts` to create the schema.
+
+For a PostgreSQL setup using Helm, refer to the [Bitnami PostgreSQL Helm Chart](https://bitnami.com/stacks/postgresql).
+
+Once the databases are ready, configure Thunder to connect to them:
+
+```yaml
+configuration:
+  database:
+    config:
+      type: postgres
+      host: postgres.example.com
+      port: 5432
+      name: configdb
+      username: thunder_user
+      password: <config-db-password>
+      sslmode: require
+    runtime:
+      type: postgres
+      host: postgres.example.com
+      port: 5432
+      name: runtimedb
+      username: thunder_user
+      password: <runtime-db-password>
+      sslmode: require
+    user:
+      type: postgres
+      host: postgres.example.com
+      port: 5432
+      name: userdb
+      username: thunder_user
+      password: <user-db-password>
+      sslmode: require
+```
+
+### SQLite
+
+For development or testing, configure Thunder to use SQLite:
+
+```yaml
+configuration:
+  database:
+    config:
+      type: sqlite
+      sqlitePath: repository/database/configdb.db
+      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)"
+    runtime:
+      type: sqlite
+      sqlitePath: repository/database/runtimedb.db
+      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)"
+    user:
+      type: sqlite
+      sqlitePath: repository/database/userdb.db
+      sqliteOptions: "_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)"
+```
+
+## Upgrade and Rollback
+
+To upgrade to a new version:
+
+```bash
+helm upgrade thunder oci://ghcr.io/asgardeo/helm-charts/thunder \
+  --version 0.12.0 \
+  -f custom-values.yaml
+```
+
+To roll back to a previous release:
+
+```bash
+helm rollback thunder 1
+```
+
+## Next Steps
+
+- [Deploy Thunder on OpenChoreo](./openchoreo) — Deploy Thunder on the OpenChoreo platform.
+- [Deploy Thunder with Docker](./docker) — Run Thunder locally using Docker.

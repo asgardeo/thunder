@@ -37,7 +37,7 @@ func TestNodeTestSuite(t *testing.T) {
 func (s *NodeTestSuite) TestExecuteBaseNodeReturnsError() {
 	node := newTaskExecutionNode("node-1", nil, false, false)
 
-	resp, err := node.Execute(&NodeContext{FlowID: "f1"})
+	resp, err := node.Execute(&NodeContext{ExecutionID: "f1"})
 
 	s.NotNil(err)
 	s.Nil(resp)

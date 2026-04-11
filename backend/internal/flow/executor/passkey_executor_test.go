@@ -131,7 +131,7 @@ func createMockPasskeyAuthExecutor(t *testing.T) core.ExecutorInterface {
 // Helper to create a node context with common properties
 func createPasskeyNodeContext(mode string, flowType common.FlowType) *core.NodeContext {
 	return &core.NodeContext{
-		FlowID:       testPasskeyFlowID,
+		ExecutionID:  testPasskeyFlowID,
 		FlowType:     flowType,
 		ExecutorMode: mode,
 		UserInputs:   make(map[string]string),

@@ -73,9 +73,9 @@ func TestPublishFlowStartedEvent(t *testing.T) {
 
 	t.Run("with_authenticated_user", func(t *testing.T) {
 		ctx := &EngineContext{
-			FlowID:   "flow-001",
-			FlowType: common.FlowTypeAuthentication,
-			AppID:    "app-001",
+			ExecutionID: "flow-001",
+			FlowType:    common.FlowTypeAuthentication,
+			AppID:       "app-001",
 			AuthenticatedUser: authncm.AuthenticatedUser{
 				IsAuthenticated: true,
 				UserID:          "user-123",
@@ -93,7 +93,7 @@ func TestPublishFlowStartedEvent(t *testing.T) {
 
 	t.Run("without_authenticated_user", func(t *testing.T) {
 		ctx := &EngineContext{
-			FlowID:           "flow-002",
+			ExecutionID:      "flow-002",
 			FlowType:         common.FlowTypeRegistration,
 			AppID:            "app-002",
 			ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
@@ -115,9 +115,9 @@ func TestPublishFlowCompletedEvent(t *testing.T) {
 	defer config.ResetThunderRuntime()
 
 	ctx := &EngineContext{
-		FlowID:   "flow-003",
-		FlowType: common.FlowTypeAuthentication,
-		AppID:    "app-003",
+		ExecutionID: "flow-003",
+		FlowType:    common.FlowTypeAuthentication,
+		AppID:       "app-003",
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          "user-456",
@@ -144,7 +144,7 @@ func TestPublishFlowFailedEvent(t *testing.T) {
 
 	t.Run("with_error_description", func(t *testing.T) {
 		ctx := &EngineContext{
-			FlowID:           "flow-004",
+			ExecutionID:      "flow-004",
 			FlowType:         common.FlowTypeAuthentication,
 			AppID:            "app-004",
 			ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
@@ -169,7 +169,7 @@ func TestPublishFlowFailedEvent(t *testing.T) {
 
 	t.Run("without_error_description", func(t *testing.T) {
 		ctx := &EngineContext{
-			FlowID:           "flow-005",
+			ExecutionID:      "flow-005",
 			FlowType:         common.FlowTypeAuthentication,
 			AppID:            "app-005",
 			ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
@@ -204,7 +204,7 @@ func TestPublishNodeExecutionStartedEvent(t *testing.T) {
 		node.On("GetType").Return(common.NodeTypePrompt)
 
 		ctx := &EngineContext{
-			FlowID:           "flow-006",
+			ExecutionID:      "flow-006",
 			FlowType:         common.FlowTypeAuthentication,
 			AppID:            "app-006",
 			ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
@@ -224,7 +224,7 @@ func TestPublishNodeExecutionStartedEvent(t *testing.T) {
 		node.On("GetType").Return(common.NodeTypeTaskExecution)
 
 		ctx := &EngineContext{
-			FlowID:           "flow-007",
+			ExecutionID:      "flow-007",
 			FlowType:         common.FlowTypeAuthentication,
 			AppID:            "app-007",
 			ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
@@ -261,9 +261,9 @@ func TestPublishNodeExecutionCompletedEvent(t *testing.T) {
 		node.On("GetType").Return(common.NodeTypePrompt)
 
 		ctx := &EngineContext{
-			FlowID:   "flow-008",
-			FlowType: common.FlowTypeAuthentication,
-			AppID:    "app-008",
+			ExecutionID: "flow-008",
+			FlowType:    common.FlowTypeAuthentication,
+			AppID:       "app-008",
 			AuthenticatedUser: authncm.AuthenticatedUser{
 				IsAuthenticated: true,
 				UserID:          "user-789",
@@ -298,7 +298,7 @@ func TestPublishNodeExecutionCompletedEvent(t *testing.T) {
 		node.On("GetType").Return(common.NodeTypeTaskExecution)
 
 		ctx := &EngineContext{
-			FlowID:           "flow-009",
+			ExecutionID:      "flow-009",
 			FlowType:         common.FlowTypeAuthentication,
 			AppID:            "app-009",
 			ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
@@ -336,7 +336,7 @@ func TestPublishNodeExecutionCompletedEvent(t *testing.T) {
 		node.On("GetType").Return(common.NodeTypePrompt)
 
 		ctx := &EngineContext{
-			FlowID:           "flow-010",
+			ExecutionID:      "flow-010",
 			FlowType:         common.FlowTypeAuthentication,
 			AppID:            "app-010",
 			ExecutionHistory: make(map[string]*common.NodeExecutionRecord),
@@ -386,7 +386,7 @@ func TestObservabilityDisabled(t *testing.T) {
 
 	// Try to publish an event
 	ctx := &EngineContext{
-		FlowID:           "test-flow",
+		ExecutionID:      "test-flow",
 		FlowType:         common.FlowTypeAuthentication,
 		AppID:            "test-app",
 		ExecutionHistory: make(map[string]*common.NodeExecutionRecord),

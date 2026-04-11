@@ -53,7 +53,7 @@
       "picomatch": ">=4.0.4",
       "vite": "catalog:",
       "defu": ">=6.1.5",
-      "nx>axios": ">=1.13.5",
+      "axios": "1.15.0",
       "dompurify": ">=3.3.2",
       "minimatch@>=5.0.0 <5.1.8": ">=5.1.8",
       "minimatch@<3.1.4": ">=3.1.4",

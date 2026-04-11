@@ -38,7 +38,7 @@ Continue the flow by providing the flow ID, selected action, and user inputs:
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `flowId` | Yes | Flow session ID from previous response |
+| `executionId` | Yes | Flow session ID from previous response |
 | `action` | No | Reference to the selected action |
 | `inputs` | No | User-provided input values |
 
@@ -48,7 +48,7 @@ Continue the flow by providing the flow ID, selected action, and user inputs:
 curl -X POST https://localhost:8090/flow/execute \
   -H 'Content-Type: application/json' \
   -d '{
-    "flowId": "<flow-uuid>",
+    "executionId": "<flow-uuid>",
     "action": "action_001",
     "inputs": {
       "username": "user@example.com",
@@ -82,7 +82,7 @@ curl -X POST https://localhost:8090/flow/execute \
 
 ```json
 {
-  "flowId": "abc-123",
+  "executionId": "abc-123",
   "flowStatus": "PROMPT_ONLY",
   "stepId": "node_001",
   "type": "VIEW",
@@ -113,7 +113,7 @@ curl -X POST https://localhost:8090/flow/execute \
 
 ```json
 {
-  "flowId": "abc-123",
+  "executionId": "abc-123",
   "flowStatus": "PROMPT_ONLY",
   "stepId": "node_001",
   "type": "VIEW",
@@ -138,7 +138,7 @@ curl -X POST https://localhost:8090/flow/execute \
 
 | Field | Description |
 |-------|-------------|
-| `flowId` | Session identifier to use in subsequent requests |
+| `executionId` | Session identifier to use in following requests |
 | `flowStatus` | Current flow state (see Flow Status below) |
 | `stepId` | Current node/step identifier |
 | `type` | Response type (VIEW or REDIRECTION) |
@@ -175,7 +175,7 @@ On successful completion, the response includes a JWT assertion:
 
 ```json
 {
-  "flowId": "abc-123",
+  "executionId": "abc-123",
   "flowStatus": "COMPLETE",
   "assertion": "<jwt-token>"
 }

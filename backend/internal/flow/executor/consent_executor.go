@@ -89,7 +89,7 @@ func newConsentExecutor(
 
 // Execute runs the consent enforcement logic.
 func (e *consentExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := e.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing consent executor")
 
 	execResp := &common.ExecutorResponse{
@@ -122,7 +122,7 @@ func (e *consentExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRespon
 // checkConsent resolves whether consent is needed and either completes or forwards to a prompt.
 func (e *consentExecutor) checkConsent(ctx *core.NodeContext, execResp *common.ExecutorResponse,
 	ouID, appID, userID string) (*common.ExecutorResponse, error) {
-	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := e.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Checking if user consent is required")
 
 	essentialAttributes, optionalAttributes := e.getRequiredAttributes(ctx)
@@ -185,7 +185,7 @@ func (e *consentExecutor) checkConsent(ctx *core.NodeContext, execResp *common.E
 // handleConsentDecisions processes the user's consent decisions.
 func (e *consentExecutor) handleConsentDecisions(ctx *core.NodeContext, execResp *common.ExecutorResponse,
 	ouID, appID, userID string) (*common.ExecutorResponse, error) {
-	logger := e.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := e.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Processing consent decisions from user")
 
 	decisionsJSON, ok := ctx.UserInputs[userInputConsentDecisions]

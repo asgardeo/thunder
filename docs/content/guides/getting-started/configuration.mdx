@@ -28,7 +28,7 @@ Controls the Thunder server's network settings and identity.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `server.hostname` | `localhost` | Hostname or IP address the server binds to |
+| `server.hostname` | `localhost` | The hostname or IP address the server binds to |
 | `server.port` | `8090` | Port the server listens on |
 | `server.http_only` | `false` | If `true`, disables HTTPS and uses HTTP only (not recommended for production) |
 | `server.identifier` | `default-deployment` | Unique identifier for this deployment instance |
@@ -39,7 +39,7 @@ Configures the connection to Thunder Gate (the login UI).
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `gate_client.hostname` | `localhost` | Hostname where Thunder Gate is hosted |
+| `gate_client.hostname` | `localhost` | The hostname where Thunder Gate is hosted |
 | `gate_client.port` | `8090` | Port where Thunder Gate is accessible |
 | `gate_client.scheme` | `https` | Protocol scheme (`http` or `https`) |
 | `gate_client.path` | `/gate` | Base path for Thunder Gate |
@@ -353,3 +353,39 @@ passkey:
   allowed_origins:
     - "https://localhost:8090"
 ```
+
+## Security Configuration
+
+Controls server-wide security behavior that is not specific to any single authenticator. Maps to `SecurityConfig` in the backend, nested under `server.security`.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `server.security.jwks_cache_ttl` | `300` | JWKS cache TTL in seconds. Applies to every JWKS consumer in the server (trusted issuer validation, federated OIDC authenticators such as Google, and so on). Fetched signing keys are reused from the in-process cache for this duration before being re-fetched. Plan external-server key rotations with at least this much overlap. Set to `0` to disable caching |
+
+## Trusted Issuer Configuration
+
+Maps to `TrustedIssuerConfig` in the backend, nested under `server.security.trusted_issuer`. Setting `server.security.trusted_issuer.issuer` activates the feature: Thunder trusts access tokens issued by an external authorization server and validates them against the external server's JWKS endpoint. When `issuer` is set, `jwks_url` and `audience` are required and Thunder fails to start if either is missing. This is used for federated authentication scenarios where a central Thunder instance issues tokens that tenant instances accept.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `server.security.trusted_issuer.issuer` | `""` | Expected value of the token's `iss` claim. Must match the external authorization server's issuer URL exactly |
+| `server.security.trusted_issuer.jwks_url` | `""` | URL of the external authorization server's JWKS endpoint used to fetch signing keys. Must use HTTPS (HTTP allowed only for `localhost`) |
+| `server.security.trusted_issuer.audience` | `""` | Expected value of the token's `aud` claim. This should be this server's own identifier (typically its public URL) |
+| `server.security.trusted_issuer.required_claims` | `[]` | List of claims that every accepted token must contain. Each entry has a `claim` name and an expected `value`. If any required claim is missing or does not match, the token is rejected |
+
+**Example:**
+```yaml
+server:
+  security:
+    trusted_issuer:
+      issuer: "https://cloud.example.com"
+      jwks_url: "https://cloud.example.com/oauth2/jwks"
+      audience: "https://tenant.example.com"
+      required_claims:
+        - claim: "ouId"
+          value: "tenant-123"
+```
+
+:::note
+The frontend must include a matching `resource` parameter in the authorization request so the external authorization server sets the token's `aud` claim to this server's identifier. See the [Trusted Issuer](/docs/next/guides/guides/trusted-issuer) guide for the end-to-end setup.
+:::

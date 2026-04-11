@@ -52,7 +52,8 @@ func TestTokenValidatorTestSuite(t *testing.T) {
 }
 
 func (suite *TokenValidatorTestSuite) SetupTest() {
-	// Initialize Thunder Runtime for tests
+	config.ResetThunderRuntime()
+
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "https://thunder.io",

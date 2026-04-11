@@ -118,7 +118,7 @@ func (i *identifyingExecutor) IdentifyUser(filters map[string]interface{},
 
 // Execute executes the identifying executor logic.
 func (i *identifyingExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := i.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := i.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing identifying executor")
 
 	execResp := &common.ExecutorResponse{
@@ -146,7 +146,7 @@ func (i *identifyingExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRe
 // executeIdentify handles the default identify mode which expects exactly one user match.
 func (i *identifyingExecutor) executeIdentify(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
-	logger := i.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := i.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	userSearchAttributes := i.buildSearchAttributes(ctx)
 
@@ -182,7 +182,7 @@ func (i *identifyingExecutor) executeIdentify(ctx *core.NodeContext,
 // executeResolve handles the resolve mode for user disambiguation.
 func (i *identifyingExecutor) executeResolve(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*common.ExecutorResponse, error) {
-	logger := i.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := i.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing identifying executor in resolve mode")
 
 	userSearchAttributes := i.buildSearchAttributes(ctx)

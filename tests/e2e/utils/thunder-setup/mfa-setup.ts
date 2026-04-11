@@ -193,12 +193,12 @@ export class ThunderMFASetup {
     }
 
     const flowData = await flowResponse.json();
-    const flowId = flowData.flowId;
+    const executionId = flowData.executionId;
 
     // Step 2: Submit credentials
     const authResponse = await this.request.post(`${this.config.thunderUrl}/flow/execute`, {
       data: {
-        flowId,
+        executionId: executionId,
         inputs: {
           username: this.config.adminUsername,
           password: this.config.adminPassword,

@@ -205,8 +205,8 @@ func (suite *IdentifyingExecutorTestSuite) TestIdentifyUser_WithMobileNumber() {
 
 func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_UserInputs() {
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		UserInputs: map[string]string{"username": "testuser"},
+		ExecutionID: "flow-123",
+		UserInputs:  map[string]string{"username": "testuser"},
 	}
 	// Use package-level testUserID constant
 	// Configure mock base executor
@@ -233,7 +233,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_UserInputs() {
 
 func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_RuntimeData() {
 	ctx := &core.NodeContext{
-		FlowID:      "flow-123",
+		ExecutionID: "flow-123",
 		UserInputs:  make(map[string]string),
 		RuntimeData: map[string]string{"username": "testuser"},
 	}
@@ -261,8 +261,8 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_RuntimeData() {
 
 func (suite *IdentifyingExecutorTestSuite) TestExecute_UserInputRequired() {
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		UserInputs: map[string]string{},
+		ExecutionID: "flow-123",
+		UserInputs:  map[string]string{},
 	}
 
 	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
@@ -277,8 +277,8 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_UserInputRequired() {
 
 func (suite *IdentifyingExecutorTestSuite) TestExecute_Failure_IdentifyUserError() {
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		UserInputs: map[string]string{"username": "testuser"},
+		ExecutionID: "flow-123",
+		UserInputs:  map[string]string{"username": "testuser"},
 	}
 
 	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
@@ -304,8 +304,8 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Failure_IdentifyUserError
 
 func (suite *IdentifyingExecutorTestSuite) TestExecute_Failure_UserNotFound() {
 	ctx := &core.NodeContext{
-		FlowID:     "flow-123",
-		UserInputs: map[string]string{"username": "nonexistent"},
+		ExecutionID: "flow-123",
+		UserInputs:  map[string]string{"username": "nonexistent"},
 	}
 
 	mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
@@ -343,8 +343,8 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_WithVariousAttrib
 		suite.Run(tc.name, func() {
 			suite.SetupTest()
 			ctx := &core.NodeContext{
-				FlowID:     "flow-123",
-				UserInputs: map[string]string{tc.attribute: tc.value},
+				ExecutionID: "flow-123",
+				UserInputs:  map[string]string{tc.attribute: tc.value},
 			}
 
 			mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
@@ -370,7 +370,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_WithVariousAttrib
 
 func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_WithMultipleAttributes() {
 	ctx := &core.NodeContext{
-		FlowID: "flow-123",
+		ExecutionID: "flow-123",
 		UserInputs: map[string]string{
 			"username": "testuser",
 			"email":    "test@example.com",
@@ -414,8 +414,8 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Failure_UserNotFoundByAtt
 		suite.Run(tc.name, func() {
 			suite.SetupTest()
 			ctx := &core.NodeContext{
-				FlowID:     "flow-123",
-				UserInputs: map[string]string{tc.attribute: tc.value},
+				ExecutionID: "flow-123",
+				UserInputs:  map[string]string{tc.attribute: tc.value},
 			}
 
 			mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
@@ -455,7 +455,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Success_FromRuntimeData()
 		suite.Run(tc.name, func() {
 			suite.SetupTest()
 			ctx := &core.NodeContext{
-				FlowID:      "flow-123",
+				ExecutionID: "flow-123",
 				UserInputs:  make(map[string]string),
 				RuntimeData: map[string]string{tc.attribute: tc.value},
 			}
@@ -495,8 +495,8 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_Failure_EmptyInput() {
 		suite.Run(tc.name, func() {
 			suite.SetupTest()
 			ctx := &core.NodeContext{
-				FlowID:     "flow-123",
-				UserInputs: map[string]string{tc.attribute: ""},
+				ExecutionID: "flow-123",
+				UserInputs:  map[string]string{tc.attribute: ""},
 			}
 
 			mockBase := suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock)
@@ -540,7 +540,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecute_UserInputsPriorityOverRun
 			// Both UserInputs and RuntimeData have the same key
 			// UserInputs should take priority
 			ctx := &core.NodeContext{
-				FlowID:      "flow-123",
+				ExecutionID: "flow-123",
 				UserInputs:  map[string]string{tc.attribute: tc.userInputValue},
 				RuntimeData: map[string]string{tc.attribute: tc.runtimeValue},
 			}
@@ -580,7 +580,7 @@ var (
 
 func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_UniqueUser() {
 	ctx := &core.NodeContext{
-		FlowID:       "flow-123",
+		ExecutionID:  "flow-123",
 		ExecutorMode: ExecutorModeResolve,
 		UserInputs:   map[string]string{"given_name": "Alex"},
 		RuntimeData:  make(map[string]string),
@@ -607,7 +607,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_UniqueUser() {
 
 func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_AmbiguousUser() {
 	ctx := &core.NodeContext{
-		FlowID:       "flow-123",
+		ExecutionID:  "flow-123",
 		ExecutorMode: ExecutorModeResolve,
 		UserInputs:   map[string]string{"given_name": "Alex"},
 		RuntimeData:  make(map[string]string),
@@ -642,7 +642,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_FilteredToOne() {
 	candidatesJSON, _ := json.Marshal(candidates)
 
 	ctx := &core.NodeContext{
-		FlowID:       "flow-123",
+		ExecutionID:  "flow-123",
 		ExecutorMode: ExecutorModeResolve,
 		UserInputs:   map[string]string{"given_name": "Alex", "family_name": "Smith"},
 		RuntimeData: map[string]string{
@@ -672,7 +672,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_StillAmbiguous() {
 	candidatesJSON, _ := json.Marshal(candidates)
 
 	ctx := &core.NodeContext{
-		FlowID:       "flow-123",
+		ExecutionID:  "flow-123",
 		ExecutorMode: ExecutorModeResolve,
 		UserInputs:   map[string]string{"given_name": "Alex", "family_name": "Smith"},
 		RuntimeData: map[string]string{
@@ -701,7 +701,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_FilteredToNone() {
 	candidatesJSON, _ := json.Marshal(candidates)
 
 	ctx := &core.NodeContext{
-		FlowID:       "flow-123",
+		ExecutionID:  "flow-123",
 		ExecutorMode: ExecutorModeResolve,
 		UserInputs:   map[string]string{"given_name": "Alex", "family_name": "Williams"},
 		RuntimeData: map[string]string{
@@ -725,7 +725,7 @@ func (suite *IdentifyingExecutorTestSuite) TestExecuteResolve_FilteredToNone() {
 
 func (suite *IdentifyingExecutorTestSuite) TestExecute_IdentifyMode_AmbiguousUser() {
 	ctx := &core.NodeContext{
-		FlowID:       "flow-123",
+		ExecutionID:  "flow-123",
 		ExecutorMode: ExecutorModeIdentify,
 		UserInputs:   map[string]string{"given_name": "Alex"},
 		RuntimeData:  make(map[string]string),

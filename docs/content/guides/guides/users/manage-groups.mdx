@@ -6,18 +6,8 @@ description: Create and manage groups to organize users and simplify role assign
 
 # Groups
 
-A group is a named collection of users within an **Organization Unit (OU)**. Use groups to organize users and assign roles to multiple users at once rather than assigning roles individually.
-
-## Groups and Organization Units
-
-Every group belongs to exactly one OU. This scoping has two key effects:
-
-- **Groups are OU-scoped** — a group can only contain users from its own OU. Users in other OUs cannot be members of that group.
-- **Role assignments are scoped** — roles assigned to a group apply within the context of that group's OU. Users in a child OU inherit group membership when groups are nested.
-
-Groups can also contain other groups as members, allowing you to build nested groupings. Adding a group as a member transitively includes all users in that group.
-
-Because user types are also tied to OUs, users in a group naturally share the same schema and registration rules. For example, a group under the **Customers** OU contains only Customer-type users.
+A group is a named collection of users within an **Organization Unit (OU)**. You can use groups to organize users and assign roles to multiple users at once rather than assigning roles individually.
+Every group belongs to exactly one OU, which determines which users can be members. 
 
 :::note
 A group's OU cannot be changed after creation. If you need to move a group to a different OU, delete it and recreate it under the correct OU.
@@ -65,11 +55,10 @@ Deleting a group is permanent. Members are not deleted — only the group itself
 
 Roles assigned to a group apply to all members of that group. This is the recommended way to grant permissions to a set of users instead of assigning roles individually.
 
-To assign a role to a group, see [Roles](/guides/guides/roles).
+To assign a role to a group, see the Roles guide.
 
 ## Related Guides
 
-- [Organization Units](/guides/guides/organization-units) - Each group is scoped to an organization unit
-- [Users](/guides/guides/users/manage-users) - Create and manage the users you add to groups
-- [User Types](/guides/guides/users/user-types) - User types determine which users belong to which OU
-- [Roles](/guides/guides/roles) - Assign roles to groups to manage permissions at scale
+- [Organization Units](../organization-units) - Each group is scoped to an organization unit
+- [Users](./manage-users) - Create and manage the users you add to groups
+- [User Types](./user-types) - User types determine which users belong to which OU

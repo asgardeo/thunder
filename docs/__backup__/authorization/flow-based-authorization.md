@@ -196,7 +196,7 @@ curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute
 
 ```json
 {
-    "flowId": "flow-123",
+    "executionId": "flow-123",
     "flowStatus": "INCOMPLETE",
     "type": "VIEW",
     "data": {
@@ -216,7 +216,7 @@ curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute
 }
 ```
 
-Note the `flowId` from the response.
+Note the `executionId` from the response.
 
 ### Step 8: Complete Authentication
 
@@ -225,7 +225,7 @@ Complete the authentication by providing credentials:
 ```bash
 curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute \
 -d '{
-    "flowId": "<flow-id>",
+    "executionId": "<execution_id>",
     "inputs": {
         "username": "alice",
         "password": "<password>"
@@ -237,7 +237,7 @@ curl -kL -H 'Content-Type: application/json' https://localhost:8090/flow/execute
 
 ```json
 {
-    "flowId": "flow-123",
+    "executionId": "flow-123",
     "flowStatus": "COMPLETE",
     "assertion": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
 }

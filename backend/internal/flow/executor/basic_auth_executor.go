@@ -84,7 +84,7 @@ func newBasicAuthExecutor(
 
 // Execute executes the basic authentication logic.
 func (b *basicAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
-	logger := b.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := b.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing basic authentication executor")
 
 	execResp := &common.ExecutorResponse{
@@ -168,7 +168,7 @@ func (b *basicAuthExecutor) getCredentialInputs(ctx *core.NodeContext) []common.
 // credential attributes and returns the authenticated user details.
 func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*authncm.AuthenticatedUser, error) {
-	logger := b.logger.With(log.String(log.LoggerKeyFlowID, ctx.FlowID))
+	logger := b.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
 	userIdentifiers := map[string]interface{}{}
 	userCredentials := map[string]interface{}{}
