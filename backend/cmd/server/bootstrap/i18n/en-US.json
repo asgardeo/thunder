@@ -188,7 +188,13 @@
       "forms.credential.fields.password.placeholder": "Enter your password",
       "forms.credential.actions.submit.label": "Sign Up",
       "forms.email_sent.title": "Check Your Email",
-      "forms.email_sent.message": "We sent you a verification link. Please check your inbox and click the link to continue."
+      "forms.email_sent.message": "We sent you a verification link. Please check your inbox and click the link to continue.",
+      "forms.phone.title": "Sign Up",
+      "forms.phone.fields.phone.label": "Mobile Number",
+      "forms.phone.fields.phone.placeholder": "Enter your mobile number",
+      "forms.phone.actions.next.label": "Next",
+      "forms.sms_sent.title": "Check Your Phone",
+      "forms.sms_sent.message": "We sent you a verification link via SMS. Please check your messages and click the link to continue."
     }
   }
 }
