@@ -103,6 +103,13 @@ var (
 		Error:            "Empty members list",
 		ErrorDescription: "The members list cannot be empty",
 	}
+	// ErrorInvalidMemberType is the error returned when a member type is not a valid API value.
+	ErrorInvalidMemberType = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "GRP-1014",
+		Error:            "Invalid member type",
+		ErrorDescription: "The member type must be 'user', 'group', or 'app'",
+	}
 )
 
 // Server errors for group management operations.

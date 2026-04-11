@@ -176,9 +176,9 @@ func buildAuthorizedPermissionsQuery(
 	// Build entity condition if entityID is provided
 	if entityID != "" {
 		postgresWhere = append(postgresWhere,
-			fmt.Sprintf("(ra.ASSIGNEE_TYPE IN ('user', 'app') AND ra.ASSIGNEE_ID = $%d)", paramIndex))
+			fmt.Sprintf("(ra.ASSIGNEE_TYPE = 'entity' AND ra.ASSIGNEE_ID = $%d)", paramIndex))
 		sqliteWhere = append(sqliteWhere,
-			"(ra.ASSIGNEE_TYPE IN ('user', 'app') AND ra.ASSIGNEE_ID = ?)")
+			"(ra.ASSIGNEE_TYPE = 'entity' AND ra.ASSIGNEE_ID = ?)")
 		args = append(args, entityID)
 		paramIndex++
 	}
@@ -261,9 +261,9 @@ func buildUserRolesQuery(
 	// Build entity condition if entityID is provided
 	if entityID != "" {
 		postgresWhere = append(postgresWhere,
-			fmt.Sprintf("(ra.ASSIGNEE_TYPE IN ('user', 'app') AND ra.ASSIGNEE_ID = $%d)", paramIndex))
+			fmt.Sprintf("(ra.ASSIGNEE_TYPE = 'entity' AND ra.ASSIGNEE_ID = $%d)", paramIndex))
 		sqliteWhere = append(sqliteWhere,
-			"(ra.ASSIGNEE_TYPE IN ('user', 'app') AND ra.ASSIGNEE_ID = ?)")
+			"(ra.ASSIGNEE_TYPE = 'entity' AND ra.ASSIGNEE_ID = ?)")
 		args = append(args, entityID)
 		paramIndex++
 	}

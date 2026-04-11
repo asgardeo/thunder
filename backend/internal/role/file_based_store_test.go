@@ -111,7 +111,7 @@ func (suite *RoleFileBasedStoreTestSuite) TestGetRoleAssignmentsAndCount() {
 		Name: "Admin",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{ID: "user1", Type: AssigneeTypeUser},
+			{ID: "user1", Type: AssigneeTypeEntity},
 			{ID: "group1", Type: AssigneeTypeGroup},
 		},
 	})
@@ -192,7 +192,7 @@ func (suite *RoleFileBasedStoreTestSuite) TestGetAuthorizedPermissions() {
 		Name: "Admin",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{ID: "user1", Type: AssigneeTypeUser},
+			{ID: "user1", Type: AssigneeTypeEntity},
 			{ID: "group1", Type: AssigneeTypeGroup},
 		},
 		Permissions: []ResourcePermissions{
@@ -238,13 +238,13 @@ func (suite *RoleFileBasedStoreTestSuite) TestImmutability() {
 
 	// Test AddAssignments returns error
 	err = suite.store.AddAssignments(context.Background(), "immutable-role", []RoleAssignment{
-		{ID: "user1", Type: AssigneeTypeUser},
+		{ID: "user1", Type: AssigneeTypeEntity},
 	})
 	suite.Error(err)
 
 	// Test RemoveAssignments returns error
 	err = suite.store.RemoveAssignments(context.Background(), "immutable-role", []RoleAssignment{
-		{ID: "user1", Type: AssigneeTypeUser},
+		{ID: "user1", Type: AssigneeTypeEntity},
 	})
 	suite.Error(err)
 }

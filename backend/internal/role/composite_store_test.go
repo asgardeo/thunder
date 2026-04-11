@@ -77,11 +77,11 @@ func (suite *CompositeRoleStoreTestSuite) TestGetRoleList_Pagination() {
 
 func (suite *CompositeRoleStoreTestSuite) TestGetRoleAssignmentsCount_Deduplicates() {
 	dbAssignments := []RoleAssignment{
-		{ID: "user1", Type: AssigneeTypeUser},
+		{ID: "user1", Type: AssigneeTypeEntity},
 		{ID: "group1", Type: AssigneeTypeGroup},
 	}
 	fileAssignments := []RoleAssignment{
-		{ID: "user1", Type: AssigneeTypeUser},
+		{ID: "user1", Type: AssigneeTypeEntity},
 		{ID: "group2", Type: AssigneeTypeGroup},
 	}
 
@@ -98,11 +98,11 @@ func (suite *CompositeRoleStoreTestSuite) TestGetRoleAssignmentsCount_Deduplicat
 
 func (suite *CompositeRoleStoreTestSuite) TestGetRoleAssignments_Pagination() {
 	dbAssignments := []RoleAssignment{
-		{ID: "user1", Type: AssigneeTypeUser},
+		{ID: "user1", Type: AssigneeTypeEntity},
 		{ID: "group1", Type: AssigneeTypeGroup},
 	}
 	fileAssignments := []RoleAssignment{
-		{ID: "user1", Type: AssigneeTypeUser},
+		{ID: "user1", Type: AssigneeTypeEntity},
 		{ID: "group2", Type: AssigneeTypeGroup},
 	}
 
@@ -247,7 +247,7 @@ func (suite *CompositeRoleStoreTestSuite) TestGetRoleAssignmentsCount_DBAssignme
 
 func (suite *CompositeRoleStoreTestSuite) TestGetRoleAssignmentsCount_FileAssignmentsListError() {
 	testErr := errors.New("test error")
-	dbAssignments := []RoleAssignment{{ID: "user1", Type: AssigneeTypeUser}}
+	dbAssignments := []RoleAssignment{{ID: "user1", Type: AssigneeTypeEntity}}
 	suite.mockDBStore.On("GetRoleAssignmentsCount", mock.Anything, "role1").Return(1, nil)
 	suite.mockFileStore.On("GetRoleAssignmentsCount", mock.Anything, "role1").Return(2, nil)
 	suite.mockDBStore.On("GetRoleAssignments", mock.Anything, "role1", 1, 0).Return(dbAssignments, nil)
@@ -294,7 +294,7 @@ func (suite *CompositeRoleStoreTestSuite) TestGetRoleAssignments_DBAssignmentsLi
 
 func (suite *CompositeRoleStoreTestSuite) TestGetRoleAssignments_FileAssignmentsListError() {
 	testErr := errors.New("test error")
-	dbAssignments := []RoleAssignment{{ID: "user1", Type: AssigneeTypeUser}}
+	dbAssignments := []RoleAssignment{{ID: "user1", Type: AssigneeTypeEntity}}
 	suite.mockDBStore.On("GetRoleAssignmentsCount", mock.Anything, "role1").Return(1, nil)
 	suite.mockFileStore.On("GetRoleAssignmentsCount", mock.Anything, "role1").Return(2, nil)
 	suite.mockDBStore.On("GetRoleAssignments", mock.Anything, "role1", 1, 0).Return(dbAssignments, nil)

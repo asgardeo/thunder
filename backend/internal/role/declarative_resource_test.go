@@ -207,7 +207,7 @@ func (suite *RoleExporterTestSuite) TestGetResourceByID_Success() {
 		"GetRoleAssignments", suite.ctx, "role1", serverconst.MaxPageSize, 0, false,
 	).Return(&AssignmentList{
 		Assignments: []RoleAssignmentWithDisplay{
-			{ID: "user1", Type: AssigneeTypeUser},
+			{ID: "user1", Type: AssigneeTypeEntity},
 			{ID: "group1", Type: AssigneeTypeGroup},
 		},
 		TotalResults: 2,
@@ -337,7 +337,7 @@ func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_ValidRole() {
 			{ResourceServerID: "rs1", Permissions: []string{"read"}},
 		},
 		Assignments: []RoleAssignment{
-			{ID: "user1", Type: AssigneeTypeUser},
+			{ID: "user1", Type: AssigneeTypeEntity},
 		},
 	}
 
@@ -410,7 +410,7 @@ func (suite *RoleExporterTestSuite) TestValidateRoleWrapper_MissingAssignmentID(
 		Name: "Admin",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{Type: AssigneeTypeUser},
+			{Type: AssigneeTypeEntity},
 		},
 	}
 

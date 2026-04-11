@@ -374,8 +374,8 @@ func (gh *groupHandler) handleError(w http.ResponseWriter, logger *log.Logger,
 		case ErrorInvalidOUID.Code, ErrorCannotDeleteGroup.Code,
 			ErrorInvalidRequestFormat.Code, ErrorMissingGroupID.Code,
 			ErrorInvalidLimit.Code, ErrorInvalidOffset.Code,
-			ErrorEmptyMembers.Code, ErrorInvalidUserMemberID.Code,
-			ErrorInvalidGroupMemberID.Code:
+			ErrorEmptyMembers.Code, ErrorInvalidMemberType.Code,
+			ErrorInvalidUserMemberID.Code, ErrorInvalidGroupMemberID.Code:
 			statusCode = http.StatusBadRequest
 		case serviceerror.ErrorUnauthorized.Code:
 			statusCode = http.StatusForbidden

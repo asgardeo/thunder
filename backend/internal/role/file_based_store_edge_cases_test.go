@@ -137,7 +137,7 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRoleAssignments_ZeroLim
 		Name: "Admin",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{ID: "user1", Type: AssigneeTypeUser},
+			{ID: "user1", Type: AssigneeTypeEntity},
 		},
 	})
 
@@ -248,7 +248,7 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_E
 		Name: "Admin",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{ID: "user1", Type: AssigneeTypeUser},
+			{ID: "user1", Type: AssigneeTypeEntity},
 		},
 		Permissions: []ResourcePermissions{
 			{ResourceServerID: "rs1", Permissions: []string{"perm1"}},
@@ -300,7 +300,7 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_M
 		Name: "Admin",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{ID: "user1", Type: AssigneeTypeUser},
+			{ID: "user1", Type: AssigneeTypeEntity},
 		},
 		Permissions: []ResourcePermissions{
 			{ResourceServerID: "rs1", Permissions: []string{"read", "write"}},
@@ -312,7 +312,7 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_M
 		Name: "Editor",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{ID: "user1", Type: AssigneeTypeUser},
+			{ID: "user1", Type: AssigneeTypeEntity},
 		},
 		Permissions: []ResourcePermissions{
 			{ResourceServerID: "rs1", Permissions: []string{"write"}},
@@ -340,7 +340,7 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_M
 		Name: "Admin",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{ID: "user1", Type: AssigneeTypeUser},
+			{ID: "user1", Type: AssigneeTypeEntity},
 		},
 		Permissions: []ResourcePermissions{
 			{ResourceServerID: "rs1", Permissions: []string{"perm1", "perm2", "perm3"}},
@@ -418,9 +418,9 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetRoleAssignments_Paginat
 		Name: "Admin",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{ID: "user1", Type: AssigneeTypeUser},
-			{ID: "user2", Type: AssigneeTypeUser},
-			{ID: "user3", Type: AssigneeTypeUser},
+			{ID: "user1", Type: AssigneeTypeEntity},
+			{ID: "user2", Type: AssigneeTypeEntity},
+			{ID: "user3", Type: AssigneeTypeEntity},
 		},
 	})
 
@@ -447,7 +447,7 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_A
 		Name: "APIRole",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{ID: "app-uuid-123", Type: AssigneeTypeApp},
+			{ID: "app-uuid-123", Type: AssigneeTypeEntity},
 		},
 		Permissions: []ResourcePermissions{
 			{ResourceServerID: "rs1", Permissions: []string{"read:docs", "write:docs", "delete:docs"}},
@@ -472,7 +472,7 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_A
 		Name: "APIRole",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{ID: "app-uuid-123", Type: AssigneeTypeApp},
+			{ID: "app-uuid-123", Type: AssigneeTypeEntity},
 		},
 		Permissions: []ResourcePermissions{
 			{ResourceServerID: "rs1", Permissions: []string{"read:docs"}},
@@ -497,8 +497,8 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_M
 		Name: "SharedRole",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{ID: "user-uuid-1", Type: AssigneeTypeUser},
-			{ID: "app-uuid-1", Type: AssigneeTypeApp},
+			{ID: "user-uuid-1", Type: AssigneeTypeEntity},
+			{ID: "app-uuid-1", Type: AssigneeTypeEntity},
 			{ID: "group1", Type: AssigneeTypeGroup},
 		},
 		Permissions: []ResourcePermissions{
@@ -532,7 +532,7 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_A
 		Name: "ReaderRole",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{ID: "app-uuid-1", Type: AssigneeTypeApp},
+			{ID: "app-uuid-1", Type: AssigneeTypeEntity},
 		},
 		Permissions: []ResourcePermissions{
 			{ResourceServerID: "rs1", Permissions: []string{"read:docs"}},
@@ -543,7 +543,7 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetAuthorizedPermissions_A
 		Name: "WriterRole",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{ID: "app-uuid-1", Type: AssigneeTypeApp},
+			{ID: "app-uuid-1", Type: AssigneeTypeEntity},
 		},
 		Permissions: []ResourcePermissions{
 			{ResourceServerID: "rs1", Permissions: []string{"write:docs"}},
@@ -568,7 +568,7 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetUserRoles_AppEntity() {
 		Name: "AppRole",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{ID: "app-uuid-1", Type: AssigneeTypeApp},
+			{ID: "app-uuid-1", Type: AssigneeTypeEntity},
 		},
 		Permissions: []ResourcePermissions{
 			{ResourceServerID: "rs1", Permissions: []string{"perm1"}},
@@ -579,7 +579,7 @@ func (suite *RoleFileBasedStoreEdgeCaseTestSuite) TestGetUserRoles_AppEntity() {
 		Name: "UserRole",
 		OUID: "ou1",
 		Assignments: []RoleAssignment{
-			{ID: "user-uuid-1", Type: AssigneeTypeUser},
+			{ID: "user-uuid-1", Type: AssigneeTypeEntity},
 		},
 		Permissions: []ResourcePermissions{
 			{ResourceServerID: "rs1", Permissions: []string{"perm2"}},

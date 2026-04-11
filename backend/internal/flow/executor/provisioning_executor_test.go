@@ -169,7 +169,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success() {
 		mock.MatchedBy(func(members []group.Member) bool {
 			return len(members) == 1 &&
 				members[0].ID == testNewUserID &&
-				members[0].Type == group.MemberTypeUser
+				members[0].Type == group.MemberTypeEntity
 		})).Return(nil, nil)
 
 	// Mock role assignment
@@ -177,7 +177,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success() {
 		mock.MatchedBy(func(assignments []role.RoleAssignment) bool {
 			return len(assignments) == 1 &&
 				assignments[0].ID == testNewUserID &&
-				assignments[0].Type == role.AssigneeTypeUser
+				assignments[0].Type == role.AssigneeTypeEntity
 		})).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -1176,7 +1176,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_GroupWithExistingMembers
 		mock.MatchedBy(func(members []group.Member) bool {
 			return len(members) == 1 &&
 				members[0].ID == testNewUserID &&
-				members[0].Type == group.MemberTypeUser
+				members[0].Type == group.MemberTypeEntity
 		})).Return(nil, nil)
 
 	suite.mockRoleService.On("AddAssignments", mock.Anything, "test-role-id", mock.Anything).Return(nil)
@@ -1288,7 +1288,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success_WithGroupAndRole
 		mock.MatchedBy(func(members []group.Member) bool {
 			return len(members) == 1 &&
 				members[0].ID == testNewUserID &&
-				members[0].Type == group.MemberTypeUser
+				members[0].Type == group.MemberTypeEntity
 		})).Return(nil, nil)
 
 	// Mock role assignment
@@ -1296,7 +1296,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_Success_WithGroupAndRole
 		mock.MatchedBy(func(assignments []role.RoleAssignment) bool {
 			return len(assignments) == 1 &&
 				assignments[0].ID == testNewUserID &&
-				assignments[0].Type == role.AssigneeTypeUser
+				assignments[0].Type == role.AssigneeTypeEntity
 		})).Return(nil)
 
 	resp, err := suite.executor.Execute(ctx)
