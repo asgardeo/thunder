@@ -22,12 +22,12 @@ import SignInBox from './SignInBox';
 import SignInSlogan from './SignInSlogan';
 
 export default function SignIn(): JSX.Element {
-  const {isDesignEnabled} = useDesign();
+  const {isDesignEnabled, isLoading} = useDesign();
 
   const showSlogan = !isDesignEnabled;
 
   return (
-    <AuthPageLayout variant="SignIn">
+    <AuthPageLayout variant="SignIn" isLoading={isLoading}>
       {showSlogan && <SignInSlogan />}
       <SignInBox />
     </AuthPageLayout>

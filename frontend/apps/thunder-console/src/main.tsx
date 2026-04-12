@@ -18,8 +18,8 @@
 
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
-import {LoggerProvider, LogLevel} from '@thunder/logger/react';
 import {ConfigProvider} from '@thunder/contexts';
+import {LoggerProvider, LogLevel} from '@thunder/logger/react';
 import {StrictMode} from 'react';
 import * as ReactDOM from 'react-dom/client';
 import AppWithDecorators from './AppWithDecorators';

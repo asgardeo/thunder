@@ -91,12 +91,12 @@ export default function DesignProvider({
     () => ({
       design,
       isDesignEnabled: Boolean(design) && (!isEmpty(design?.theme) || !isEmpty(design?.layout)),
-      isLoading: externalDesign ? false : isLoading,
+      isLoading: externalDesign ? false : shouldResolveDesignInternally ? isLoading : true,
       error: externalDesign ? null : error,
       theme: undefined,
       layout: isEmpty(design?.layout) ? undefined : design?.layout,
     }),
-    [design, externalDesign, isLoading, error],
+    [design, externalDesign, shouldResolveDesignInternally, isLoading, error],
   );
 
   return <DesignContext.Provider value={contextValue}>{children}</DesignContext.Provider>;
