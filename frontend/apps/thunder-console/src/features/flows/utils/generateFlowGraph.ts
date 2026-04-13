@@ -85,6 +85,18 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
       '<span class="rich-text-pre-wrap">Sign up</span></a></p>',
   };
 
+  // Application Logo
+  metaComponents.push({
+    category: 'DISPLAY',
+    type: 'IMAGE',
+    id: 'image_app_logo',
+    src: '{{meta(application.logoUrl)}}',
+    alt: '{{t(signin:images.app_logo.alt)}}',
+    height: '60',
+    width: '',
+    resourceType: 'ELEMENT',
+  });
+
   // Header
   metaComponents.push({
     type: 'TEXT',
@@ -132,7 +144,6 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
           variant: 'PRIMARY',
           eventType: 'SUBMIT',
         },
-        selfSignUpLink,
       ],
     });
 
@@ -173,7 +184,6 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
           variant: hasBasicAuth ? 'SECONDARY' : 'PRIMARY',
           eventType: 'SUBMIT',
         },
-        ...(!hasBasicAuth ? [selfSignUpLink] : []),
       ],
     });
 
@@ -231,6 +241,11 @@ export default function generateFlowGraph(options: FlowGeneratorOptions): Create
       id: 'block_social',
       components: socialComponents,
     });
+  }
+
+  // Self Sign Up Link — always at the bottom, after all auth options
+  if (hasBasicAuth || hasPasskey) {
+    metaComponents.push(selfSignUpLink);
   }
 
   // Connect PROMPT node
