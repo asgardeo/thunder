@@ -467,10 +467,28 @@ jobs:
           name: sample-app-react-sdk
           path: target/dist/sample-app-react-sdk-*.zip
 
+  detect-docs-changes:
+    name: 🔍 Detect Docs-Only Changes
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+    runs-on: ubuntu-latest
+    outputs:
+      docs-only: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
+        id: filter
+        with:
+          base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || github.event.pull_request.base.sha }}
+          ref: ${{ github.event_name == 'merge_group' && github.sha || github.event.pull_request.head.sha }}
+          filters: |
+            docs:
+              - 'docs/**'
+              - '*.md'
+
   test-integration:
     name: 🧪 Integration Tests (${{ matrix.database }})
-    needs: build
-    if: ${{ always() && needs.build.result == 'success' }}
+    needs: [build, detect-docs-changes]
+    if: ${{ always() && needs.build.result == 'success' && !(contains(github.event.pull_request.labels.*.name, 'Type/Docs') && needs.detect-docs-changes.outputs.docs-only == 'true') }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -559,8 +577,8 @@ jobs:
 
   test-e2e:
     name: 🎭 Playwright E2E Tests
-    needs: [build, build_samples]
-    if: ${{ always() && needs.build.result == 'success' && needs.build_samples.result == 'success' }}
+    needs: [build, build_samples, detect-docs-changes]
+    if: ${{ always() && needs.build.result == 'success' && needs.build_samples.result == 'success' && !(contains(github.event.pull_request.labels.*.name, 'Type/Docs') && needs.detect-docs-changes.outputs.docs-only == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout Code

@@ -28,6 +28,7 @@ jobs:
                 'Type/Improvement',
                 'Type/Bug',
                 'Type/Task',
+                'Type/Docs',
                 'skip-changelog'
             ];
 
