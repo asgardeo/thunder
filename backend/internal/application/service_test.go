@@ -1150,9 +1150,9 @@ func mockLoadFullApplication(
 	sysAttrsJSON, _ := json.Marshal(sysAttrs)
 	ep.On("GetEntity", dto.ID).Return(
 		&entityprovider.Entity{
-			ID:                 dto.ID,
-			OrganizationUnitID: dto.OUID,
-			SystemAttributes:   sysAttrsJSON,
+			ID:               dto.ID,
+			OUID:             dto.OUID,
+			SystemAttributes: sysAttrsJSON,
 		},
 		(*entityprovider.EntityProviderError)(nil))
 }

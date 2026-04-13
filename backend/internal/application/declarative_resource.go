@@ -348,12 +348,12 @@ func makeAppEntityParser() func(data []byte) (*entity.Entity, json.RawMessage, j
 		}
 
 		e := &entity.Entity{
-			ID:                 appRequest.ID,
-			Category:           entity.EntityCategoryApp,
-			Type:               "application",
-			State:              entity.EntityStateActive,
-			OrganizationUnitID: appRequest.OUID,
-			SystemAttributes:   sysAttrsJSON,
+			ID:               appRequest.ID,
+			Category:         entity.EntityCategoryApp,
+			Type:             "application",
+			State:            entity.EntityStateActive,
+			OUID:             appRequest.OUID,
+			SystemAttributes: sysAttrsJSON,
 		}
 
 		return e, nil, sysCredsJSON, nil

@@ -150,11 +150,12 @@ packages:
 
   github.com/asgardeo/thunder/internal/entity:
     config:
-      all: true
       dir: tests/mocks/entitymock
       structname: '{{.InterfaceName}}Mock'
       pkgname: entitymock
       filename: "{{.InterfaceName}}_mock.go"
+    interfaces:
+      EntityServiceInterface:
 
   github.com/asgardeo/thunder/internal/user:
     config:
@@ -455,14 +456,6 @@ packages:
       pkgname: authnprovidermock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/asgardeo/thunder/internal/userprovider:
-    config:
-      all: true
-      dir: tests/mocks/userprovidermock
-      structname: '{{.InterfaceName}}Mock'
-      pkgname: userprovidermock
-      filename: "{{.InterfaceName}}_mock.go"
-  
   github.com/asgardeo/thunder/internal/system/sysauthz:
     interfaces:
       SystemAuthorizationServiceInterface:

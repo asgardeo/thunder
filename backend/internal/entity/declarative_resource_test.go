@@ -135,7 +135,7 @@ attributes: {}
 		Parser: func(data []byte) (*Entity, json.RawMessage, json.RawMessage, error) {
 			attrs, _ := json.Marshal(map[string]interface{}{})
 			return &Entity{ID: "item-1", Category: EntityCategoryUser, Type: "thing",
-				OrganizationUnitID: "ou-1", Attributes: json.RawMessage(attrs)}, nil, nil, nil
+				OUID: "ou-1", Attributes: json.RawMessage(attrs)}, nil, nil, nil
 		},
 		Validator: func(e *Entity, svc EntityServiceInterface) error {
 			validatorCalled = true

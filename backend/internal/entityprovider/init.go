@@ -20,23 +20,28 @@ package entityprovider
 
 import (
 	"github.com/asgardeo/thunder/internal/entity"
+	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/config"
 )
 
 // InitializeEntityProvider initializes the entity provider.
-func InitializeEntityProvider(entitySvc entity.EntityServiceInterface) EntityProviderInterface {
+func InitializeEntityProvider(
+	entitySvc entity.EntityServiceInterface, ouSvc ou.OrganizationUnitServiceInterface,
+) EntityProviderInterface {
 	entityProviderConfig := config.GetThunderRuntime().Config.EntityProvider
 	switch entityProviderConfig.Type {
 	case "disabled":
 		return initializeDisabledEntityProvider()
 	default:
-		return initializeDefaultEntityProvider(entitySvc)
+		return initializeDefaultEntityProvider(entitySvc, ouSvc)
 	}
 }
 
 // initializeDefaultEntityProvider initializes the default entity provider.
-func initializeDefaultEntityProvider(entitySvc entity.EntityServiceInterface) EntityProviderInterface {
-	return newDefaultEntityProvider(entitySvc)
+func initializeDefaultEntityProvider(
+	entitySvc entity.EntityServiceInterface, ouSvc ou.OrganizationUnitServiceInterface,
+) EntityProviderInterface {
+	return newDefaultEntityProvider(entitySvc, ouSvc)
 }
 
 // initializeDisabledEntityProvider initializes the disabled entity provider.

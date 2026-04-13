@@ -23,19 +23,18 @@ import (
 )
 
 // EntityProviderInterface defines the boundary contract between the gateway layer and the
-// directory layer for entity operations. Gateway-layer packages (application, flow executors,
-// roles, groups, OAuth) use this interface to interact with entities without depending on
-// directory-layer internals.
+// directory layer for entity operations.
 type EntityProviderInterface interface {
 	// IdentifyEntity resolves an entity ID from indexed attribute filters (e.g., email, clientId).
 	IdentifyEntity(filters map[string]interface{}) (*string, *EntityProviderError)
 
+	// SearchEntities searches for all entities matching the given filters.
+	SearchEntities(filters map[string]interface{}) ([]*Entity, *EntityProviderError)
+
 	// GetEntity retrieves an entity by ID. Credentials are never returned.
 	GetEntity(entityID string) (*Entity, *EntityProviderError)
 
-	// CreateEntity creates a new entity. Entity Attributes may include credential fields
-	// which are extracted and stored separately. SystemCredentials (e.g., clientSecret) are
-	// hashed and stored in the SYSTEM_CREDENTIALS column.
+	// CreateEntity creates a new entity.
 	CreateEntity(entity *Entity,
 		systemCredentials json.RawMessage) (*Entity, *EntityProviderError)
 
@@ -45,6 +44,14 @@ type EntityProviderInterface interface {
 	// DeleteEntity deletes an entity by ID. Cascades to identifiers.
 	DeleteEntity(entityID string) *EntityProviderError
 
+	// UpdateCredentials updates schema-defined credentials for an entity.
+	UpdateCredentials(entityID string,
+		credentials json.RawMessage) *EntityProviderError
+
+	// UpdateAttributes updates schema-defined attributes for an entity.
+	UpdateAttributes(entityID string,
+		attributes json.RawMessage) *EntityProviderError
+
 	// UpdateSystemAttributes updates system-managed attributes for an entity.
 	UpdateSystemAttributes(entityID string,
 		attributes json.RawMessage) *EntityProviderError
@@ -52,10 +59,6 @@ type EntityProviderInterface interface {
 	// UpdateSystemCredentials updates system-managed credentials for an entity.
 	UpdateSystemCredentials(entityID string,
 		credentials json.RawMessage) *EntityProviderError
-
-	// GetEntityGroups retrieves the groups an entity belongs to with pagination.
-	GetEntityGroups(entityID string,
-		limit, offset int) (*EntityGroupListResponse, *EntityProviderError)
 
 	// GetTransitiveEntityGroups retrieves all groups an entity belongs to, including inherited groups.
 	GetTransitiveEntityGroups(entityID string) ([]EntityGroup, *EntityProviderError)

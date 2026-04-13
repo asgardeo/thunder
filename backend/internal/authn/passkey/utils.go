@@ -25,10 +25,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
 )
 
 const (
@@ -74,8 +73,8 @@ func getConfiguredOrigins() []string {
 	return originList
 }
 
-// parseUserAttributes extracts user attributes from JSON.
-func parseUserAttributes(attributes json.RawMessage) map[string]interface{} {
+// parseEntityAttributes parses an entity's attributes JSON into a generic map.
+func parseEntityAttributes(attributes json.RawMessage) map[string]interface{} {
 	if len(attributes) == 0 {
 		return nil
 	}
@@ -88,10 +87,11 @@ func parseUserAttributes(attributes json.RawMessage) map[string]interface{} {
 	return parsed
 }
 
-// buildUserDisplayName builds a display name from user attributes.
-func buildUserDisplayName(userID string, attributes map[string]interface{}) string {
+// buildWebAuthnDisplayName builds a WebAuthn-friendly display name from entity attributes,
+// falling back to the entity ID when no human-readable name attributes are present.
+func buildWebAuthnDisplayName(entityID string, attributes map[string]interface{}) string {
 	if attributes == nil {
-		return userID
+		return entityID
 	}
 
 	firstName, firstOk := attributes["given_name"].(string)
@@ -104,13 +104,14 @@ func buildUserDisplayName(userID string, attributes map[string]interface{}) stri
 		return firstName
 	}
 
-	return userID
+	return entityID
 }
 
-// resolveUserName builds a username from user attributes.
-func resolveUserName(userID string, attributes map[string]interface{}) string {
+// resolveWebAuthnName resolves a WebAuthn-friendly username from entity attributes,
+// falling back to the entity ID when no username/email attributes are present.
+func resolveWebAuthnName(entityID string, attributes map[string]interface{}) string {
 	if attributes == nil {
-		return userID
+		return entityID
 	}
 
 	if username, ok := attributes["username"].(string); ok && username != "" {
@@ -121,15 +122,16 @@ func resolveUserName(userID string, attributes map[string]interface{}) string {
 		return email
 	}
 
-	return userID
+	return entityID
 }
 
-// extractCoreUser extracts display name and username from core user.
-func extractCoreUser(coreUser *user.User) (displayName, userName string) {
-	attributes := parseUserAttributes(coreUser.Attributes)
-	displayName = buildUserDisplayName(coreUser.ID, attributes)
-	userName = resolveUserName(coreUser.ID, attributes)
-	return displayName, userName
+// extractWebAuthnIdentity derives a WebAuthn display name and username from any entity's
+// attributes, falling back to the entity ID when no name attributes are present.
+func extractWebAuthnIdentity(e *entity.Entity) (displayName, name string) {
+	attributes := parseEntityAttributes(e.Attributes)
+	displayName = buildWebAuthnDisplayName(e.ID, attributes)
+	name = resolveWebAuthnName(e.ID, attributes)
+	return displayName, name
 }
 
 // decodeBase64 attempts to decode a base64 string using multiple encodings.
@@ -212,18 +214,6 @@ func validateAuthenticationFinishRequest(req *PasskeyAuthenticationFinishRequest
 		return &ErrorEmptySessionToken
 	}
 	return nil
-}
-
-// handleUserRetrievalError handles errors from user retrieval.
-func handleUserRetrievalError(
-	svcErr *serviceerror.ServiceError, userID string, logger *log.Logger,
-) *serviceerror.ServiceError {
-	if svcErr.Type == serviceerror.ClientErrorType {
-		logger.Debug("User not found", log.String("userID", log.MaskString(userID)))
-		return &ErrorUserNotFound
-	}
-	logger.Error("Failed to retrieve user", log.String("error", svcErr.Error))
-	return &serviceerror.InternalServerError
 }
 
 // buildRegistrationOptions builds registration options from the request.

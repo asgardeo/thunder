@@ -24,13 +24,13 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/idp"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	syshttp "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 const (
@@ -43,7 +43,7 @@ type OAuthAuthnCoreServiceInterface interface {
 	ExchangeCodeForToken(ctx context.Context, idpID, code string, validateResponse bool) (
 		*TokenResponse, *serviceerror.ServiceError)
 	FetchUserInfo(ctx context.Context, idpID, accessToken string) (map[string]interface{}, *serviceerror.ServiceError)
-	GetInternalUser(sub string) (*userprovider.User, *serviceerror.ServiceError)
+	GetInternalUser(sub string) (*entityprovider.Entity, *serviceerror.ServiceError)
 	GetOAuthClientConfig(ctx context.Context, idpID string) (*OAuthClientConfig, *serviceerror.ServiceError)
 }
 
@@ -57,21 +57,21 @@ type OAuthAuthnServiceInterface interface {
 
 // oAuthAuthnService is the default implementation of OAuthAuthnServiceInterface.
 type oAuthAuthnService struct {
-	httpClient   syshttp.HTTPClientInterface
-	idpService   idp.IDPServiceInterface
-	userProvider userprovider.UserProviderInterface
-	logger       *log.Logger
+	httpClient     syshttp.HTTPClientInterface
+	idpService     idp.IDPServiceInterface
+	entityProvider entityprovider.EntityProviderInterface
+	logger         *log.Logger
 }
 
 // newOAuthAuthnService creates a new instance of OAuth authenticator service.
 func newOAuthAuthnService(httpClient syshttp.HTTPClientInterface,
-	idpSvc idp.IDPServiceInterface, userProvider userprovider.UserProviderInterface,
+	idpSvc idp.IDPServiceInterface, entityProvider entityprovider.EntityProviderInterface,
 ) OAuthAuthnServiceInterface {
 	service := &oAuthAuthnService{
-		httpClient:   httpClient,
-		idpService:   idpSvc,
-		userProvider: userProvider,
-		logger:       log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
+		httpClient:     httpClient,
+		idpService:     idpSvc,
+		entityProvider: entityProvider,
+		logger:         log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 	}
 	common.RegisterAuthenticator(service.getMetadata())
 
@@ -82,8 +82,8 @@ func newOAuthAuthnService(httpClient syshttp.HTTPClientInterface,
 // [Deprecated: use dependency injection to get the instance instead].
 // TODO: Should be removed when executors are migrated to di pattern.
 func NewOAuthAuthnService(httpClient syshttp.HTTPClientInterface,
-	idpSvc idp.IDPServiceInterface, userProvider userprovider.UserProviderInterface) OAuthAuthnServiceInterface {
-	return newOAuthAuthnService(httpClient, idpSvc, userProvider)
+	idpSvc idp.IDPServiceInterface, entityProvider entityprovider.EntityProviderInterface) OAuthAuthnServiceInterface {
+	return newOAuthAuthnService(httpClient, idpSvc, entityProvider)
 }
 
 // GetOAuthClientConfig retrieves the OAuth client configuration for the given identity provider ID.
@@ -258,7 +258,7 @@ func (s *oAuthAuthnService) FetchUserInfoWithClientConfig(oAuthClientConfig *OAu
 }
 
 // GetInternalUser retrieves the internal user based on the external subject identifier.
-func (s *oAuthAuthnService) GetInternalUser(sub string) (*userprovider.User, *serviceerror.ServiceError) {
+func (s *oAuthAuthnService) GetInternalUser(sub string) (*entityprovider.Entity, *serviceerror.ServiceError) {
 	logger := s.logger.With(log.String("sub", log.MaskString(sub)))
 	logger.Debug("Retrieving internal user for the given sub claim")
 
@@ -269,13 +269,13 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*userprovider.User, *se
 	filters := map[string]interface{}{
 		"sub": sub,
 	}
-	userID, upErr := s.userProvider.IdentifyUser(filters)
+	userID, upErr := s.entityProvider.IdentifyEntity(filters)
 	if upErr != nil {
-		if upErr.Code == userprovider.ErrorCodeUserNotFound {
+		if upErr.Code == entityprovider.ErrorCodeEntityNotFound {
 			logger.Debug("No user found for the provided sub claim")
 			return nil, &common.ErrorUserNotFound
 		}
-		if upErr.Code == userprovider.ErrorCodeAmbiguousUser {
+		if upErr.Code == entityprovider.ErrorCodeAmbiguousEntity {
 			logger.Debug("Multiple users found for the provided sub claim")
 			return nil, &common.ErrorAmbiguousUser
 		}
@@ -289,9 +289,9 @@ func (s *oAuthAuthnService) GetInternalUser(sub string) (*userprovider.User, *se
 		return nil, &common.ErrorUserNotFound
 	}
 
-	user, upErr := s.userProvider.GetUser(*userID)
+	user, upErr := s.entityProvider.GetEntity(*userID)
 	if upErr != nil {
-		if upErr.Code == userprovider.ErrorCodeUserNotFound {
+		if upErr.Code == entityprovider.ErrorCodeEntityNotFound {
 			return nil, &common.ErrorUserNotFound
 		}
 		logger.Error("Error while retrieving user", log.String("errorCode", string(upErr.Code)),

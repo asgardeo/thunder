@@ -67,6 +67,11 @@ func (suite *DisabledEntityProviderTestSuite) TestDeleteEntity() {
 	suite.Equal(errNotImplemented, err)
 }
 
+func (suite *DisabledEntityProviderTestSuite) TestUpdateCredentials() {
+	err := suite.provider.UpdateCredentials("entity-id", json.RawMessage{})
+	suite.Equal(errNotImplemented, err)
+}
+
 func (suite *DisabledEntityProviderTestSuite) TestUpdateSystemAttributes() {
 	err := suite.provider.UpdateSystemAttributes("entity-id", json.RawMessage{})
 	suite.Equal(errNotImplemented, err)
@@ -74,12 +79,6 @@ func (suite *DisabledEntityProviderTestSuite) TestUpdateSystemAttributes() {
 
 func (suite *DisabledEntityProviderTestSuite) TestUpdateSystemCredentials() {
 	err := suite.provider.UpdateSystemCredentials("entity-id", json.RawMessage{})
-	suite.Equal(errNotImplemented, err)
-}
-
-func (suite *DisabledEntityProviderTestSuite) TestGetEntityGroups() {
-	groups, err := suite.provider.GetEntityGroups("entity-id", 10, 0)
-	suite.Nil(groups)
 	suite.Equal(errNotImplemented, err)
 }
 

@@ -38,7 +38,7 @@ type entityStoreInterface interface {
 	CreateEntity(ctx context.Context, entity Entity,
 		credentials json.RawMessage, systemCredentials json.RawMessage) error
 	GetEntity(ctx context.Context, id string) (Entity, error)
-	GetEntityWithCredentials(ctx context.Context, id string) (*EntityWithCredentials, error)
+	GetEntityWithCredentials(ctx context.Context, id string) (*entityWithCredentials, error)
 	UpdateEntity(ctx context.Context, entity *Entity) error
 	UpdateAttributes(ctx context.Context, entityID string, attributes json.RawMessage) error
 	UpdateSystemAttributes(ctx context.Context, entityID string,
@@ -167,7 +167,7 @@ func (es *entityDBStore) CreateEntity(ctx context.Context, entity Entity,
 		string(entity.Category),
 		entity.Type,
 		string(entity.State),
-		entity.OrganizationUnitID,
+		entity.OUID,
 		string(attributes),
 		systemAttrs,
 		credsJSON,
@@ -210,7 +210,7 @@ func (es *entityDBStore) GetEntity(ctx context.Context, id string) (Entity, erro
 
 // GetEntityWithCredentials retrieves an entity with all credential columns.
 func (es *entityDBStore) GetEntityWithCredentials(ctx context.Context, id string) (
-	*EntityWithCredentials, error) {
+	*entityWithCredentials, error) {
 	dbClient, err := es.dbProvider.GetUserDBClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get database client: %w", err)
@@ -235,7 +235,7 @@ func (es *entityDBStore) GetEntityWithCredentials(ctx context.Context, id string
 		return nil, err
 	}
 
-	return &EntityWithCredentials{
+	return &entityWithCredentials{
 		Entity:            &entity,
 		SchemaCredentials: parseJSONColumn(row, "credentials"),
 		SystemCredentials: parseJSONColumn(row, "system_credentials"),
@@ -262,7 +262,7 @@ func (es *entityDBStore) UpdateEntity(ctx context.Context, entity *Entity) error
 	rowsAffected, err := dbClient.ExecuteContext(
 		ctx,
 		QueryUpdateEntity,
-		entity.ID, entity.OrganizationUnitID, entity.Type,
+		entity.ID, entity.OUID, entity.Type,
 		string(entity.State), string(attributes), systemAttrs, es.deploymentID,
 	)
 	if err != nil {
@@ -883,11 +883,11 @@ func buildEntityFromResultRow(row map[string]interface{}) (Entity, error) {
 	}
 
 	entity := Entity{
-		ID:                 entityID,
-		Category:           EntityCategory(category),
-		Type:               entityType,
-		State:              EntityState(state),
-		OrganizationUnitID: ouID,
+		ID:       entityID,
+		Category: EntityCategory(category),
+		Type:     entityType,
+		State:    EntityState(state),
+		OUID:     ouID,
 	}
 
 	if err := json.Unmarshal([]byte(attributes), &entity.Attributes); err != nil {

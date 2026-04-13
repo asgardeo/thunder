@@ -19,13 +19,13 @@
 package passkey
 
 import (
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/internal/entity"
 )
 
 // Initialize initializes the WebAuthn authentication service.
-func Initialize(userSvc user.UserServiceInterface) PasskeyServiceInterface {
+func Initialize(entitySvc entity.EntityServiceInterface) PasskeyServiceInterface {
 	// Create the session store
 	sessionStore := newSessionStore()
 
-	return newPasskeyService(userSvc, sessionStore)
+	return newPasskeyService(entitySvc, sessionStore)
 }

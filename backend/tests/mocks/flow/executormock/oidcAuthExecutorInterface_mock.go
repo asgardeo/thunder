@@ -6,10 +6,10 @@ package executormock
 
 import (
 	common0 "github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
-	"github.com/asgardeo/thunder/internal/userprovider"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -408,23 +408,23 @@ func (_c *oidcAuthExecutorInterfaceMock_GetIdpID_Call) RunAndReturn(run func(ctx
 }
 
 // GetInternalUser provides a mock function for the type oidcAuthExecutorInterfaceMock
-func (_mock *oidcAuthExecutorInterfaceMock) GetInternalUser(sub string, execResp *common.ExecutorResponse) (*userprovider.User, error) {
+func (_mock *oidcAuthExecutorInterfaceMock) GetInternalUser(sub string, execResp *common.ExecutorResponse) (*entityprovider.Entity, error) {
 	ret := _mock.Called(sub, execResp)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetInternalUser")
 	}
 
-	var r0 *userprovider.User
+	var r0 *entityprovider.Entity
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string, *common.ExecutorResponse) (*userprovider.User, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, *common.ExecutorResponse) (*entityprovider.Entity, error)); ok {
 		return returnFunc(sub, execResp)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, *common.ExecutorResponse) *userprovider.User); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, *common.ExecutorResponse) *entityprovider.Entity); ok {
 		r0 = returnFunc(sub, execResp)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*userprovider.User)
+			r0 = ret.Get(0).(*entityprovider.Entity)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string, *common.ExecutorResponse) error); ok {
@@ -465,12 +465,12 @@ func (_c *oidcAuthExecutorInterfaceMock_GetInternalUser_Call) Run(run func(sub s
 	return _c
 }
 
-func (_c *oidcAuthExecutorInterfaceMock_GetInternalUser_Call) Return(user *userprovider.User, err error) *oidcAuthExecutorInterfaceMock_GetInternalUser_Call {
-	_c.Call.Return(user, err)
+func (_c *oidcAuthExecutorInterfaceMock_GetInternalUser_Call) Return(entity *entityprovider.Entity, err error) *oidcAuthExecutorInterfaceMock_GetInternalUser_Call {
+	_c.Call.Return(entity, err)
 	return _c
 }
 
-func (_c *oidcAuthExecutorInterfaceMock_GetInternalUser_Call) RunAndReturn(run func(sub string, execResp *common.ExecutorResponse) (*userprovider.User, error)) *oidcAuthExecutorInterfaceMock_GetInternalUser_Call {
+func (_c *oidcAuthExecutorInterfaceMock_GetInternalUser_Call) RunAndReturn(run func(sub string, execResp *common.ExecutorResponse) (*entityprovider.Entity, error)) *oidcAuthExecutorInterfaceMock_GetInternalUser_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -902,7 +902,7 @@ func (_c *oidcAuthExecutorInterfaceMock_ProcessAuthFlowResponse_Call) RunAndRetu
 }
 
 // ResolveContextUser provides a mock function for the type oidcAuthExecutorInterfaceMock
-func (_mock *oidcAuthExecutorInterfaceMock) ResolveContextUser(ctx *core.NodeContext, execResp *common.ExecutorResponse, sub string, internalUser *userprovider.User) (*common0.AuthenticatedUser, error) {
+func (_mock *oidcAuthExecutorInterfaceMock) ResolveContextUser(ctx *core.NodeContext, execResp *common.ExecutorResponse, sub string, internalUser *entityprovider.Entity) (*common0.AuthenticatedUser, error) {
 	ret := _mock.Called(ctx, execResp, sub, internalUser)
 
 	if len(ret) == 0 {
@@ -911,17 +911,17 @@ func (_mock *oidcAuthExecutorInterfaceMock) ResolveContextUser(ctx *core.NodeCon
 
 	var r0 *common0.AuthenticatedUser
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(*core.NodeContext, *common.ExecutorResponse, string, *userprovider.User) (*common0.AuthenticatedUser, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(*core.NodeContext, *common.ExecutorResponse, string, *entityprovider.Entity) (*common0.AuthenticatedUser, error)); ok {
 		return returnFunc(ctx, execResp, sub, internalUser)
 	}
-	if returnFunc, ok := ret.Get(0).(func(*core.NodeContext, *common.ExecutorResponse, string, *userprovider.User) *common0.AuthenticatedUser); ok {
+	if returnFunc, ok := ret.Get(0).(func(*core.NodeContext, *common.ExecutorResponse, string, *entityprovider.Entity) *common0.AuthenticatedUser); ok {
 		r0 = returnFunc(ctx, execResp, sub, internalUser)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*common0.AuthenticatedUser)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(*core.NodeContext, *common.ExecutorResponse, string, *userprovider.User) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(*core.NodeContext, *common.ExecutorResponse, string, *entityprovider.Entity) error); ok {
 		r1 = returnFunc(ctx, execResp, sub, internalUser)
 	} else {
 		r1 = ret.Error(1)
@@ -938,12 +938,12 @@ type oidcAuthExecutorInterfaceMock_ResolveContextUser_Call struct {
 //   - ctx *core.NodeContext
 //   - execResp *common.ExecutorResponse
 //   - sub string
-//   - internalUser *userprovider.User
+//   - internalUser *entityprovider.Entity
 func (_e *oidcAuthExecutorInterfaceMock_Expecter) ResolveContextUser(ctx interface{}, execResp interface{}, sub interface{}, internalUser interface{}) *oidcAuthExecutorInterfaceMock_ResolveContextUser_Call {
 	return &oidcAuthExecutorInterfaceMock_ResolveContextUser_Call{Call: _e.mock.On("ResolveContextUser", ctx, execResp, sub, internalUser)}
 }
 
-func (_c *oidcAuthExecutorInterfaceMock_ResolveContextUser_Call) Run(run func(ctx *core.NodeContext, execResp *common.ExecutorResponse, sub string, internalUser *userprovider.User)) *oidcAuthExecutorInterfaceMock_ResolveContextUser_Call {
+func (_c *oidcAuthExecutorInterfaceMock_ResolveContextUser_Call) Run(run func(ctx *core.NodeContext, execResp *common.ExecutorResponse, sub string, internalUser *entityprovider.Entity)) *oidcAuthExecutorInterfaceMock_ResolveContextUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 *core.NodeContext
 		if args[0] != nil {
@@ -957,9 +957,9 @@ func (_c *oidcAuthExecutorInterfaceMock_ResolveContextUser_Call) Run(run func(ct
 		if args[2] != nil {
 			arg2 = args[2].(string)
 		}
-		var arg3 *userprovider.User
+		var arg3 *entityprovider.Entity
 		if args[3] != nil {
-			arg3 = args[3].(*userprovider.User)
+			arg3 = args[3].(*entityprovider.Entity)
 		}
 		run(
 			arg0,
@@ -976,7 +976,7 @@ func (_c *oidcAuthExecutorInterfaceMock_ResolveContextUser_Call) Return(authenti
 	return _c
 }
 
-func (_c *oidcAuthExecutorInterfaceMock_ResolveContextUser_Call) RunAndReturn(run func(ctx *core.NodeContext, execResp *common.ExecutorResponse, sub string, internalUser *userprovider.User) (*common0.AuthenticatedUser, error)) *oidcAuthExecutorInterfaceMock_ResolveContextUser_Call {
+func (_c *oidcAuthExecutorInterfaceMock_ResolveContextUser_Call) RunAndReturn(run func(ctx *core.NodeContext, execResp *common.ExecutorResponse, sub string, internalUser *entityprovider.Entity) (*common0.AuthenticatedUser, error)) *oidcAuthExecutorInterfaceMock_ResolveContextUser_Call {
 	_c.Call.Return(run)
 	return _c
 }

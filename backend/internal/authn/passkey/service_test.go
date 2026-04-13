@@ -29,12 +29,11 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
-	"github.com/asgardeo/thunder/tests/mocks/usermock"
+	"github.com/asgardeo/thunder/tests/mocks/entitymock"
 )
 
 const (
@@ -48,9 +47,9 @@ const (
 
 type WebAuthnServiceTestSuite struct {
 	suite.Suite
-	mockUserService  *usermock.UserServiceInterfaceMock
-	mockSessionStore *sessionStoreInterfaceMock
-	service          *passkeyService
+	mockEntityService *entitymock.EntityServiceInterfaceMock
+	mockSessionStore  *sessionStoreInterfaceMock
+	service           *passkeyService
 }
 
 func TestWebAuthnServiceTestSuite(t *testing.T) {
@@ -72,13 +71,13 @@ func (suite *WebAuthnServiceTestSuite) SetupSuite() {
 }
 
 func (suite *WebAuthnServiceTestSuite) SetupTest() {
-	suite.mockUserService = usermock.NewUserServiceInterfaceMock(suite.T())
+	suite.mockEntityService = entitymock.NewEntityServiceInterfaceMock(suite.T())
 	suite.mockSessionStore = newSessionStoreInterfaceMock(suite.T())
 
 	suite.service = &passkeyService{
-		userService:  suite.mockUserService,
-		sessionStore: suite.mockSessionStore,
-		logger:       log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
+		entityService: suite.mockEntityService,
+		sessionStore:  suite.mockSessionStore,
+		logger:        log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 	}
 }
 
@@ -122,13 +121,8 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_UserNotFound() {
 		RelyingPartyID: testRelyingPartyID,
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(
-		nil,
-		&serviceerror.ServiceError{
-			Type: serviceerror.ClientErrorType,
-			Code: "USER_NOT_FOUND",
-		},
-	).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(nil, entity.ErrEntityNotFound).Once()
 
 	result, svcErr := suite.service.StartRegistration(context.Background(), req)
 
@@ -143,13 +137,8 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_UserServiceServerEr
 		RelyingPartyID: testRelyingPartyID,
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(
-		nil,
-		&serviceerror.ServiceError{
-			Type: serviceerror.ServerErrorType,
-			Code: "INTERNAL_ERROR",
-		},
-	).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(nil, assert.AnError).Once()
 
 	result, svcErr := suite.service.StartRegistration(context.Background(), req)
 
@@ -164,20 +153,16 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_GetCredentialsError
 		RelyingPartyID: testRelyingPartyID,
 	}
 
-	testUser := &user.User{
-		ID:   testUserID,
-		Type: "person",
-		OUID: "org123",
+	testEntity := &entity.Entity{
+		ID:       testUserID,
+		Category: entity.EntityCategoryUser,
+		Type:     "person",
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(testUser, nil).Once()
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").Return(
-		nil,
-		&serviceerror.ServiceError{
-			Type: serviceerror.ServerErrorType,
-			Code: "DB_ERROR",
-		},
-	).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(testEntity, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return(nil, assert.AnError).Once()
 
 	result, svcErr := suite.service.StartRegistration(context.Background(), req)
 
@@ -294,13 +279,8 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_EmptyRelyingParty
 }
 
 func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_UserNotFound() {
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(
-		nil,
-		&serviceerror.ServiceError{
-			Type: serviceerror.ClientErrorType,
-			Code: "USER_NOT_FOUND",
-		},
-	).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(nil, entity.ErrEntityNotFound).Once()
 
 	req := &PasskeyAuthenticationStartRequest{
 		UserID:         testUserID,
@@ -314,13 +294,8 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_UserNotFound() {
 }
 
 func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_UserServiceServerError() {
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(
-		nil,
-		&serviceerror.ServiceError{
-			Type: serviceerror.ServerErrorType,
-			Code: "INTERNAL_ERROR",
-		},
-	).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(nil, assert.AnError).Once()
 
 	req := &PasskeyAuthenticationStartRequest{
 		UserID:         testUserID,
@@ -334,20 +309,16 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_UserServiceServer
 }
 
 func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_GetCredentialsError() {
-	testUser := &user.User{
-		ID:   testUserID,
-		Type: "person",
-		OUID: "org123",
+	testEntity := &entity.Entity{
+		ID:       testUserID,
+		Category: entity.EntityCategoryUser,
+		Type:     "person",
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(testUser, nil).Once()
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").Return(
-		nil,
-		&serviceerror.ServiceError{
-			Type: serviceerror.ServerErrorType,
-			Code: "DB_ERROR",
-		},
-	).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(testEntity, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return(nil, assert.AnError).Once()
 
 	req := &PasskeyAuthenticationStartRequest{
 		UserID:         testUserID,
@@ -361,19 +332,17 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_GetCredentialsErr
 }
 
 func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_NoCredentialsFound() {
-	testUser := &user.User{
-		ID:   testUserID,
-		Type: "person",
-		OUID: "org123",
+	testEntity := &entity.Entity{
+		ID:       testUserID,
+		Category: entity.EntityCategoryUser,
+		Type:     "person",
+		OUID:     "org123",
 	}
 
-	emptyCredentials := []user.Credential{}
-
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(testUser, nil).Once()
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").Return(
-		emptyCredentials,
-		nil,
-	).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(testEntity, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return(nil, nil).Once()
 
 	req := &PasskeyAuthenticationStartRequest{
 		UserID:         testUserID,
@@ -504,8 +473,7 @@ func (suite *WebAuthnServiceTestSuite) TestGetMetadata() {
 	suite.Contains(metadata.Factors, common.FactorPossession)
 }
 
-func (suite *WebAuthnServiceTestSuite) TestGetWebAuthnCredentialsFromDB_Success() {
-	// Create mock credentials
+func (suite *WebAuthnServiceTestSuite) TestGetStoredPasskeyCredentials_Success() {
 	mockCredential := map[string]interface{}{
 		"id":        []byte("credential123"),
 		"publicKey": []byte("publickey123"),
@@ -513,68 +481,64 @@ func (suite *WebAuthnServiceTestSuite) TestGetWebAuthnCredentialsFromDB_Success(
 	}
 	credentialJSON, _ := json.Marshal(mockCredential)
 
-	mockUserCreds := []user.Credential{
-		{
-			StorageType:       "",
-			StorageAlgo:       "",
-			StorageAlgoParams: hash.CredParameters{},
-			Value:             string(credentialJSON),
-		},
-	}
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]entity.StoredCredential{{Value: string(credentialJSON)}}, nil).Once()
 
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(mockUserCreds, nil).Once()
+	entries, svcErr := suite.service.getStoredPasskeyEntries(context.Background(), testUserID)
+	suite.Nil(svcErr)
+	suite.Len(entries, 1)
 
-	credentials, err := suite.service.getStoredPasskeyCredentials(context.Background(), testUserID)
-
-	suite.NoError(err)
-	suite.NotNil(credentials)
+	credentials := suite.service.decodePasskeyCredentials(testUserID, entries)
 	suite.Len(credentials, 1)
 }
 
-func (suite *WebAuthnServiceTestSuite) TestGetWebAuthnCredentialsFromDB_ServiceError() {
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ServerErrorType,
-		Code:  "DB_ERROR",
-		Error: "Database error",
-	}
+func (suite *WebAuthnServiceTestSuite) TestGetStoredPasskeyCredentials_ServiceError() {
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return(nil, assert.AnError).Once()
 
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(nil, svcErr).Once()
+	entries, svcErr := suite.service.getStoredPasskeyEntries(context.Background(), testUserID)
 
-	credentials, err := suite.service.getStoredPasskeyCredentials(context.Background(), testUserID)
-
-	suite.Error(err)
-	suite.Nil(credentials)
-	suite.Contains(err.Error(), "failed to get passkey credentials")
+	suite.NotNil(svcErr)
+	suite.Nil(entries)
+	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
-func (suite *WebAuthnServiceTestSuite) TestGetWebAuthnCredentialsFromDB_InvalidJSON() {
-	mockUserCreds := []user.Credential{
-		{
-			Value: "{invalid json}",
-		},
-	}
+func (suite *WebAuthnServiceTestSuite) TestGetStoredPasskeyCredentials_NotFound() {
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return(nil, entity.ErrEntityNotFound).Once()
 
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(mockUserCreds, nil).Once()
+	entries, svcErr := suite.service.getStoredPasskeyEntries(context.Background(), testUserID)
 
-	credentials, err := suite.service.getStoredPasskeyCredentials(context.Background(), testUserID)
-
-	suite.NoError(err)
-	suite.NotNil(credentials)
-	suite.Len(credentials, 0) // Invalid credentials are skipped
+	suite.NotNil(svcErr)
+	suite.Nil(entries)
+	suite.Equal(ErrorUserNotFound.Code, svcErr.Code)
 }
 
-func (suite *WebAuthnServiceTestSuite) TestGetWebAuthnCredentialsFromDB_EmptyCredentials() {
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return([]user.Credential{}, nil).Once()
+func (suite *WebAuthnServiceTestSuite) TestGetStoredPasskeyCredentials_SkipsInvalidEntries() {
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]entity.StoredCredential{
+			{Value: "{invalid json}"},
+			{Value: ""},
+		}, nil).Once()
 
-	credentials, err := suite.service.getStoredPasskeyCredentials(context.Background(), testUserID)
+	entries, svcErr := suite.service.getStoredPasskeyEntries(context.Background(), testUserID)
+	suite.Nil(svcErr)
+	suite.Len(entries, 2) // raw entries are returned as-is
 
-	suite.NoError(err)
-	suite.NotNil(credentials)
-	suite.Len(credentials, 0)
+	credentials := suite.service.decodePasskeyCredentials(testUserID, entries)
+	suite.Len(credentials, 0) // both decode failures are skipped
+}
+
+func (suite *WebAuthnServiceTestSuite) TestGetStoredPasskeyCredentials_NoCredentials() {
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return(nil, nil).Once()
+
+	entries, svcErr := suite.service.getStoredPasskeyEntries(context.Background(), testUserID)
+	suite.Nil(svcErr)
+	suite.Empty(entries)
+
+	credentials := suite.service.decodePasskeyCredentials(testUserID, entries)
+	suite.Empty(credentials)
 }
 
 func (suite *WebAuthnServiceTestSuite) TestStoreWebAuthnCredentialInDB_Success() {
@@ -587,14 +551,12 @@ func (suite *WebAuthnServiceTestSuite) TestStoreWebAuthnCredentialInDB_Success()
 		},
 	}
 
-	existingCreds := []user.Credential{}
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return(nil, nil).Once()
 
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(existingCreds, nil).Once()
-
-	suite.mockUserService.On("UpdateUserCredentials", mock.Anything, testUserID, mock.MatchedBy(
+	suite.mockEntityService.On("UpdateSystemCredentials", mock.Anything, testUserID, mock.MatchedBy(
 		func(credentialsJSON json.RawMessage) bool {
-			var credMap map[string][]user.Credential
+			var credMap map[string][]entity.StoredCredential
 			if err := json.Unmarshal(credentialsJSON, &credMap); err != nil {
 				return false
 			}
@@ -612,19 +574,13 @@ func (suite *WebAuthnServiceTestSuite) TestStoreWebAuthnCredentialInDB_GetCreden
 		ID: []byte("credential123"),
 	}
 
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ServerErrorType,
-		Code:  "DB_ERROR",
-		Error: "Database error",
-	}
-
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(nil, svcErr).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return(nil, assert.AnError).Once()
 
 	err := suite.service.storePasskeyCredential(context.Background(), testUserID, mockCredential)
 
 	suite.Error(err)
-	suite.Contains(err.Error(), "failed to get existing passkey credentials")
+	suite.Contains(err.Error(), "failed to load existing passkey credentials")
 }
 
 func (suite *WebAuthnServiceTestSuite) TestStoreWebAuthnCredentialInDB_UpdateCredentialsError() {
@@ -633,19 +589,11 @@ func (suite *WebAuthnServiceTestSuite) TestStoreWebAuthnCredentialInDB_UpdateCre
 		PublicKey: []byte("publickey123"),
 	}
 
-	existingCreds := []user.Credential{}
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return(nil, nil).Once()
 
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ServerErrorType,
-		Code:  "DB_ERROR",
-		Error: "Database error",
-	}
-
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(existingCreds, nil).Once()
-
-	suite.mockUserService.On("UpdateUserCredentials", mock.Anything, testUserID, mock.Anything).
-		Return(svcErr).Once()
+	suite.mockEntityService.On("UpdateSystemCredentials", mock.Anything, testUserID, mock.Anything).
+		Return(assert.AnError).Once()
 
 	err := suite.service.storePasskeyCredential(context.Background(), testUserID, mockCredential)
 
@@ -672,18 +620,12 @@ func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_Success(
 		},
 	}
 
-	existingCreds := []user.Credential{
-		{
-			Value: string(existingCredJSON),
-		},
-	}
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]entity.StoredCredential{{Value: string(existingCredJSON)}}, nil).Once()
 
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(existingCreds, nil).Once()
-
-	suite.mockUserService.On("UpdateUserCredentials", mock.Anything, testUserID, mock.MatchedBy(
+	suite.mockEntityService.On("UpdateSystemCredentials", mock.Anything, testUserID, mock.MatchedBy(
 		func(credentialsJSON json.RawMessage) bool {
-			var credMap map[string][]user.Credential
+			var credMap map[string][]entity.StoredCredential
 			if err := json.Unmarshal(credentialsJSON, &credMap); err != nil {
 				return false
 			}
@@ -715,14 +657,8 @@ func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_Credenti
 	}
 	existingCredJSON, _ := json.Marshal(differentCredential)
 
-	existingCreds := []user.Credential{
-		{
-			Value: string(existingCredJSON),
-		},
-	}
-
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(existingCreds, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]entity.StoredCredential{{Value: string(existingCredJSON)}}, nil).Once()
 
 	err := suite.service.updatePasskeyCredential(context.Background(), testUserID, updatedCredential)
 
@@ -735,19 +671,13 @@ func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_GetCrede
 		ID: []byte("credential123"),
 	}
 
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ServerErrorType,
-		Code:  "DB_ERROR",
-		Error: "Database error",
-	}
-
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(nil, svcErr).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return(nil, assert.AnError).Once()
 
 	err := suite.service.updatePasskeyCredential(context.Background(), testUserID, updatedCredential)
 
 	suite.Error(err)
-	suite.Contains(err.Error(), "failed to get existing credentials")
+	suite.Contains(err.Error(), "failed to load existing passkey credentials")
 }
 
 func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_UpdateError() {
@@ -763,28 +693,16 @@ func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_UpdateEr
 		PublicKey: []byte("publickey123"),
 	}
 
-	existingCreds := []user.Credential{
-		{
-			Value: string(existingCredJSON),
-		},
-	}
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]entity.StoredCredential{{Value: string(existingCredJSON)}}, nil).Once()
 
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ServerErrorType,
-		Code:  "DB_ERROR",
-		Error: "Database error",
-	}
-
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(existingCreds, nil).Once()
-
-	suite.mockUserService.On("UpdateUserCredentials", mock.Anything, testUserID, mock.Anything).
-		Return(svcErr).Once()
+	suite.mockEntityService.On("UpdateSystemCredentials", mock.Anything, testUserID, mock.Anything).
+		Return(assert.AnError).Once()
 
 	err := suite.service.updatePasskeyCredential(context.Background(), testUserID, updatedCredential)
 
 	suite.Error(err)
-	suite.Contains(err.Error(), "failed to update credentials")
+	suite.Contains(err.Error(), "failed to update passkey credentials")
 }
 
 func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_InvalidExistingCredential() {
@@ -794,17 +712,11 @@ func (suite *WebAuthnServiceTestSuite) TestUpdateWebAuthnCredentialInDB_InvalidE
 		PublicKey: []byte("publickey123"),
 	}
 
-	existingCreds := []user.Credential{
-		{
-			Value: "{invalid json}",
-		},
-		{
-			Value: "{invalid}",
-		},
-	}
-
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(existingCreds, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]entity.StoredCredential{
+			{Value: "{invalid json}"},
+			{Value: "{invalid}"},
+		}, nil).Once()
 
 	err := suite.service.updatePasskeyCredential(context.Background(), testUserID, updatedCredential)
 
@@ -899,15 +811,17 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_StoreSessionError()
 		RelyingPartyID: testRelyingPartyID,
 	}
 
-	testUser := &user.User{
-		ID:   testUserID,
-		Type: "person",
-		OUID: "org123",
+	testEntity := &entity.Entity{
+		ID:       testUserID,
+		Category: entity.EntityCategoryUser,
+		Type:     "person",
+		OUID:     "org123",
 	}
 
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(testUser, nil).Once()
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return([]user.Credential{}, nil).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(testEntity, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return(nil, nil).Once()
 
 	// Mock session store to return error
 	suite.mockSessionStore.On("storeSession",
@@ -986,13 +900,8 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_GetUserError() {
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
 		Return(sessionData, nil).Once()
 
-	svcErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ServerErrorType,
-		Code:  "USER_ERROR",
-		Error: "User retrieval error",
-	}
-
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(nil, svcErr).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(nil, assert.AnError).Once()
 
 	req := &PasskeyAuthenticationFinishRequest{
 		CredentialID:      testCredentialID,
@@ -1017,24 +926,19 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_GetCredentialsEr
 		RelyingPartyID: testRelyingPartyID,
 	}
 
-	testUser := &user.User{
-		ID:   testUserID,
-		Type: "person",
+	testEntity := &entity.Entity{
+		ID:       testUserID,
+		Category: entity.EntityCategoryUser,
+		Type:     "person",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
 		Return(sessionData, nil).Once()
 
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(testUser, nil).Once()
-
-	credErr := &serviceerror.ServiceError{
-		Type:  serviceerror.ServerErrorType,
-		Code:  "CRED_ERROR",
-		Error: "webauthnCredential retrieval error",
-	}
-
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(nil, credErr).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(testEntity, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return(nil, assert.AnError).Once()
 
 	req := &PasskeyAuthenticationFinishRequest{
 		CredentialID:      testCredentialID,
@@ -1059,17 +963,19 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_NoCredentialsErr
 		RelyingPartyID: testRelyingPartyID,
 	}
 
-	testUser := &user.User{
-		ID:   testUserID,
-		Type: "person",
+	testEntity := &entity.Entity{
+		ID:       testUserID,
+		Category: entity.EntityCategoryUser,
+		Type:     "person",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
 		Return(sessionData, nil).Once()
 
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(testUser, nil).Once()
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return([]user.Credential{}, nil).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(testEntity, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return(nil, nil).Once()
 
 	req := &PasskeyAuthenticationFinishRequest{
 		CredentialID:      testCredentialID,
@@ -1100,23 +1006,19 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_InvalidAssertion
 	}
 	credentialJSON, _ := json.Marshal(mockCredential)
 
-	mockUserCreds := []user.Credential{
-		{
-			Value: string(credentialJSON),
-		},
-	}
-
-	testUser := &user.User{
-		ID:   testUserID,
-		Type: "person",
+	testEntity := &entity.Entity{
+		ID:       testUserID,
+		Category: entity.EntityCategoryUser,
+		Type:     "person",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
 		Return(sessionData, nil).Once()
 
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(testUser, nil).Once()
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(mockUserCreds, nil).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(testEntity, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]entity.StoredCredential{{Value: string(credentialJSON)}}, nil).Once()
 
 	// Use invalid base64 to trigger parsing error
 	req := &PasskeyAuthenticationFinishRequest{
@@ -1147,23 +1049,16 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_CredentialsValida
 	}
 	credentialJSON, _ := json.Marshal(mockCredential)
 
-	mockUserCreds := []user.Credential{
-		{
-			StorageType:       "",
-			StorageAlgo:       "",
-			StorageAlgoParams: hash.CredParameters{},
-			Value:             string(credentialJSON),
-		},
+	testEntity := &entity.Entity{
+		ID:       testUserID,
+		Category: entity.EntityCategoryUser,
+		Type:     "person",
 	}
 
-	testUser := &user.User{
-		ID:   testUserID,
-		Type: "person",
-	}
-
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(testUser, nil).Once()
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(mockUserCreds, nil).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(testEntity, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]entity.StoredCredential{{Value: string(credentialJSON)}}, nil).Once()
 
 	suite.mockSessionStore.On("storeSession",
 		mock.AnythingOfType("string"),
@@ -1195,18 +1090,16 @@ func (suite *WebAuthnServiceTestSuite) TestStartAuthentication_CredentialWithZer
 	}
 	credentialJSON, _ := json.Marshal(mockCredential)
 
-	mockUserCreds := []user.Credential{
-		{Value: string(credentialJSON)},
+	testEntity := &entity.Entity{
+		ID:       testUserID,
+		Category: entity.EntityCategoryUser,
+		Type:     "person",
 	}
 
-	testUser := &user.User{
-		ID:   testUserID,
-		Type: "person",
-	}
-
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(testUser, nil).Once()
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(mockUserCreds, nil).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(testEntity, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]entity.StoredCredential{{Value: string(credentialJSON)}}, nil).Once()
 
 	suite.mockSessionStore.On("storeSession",
 		mock.AnythingOfType("string"),
@@ -1242,18 +1135,16 @@ func (suite *WebAuthnServiceTestSuite) TestStartRegistration_WithExistingValidCr
 	}
 	credentialJSON, _ := json.Marshal(mockCredential)
 
-	mockUserCreds := []user.Credential{
-		{Value: string(credentialJSON)},
+	testEntity := &entity.Entity{
+		ID:       testUserID,
+		Category: entity.EntityCategoryUser,
+		Type:     "person",
 	}
 
-	testUser := &user.User{
-		ID:   testUserID,
-		Type: "person",
-	}
-
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(testUser, nil).Once()
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(mockUserCreds, nil).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(testEntity, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]entity.StoredCredential{{Value: string(credentialJSON)}}, nil).Once()
 
 	suite.mockSessionStore.On("storeSession",
 		mock.AnythingOfType("string"),
@@ -1287,21 +1178,19 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_UpdateCredential
 	}
 	credentialJSON, _ := json.Marshal(mockCredential)
 
-	mockUserCreds := []user.Credential{
-		{Value: string(credentialJSON)},
-	}
-
-	testUser := &user.User{
-		ID:   testUserID,
-		Type: "person",
+	testEntity := &entity.Entity{
+		ID:       testUserID,
+		Category: entity.EntityCategoryUser,
+		Type:     "person",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
 		Return(sessionData, nil).Once()
 
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(testUser, nil).Once()
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(mockUserCreds, nil).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(testEntity, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]entity.StoredCredential{{Value: string(credentialJSON)}}, nil).Once()
 
 	req := &PasskeyAuthenticationFinishRequest{
 		CredentialID:      validCredentialID,
@@ -1332,21 +1221,19 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_SkipAssertion() 
 	}
 	credentialJSON, _ := json.Marshal(mockCredential)
 
-	mockUserCreds := []user.Credential{
-		{Value: string(credentialJSON)},
-	}
-
-	testUser := &user.User{
-		ID:   testUserID,
-		Type: "person",
+	testEntity := &entity.Entity{
+		ID:       testUserID,
+		Category: entity.EntityCategoryUser,
+		Type:     "person",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
 		Return(sessionData, nil).Once()
 
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(testUser, nil).Once()
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return(mockUserCreds, nil).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(testEntity, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]entity.StoredCredential{{Value: string(credentialJSON)}}, nil).Once()
 
 	req := &PasskeyAuthenticationFinishRequest{
 		CredentialID:      "credential123",
@@ -1382,17 +1269,19 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_UsernameBasedFlo
 	}
 	credentialJSON, _ := json.Marshal(mockCredential)
 
-	testUser := &user.User{
-		ID:   testUserID,
-		Type: "person",
+	testEntity := &entity.Entity{
+		ID:       testUserID,
+		Category: entity.EntityCategoryUser,
+		Type:     "person",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
 		Return(sessionData, nil).Once()
 
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(testUser, nil).Once()
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return([]user.Credential{{Value: string(credentialJSON)}}, nil).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(testEntity, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]entity.StoredCredential{{Value: string(credentialJSON)}}, nil).Once()
 
 	suite.mockSessionStore.On("deleteSession", testSessionToken).
 		Return(nil).Maybe()
@@ -1436,18 +1325,20 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidatePasskeyL
 	}
 	credentialJSON, _ := json.Marshal(mockCredential)
 
-	testUser := &user.User{
-		ID:   testUserID,
-		Type: "person",
-		OUID: "org123",
+	testEntity := &entity.Entity{
+		ID:       testUserID,
+		Category: entity.EntityCategoryUser,
+		Type:     "person",
+		OUID:     "org123",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
 		Return(sessionData, nil).Once()
 
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(testUser, nil).Once()
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return([]user.Credential{{Value: string(credentialJSON)}}, nil).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(testEntity, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]entity.StoredCredential{{Value: string(credentialJSON)}}, nil).Once()
 
 	validCredentialID := base64.RawURLEncoding.EncodeToString([]byte("credential123"))
 
@@ -1487,18 +1378,20 @@ func (suite *WebAuthnServiceTestSuite) TestFinishAuthentication_ValidateLogin_Re
 	}
 	credentialJSON, _ := json.Marshal(mockCredential)
 
-	testUser := &user.User{
-		ID:   testUserID,
-		Type: "person",
-		OUID: "org123",
+	testEntity := &entity.Entity{
+		ID:       testUserID,
+		Category: entity.EntityCategoryUser,
+		Type:     "person",
+		OUID:     "org123",
 	}
 
 	suite.mockSessionStore.On("retrieveSession", testSessionToken).
 		Return(sessionData, nil).Once()
 
-	suite.mockUserService.On("GetUser", mock.Anything, testUserID, false).Return(testUser, nil).Once()
-	suite.mockUserService.On("GetUserCredentialsByType", mock.Anything, testUserID, "passkey").
-		Return([]user.Credential{{Value: string(credentialJSON)}}, nil).Once()
+	suite.mockEntityService.On("GetEntity", mock.Anything, testUserID).
+		Return(testEntity, nil).Once()
+	suite.mockEntityService.On("GetCredentialsByType", mock.Anything, testUserID, "passkey").
+		Return([]entity.StoredCredential{{Value: string(credentialJSON)}}, nil).Once()
 
 	validCredentialID := base64.RawURLEncoding.EncodeToString([]byte("credential123"))
 

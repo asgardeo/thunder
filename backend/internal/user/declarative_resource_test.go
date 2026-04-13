@@ -177,7 +177,7 @@ func (suite *DeclarativeResourceTestSuite) TestParseToUserWrapper() {
 
 func (suite *DeclarativeResourceTestSuite) TestUserExporter_GetResourceByID() {
 	mockSvc := NewUserServiceInterfaceMock(suite.T())
-	exporter := newUserExporter(mockSvc)
+	exporter := newUserExporter(mockSvc, entitymock.NewEntityServiceInterfaceMock(suite.T()))
 
 	attrs := json.RawMessage(`{"username":"alice"}`)
 	mockSvc.On("GetUser", context.Background(), "user-1", false).
@@ -193,7 +193,8 @@ func (suite *DeclarativeResourceTestSuite) TestUserExporter_GetResourceByID() {
 }
 
 func (suite *DeclarativeResourceTestSuite) TestUserExporter_Metadata() {
-	exporter := newUserExporter(NewUserServiceInterfaceMock(suite.T()))
+	exporter := newUserExporter(
+		NewUserServiceInterfaceMock(suite.T()), entitymock.NewEntityServiceInterfaceMock(suite.T()))
 
 	suite.Equal(resourceTypeUser, exporter.GetResourceType())
 	suite.Equal(paramTypeUser, exporter.GetParameterizerType())
@@ -202,13 +203,14 @@ func (suite *DeclarativeResourceTestSuite) TestUserExporter_Metadata() {
 func (suite *DeclarativeResourceTestSuite) TestUserExporter_GetAllResourceIDs() {
 	ctx := context.Background()
 	mockSvc := NewUserServiceInterfaceMock(suite.T())
-	exporter := newUserExporter(mockSvc)
+	entityServiceMock := entitymock.NewEntityServiceInterfaceMock(suite.T())
+	exporter := newUserExporter(mockSvc, entityServiceMock)
 
 	users := []User{{ID: "user-1"}, {ID: "user-2"}}
 	mockSvc.On("GetUserList", ctx, serverconst.MaxPageSize, 0, mock.Anything, false).
 		Return(&UserListResponse{Users: users}, nil)
-	mockSvc.On("IsUserDeclarative", ctx, "user-1").Return(true, nil)
-	mockSvc.On("IsUserDeclarative", ctx, "user-2").Return(false, nil)
+	entityServiceMock.On("IsEntityDeclarative", ctx, "user-1").Return(true, nil)
+	entityServiceMock.On("IsEntityDeclarative", ctx, "user-2").Return(false, nil)
 	mockSvc.On("GetUserList", ctx, serverconst.MaxPageSize, 2, mock.Anything, false).
 		Return(&UserListResponse{Users: []User{}}, nil)
 
@@ -235,7 +237,7 @@ func (suite *DeclarativeResourceTestSuite) TestMakeUserParser_ParsesYAMLToEntity
 	suite.NotNil(e)
 	suite.Equal("user-1", e.ID)
 	suite.Equal("person", e.Type)
-	suite.Equal("ou-1", e.OrganizationUnitID)
+	suite.Equal("ou-1", e.OUID)
 	suite.Equal(entitypkg.EntityCategoryUser, e.Category)
 
 	// Verify attributes preserved
@@ -249,14 +251,16 @@ func (suite *DeclarativeResourceTestSuite) TestMakeUserParser_ParsesYAMLToEntity
 }
 
 func (suite *DeclarativeResourceTestSuite) TestGetResourceRules_IncludesCredentials() {
-	exporter := newUserExporter(NewUserServiceInterfaceMock(suite.T()))
+	exporter := newUserExporter(
+		NewUserServiceInterfaceMock(suite.T()), entitymock.NewEntityServiceInterfaceMock(suite.T()))
 
 	rules := exporter.GetResourceRules()
 	suite.Contains(rules.DynamicPropertyFields, "Credentials")
 }
 
 func (suite *DeclarativeResourceTestSuite) TestValidateResource_MissingUsername() {
-	exporter := newUserExporter(NewUserServiceInterfaceMock(suite.T()))
+	exporter := newUserExporter(
+		NewUserServiceInterfaceMock(suite.T()), entitymock.NewEntityServiceInterfaceMock(suite.T()))
 
 	resource := &userDeclarativeResource{
 		ID:         "user-1",
@@ -274,10 +278,10 @@ func (suite *DeclarativeResourceTestSuite) TestMakeUserValidator_Success() {
 	suite.Require().NoError(err)
 
 	e := &entitypkg.Entity{
-		ID:                 "user-1",
-		Type:               "person",
-		OrganizationUnitID: "ou-1",
-		Attributes:         attrs,
+		ID:         "user-1",
+		Type:       "person",
+		OUID:       "ou-1",
+		Attributes: attrs,
 	}
 
 	svcMock := entitymock.NewEntityServiceInterfaceMock(suite.T())
@@ -294,10 +298,10 @@ func (suite *DeclarativeResourceTestSuite) TestMakeUserValidator_DuplicateEntity
 	suite.Require().NoError(err)
 
 	e := &entitypkg.Entity{
-		ID:                 "user-1",
-		Type:               "person",
-		OrganizationUnitID: "ou-1",
-		Attributes:         attrs,
+		ID:         "user-1",
+		Type:       "person",
+		OUID:       "ou-1",
+		Attributes: attrs,
 	}
 
 	svcMock := entitymock.NewEntityServiceInterfaceMock(suite.T())
@@ -315,10 +319,10 @@ func (suite *DeclarativeResourceTestSuite) TestMakeUserValidator_DBError() {
 	suite.Require().NoError(err)
 
 	e := &entitypkg.Entity{
-		ID:                 "user-1",
-		Type:               "person",
-		OrganizationUnitID: "ou-1",
-		Attributes:         attrs,
+		ID:         "user-1",
+		Type:       "person",
+		OUID:       "ou-1",
+		Attributes: attrs,
 	}
 
 	svcMock := entitymock.NewEntityServiceInterfaceMock(suite.T())

@@ -19,12 +19,12 @@
 package otp
 
 import (
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/notification"
-	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 // Initialize initializes the OTP authentication service.
 func Initialize(otpSvc notification.OTPServiceInterface,
-	userProvider userprovider.UserProviderInterface) OTPAuthnServiceInterface {
-	return newOTPAuthnService(otpSvc, userProvider)
+	entityProvider entityprovider.EntityProviderInterface) OTPAuthnServiceInterface {
+	return newOTPAuthnService(otpSvc, entityProvider)
 }

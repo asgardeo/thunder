@@ -23,19 +23,23 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
 )
 
 const (
 	// loggerComponentName is the component name for logging.
 	loggerComponentName = "PasskeyService"
+
+	// passkeyCredentialType is the credential type key.
+	passkeyCredentialType = "passkey"
 )
 
 // PasskeyServiceInterface defines the interface for passkey authentication and registration operations.
@@ -59,21 +63,19 @@ type PasskeyServiceInterface interface {
 
 // passkeyService is the default implementation of PasskeyServiceInterface.
 type passkeyService struct {
-	userService  user.UserServiceInterface
-	sessionStore sessionStoreInterface
-	logger       *log.Logger
+	entityService entity.EntityServiceInterface
+	sessionStore  sessionStoreInterface
+	logger        *log.Logger
 }
 
 // newPasskeyService creates a new instance of passkey service.
-func newPasskeyService(userSvc user.UserServiceInterface, sessionStore sessionStoreInterface) PasskeyServiceInterface {
-	if userSvc == nil {
-		userSvc = user.GetUserService()
-	}
-
+func newPasskeyService(
+	entitySvc entity.EntityServiceInterface, sessionStore sessionStoreInterface,
+) PasskeyServiceInterface {
 	service := &passkeyService{
-		userService:  userSvc,
-		sessionStore: sessionStore,
-		logger:       log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
+		entityService: entitySvc,
+		sessionStore:  sessionStore,
+		logger:        log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 	}
 	common.RegisterAuthenticator(service.getMetadata())
 
@@ -98,11 +100,18 @@ func (w *passkeyService) StartRegistration(
 		return nil, svcErr
 	}
 
-	// Retrieve core user
-	coreUser, svcErr := w.userService.GetUser(ctx, req.UserID, false)
+	// Retrieve entity
+	coreEntity, svcErr := w.getEntity(ctx, req.UserID)
 	if svcErr != nil {
-		return nil, handleUserRetrievalError(svcErr, req.UserID, logger)
+		return nil, svcErr
 	}
+
+	// Retrieve any existing passkey credentials
+	entries, svcErr := w.getStoredPasskeyEntries(ctx, req.UserID)
+	if svcErr != nil {
+		return nil, svcErr
+	}
+	credentials := w.decodePasskeyCredentials(req.UserID, entries)
 
 	// Build relying party display name
 	rpDisplayName := req.RelyingPartyName
@@ -110,19 +119,12 @@ func (w *passkeyService) StartRegistration(
 		rpDisplayName = req.RelyingPartyID
 	}
 
-	// Retrieve user's existing passkey credentials from database
-	credentials, err := w.getStoredPasskeyCredentials(ctx, req.UserID)
-	if err != nil {
-		logger.Error("Failed to retrieve credentials from database", log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-
 	logger.Debug("Retrieved existing credentials",
-		log.String("userID", req.UserID),
+		log.String("entityID", log.MaskString(req.UserID)),
 		log.Int("credentialCount", len(credentials)))
 
 	// Create passkey user
-	webAuthnUser := newWebAuthnUserFromCoreUser(coreUser, credentials)
+	webAuthnUser := newWebAuthnUserFromEntity(coreEntity, credentials)
 
 	// Initialize WebAuthn service with relying party configuration
 	rpOrigins := getConfiguredOrigins()
@@ -224,26 +226,25 @@ func (w *passkeyService) FinishRegistration(ctx context.Context, req *PasskeyReg
 		return nil, svcErr
 	}
 
-	// Get core user
-	coreUser, svcErr := w.userService.GetUser(ctx, userID, false)
+	// Retrieve entity
+	coreEntity, svcErr := w.getEntity(ctx, userID)
 	if svcErr != nil {
-		logger.Error("Failed to retrieve user", log.String("error", svcErr.Error))
-		return nil, &serviceerror.InternalServerError
+		return nil, svcErr
 	}
 
-	// Retrieve existing credentials from database
-	credentials, err := w.getStoredPasskeyCredentials(ctx, userID)
-	if err != nil {
-		logger.Error("Failed to retrieve credentials from database", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+	// Retrieve any existing passkey credentials
+	entries, svcErr := w.getStoredPasskeyEntries(ctx, userID)
+	if svcErr != nil {
+		return nil, svcErr
 	}
+	credentials := w.decodePasskeyCredentials(userID, entries)
 
-	logger.Debug("Retrieved existing credentials for user",
-		log.String("userID", userID),
+	logger.Debug("Retrieved existing credentials for entity",
+		log.String("entityID", log.MaskString(userID)),
 		log.Int("credentialCount", len(credentials)))
 
-	// Create WebAuthn user from core user
-	webAuthnUser := newWebAuthnUserFromCoreUser(coreUser, credentials)
+	// Create WebAuthn user from entity
+	webAuthnUser := newWebAuthnUserFromEntity(coreEntity, credentials)
 
 	// Initialize WebAuthn service with relying party configuration
 	rpOrigins := getConfiguredOrigins()
@@ -330,31 +331,29 @@ func (w *passkeyService) StartAuthentication(ctx context.Context, req *PasskeyAu
 			return nil, &serviceerror.InternalServerError
 		}
 	} else {
-		// Username-based flow: Retrieve user and credentials
-		// Retrieve user by userID to verify user exists
-		coreUser, svcErr := w.userService.GetUser(ctx, req.UserID, false)
+		// Username-based flow: Retrieve entity and its credentials
+		coreEntity, svcErr := w.getEntity(ctx, req.UserID)
 		if svcErr != nil {
-			return nil, handleUserRetrievalError(svcErr, req.UserID, logger)
+			return nil, svcErr
 		}
 
-		// Retrieve user's registered passkey credentials from database
-		credentials, err := w.getStoredPasskeyCredentials(ctx, req.UserID)
-		if err != nil {
-			logger.Error("Failed to retrieve credentials from database", log.Error(err))
-			return nil, &serviceerror.InternalServerError
+		entries, svcErr := w.getStoredPasskeyEntries(ctx, req.UserID)
+		if svcErr != nil {
+			return nil, svcErr
 		}
+		credentials := w.decodePasskeyCredentials(req.UserID, entries)
 
 		logger.Debug("Retrieved credentials for authentication",
-			log.String("userID", log.MaskString(req.UserID)),
+			log.String("entityID", log.MaskString(req.UserID)),
 			log.Int("credentialCount", len(credentials)))
 
 		if len(credentials) == 0 {
-			logger.Debug("No credentials found for user", log.String("userID", log.MaskString(req.UserID)))
+			logger.Debug("No credentials found for entity", log.String("entityID", log.MaskString(req.UserID)))
 			return nil, &ErrorNoCredentialsFound
 		}
 
-		// Create WebAuthn user from core user
-		webAuthnUser := newWebAuthnUserFromCoreUser(coreUser, credentials)
+		// Create WebAuthn user from entity
+		webAuthnUser := newWebAuthnUserFromEntity(coreEntity, credentials)
 
 		// Begin login ceremony using the WebAuthn service
 		// The WebAuthn service will generate challenge and set timeout automatically
@@ -440,31 +439,29 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 			log.String("relyingPartyID", relyingPartyID))
 	}
 
-	// Get core user
-	coreUser, svcErr := w.userService.GetUser(ctx, userID, false)
+	// Retrieve entity and its credentials
+	coreEntity, svcErr := w.getEntity(ctx, userID)
 	if svcErr != nil {
-		logger.Error("Failed to retrieve user", log.String("error", svcErr.Error))
-		return nil, &serviceerror.InternalServerError
+		return nil, svcErr
 	}
 
-	// Retrieve user's credentials from database
-	credentials, err := w.getStoredPasskeyCredentials(ctx, userID)
-	if err != nil {
-		logger.Error("Failed to retrieve credentials from database", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+	entries, svcErr := w.getStoredPasskeyEntries(ctx, userID)
+	if svcErr != nil {
+		return nil, svcErr
 	}
+	credentials := w.decodePasskeyCredentials(userID, entries)
 
 	logger.Debug("Retrieved credentials for authentication verification",
-		log.String("userID", userID),
+		log.String("entityID", log.MaskString(userID)),
 		log.Int("credentialCount", len(credentials)))
 
 	if len(credentials) == 0 {
-		logger.Debug("No credentials found for user", log.String("userID", userID))
+		logger.Debug("No credentials found for entity", log.String("entityID", log.MaskString(userID)))
 		return nil, &ErrorNoCredentialsFound
 	}
 
-	// Create WebAuthn user from core user
-	webAuthnUser := newWebAuthnUserFromCoreUser(coreUser, credentials)
+	// Create WebAuthn user from entity
+	webAuthnUser := newWebAuthnUserFromEntity(coreEntity, credentials)
 
 	// Initialize WebAuthn service with relying party configuration
 	rpOrigins := getConfiguredOrigins()
@@ -516,7 +513,7 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 	}
 
 	logger.Debug("Updated credential sign count in database",
-		log.String("userID", userID),
+		log.String("userID", log.MaskString(userID)),
 		log.String("credentialID", base64.StdEncoding.EncodeToString(credential.ID)),
 		log.Any("newSignCount", credential.Authenticator.SignCount))
 
@@ -525,13 +522,13 @@ func (w *passkeyService) FinishAuthentication(ctx context.Context, req *PasskeyA
 
 	// Build authentication response
 	authResponse := &common.AuthenticationResponse{
-		ID:   coreUser.ID,
-		Type: coreUser.Type,
-		OUID: coreUser.OUID,
+		ID:   coreEntity.ID,
+		Type: coreEntity.Type,
+		OUID: coreEntity.OUID,
 	}
 
 	logger.Debug("Passkey authentication completed successfully",
-		log.String("userID", log.MaskString(userID)))
+		log.String("entityID", log.MaskString(userID)))
 
 	return authResponse, nil
 }
@@ -544,215 +541,182 @@ func (w *passkeyService) getMetadata() common.AuthenticatorMeta {
 	}
 }
 
-// getStoredPasskeyCredentials retrieves passkey credentials for a user from the database.
-func (w *passkeyService) getStoredPasskeyCredentials(ctx context.Context, userID string) ([]webauthnCredential, error) {
+// getEntity retrieves an entity by ID, mapping entity-layer errors to passkey service errors.
+func (w *passkeyService) getEntity(
+	ctx context.Context, entityID string,
+) (*entity.Entity, *serviceerror.ServiceError) {
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	// Get passkey credentials from user service
-	passkeyCredentials, svcErr := w.userService.GetUserCredentialsByType(
-		ctx, userID, user.CredentialTypePasskey.String())
-	if svcErr != nil {
-		logger.Error("Failed to get passkey credentials",
-			log.String("userID", userID),
-			log.String("error", svcErr.Error))
-		return nil, fmt.Errorf("failed to get passkey credentials: %s", svcErr.Error)
+	e, err := w.entityService.GetEntity(ctx, entityID)
+	if err != nil {
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			logger.Debug("Entity not found", log.String("entityID", log.MaskString(entityID)))
+			return nil, &ErrorUserNotFound
+		}
+		logger.Error("Failed to retrieve entity", log.Error(err))
+		return nil, &serviceerror.InternalServerError
 	}
+	return e, nil
+}
 
-	// Convert passkey credentials to generic maps for processing
-	storedCreds := make([]map[string]interface{}, 0, len(passkeyCredentials))
-	for _, cred := range passkeyCredentials {
-		storedCreds = append(storedCreds, map[string]interface{}{
-			"storageType":       cred.StorageType,
-			"storageAlgo":       cred.StorageAlgo,
-			"storageAlgoParams": cred.StorageAlgoParams,
-			"value":             cred.Value,
-		})
+// getStoredPasskeyEntries fetches the raw stored passkey credential entries for an entity.
+// Returns a nil slice when the entity has no passkey credentials registered.
+func (w *passkeyService) getStoredPasskeyEntries(
+	ctx context.Context, entityID string,
+) ([]entity.StoredCredential, *serviceerror.ServiceError) {
+	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	entries, err := w.entityService.GetCredentialsByType(ctx, entityID, passkeyCredentialType)
+	if err != nil {
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			logger.Debug("Entity not found", log.String("entityID", log.MaskString(entityID)))
+			return nil, &ErrorUserNotFound
+		}
+		logger.Error("Failed to retrieve passkey credentials", log.Error(err))
+		return nil, &serviceerror.InternalServerError
 	}
+	return entries, nil
+}
 
-	// Convert stored credentials to passkey credentials
-	credentials := make([]webauthnCredential, 0, len(storedCreds))
-	for _, storedCred := range storedCreds {
-		// Get the credential value
-		credValueStr, ok := storedCred["value"].(string)
-		if !ok {
-			logger.Error("Failed to get credential value",
-				log.String("userID", userID))
+// decodePasskeyCredentials converts stored passkey entries into decoded webauthnCredential
+// values, skipping any entries with empty or malformed values.
+func (w *passkeyService) decodePasskeyCredentials(
+	entityID string, entries []entity.StoredCredential,
+) []webauthnCredential {
+	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+
+	credentials := make([]webauthnCredential, 0, len(entries))
+	for _, entry := range entries {
+		if entry.Value == "" {
+			logger.Error("Empty credential value", log.String("entityID", log.MaskString(entityID)))
 			continue
 		}
-
 		var credential webauthnCredential
-		if err := json.Unmarshal([]byte(credValueStr), &credential); err != nil {
-			// Log error but continue processing other credentials
+		if err := json.Unmarshal([]byte(entry.Value), &credential); err != nil {
 			logger.Error("Failed to unmarshal passkey credential",
-				log.String("userID", userID),
+				log.String("entityID", log.MaskString(entityID)),
 				log.Error(err))
 			continue
 		}
 		credentials = append(credentials, credential)
 	}
-
-	logger.Debug("Retrieved passkey credentials from database",
-		log.String("userID", userID),
-		log.Int("credentialCount", len(credentials)))
-
-	return credentials, nil
+	return credentials
 }
 
-// storePasskeyCredential stores a passkey credential in the database.
+// storePasskeyCredential appends a new passkey credential to the entity's stored set.
 func (w *passkeyService) storePasskeyCredential(
-	ctx context.Context, userID string, credential *webauthnCredential,
+	ctx context.Context, entityID string, credential *webauthnCredential,
 ) error {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
+	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	// Serialize the passkey credential to JSON for storage in the Value field
 	credentialJSON, err := json.Marshal(credential)
 	if err != nil {
 		logger.Error("Failed to marshal credential",
-			log.String("userID", userID),
+			log.String("entityID", log.MaskString(entityID)),
 			log.Error(err))
 		return fmt.Errorf("failed to marshal credential: %w", err)
 	}
 
-	// Get existing passkey credentials to append to
-	existingCredentials, svcErr := w.userService.GetUserCredentialsByType(
-		ctx, userID, user.CredentialTypePasskey.String())
+	existingEntries, svcErr := w.getStoredPasskeyEntries(ctx, entityID)
 	if svcErr != nil {
-		logger.Error("Failed to get existing passkey credentials",
-			log.String("userID", userID),
-			log.String("error", svcErr.Error))
-		return fmt.Errorf("failed to get existing passkey credentials: %s", svcErr.Error)
+		return fmt.Errorf("failed to load existing passkey credentials: %s", svcErr.Error)
 	}
 
-	// Create a new credential entry
-	newCredential := user.Credential{
+	existingEntries = append(existingEntries, entity.StoredCredential{
 		Value: string(credentialJSON),
-	}
+	})
 
-	// Append the new credential to existing ones
-	existingCredentials = append(existingCredentials, newCredential)
-
-	// Prepare credentials map for update
-	credentialsMap := map[string][]user.Credential{
-		user.CredentialTypePasskey.String(): existingCredentials,
-	}
-	credentialsJSON, err := json.Marshal(credentialsMap)
+	payload, err := json.Marshal(map[string][]entity.StoredCredential{
+		passkeyCredentialType: existingEntries,
+	})
 	if err != nil {
-		logger.Error("Failed to marshal credentials",
-			log.String("userID", userID),
-			log.Error(err))
-		return fmt.Errorf("failed to marshal credentials: %w", err)
+		return fmt.Errorf("failed to marshal passkey credentials: %w", err)
 	}
-
-	// Update credentials in the database
-	svcErr = w.userService.UpdateUserCredentials(
-		ctx, userID, credentialsJSON)
-	if svcErr != nil {
+	if err := w.entityService.UpdateSystemCredentials(ctx, entityID, payload); err != nil {
 		logger.Error("Failed to update passkey credentials",
-			log.String("userID", userID),
-			log.String("error", svcErr.Error))
-		return fmt.Errorf("failed to update passkey credentials: %s", svcErr.Error)
+			log.String("entityID", log.MaskString(entityID)),
+			log.Error(err))
+		return fmt.Errorf("failed to update passkey credentials: %w", err)
 	}
 
 	logger.Debug("Successfully stored passkey credential in database",
-		log.String("userID", userID),
+		log.String("entityID", log.MaskString(entityID)),
 		log.String("credentialID", base64.StdEncoding.EncodeToString(credential.ID)))
 
 	return nil
 }
 
-// updatePasskeyCredential updates an existing passkey credential in the database.
+// updatePasskeyCredential updates an existing passkey credential, preserving the storage
+// metadata (StorageAlgo, StorageAlgoParams) of the original entry.
 func (w *passkeyService) updatePasskeyCredential(
-	ctx context.Context, userID string, updatedCredential *webauthnCredential,
+	ctx context.Context, entityID string, updatedCredential *webauthnCredential,
 ) error {
 	logger := w.logger.With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 
-	// Get all existing passkey credentials
-	existingCredentials, svcErr := w.userService.GetUserCredentialsByType(
-		ctx, userID, user.CredentialTypePasskey.String())
+	existingEntries, svcErr := w.getStoredPasskeyEntries(ctx, entityID)
 	if svcErr != nil {
-		logger.Error("Failed to get existing credentials",
-			log.String("userID", userID),
-			log.String("error", svcErr.Error))
-		return fmt.Errorf("failed to get existing credentials: %s", svcErr.Error)
+		return fmt.Errorf("failed to load existing passkey credentials: %s", svcErr.Error)
 	}
 
-	// Find and update the matching credential
 	found := false
-	updatedCredentials := make([]user.Credential, 0, len(existingCredentials))
+	updatedEntries := make([]entity.StoredCredential, 0, len(existingEntries))
 
-	for _, storedCred := range existingCredentials {
+	for _, entry := range existingEntries {
 		var credential webauthnCredential
-		if err := json.Unmarshal([]byte(storedCred.Value), &credential); err != nil {
-			// Keep the credential as-is if we can't unmarshal it
+		if err := json.Unmarshal([]byte(entry.Value), &credential); err != nil {
 			logger.Warn("Failed to unmarshal credential, keeping original",
-				log.String("userID", userID),
+				log.String("entityID", log.MaskString(entityID)),
 				log.Error(err))
-			updatedCredentials = append(updatedCredentials, storedCred)
+			updatedEntries = append(updatedEntries, entry)
 			continue
 		}
 
-		// Check if this is the credential to update
 		if string(credential.ID) == string(updatedCredential.ID) {
-			// Serialize the updated credential
-			credentialJSON, err := json.Marshal(updatedCredential)
-			if err != nil {
+			credentialJSON, marshalErr := json.Marshal(updatedCredential)
+			if marshalErr != nil {
 				logger.Error("Failed to marshal updated credential",
-					log.String("userID", userID),
-					log.Error(err))
-				return fmt.Errorf("failed to marshal updated credential: %w", err)
+					log.String("entityID", log.MaskString(entityID)),
+					log.Error(marshalErr))
+				return fmt.Errorf("failed to marshal updated credential: %w", marshalErr)
 			}
-
-			// Create updated credential entry
-			updatedCred := user.Credential{
-				StorageType:       storedCred.StorageType,
-				StorageAlgo:       storedCred.StorageAlgo,
-				StorageAlgoParams: storedCred.StorageAlgoParams,
+			updatedEntries = append(updatedEntries, entity.StoredCredential{
+				StorageAlgo:       entry.StorageAlgo,
+				StorageAlgoParams: entry.StorageAlgoParams,
 				Value:             string(credentialJSON),
-			}
-			updatedCredentials = append(updatedCredentials, updatedCred)
+			})
 			found = true
 
 			logger.Debug("Updated credential in memory",
-				log.String("userID", userID),
+				log.String("entityID", log.MaskString(entityID)),
 				log.String("credentialID", base64.StdEncoding.EncodeToString(updatedCredential.ID)),
 				log.Any("newSignCount", updatedCredential.Authenticator.SignCount))
 		} else {
-			// Keep the credential as-is
-			updatedCredentials = append(updatedCredentials, storedCred)
+			updatedEntries = append(updatedEntries, entry)
 		}
 	}
 
 	if !found {
 		logger.Warn("Passkey credential not found for update",
-			log.String("userID", userID),
+			log.String("entityID", log.MaskString(entityID)),
 			log.String("credentialID", base64.StdEncoding.EncodeToString(updatedCredential.ID)))
 		return fmt.Errorf("credential not found for update")
 	}
 
-	// Prepare credentials map for update
-	credentialsMap := map[string][]user.Credential{
-		user.CredentialTypePasskey.String(): updatedCredentials,
-	}
-	credentialsJSON, err := json.Marshal(credentialsMap)
+	payload, err := json.Marshal(map[string][]entity.StoredCredential{
+		passkeyCredentialType: updatedEntries,
+	})
 	if err != nil {
-		logger.Error("Failed to marshal credentials",
-			log.String("userID", userID),
-			log.Error(err))
-		return fmt.Errorf("failed to marshal credentials: %w", err)
+		return fmt.Errorf("failed to marshal passkey credentials: %w", err)
 	}
-
-	// Update all passkey credentials in the database
-	svcErr = w.userService.UpdateUserCredentials(
-		ctx, userID, credentialsJSON)
-	if svcErr != nil {
+	if err := w.entityService.UpdateSystemCredentials(ctx, entityID, payload); err != nil {
 		logger.Error("Failed to update credentials",
-			log.String("userID", userID),
-			log.String("error", svcErr.Error))
-		return fmt.Errorf("failed to update credentials: %s", svcErr.Error)
+			log.String("entityID", log.MaskString(entityID)),
+			log.Error(err))
+		return fmt.Errorf("failed to update passkey credentials: %w", err)
 	}
 
 	logger.Debug("Successfully updated passkey credential in database",
-		log.String("userID", userID),
+		log.String("entityID", log.MaskString(entityID)),
 		log.String("credentialID", base64.StdEncoding.EncodeToString(updatedCredential.ID)),
 		log.Any("newSignCount", updatedCredential.Authenticator.SignCount))
 

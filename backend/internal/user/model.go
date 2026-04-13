@@ -107,7 +107,7 @@ type CreateUserByPathRequest struct {
 func entityToUser(e *entity.Entity) User {
 	return User{
 		ID:         e.ID,
-		OUID:       e.OrganizationUnitID,
+		OUID:       e.OUID,
 		Type:       e.Type,
 		Attributes: e.Attributes,
 		IsReadOnly: e.IsReadOnly,
@@ -126,12 +126,12 @@ func entitiesToUsers(entities []entity.Entity) []User {
 // userToEntity converts a User to an Entity for storage.
 func userToEntity(u *User) *entity.Entity {
 	return &entity.Entity{
-		ID:                 u.ID,
-		Category:           entity.EntityCategoryUser,
-		Type:               u.Type,
-		OrganizationUnitID: u.OUID,
-		State:              entity.EntityStateActive,
-		Attributes:         u.Attributes,
+		ID:         u.ID,
+		Category:   entity.EntityCategoryUser,
+		Type:       u.Type,
+		OUID:       u.OUID,
+		State:      entity.EntityStateActive,
+		Attributes: u.Attributes,
 	}
 }
 
@@ -145,16 +145,4 @@ func credentialsToJSON(creds Credentials) (json.RawMessage, error) {
 		return nil, err
 	}
 	return data, nil
-}
-
-// jsonToCredentials unmarshals entity system credentials JSON to user Credentials.
-func jsonToCredentials(data json.RawMessage) (Credentials, error) {
-	if len(data) == 0 {
-		return Credentials{}, nil
-	}
-	var creds Credentials
-	if err := json.Unmarshal(data, &creds); err != nil {
-		return nil, err
-	}
-	return creds, nil
 }

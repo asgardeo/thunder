@@ -33,12 +33,12 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
 	"github.com/asgardeo/thunder/internal/authnprovider"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/idp"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authn/assertmock"
 	"github.com/asgardeo/thunder/tests/mocks/authn/credentialsmock"
 	"github.com/asgardeo/thunder/tests/mocks/authn/githubmock"
@@ -498,10 +498,10 @@ func (suite *AuthenticationServiceTestSuite) TestSendOTPServiceError() {
 func (suite *AuthenticationServiceTestSuite) TestVerifyOTP() {
 	sessionToken := testSessionTkn
 	otpCode := "123456"
-	testUser := &userprovider.User{
-		UserID:   testUserID,
-		UserType: "person",
-		OUID:     testOrgUnit,
+	testUser := &entityprovider.Entity{
+		ID:   testUserID,
+		Type: "person",
+		OUID: testOrgUnit,
 	}
 
 	testCases := []struct {
@@ -787,10 +787,10 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationJWTGenera
 }
 
 func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationOAuthSuccess() {
-	testUser := &userprovider.User{
-		UserID:   testUserID,
-		UserType: "person",
-		OUID:     testOrgUnit,
+	testUser := &entityprovider.Entity{
+		ID:   testUserID,
+		Type: "person",
+		OUID: testOrgUnit,
 	}
 	tokenResp := &oauth.TokenResponse{
 		AccessToken: testToken,
@@ -832,10 +832,10 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationGitHubSu
 }
 
 func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationWithAssertion() {
-	testUser := &userprovider.User{
-		UserID:   testUserID,
-		UserType: "person",
-		OUID:     testOrgUnit,
+	testUser := &entityprovider.Entity{
+		ID:   testUserID,
+		Type: "person",
+		OUID: testOrgUnit,
 	}
 	tokenResp := &oauth.TokenResponse{
 		AccessToken: testToken,
@@ -1215,10 +1215,10 @@ func (suite *AuthenticationServiceTestSuite) testFinishOIDCBasedAuth(
 	idpType idp.IDPType,
 	mockService interface{},
 ) {
-	testUser := &userprovider.User{
-		UserID:   testUserID,
-		UserType: "person",
-		OUID:     testOrgUnit,
+	testUser := &entityprovider.Entity{
+		ID:   testUserID,
+		Type: "person",
+		OUID: testOrgUnit,
 	}
 	tokenResp := &oauth.TokenResponse{
 		AccessToken: testToken,
@@ -1256,10 +1256,10 @@ func (suite *AuthenticationServiceTestSuite) testFinishOAuthBasedAuth(
 	mockService interface{},
 	userInfo map[string]interface{},
 ) {
-	testUser := &userprovider.User{
-		UserID:   testUserID,
-		UserType: "person",
-		OUID:     testOrgUnit,
+	testUser := &entityprovider.Entity{
+		ID:   testUserID,
+		Type: "person",
+		OUID: testOrgUnit,
 	}
 	tokenResp := &oauth.TokenResponse{
 		AccessToken: testToken,
@@ -1302,14 +1302,14 @@ func (suite *AuthenticationServiceTestSuite) createSessionToken(idpType idp.IDPT
 }
 
 func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionExtractClaimsError() {
-	testUser := &userprovider.User{
-		UserID:   testUserID,
-		UserType: "person",
-		OUID:     testOrgUnit,
+	testUser := &entityprovider.Entity{
+		ID:   testUserID,
+		Type: "person",
+		OUID: testOrgUnit,
 	}
 	authResponse := &common.AuthenticationResponse{
 		ID:   testUserID,
-		Type: testUser.UserType,
+		Type: testUser.Type,
 		OUID: testUser.OUID,
 	}
 	logger := log.GetLogger()
@@ -1342,10 +1342,10 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionE
 }
 
 func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationAssertionGenerationError() {
-	testUser := &userprovider.User{
-		UserID:   testUserID,
-		UserType: "person",
-		OUID:     testOrgUnit,
+	testUser := &entityprovider.Entity{
+		ID:   testUserID,
+		Type: "person",
+		OUID: testOrgUnit,
 	}
 	tokenResp := &oauth.TokenResponse{
 		AccessToken: testToken,
@@ -1380,14 +1380,14 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationAssertio
 }
 
 func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionStepOne() {
-	testUser := &userprovider.User{
-		UserID:   testUserID,
-		UserType: "person",
-		OUID:     testOrgUnit,
+	testUser := &entityprovider.Entity{
+		ID:   testUserID,
+		Type: "person",
+		OUID: testOrgUnit,
 	}
 	authResponse := &common.AuthenticationResponse{
 		ID:   testUserID,
-		Type: testUser.UserType,
+		Type: testUser.Type,
 		OUID: testUser.OUID,
 	}
 	logger := log.GetLogger()
@@ -1411,14 +1411,14 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionS
 }
 
 func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionSubjectMismatch() {
-	testUser := &userprovider.User{
-		UserID:   testUserID,
-		UserType: "person",
-		OUID:     testOrgUnit,
+	testUser := &entityprovider.Entity{
+		ID:   testUserID,
+		Type: "person",
+		OUID: testOrgUnit,
 	}
 	authResponse := &common.AuthenticationResponse{
 		ID:   testUserID,
-		Type: testUser.UserType,
+		Type: testUser.Type,
 		OUID: testUser.OUID,
 	}
 
@@ -1580,10 +1580,10 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionUnmar
 func (suite *AuthenticationServiceTestSuite) TestVerifyOTPJWTGenerationError() {
 	sessionToken := testSessionTkn
 	otpCode := "123456"
-	testUser := &userprovider.User{
-		UserID:   testUserID,
-		UserType: "person",
-		OUID:     testOrgUnit,
+	testUser := &entityprovider.Entity{
+		ID:   testUserID,
+		Type: "person",
+		OUID: testOrgUnit,
 	}
 
 	suite.mockOTPService.On("VerifyOTP", mock.Anything, sessionToken, otpCode).Return(testUser, nil)
@@ -1652,10 +1652,10 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionMalfo
 }
 
 func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionGenerationError() {
-	testUser := &userprovider.User{
-		UserID:   testUserID,
-		UserType: "person",
-		OUID:     testOrgUnit,
+	testUser := &entityprovider.Entity{
+		ID:   testUserID,
+		Type: "person",
+		OUID: testOrgUnit,
 	}
 	authResponse := &common.AuthenticationResponse{
 		ID:   testUserID,
@@ -1686,14 +1686,14 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionG
 }
 
 func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionUpdateError() {
-	testUser := &userprovider.User{
-		UserID:   testUserID,
-		UserType: "person",
-		OUID:     testOrgUnit,
+	testUser := &entityprovider.Entity{
+		ID:   testUserID,
+		Type: "person",
+		OUID: testOrgUnit,
 	}
 	authResponse := &common.AuthenticationResponse{
 		ID:   testUserID,
-		Type: testUser.UserType,
+		Type: testUser.Type,
 		OUID: testUser.OUID,
 	}
 	logger := log.GetLogger()

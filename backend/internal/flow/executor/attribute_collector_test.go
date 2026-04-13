@@ -27,20 +27,20 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
-	"github.com/asgardeo/thunder/internal/userprovider"
+	"github.com/asgardeo/thunder/tests/mocks/entityprovidermock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
-	"github.com/asgardeo/thunder/tests/mocks/userprovidermock"
 )
 
 const testUserID = "user-123"
 
 type AttributeCollectorTestSuite struct {
 	suite.Suite
-	mockUserProvider *userprovidermock.UserProviderInterfaceMock
-	mockFlowFactory  *coremock.FlowFactoryInterfaceMock
-	executor         *attributeCollector
+	mockEntityProvider *entityprovidermock.EntityProviderInterfaceMock
+	mockFlowFactory    *coremock.FlowFactoryInterfaceMock
+	executor           *attributeCollector
 }
 
 func TestAttributeCollectorSuite(t *testing.T) {
@@ -48,7 +48,7 @@ func TestAttributeCollectorSuite(t *testing.T) {
 }
 
 func (suite *AttributeCollectorTestSuite) SetupTest() {
-	suite.mockUserProvider = userprovidermock.NewUserProviderInterfaceMock(suite.T())
+	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 
 	prerequisites := []common.Input{{Identifier: "userID", Type: "string", Required: true}}
@@ -58,7 +58,7 @@ func (suite *AttributeCollectorTestSuite) SetupTest() {
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameAttributeCollect, common.ExecutorTypeUtility,
 		[]common.Input{}, prerequisites).Return(mockExec)
 
-	suite.executor = newAttributeCollector(suite.mockFlowFactory, suite.mockUserProvider)
+	suite.executor = newAttributeCollector(suite.mockFlowFactory, suite.mockEntityProvider)
 }
 
 func createMockExecutorForAttrCollector(t *testing.T, name string,
@@ -99,7 +99,7 @@ func createMockExecutorForAttrCollector(t *testing.T, name string,
 
 func (suite *AttributeCollectorTestSuite) TestNewAttributeCollector() {
 	assert.NotNil(suite.T(), suite.executor)
-	assert.NotNil(suite.T(), suite.executor.userProvider)
+	assert.NotNil(suite.T(), suite.executor.entityProvider)
 }
 
 func (suite *AttributeCollectorTestSuite) TestExecute_RegistrationFlow() {
@@ -149,12 +149,12 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UserInputRequired() {
 	attrs := map[string]interface{}{"phone": "1234567890"}
 	attrsJSON, _ := json.Marshal(attrs)
 
-	existingUser := &userprovider.User{
-		UserID:     testUserID,
+	existingUser := &entityprovider.Entity{
+		ID:         testUserID,
 		Attributes: attrsJSON,
 	}
 
-	suite.mockUserProvider.On("GetUser", testUserID).Return(existingUser, nil)
+	suite.mockEntityProvider.On("GetEntity", testUserID).Return(existingUser, nil)
 
 	ctx := &core.NodeContext{
 		ExecutionID:       "flow-123",
@@ -171,7 +171,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UserInputRequired() {
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
 	assert.NotEmpty(suite.T(), resp.Inputs)
-	suite.mockUserProvider.AssertExpectations(suite.T())
+	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 
 func (suite *AttributeCollectorTestSuite) TestExecute_Success() {
@@ -184,25 +184,25 @@ func (suite *AttributeCollectorTestSuite) TestExecute_Success() {
 		UserInputs:        map[string]string{"email": "test@example.com"},
 	}
 
-	existingUser := &userprovider.User{
-		UserID:     testUserID,
+	existingUser := &entityprovider.Entity{
+		ID:         testUserID,
 		OUID:       "ou-123",
-		UserType:   "INTERNAL",
+		Type:       "INTERNAL",
 		Attributes: json.RawMessage(`{}`),
 	}
 
 	updatedAttrs := map[string]interface{}{"email": "test@example.com"}
 	updatedAttrsJSON, _ := json.Marshal(updatedAttrs)
-	updatedUser := &userprovider.User{
-		UserID:     testUserID,
+	updatedUser := &entityprovider.Entity{
+		ID:         testUserID,
 		OUID:       "ou-123",
-		UserType:   "INTERNAL",
+		Type:       "INTERNAL",
 		Attributes: updatedAttrsJSON,
 	}
 
-	suite.mockUserProvider.On("GetUser", testUserID).Return(existingUser, nil)
-	suite.mockUserProvider.On("UpdateUser", testUserID, mock.MatchedBy(func(u *userprovider.User) bool {
-		return u.UserID == testUserID && u.Attributes != nil
+	suite.mockEntityProvider.On("GetEntity", testUserID).Return(existingUser, nil)
+	suite.mockEntityProvider.On("UpdateEntity", testUserID, mock.MatchedBy(func(u *entityprovider.Entity) bool {
+		return u.ID == testUserID && u.Attributes != nil
 	})).Return(updatedUser, nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -210,7 +210,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_Success() {
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecComplete, resp.Status)
-	suite.mockUserProvider.AssertExpectations(suite.T())
+	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 
 func (suite *AttributeCollectorTestSuite) TestExecute_UpdateUserFails() {
@@ -223,16 +223,16 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UpdateUserFails() {
 		UserInputs:        map[string]string{"email": "test@example.com"},
 	}
 
-	existingUser := &userprovider.User{
-		UserID:     testUserID,
+	existingUser := &entityprovider.Entity{
+		ID:         testUserID,
 		OUID:       "ou-123",
-		UserType:   "INTERNAL",
+		Type:       "INTERNAL",
 		Attributes: json.RawMessage(`{}`),
 	}
 
-	suite.mockUserProvider.On("GetUser", testUserID).Return(existingUser, nil)
-	suite.mockUserProvider.On("UpdateUser", testUserID, mock.Anything).
-		Return(nil, &userprovider.UserProviderError{Message: "update failed"})
+	suite.mockEntityProvider.On("GetEntity", testUserID).Return(existingUser, nil)
+	suite.mockEntityProvider.On("UpdateEntity", testUserID, mock.Anything).
+		Return(nil, &entityprovider.EntityProviderError{Message: "update failed"})
 
 	resp, err := suite.executor.Execute(ctx)
 
@@ -240,7 +240,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UpdateUserFails() {
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
 	assert.Contains(suite.T(), resp.FailureReason, "Failed to update user attributes")
-	suite.mockUserProvider.AssertExpectations(suite.T())
+	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 
 func (suite *AttributeCollectorTestSuite) TestHasRequiredInputs_AttributesInAuthenticatedUser() {
@@ -284,19 +284,19 @@ func (suite *AttributeCollectorTestSuite) TestHasRequiredInputs_AttributesInUser
 		RuntimeData: make(map[string]string),
 	}
 
-	existingUser := &userprovider.User{
-		UserID:     testUserID,
+	existingUser := &entityprovider.Entity{
+		ID:         testUserID,
 		Attributes: attrsJSON,
 	}
 
-	suite.mockUserProvider.On("GetUser", testUserID).Return(existingUser, nil)
+	suite.mockEntityProvider.On("GetEntity", testUserID).Return(existingUser, nil)
 
 	result := suite.executor.HasRequiredInputs(ctx, execResp)
 
 	assert.True(suite.T(), result)
 	assert.Empty(suite.T(), execResp.Inputs)
 	assert.Equal(suite.T(), "profile@example.com", execResp.RuntimeData["email"])
-	suite.mockUserProvider.AssertExpectations(suite.T())
+	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 
 func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_Success() {
@@ -307,12 +307,12 @@ func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_Success() {
 		RuntimeData: map[string]string{userAttributeUserID: testUserID},
 	}
 
-	existingUser := &userprovider.User{
-		UserID:     testUserID,
+	existingUser := &entityprovider.Entity{
+		ID:         testUserID,
 		Attributes: attrsJSON,
 	}
 
-	suite.mockUserProvider.On("GetUser", testUserID).Return(existingUser, nil)
+	suite.mockEntityProvider.On("GetEntity", testUserID).Return(existingUser, nil)
 
 	result, err := suite.executor.getUserAttributes(ctx)
 
@@ -320,7 +320,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_Success() {
 	assert.NotNil(suite.T(), result)
 	assert.Equal(suite.T(), "test@example.com", result["email"])
 	assert.Equal(suite.T(), "1234567890", result["phone"])
-	suite.mockUserProvider.AssertExpectations(suite.T())
+	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 
 func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_UserNotFound() {
@@ -328,14 +328,14 @@ func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_UserNotFound() {
 		RuntimeData: map[string]string{userAttributeUserID: testUserID},
 	}
 
-	suite.mockUserProvider.On("GetUser", testUserID).
-		Return(nil, &userprovider.UserProviderError{Message: "user not found"})
+	suite.mockEntityProvider.On("GetEntity", testUserID).
+		Return(nil, &entityprovider.EntityProviderError{Message: "user not found"})
 
 	result, err := suite.executor.getUserAttributes(ctx)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
-	suite.mockUserProvider.AssertExpectations(suite.T())
+	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 
 func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_InvalidJSON() {
@@ -343,18 +343,18 @@ func (suite *AttributeCollectorTestSuite) TestGetUserAttributes_InvalidJSON() {
 		RuntimeData: map[string]string{userAttributeUserID: testUserID},
 	}
 
-	existingUser := &userprovider.User{
-		UserID:     testUserID,
+	existingUser := &entityprovider.Entity{
+		ID:         testUserID,
 		Attributes: json.RawMessage(`invalid json`),
 	}
 
-	suite.mockUserProvider.On("GetUser", testUserID).Return(existingUser, nil)
+	suite.mockEntityProvider.On("GetEntity", testUserID).Return(existingUser, nil)
 
 	result, err := suite.executor.getUserAttributes(ctx)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
-	suite.mockUserProvider.AssertExpectations(suite.T())
+	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 
 func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_NewAttributes() {
@@ -363,10 +363,10 @@ func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_NewAttributes
 		NodeInputs: []common.Input{{Identifier: "email", Type: "string", Required: true}},
 	}
 
-	existingUser := &userprovider.User{
-		UserID:     testUserID,
+	existingUser := &entityprovider.Entity{
+		ID:         testUserID,
 		OUID:       "ou-123",
-		UserType:   "INTERNAL",
+		Type:       "INTERNAL",
 		Attributes: json.RawMessage(`{}`),
 	}
 
@@ -375,7 +375,7 @@ func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_NewAttributes
 	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), updateRequired)
 	assert.NotNil(suite.T(), updatedUser)
-	assert.Equal(suite.T(), testUserID, updatedUser.UserID)
+	assert.Equal(suite.T(), testUserID, updatedUser.ID)
 
 	var attrs map[string]interface{}
 	err = json.Unmarshal(updatedUser.Attributes, &attrs)
@@ -389,10 +389,10 @@ func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_NoNewAttribut
 		NodeInputs: []common.Input{{Identifier: "email", Type: "string", Required: true}},
 	}
 
-	existingUser := &userprovider.User{
-		UserID:     testUserID,
+	existingUser := &entityprovider.Entity{
+		ID:         testUserID,
 		OUID:       "ou-123",
-		UserType:   "INTERNAL",
+		Type:       "INTERNAL",
 		Attributes: json.RawMessage(`{"existing": "value"}`),
 	}
 
@@ -412,10 +412,10 @@ func (suite *AttributeCollectorTestSuite) TestGetUpdatedUserObject_MergeAttribut
 		NodeInputs: []common.Input{{Identifier: "email", Type: "string", Required: true}},
 	}
 
-	existingUser := &userprovider.User{
-		UserID:     testUserID,
+	existingUser := &entityprovider.Entity{
+		ID:         testUserID,
 		OUID:       "ou-123",
-		UserType:   "INTERNAL",
+		Type:       "INTERNAL",
 		Attributes: existingAttrsJSON,
 	}
 

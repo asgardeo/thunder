@@ -53,14 +53,14 @@ func (es EntityState) String() string {
 
 // Entity represents a unified identity principal returned by the entity provider.
 type Entity struct {
-	ID                 string          `json:"id,omitempty"`
-	Category           EntityCategory  `json:"category,omitempty"`
-	Type               string          `json:"type,omitempty"`
-	State              EntityState     `json:"state,omitempty"`
-	OrganizationUnitID string          `json:"ouId,omitempty"`
-	Attributes         json.RawMessage `json:"attributes,omitempty"`
-	SystemAttributes   json.RawMessage `json:"systemAttributes,omitempty"`
-	IsReadOnly         bool            `json:"isReadOnly"`
+	ID               string          `json:"id,omitempty"`
+	Category         EntityCategory  `json:"category,omitempty"`
+	Type             string          `json:"type,omitempty"`
+	State            EntityState     `json:"state,omitempty"`
+	OUID             string          `json:"ouId,omitempty"`
+	OUHandle         string          `json:"ouHandle,omitempty"`
+	Attributes       json.RawMessage `json:"attributes,omitempty"`
+	SystemAttributes json.RawMessage `json:"systemAttributes,omitempty"`
 }
 
 // EntityGroup represents a group with basic information for entity group membership queries.
@@ -68,19 +68,4 @@ type EntityGroup struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 	OUID string `json:"ouId"`
-}
-
-// Link represents a pagination link.
-type Link struct {
-	Href string `json:"href"`
-	Rel  string `json:"rel"`
-}
-
-// EntityGroupListResponse represents a paginated response containing a list of entity groups.
-type EntityGroupListResponse struct {
-	TotalResults int           `json:"totalResults"`
-	StartIndex   int           `json:"startIndex"`
-	Count        int           `json:"count"`
-	Groups       []EntityGroup `json:"groups"`
-	Links        []Link        `json:"links"`
 }

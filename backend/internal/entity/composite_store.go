@@ -66,7 +66,7 @@ func (c *entityCompositeStore) GetEntity(ctx context.Context, id string) (Entity
 
 // GetEntityWithCredentials retrieves an entity with credentials from either store.
 func (c *entityCompositeStore) GetEntityWithCredentials(ctx context.Context, id string) (
-	*EntityWithCredentials, error) {
+	*entityWithCredentials, error) {
 	result, err := c.dbStore.GetEntityWithCredentials(ctx, id)
 	if err == nil {
 		return result, nil
@@ -300,7 +300,7 @@ func (c *entityCompositeStore) ValidateEntityIDsInOUs(
 			}
 			return nil, err
 		}
-		if !ouSet[entity.OrganizationUnitID] {
+		if !ouSet[entity.OUID] {
 			outOfScope = append(outOfScope, id)
 		}
 	}

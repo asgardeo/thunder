@@ -25,12 +25,12 @@ import (
 	"strconv"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/notification"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userprovider"
 )
 
 // mobileNumberInput is the default input definition for mobile number collection.
@@ -45,9 +45,9 @@ var mobileNumberInput = common.Input{
 type smsOTPAuthExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
-	userProvider userprovider.UserProviderInterface
-	otpService   notification.OTPServiceInterface
-	logger       *log.Logger
+	entityProvider entityprovider.EntityProviderInterface
+	otpService     notification.OTPServiceInterface
+	logger         *log.Logger
 }
 
 var _ core.ExecutorInterface = (*smsOTPAuthExecutor)(nil)
@@ -57,7 +57,7 @@ var _ identifyingExecutorInterface = (*smsOTPAuthExecutor)(nil)
 func newSMSOTPAuthExecutor(
 	flowFactory core.FlowFactoryInterface,
 	otpService notification.OTPServiceInterface,
-	userProvider userprovider.UserProviderInterface,
+	entityProvider entityprovider.EntityProviderInterface,
 ) *smsOTPAuthExecutor {
 	defaultInputs := []common.Input{
 		{
@@ -73,14 +73,14 @@ func newSMSOTPAuthExecutor(
 		log.String(log.LoggerKeyExecutorName, ExecutorNameSMSAuth))
 
 	identifyExec := newIdentifyingExecutor(ExecutorNameSMSAuth, defaultInputs, prerequisites,
-		flowFactory, userProvider)
+		flowFactory, entityProvider)
 	base := flowFactory.CreateExecutor(ExecutorNameSMSAuth, common.ExecutorTypeAuthentication,
 		defaultInputs, prerequisites)
 
 	return &smsOTPAuthExecutor{
 		ExecutorInterface:            base,
 		identifyingExecutorInterface: identifyExec,
-		userProvider:                 userProvider,
+		entityProvider:               entityProvider,
 		otpService:                   otpService,
 		logger:                       logger,
 	}
@@ -434,7 +434,7 @@ func (s *smsOTPAuthExecutor) resolveUserIDFromAttribute(ctx *core.NodeContext,
 	}
 	if attributeValue != "" {
 		filters := map[string]interface{}{attributeName: attributeValue}
-		userID, providerErr := s.userProvider.IdentifyUser(filters)
+		userID, providerErr := s.entityProvider.IdentifyEntity(filters)
 		if providerErr != nil {
 			return false, fmt.Errorf("failed to identify user by %s: %s", attributeName, providerErr.Error())
 		}
@@ -469,7 +469,7 @@ func (s *smsOTPAuthExecutor) getUserMobileNumber(userID string, ctx *core.NodeCo
 
 	// Mobile number not in context, fetch from user store
 	logger.Debug("Mobile number not in context, fetching from user store")
-	user, providerErr := s.userProvider.GetUser(userID)
+	user, providerErr := s.entityProvider.GetEntity(userID)
 	if providerErr != nil {
 		return "", fmt.Errorf("failed to retrieve user details: %s", providerErr.Error())
 	}
@@ -667,7 +667,7 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	// User not available in context, fetch from user store
 	logger.Debug("Fetching user details from user store", log.String("userID", userID))
-	user, providerErr := s.userProvider.GetUser(userID)
+	user, providerErr := s.entityProvider.GetEntity(userID)
 	if providerErr != nil {
 		return nil, fmt.Errorf("failed to get user details: %s", providerErr.Error())
 	}
@@ -688,9 +688,9 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 	authenticatedUser := &authncm.AuthenticatedUser{
 		IsAuthenticated: true,
-		UserID:          user.UserID,
+		UserID:          user.ID,
 		OUID:            user.OUID,
-		UserType:        user.UserType,
+		UserType:        user.Type,
 		Attributes:      attrs,
 	}
 
