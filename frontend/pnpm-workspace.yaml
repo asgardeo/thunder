@@ -3,6 +3,8 @@ packages:
   - packages/*
   - ../docs
 
+enablePrePostScripts: false
+
 catalog:
   '@asgardeo/react': 0.22.0
   '@asgardeo/react-router': 2.0.0
