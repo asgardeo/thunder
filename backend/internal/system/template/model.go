@@ -34,6 +34,8 @@ type ScenarioType string
 const (
 	// ScenarioUserInvite represents the user invitation scenario.
 	ScenarioUserInvite ScenarioType = "USER_INVITE"
+	// ScenarioMagicLink represents the magic link sign-in scenario.
+	ScenarioMagicLink ScenarioType = "MAGIC_LINK"
 	// ScenarioSelfRegistration represents the self-registration via invite link scenario.
 	ScenarioSelfRegistration ScenarioType = "SELF_REGISTRATION"
 	// ScenarioOTP represents the OTP verification scenario.
@@ -43,6 +45,7 @@ const (
 // supportedScenarios contains all valid scenario types.
 var supportedScenarios = map[ScenarioType]bool{
 	ScenarioUserInvite:       true,
+	ScenarioMagicLink:        true,
 	ScenarioSelfRegistration: true,
 	ScenarioOTP:              true,
 }

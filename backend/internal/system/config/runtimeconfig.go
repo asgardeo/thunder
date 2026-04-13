@@ -19,13 +19,17 @@
 package config
 
 import (
+	"fmt"
+	"net/url"
+	"strings"
 	"sync"
 )
 
 // ThunderRuntime holds the runtime configuration for the Thunder server.
 type ThunderRuntime struct {
-	ThunderHome string `yaml:"thunder_home"`
-	Config      Config `yaml:"config"`
+	ThunderHome        string `yaml:"thunder_home"`
+	GateClientLoginURL *url.URL
+	Config             Config `yaml:"config"`
 }
 
 var (
@@ -36,12 +40,23 @@ var (
 // InitializeThunderRuntime initializes the ThunderRuntime configuration.
 func InitializeThunderRuntime(thunderHome string, config *Config) error {
 	once.Do(func() {
+		loginPath := config.GateClient.LoginPath
+		if strings.TrimSpace(loginPath) == "" {
+			loginPath = "/signin"
+		}
+		rawURL := fmt.Sprintf("%s://%s:%d%s",
+			config.GateClient.Scheme,
+			config.GateClient.Hostname,
+			config.GateClient.Port,
+			loginPath,
+		)
+		parsedURL, _ := url.Parse(rawURL)
 		runtimeConfig = &ThunderRuntime{
-			ThunderHome: thunderHome,
-			Config:      *config,
+			ThunderHome:        thunderHome,
+			GateClientLoginURL: parsedURL,
+			Config:             *config,
 		}
 	})
-
 	return nil
 }
 

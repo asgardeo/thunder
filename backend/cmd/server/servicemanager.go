@@ -197,16 +197,6 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Initialize user provider based on configuration
 	userProvider := userprovider.InitializeUserProvider(userService)
 
-	// Initialize authentication services.
-	_, authSvcRegistry := authn.Initialize(
-		mux, mcpServer, idpService, jwtService, userService,
-		userProvider, otpService, authnProvider, consentService,
-	)
-
-	attributeCacheService := attributecache.Initialize()
-
-	// Initialize flow and executor services.
-	flowFactory, graphCache := flowcore.Initialize()
 	var emailClient email.EmailClientInterface
 	emailClient, err = email.Initialize()
 	if err != nil {
@@ -214,9 +204,21 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 			"EmailExecutor will be registered but will not send emails.", log.Error(err))
 		emailClient = nil
 	}
-	execRegistry := executor.Initialize(flowFactory, ouService,
-		idpService, otpService, notifSenderSvc, jwtService, authSvcRegistry, authZService, userSchemaService,
-		observabilitySvc, groupService, roleService, userProvider, attributeCacheService, emailClient, templateService)
+
+	// Initialize authentication services.
+	_, authSvcRegistry := authn.Initialize(
+		mux, mcpServer, idpService, jwtService, userService,
+		userProvider, otpService, authnProvider, consentService, emailClient, templateService,
+	)
+
+	attributeCacheService := attributecache.Initialize()
+
+	// Initialize flow and executor services.
+	flowFactory, graphCache := flowcore.Initialize()
+	execRegistry := executor.Initialize(
+		flowFactory, ouService, idpService, otpService, notifSenderSvc, jwtService,
+		authSvcRegistry, authZService, userSchemaService, groupService, roleService,
+		userProvider, attributeCacheService, emailClient, templateService)
 
 	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(mux, mcpServer, flowFactory, execRegistry, graphCache)
 	if err != nil {
