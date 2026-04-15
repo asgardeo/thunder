@@ -78,6 +78,7 @@ func (ds *discoveryService) GetOIDCMetadata(ctx context.Context) *OIDCProviderMe
 		ClaimsParameterSupported:          true,
 	}
 	oidcMetadata.UserInfoEndpoint = ds.getUserInfoEndpoint()
+	oidcMetadata.ScopesSupported = ds.getOIDCSupportedScopes()
 	return oidcMetadata
 }
 
@@ -107,6 +108,14 @@ func (ds *discoveryService) getUserInfoEndpoint() string {
 
 func (ds *discoveryService) getRegistrationEndpoint() string {
 	return ds.baseURL + constants.OAuth2DCREndpoint
+}
+
+func (ds *discoveryService) getOIDCSupportedScopes() []string {
+	scopes := make([]string, 0, len(constants.StandardOIDCScopes))
+	for scope := range constants.StandardOIDCScopes {
+		scopes = append(scopes, scope)
+	}
+	return scopes
 }
 
 func (ds *discoveryService) getSupportedScopes() []string {
