@@ -55,7 +55,6 @@ func (ds *discoveryService) GetOAuth2AuthorizationServerMetadata(
 		Issuer:                            ds.getIssuer(),
 		AuthorizationEndpoint:             ds.getAuthorizationEndpoint(),
 		TokenEndpoint:                     ds.getTokenEndpoint(),
-		UserInfoEndpoint:                  ds.getUserInfoEndpoint(),
 		JWKSUri:                           ds.getJWKSUri(),
 		RegistrationEndpoint:              ds.getRegistrationEndpoint(),
 		IntrospectionEndpoint:             ds.getIntrospectionEndpoint(),
@@ -71,13 +70,15 @@ func (ds *discoveryService) GetOAuth2AuthorizationServerMetadata(
 func (ds *discoveryService) GetOIDCMetadata(ctx context.Context) *OIDCProviderMetadata {
 	oauth2Meta := ds.GetOAuth2AuthorizationServerMetadata(ctx)
 
-	return &OIDCProviderMetadata{
+	oidcMetadata := &OIDCProviderMetadata{
 		OAuth2AuthorizationServerMetadata: *oauth2Meta,
 		SubjectTypesSupported:             ds.getSupportedSubjectTypes(),
 		IDTokenSigningAlgValuesSupported:  ds.pkiService.GetSupportedSigningAlgorithms(),
 		ClaimsSupported:                   ds.getSupportedClaims(),
 		ClaimsParameterSupported:          true,
 	}
+	oidcMetadata.UserInfoEndpoint = ds.getUserInfoEndpoint()
+	return oidcMetadata
 }
 
 func (ds *discoveryService) getIssuer() string {
@@ -111,6 +112,9 @@ func (ds *discoveryService) getRegistrationEndpoint() string {
 func (ds *discoveryService) getSupportedScopes() []string {
 	scopes := make([]string, 0, len(constants.StandardOIDCScopes))
 	for scope := range constants.StandardOIDCScopes {
+		if scope == constants.ScopeOpenID {
+			continue
+		}
 		scopes = append(scopes, scope)
 	}
 	return scopes

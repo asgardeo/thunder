@@ -113,7 +113,10 @@ func (suite *DiscoveryTestSuite) TestOAuth2AuthorizationServerMetadata() {
 	assert.NotEmpty(suite.T(), metadata.JWKSUri)
 	assert.NotEmpty(suite.T(), metadata.RegistrationEndpoint)
 	assert.NotEmpty(suite.T(), metadata.IntrospectionEndpoint)
-	assert.NotEmpty(suite.T(), metadata.UserInfoEndpoint)
+
+	// Verify OIDC-specific fields are absent from OAuth2 authorization server metadata
+	assert.Empty(suite.T(), metadata.UserInfoEndpoint, "userinfo_endpoint should not be present in OAuth2 authorization server metadata")
+	assert.NotContains(suite.T(), metadata.ScopesSupported, "openid", "openid scope should not be present in OAuth2 authorization server metadata")
 
 	// Verify only implemented endpoints are present
 	assert.Empty(suite.T(), metadata.RevocationEndpoint) // Not implemented
@@ -155,6 +158,10 @@ func (suite *DiscoveryTestSuite) TestOIDCDiscovery() {
 
 	// Verify claims parameter support
 	assert.True(suite.T(), metadata.ClaimsParameterSupported, "claims_parameter_supported should be true")
+
+	// Verify OIDC-specific fields are present in OIDC metadata
+	assert.NotEmpty(suite.T(), metadata.UserInfoEndpoint, "userinfo_endpoint should be present in OIDC metadata")
+	assert.Contains(suite.T(), metadata.ScopesSupported, "openid", "openid scope should be present in OIDC metadata")
 }
 
 // TestGrantTypeIsValid tests the GrantType.IsValid() method
