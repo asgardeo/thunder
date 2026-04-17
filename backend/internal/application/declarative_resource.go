@@ -296,63 +296,55 @@ func (e *applicationExporter) GetResourceRules() *declarativeresource.ResourceRu
 
 // makeAppDeclarativeConfig creates the declarative loader config for loading application
 // identity data into the entity file store.
-func makeAppDeclarativeConfig() entity.DeclarativeLoaderConfig {
+func makeAppDeclarativeConfig(appService ApplicationServiceInterface) entity.DeclarativeLoaderConfig {
 	return entity.DeclarativeLoaderConfig{
 		Directory: "applications",
 		Category:  entity.EntityCategoryApp,
-		Parser:    makeAppEntityParser(),
+		Parser:    makeAppEntityParser(appService),
 	}
 }
 
 // makeAppEntityParser creates a parser that converts application YAML into an entity.
-func makeAppEntityParser() func(data []byte) (*entity.Entity, json.RawMessage, json.RawMessage, error) {
+func makeAppEntityParser(
+	appService ApplicationServiceInterface,
+) func(data []byte) (*entity.Entity, json.RawMessage, json.RawMessage, error) {
 	return func(data []byte) (*entity.Entity, json.RawMessage, json.RawMessage, error) {
-		var appRequest model.ApplicationRequestWithID
-		if err := yaml.Unmarshal(data, &appRequest); err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to unmarshal application YAML: %w", err)
+		if appService == nil {
+			return nil, nil, nil, fmt.Errorf("application service is required for declarative entity parsing")
 		}
 
-		// Build system attributes from app identity fields.
-		sysAttrs := map[string]interface{}{
-			fieldName: appRequest.Name,
-		}
-		if appRequest.Description != "" {
-			sysAttrs[fieldDescription] = appRequest.Description
-		}
-
-		sysAttrsJSON, err := json.Marshal(sysAttrs)
+		appDTO, err := parseToApplicationDTO(data)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to marshal system attributes: %w", err)
+			return nil, nil, nil, fmt.Errorf("failed to parse application YAML: %w", err)
 		}
 
-		// Build system credentials if OAuth config with client secret exists.
-		var sysCredsJSON json.RawMessage
-		if len(appRequest.InboundAuthConfig) > 0 && appRequest.InboundAuthConfig[0].OAuthAppConfig != nil {
-			clientID := appRequest.InboundAuthConfig[0].OAuthAppConfig.ClientID
-			if clientID != "" {
-				sysAttrs[fieldClientID] = clientID
-				// Re-marshal with clientId added.
-				sysAttrsJSON, err = json.Marshal(sysAttrs)
-				if err != nil {
-					return nil, nil, nil, fmt.Errorf("failed to marshal system attributes with client ID: %w", err)
-				}
-			}
+		_, inboundAuthConfig, svcErr := appService.ValidateApplication(context.Background(), appDTO)
+		if svcErr != nil {
+			return nil, nil, nil, fmt.Errorf("error validating application '%s': %v", appDTO.Name, svcErr)
+		}
 
-			clientSecret := appRequest.InboundAuthConfig[0].OAuthAppConfig.ClientSecret
-			if clientSecret != "" {
-				creds := map[string]interface{}{
-					fieldClientSecret: clientSecret,
-				}
-				sysCredsJSON, _ = json.Marshal(creds)
-			}
+		var clientID, clientSecret string
+		if inboundAuthConfig != nil && inboundAuthConfig.OAuthAppConfig != nil {
+			clientID = inboundAuthConfig.OAuthAppConfig.ClientID
+			clientSecret = inboundAuthConfig.OAuthAppConfig.ClientSecret
+		}
+
+		sysAttrsJSON, err := buildSystemAttributes(appDTO, clientID)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to build system attributes: %w", err)
+		}
+
+		sysCredsJSON, err := buildSystemCredentials(clientSecret)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to build system credentials: %w", err)
 		}
 
 		e := &entity.Entity{
-			ID:               appRequest.ID,
+			ID:               appDTO.ID,
 			Category:         entity.EntityCategoryApp,
 			Type:             "application",
 			State:            entity.EntityStateActive,
-			OUID:             appRequest.OUID,
+			OUID:             appDTO.OUID,
 			SystemAttributes: sysAttrsJSON,
 		}
 

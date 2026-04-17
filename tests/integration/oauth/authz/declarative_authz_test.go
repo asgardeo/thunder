@@ -19,8 +19,12 @@
 package authz
 
 import (
+	"bytes"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/base64"
+	"encoding/json"
+	"io"
 	"net/http"
 	"net/url"
 	"testing"
@@ -32,6 +36,7 @@ import (
 const (
 	declPublicClientID       = "decl-public-client-1"
 	declConfidentialClientID = "decl-conf-client-1"
+	declConfidentialSecret   = "decl-conf-secret-1"
 	declRedirectURI          = "https://localhost:3000"
 )
 
@@ -99,6 +104,44 @@ func (ts *DeclarativeAuthzTestSuite) TestConfidentialClientAuthorize() {
 	location := resp.Header.Get("Location")
 	ts.NotEmpty(location, "expected redirect location header")
 	ts.assertNotOAuthErrorRedirect(location)
+}
+
+// TestConfidentialClientClientCredentialsGrant verifies that a declarative
+// confidential client can authenticate at the token endpoint using
+// client_secret_basic for the client_credentials grant.
+func (ts *DeclarativeAuthzTestSuite) TestConfidentialClientClientCredentialsGrant() {
+	form := url.Values{}
+	form.Set("grant_type", "client_credentials")
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		testutils.TestServerURL+"/oauth2/token",
+		bytes.NewBufferString(form.Encode()),
+	)
+	ts.Require().NoError(err, "failed to create token request")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth(declConfidentialClientID, declConfidentialSecret)
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	ts.Require().NoError(err, "failed to execute token request")
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	ts.Require().NoError(err, "failed to read token response")
+
+	ts.Equal(http.StatusOK, resp.StatusCode, "unexpected token endpoint response: %s", string(body))
+
+	var tokenResp map[string]interface{}
+	err = json.Unmarshal(body, &tokenResp)
+	ts.Require().NoError(err, "failed to parse token response body: %s", string(body))
+	ts.NotEmpty(tokenResp["access_token"], "expected access_token in token response")
+	ts.Equal("Bearer", tokenResp["token_type"])
 }
 
 // assertNotOAuthErrorRedirect validates the authorize redirect is not an OAuth

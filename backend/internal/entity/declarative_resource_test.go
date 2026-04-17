@@ -19,6 +19,7 @@
 package entity
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -28,6 +29,9 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/transaction"
+	"github.com/asgardeo/thunder/tests/mocks/crypto/hashmock"
 )
 
 type DeclarativeResourceTestSuite struct {
@@ -196,6 +200,56 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_ValidatorErr
 
 	err := loadDeclarativeResources(fileStore, mockSvc, cfg)
 	s.Error(err)
+}
+
+func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_HashesSystemCredentialsBeforeStoreWrite() {
+	tmpDir := s.T().TempDir()
+	resourceDir := filepath.Join(tmpDir, "repository", "resources", "applications")
+	s.Require().NoError(os.MkdirAll(resourceDir, 0750))
+	s.Require().NoError(os.WriteFile(filepath.Join(resourceDir, "app.yaml"), []byte("id: x"), 0600))
+	s.Require().NoError(config.InitializeThunderRuntime(tmpDir, &config.Config{}))
+
+	fileStore := newEntityFileBasedStore()
+	hashService := hashmock.NewHashServiceInterfaceMock(s.T())
+	hashService.On("Generate", []byte("plain-secret")).Return(hash.Credential{
+		Algorithm: "PBKDF2",
+		Hash:      "hashed-secret",
+		Parameters: hash.CredParameters{
+			Salt: "salt", Iterations: 1, KeySize: 32,
+		},
+	}, nil).Once()
+	svc := newEntityService(fileStore, hashService, nil, nil, transaction.NewNoOpTransactioner())
+
+	cfg := DeclarativeLoaderConfig{
+		Directory: "applications",
+		Category:  EntityCategoryApp,
+		Parser: func(data []byte) (*Entity, json.RawMessage, json.RawMessage, error) {
+			return &Entity{ID: "app-1", Category: EntityCategoryApp, Type: "application", State: EntityStateActive},
+				nil,
+				json.RawMessage(`{"clientSecret":"plain-secret"}`),
+				nil
+		},
+		IDExtractor: func(e *Entity) string {
+			return e.ID
+		},
+	}
+
+	err := loadDeclarativeResources(fileStore, svc, cfg)
+	s.NoError(err)
+
+	result, err := fileStore.GetEntityWithCredentials(context.Background(), "app-1")
+	s.NoError(err)
+
+	var systemCreds map[string][]StoredCredential
+	err = json.Unmarshal(result.SystemCredentials, &systemCreds)
+	s.NoError(err)
+	s.Equal([]StoredCredential{{
+		StorageAlgo: "PBKDF2",
+		StorageAlgoParams: hash.CredParameters{
+			Salt: "salt", Iterations: 1, KeySize: 32,
+		},
+		Value: "hashed-secret",
+	}}, systemCreds["clientSecret"])
 }
 
 func newEntityServiceMock(t *testing.T) *EntityServiceInterfaceMock {

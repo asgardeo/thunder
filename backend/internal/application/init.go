@@ -75,7 +75,7 @@ func Initialize(
 	// Step 4: Load declarative resources if store mode requires it.
 	storeMode := getApplicationStoreMode()
 	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeDeclarative {
-		if err := entityService.LoadDeclarativeResources(makeAppDeclarativeConfig()); err != nil {
+		if err := entityService.LoadDeclarativeResources(makeAppDeclarativeConfig(appService)); err != nil {
 			return nil, nil, err
 		}
 		if err := loadDeclarativeResources(appStore, appService); err != nil {

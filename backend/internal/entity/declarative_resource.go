@@ -19,11 +19,16 @@
 package entity
 
 import (
+	"encoding/json"
 	"fmt"
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
+
+type declarativeSystemCredentialHasher interface {
+	hashPlaintextCredentials(creds json.RawMessage) (json.RawMessage, error)
+}
 
 // loadDeclarativeResources loads declarative resources for a given configuration
 // into the entity file-based store. The config provides consumer-specific parser and
@@ -57,6 +62,18 @@ func loadDeclarativeResources(
 		entity, credentials, systemCredentials, err := config.Parser(data)
 		if err != nil {
 			return nil, err
+		}
+
+		if len(systemCredentials) > 0 {
+			hasher, ok := svc.(declarativeSystemCredentialHasher)
+			if !ok {
+				return nil, fmt.Errorf("entity service cannot hash declarative system credentials")
+			}
+
+			systemCredentials, err = hasher.hashPlaintextCredentials(systemCredentials)
+			if err != nil {
+				return nil, fmt.Errorf("failed to hash declarative system credentials: %w", err)
+			}
 		}
 
 		if entity == nil {

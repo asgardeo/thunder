@@ -19,6 +19,7 @@
 package application
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/stretchr/testify/mock"
@@ -578,7 +579,19 @@ inbound_auth_config:
       public_client: true
 `)
 
-	parser := makeAppEntityParser()
+	mockAppService := NewApplicationServiceInterfaceMock(s.T())
+	mockAppService.EXPECT().ValidateApplication(mock.Anything, mock.Anything).Return(
+		&model.ApplicationProcessedDTO{ID: "public-oauth-app", Name: "Public OAuth Application"},
+		&model.InboundAuthConfigDTO{
+			Type: model.OAuthInboundAuthType,
+			OAuthAppConfig: &model.OAuthAppConfigDTO{
+				ClientID: "public-client-id-123",
+			},
+		},
+		nil,
+	)
+
+	parser := makeAppEntityParser(mockAppService)
 	entityObj, _, sysCredsJSON, err := parser(yamlData)
 
 	assert.NoError(s.T(), err)
@@ -603,7 +616,20 @@ inbound_auth_config:
       client_secret: confidential-secret-456
 `)
 
-	parser := makeAppEntityParser()
+	mockAppService := NewApplicationServiceInterfaceMock(s.T())
+	mockAppService.EXPECT().ValidateApplication(mock.Anything, mock.Anything).Return(
+		&model.ApplicationProcessedDTO{ID: "confidential-oauth-app", Name: "Confidential OAuth Application"},
+		&model.InboundAuthConfigDTO{
+			Type: model.OAuthInboundAuthType,
+			OAuthAppConfig: &model.OAuthAppConfigDTO{
+				ClientID:     "confidential-client-id-123",
+				ClientSecret: "confidential-secret-456",
+			},
+		},
+		nil,
+	)
+
+	parser := makeAppEntityParser(mockAppService)
 	entityObj, _, sysCredsJSON, err := parser(yamlData)
 
 	assert.NoError(s.T(), err)
@@ -619,4 +645,101 @@ inbound_auth_config:
 	err = json.Unmarshal(sysCredsJSON, &sysCreds)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), "confidential-secret-456", sysCreds[fieldClientSecret])
+}
+
+func (s *ParseToApplicationDTOTestSuite) TestMakeAppEntityParser_UsesValidatedGeneratedClientCredentials() {
+	yamlData := []byte(`
+id: generated-credentials-app
+name: Generated Credentials App
+inbound_auth_config:
+  - type: oauth2
+    config:
+      grant_types:
+        - client_credentials
+`)
+
+	mockAppService := NewApplicationServiceInterfaceMock(s.T())
+	mockAppService.EXPECT().ValidateApplication(mock.Anything, mock.Anything).Run(
+		func(_ context.Context, app *model.ApplicationDTO) {
+			assert.Equal(s.T(), "generated-credentials-app", app.ID)
+			assert.Equal(s.T(), "Generated Credentials App", app.Name)
+		},
+	).Return(
+		&model.ApplicationProcessedDTO{ID: "generated-credentials-app", Name: "Generated Credentials App"},
+		&model.InboundAuthConfigDTO{
+			Type: model.OAuthInboundAuthType,
+			OAuthAppConfig: &model.OAuthAppConfigDTO{
+				ClientID:     "generated-client-id",
+				ClientSecret: "generated-client-secret",
+			},
+		},
+		nil,
+	)
+
+	parser := makeAppEntityParser(mockAppService)
+	entityObj, _, sysCredsJSON, err := parser(yamlData)
+
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), entityObj)
+	assert.NotNil(s.T(), sysCredsJSON)
+
+	var sysAttrs map[string]interface{}
+	err = json.Unmarshal(entityObj.SystemAttributes, &sysAttrs)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), "generated-client-id", sysAttrs[fieldClientID])
+
+	var sysCreds map[string]interface{}
+	err = json.Unmarshal(sysCredsJSON, &sysCreds)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), "generated-client-secret", sysCreds[fieldClientSecret])
+}
+
+func (s *ParseToApplicationDTOTestSuite) TestMakeAppEntityParser_SelectsOAuthConfigWhenFirstInboundIsNotOAuth() {
+	yamlData := []byte(`
+id: mixed-inbound-app
+name: Mixed Inbound App
+inbound_auth_config:
+  - type: saml
+    config: {}
+  - type: oauth2
+    config:
+      client_id: oauth-client-id
+      client_secret: oauth-client-secret
+`)
+
+	mockAppService := NewApplicationServiceInterfaceMock(s.T())
+	mockAppService.EXPECT().ValidateApplication(mock.Anything, mock.Anything).Run(
+		func(_ context.Context, app *model.ApplicationDTO) {
+			assert.Len(s.T(), app.InboundAuthConfig, 1)
+			assert.Equal(s.T(), model.OAuthInboundAuthType, app.InboundAuthConfig[0].Type)
+			assert.Equal(s.T(), "oauth-client-id", app.InboundAuthConfig[0].OAuthAppConfig.ClientID)
+		},
+	).Return(
+		&model.ApplicationProcessedDTO{ID: "mixed-inbound-app", Name: "Mixed Inbound App"},
+		&model.InboundAuthConfigDTO{
+			Type: model.OAuthInboundAuthType,
+			OAuthAppConfig: &model.OAuthAppConfigDTO{
+				ClientID:     "oauth-client-id",
+				ClientSecret: "oauth-client-secret",
+			},
+		},
+		nil,
+	)
+
+	parser := makeAppEntityParser(mockAppService)
+	entityObj, _, sysCredsJSON, err := parser(yamlData)
+
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), entityObj)
+	assert.NotNil(s.T(), sysCredsJSON)
+
+	var sysAttrs map[string]interface{}
+	err = json.Unmarshal(entityObj.SystemAttributes, &sysAttrs)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), "oauth-client-id", sysAttrs[fieldClientID])
+
+	var sysCreds map[string]interface{}
+	err = json.Unmarshal(sysCredsJSON, &sysCreds)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), "oauth-client-secret", sysCreds[fieldClientSecret])
 }

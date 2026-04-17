@@ -17,6 +17,7 @@ inbound_auth_config:
         - "https://localhost:3000"
       grant_types:
         - "authorization_code"
+        - "client_credentials"
       response_types:
         - "code"
       token_endpoint_auth_method: "client_secret_basic"

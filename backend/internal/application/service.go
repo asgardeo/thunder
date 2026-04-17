@@ -451,37 +451,8 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 		userInfo, scopeClaims,
 	)
 
-	// Update entity identity data.
-	var clientID string
-	if inboundAuthConfig != nil && inboundAuthConfig.OAuthAppConfig != nil {
-		clientID = inboundAuthConfig.OAuthAppConfig.ClientID
-	}
-	sysAttrsJSON, marshalErr := buildSystemAttributes(app, clientID)
-	if marshalErr != nil {
-		as.logger.Error("Failed to build entity system attributes for update", log.Error(marshalErr))
-		return nil, &ErrorInternalServerError
-	}
-	if epErr := as.entityProvider.UpdateSystemAttributes(appID, sysAttrsJSON); epErr != nil {
-		if svcErr := mapEntityProviderError(epErr); svcErr != nil {
-			return nil, svcErr
-		}
-		as.logger.Error("Failed to update entity system attributes", log.String("appID", appID), log.Error(epErr))
-		return nil, &ErrorInternalServerError
-	}
-
-	// Update system credentials if a new client secret is provided.
-	if inboundAuthConfig != nil && inboundAuthConfig.OAuthAppConfig != nil &&
-		inboundAuthConfig.OAuthAppConfig.ClientSecret != "" {
-		sysCredsJSON, _ := json.Marshal(map[string]interface{}{
-			fieldClientSecret: inboundAuthConfig.OAuthAppConfig.ClientSecret,
-		})
-		if epErr := as.entityProvider.UpdateSystemCredentials(appID, sysCredsJSON); epErr != nil {
-			if svcErr := mapEntityProviderError(epErr); svcErr != nil {
-				return nil, svcErr
-			}
-			as.logger.Error("Failed to update entity system credentials", log.String("appID", appID), log.Error(epErr))
-			return nil, &ErrorInternalServerError
-		}
+	if svcErr := as.updateEntityDataForApplicationUpdate(appID, app, inboundAuthConfig); svcErr != nil {
+		return nil, svcErr
 	}
 
 	// Update config.
@@ -557,6 +528,52 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 	return buildReturnApplicationDTO(appID, app, assertion, returnCert, processedDTO.Metadata,
 		inboundAuthConfig, &model.OAuthTokenConfig{AccessToken: finalOAuthAccessToken, IDToken: finalOAuthIDToken},
 		userInfo, scopeClaims, returnOAuthCert), nil
+}
+
+func (as *applicationService) updateEntityDataForApplicationUpdate(
+	appID string,
+	app *model.ApplicationDTO,
+	inboundAuthConfig *model.InboundAuthConfigDTO,
+) *serviceerror.ServiceError {
+	var clientID string
+	if inboundAuthConfig != nil && inboundAuthConfig.OAuthAppConfig != nil {
+		clientID = inboundAuthConfig.OAuthAppConfig.ClientID
+	}
+
+	sysAttrsJSON, marshalErr := buildSystemAttributes(app, clientID)
+	if marshalErr != nil {
+		as.logger.Error("Failed to build entity system attributes for update", log.Error(marshalErr))
+		return &ErrorInternalServerError
+	}
+
+	if epErr := as.entityProvider.UpdateSystemAttributes(appID, sysAttrsJSON); epErr != nil {
+		if svcErr := mapEntityProviderError(epErr); svcErr != nil {
+			return svcErr
+		}
+		as.logger.Error("Failed to update entity system attributes", log.String("appID", appID), log.Error(epErr))
+		return &ErrorInternalServerError
+	}
+
+	if inboundAuthConfig == nil || inboundAuthConfig.OAuthAppConfig == nil ||
+		inboundAuthConfig.OAuthAppConfig.ClientSecret == "" {
+		return nil
+	}
+
+	sysCredsJSON, marshalErr := buildSystemCredentials(inboundAuthConfig.OAuthAppConfig.ClientSecret)
+	if marshalErr != nil {
+		as.logger.Error("Failed to build entity system credentials for update", log.Error(marshalErr))
+		return &ErrorInternalServerError
+	}
+
+	if epErr := as.entityProvider.UpdateSystemCredentials(appID, sysCredsJSON); epErr != nil {
+		if svcErr := mapEntityProviderError(epErr); svcErr != nil {
+			return svcErr
+		}
+		as.logger.Error("Failed to update entity system credentials", log.String("appID", appID), log.Error(epErr))
+		return &ErrorInternalServerError
+	}
+
+	return nil
 }
 
 // DeleteApplication delete the application for given app id.
@@ -924,12 +941,9 @@ func buildAppEntity(appID string, app *model.ApplicationDTO, clientID string, pl
 		return nil, nil, fmt.Errorf("failed to build entity system attributes: %w", err)
 	}
 
-	var sysCredsJSON json.RawMessage
-	if plaintextSecret != "" {
-		creds := map[string]interface{}{
-			fieldClientSecret: plaintextSecret,
-		}
-		sysCredsJSON, _ = json.Marshal(creds)
+	sysCredsJSON, err := buildSystemCredentials(plaintextSecret)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to build entity system credentials: %w", err)
 	}
 
 	e := &entityprovider.Entity{
@@ -941,6 +955,17 @@ func buildAppEntity(appID string, app *model.ApplicationDTO, clientID string, pl
 		SystemAttributes: sysAttrsJSON,
 	}
 	return e, sysCredsJSON, nil
+}
+
+// buildSystemCredentials builds the system credentials JSON for the entity.
+func buildSystemCredentials(clientSecret string) (json.RawMessage, error) {
+	if clientSecret == "" {
+		return nil, nil
+	}
+
+	return json.Marshal(map[string]interface{}{
+		fieldClientSecret: clientSecret,
+	})
 }
 
 // getOAuthInboundAuthConfigDTO returns the single OAuth InboundAuthConfigDTO.
