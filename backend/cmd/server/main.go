@@ -58,10 +58,12 @@ var (
 	tlsListen = tls.Listen
 )
 
+// httpServerErrorLogWriter adapts http.Server internal logs to Thunder structured logging.
 type httpServerErrorLogWriter struct {
 	logFn func(message string)
 }
 
+// newHTTPServerErrorLogWriter creates an io.Writer for http.Server ErrorLog output.
 func newHTTPServerErrorLogWriter(logger *log.Logger) *httpServerErrorLogWriter {
 	return &httpServerErrorLogWriter{
 		logFn: func(message string) {
@@ -70,11 +72,13 @@ func newHTTPServerErrorLogWriter(logger *log.Logger) *httpServerErrorLogWriter {
 	}
 }
 
+// shouldSuppressHTTPServerErrorLog checks whether an HTTP server internal error log should be suppressed.
 func shouldSuppressHTTPServerErrorLog(message string) bool {
 	return strings.Contains(message, httpServerTLSHandshakeErrorPattern) ||
 		strings.Contains(message, httpServerTLSBadCertificatePattern)
 }
 
+// Write filters expected TLS handshake noise and forwards unexpected errors to structured logging.
 func (w *httpServerErrorLogWriter) Write(p []byte) (n int, err error) {
 	message := strings.TrimSpace(string(p))
 	if message == "" || shouldSuppressHTTPServerErrorLog(message) {
