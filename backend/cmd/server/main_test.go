@@ -237,10 +237,9 @@ func TestShouldSuppressHTTPServerErrorLog(t *testing.T) {
 
 func TestHTTPServerErrorLogWriterWrite(t *testing.T) {
 	var forwardedMessages []string
-	writer := &httpServerErrorLogWriter{
-		logFn: func(message string) {
-			forwardedMessages = append(forwardedMessages, message)
-		},
+	writer := newHTTPServerErrorLogWriter(log.GetLogger())
+	writer.logFn = func(message string) {
+		forwardedMessages = append(forwardedMessages, message)
 	}
 
 	testCases := []struct {
@@ -249,12 +248,12 @@ func TestHTTPServerErrorLogWriterWrite(t *testing.T) {
 		expectedForwarded []string
 	}{
 		{
-			name:              "suppresses tls handshake errors",
+			name:              "suppresses TLS handshake errors",
 			payload:           "http: TLS handshake error from 127.0.0.1:52264: remote error: tls: bad certificate\n",
 			expectedForwarded: nil,
 		},
 		{
-			name:              "forwards non tls errors",
+			name:              "forwards non TLS errors",
 			payload:           "http: superfluous response.WriteHeader call\n",
 			expectedForwarded: []string{"http: superfluous response.WriteHeader call"},
 		},

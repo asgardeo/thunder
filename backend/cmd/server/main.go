@@ -81,10 +81,7 @@ func (w *httpServerErrorLogWriter) Write(p []byte) (n int, err error) {
 		return len(p), nil
 	}
 
-	if w.logFn != nil {
-		w.logFn(message)
-	}
-
+	w.logFn(message)
 	return len(p), nil
 }
 
