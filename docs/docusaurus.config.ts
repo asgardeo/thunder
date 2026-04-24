@@ -87,7 +87,13 @@ const config: Config = {
             },
           },
         },
-        blog: false,
+        blog: {
+          path: 'blog',
+          routeBasePath: 'blog',
+          showReadingTime: true,
+          blogSidebarTitle: 'All posts',
+          blogSidebarCount: 'ALL',
+        },
         theme: {
           customCss: './src/css/custom.css',
         },
@@ -107,14 +113,14 @@ const config: Config = {
     },
     navbar: {
       title: '',
-      logo: {
-        href: '/',
-        src: '/assets/images/logo.svg',
-        srcDark: '/assets/images/logo-inverted.svg',
-        alt: `${thunderConfig.project.name} Logo`,
-        height: '40px',
-        width: '101px',
-      },
+      // logo: {
+      //   href: '/',
+      //   src: '/assets/images/logo.svg',
+      //   srcDark: '/assets/images/logo-inverted.svg',
+      //   alt: `${thunderConfig.project.name} Logo`,
+      //   height: '40px',
+      //   width: '101px',
+      // },
       items: [
         {
           type: 'custom-PersonaDropdown',
@@ -144,6 +150,11 @@ const config: Config = {
           docId: 'sdks/overview',
           position: 'right',
           label: 'SDKs',
+        },
+        {
+          to: '/blog',
+          label: 'Blog',
+          position: 'right',
         },
         {
           label: 'Resources',

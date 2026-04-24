@@ -60,7 +60,7 @@ export interface DocusaurusThunderConfig {
 const docusaurusThunderConfig = {
   project: {
     emoji: '⚡',
-    name: 'Thunder',
+    name: 'ThunderID',
     description:
       'Thunder is a modern, open-source identity management service designed for teams building secure, customizable authentication experiences across applications, services, and AI agents.',
     source: {
