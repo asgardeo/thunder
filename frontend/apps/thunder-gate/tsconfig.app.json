@@ -28,7 +28,15 @@
       "@/hooks/*": ["./src/hooks/*"],
       "@/types/*": ["./src/types/*"],
       "@wso2/oxygen-ui": ["../../../oxygen-ui/packages/oxygen-ui/dist/*"],
-      "@wso2/oxygen-ui-icons-react": ["../../../oxygen-ui/packages/oxygen-ui-icons-react/dist/*"]
+      "@wso2/oxygen-ui-icons-react": ["../../../oxygen-ui/packages/oxygen-ui-icons-react/dist/*"],
+      "@thunder/contexts": ["../../packages/thunder-contexts/src/index.ts"],
+      "@thunder/logger": ["../../packages/thunder-logger/src/index.ts"],
+      "@thunder/logger/react": ["../../packages/thunder-logger/src/react.ts"],
+      "@thunder/design": ["../../packages/thunder-design/src/index.ts"],
+      "@thunder/i18n": ["../../packages/thunder-i18n/src/index.ts"],
+      "@thunder/i18n/locales/en-US": ["../../packages/thunder-i18n/src/locales/en-US.ts"],
+      "@thunder/hooks": ["../../packages/thunder-hooks/src/index.ts"],
+      "@thunder/utils": ["../../packages/thunder-utils/src/index.ts"]
     },
 
     /* Linting */

@@ -17,7 +17,8 @@
  */
 
 import {useContext} from 'react';
-import ConfigContext, {ConfigContextType} from './ConfigContext';
+import ConfigContext from './ConfigContext';
+import type {ConfigContextType} from './ConfigContext';
 
 /**
  * React hook for accessing Thunder runtime configuration throughout the application.

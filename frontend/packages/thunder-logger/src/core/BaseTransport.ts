@@ -17,7 +17,7 @@
  */
 
 import type LogEntry from '../models/log-entry';
-import LogLevel, {LOG_LEVEL_PRIORITY} from '../models/log-level';
+import {LogLevel, LOG_LEVEL_PRIORITY} from '../models/log-level';
 import type Transport from '../models/transport';
 
 /**

@@ -22,7 +22,7 @@ import {Plus} from '@wso2/oxygen-ui-icons-react';
 import {useCallback, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import TranslationsList from '@/components/TranslationsList';
+import TranslationsList from '../components/TranslationsList';
 
 /**
  * Page that lists all configured translation languages in a data grid.

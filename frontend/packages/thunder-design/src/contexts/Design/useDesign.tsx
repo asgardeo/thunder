@@ -17,9 +17,11 @@
  */
 
 import {isEmpty, merge} from '@thunder/utils';
-import {CssVarsThemeOptions, extendTheme} from '@wso2/oxygen-ui';
+import type {CssVarsThemeOptions} from '@wso2/oxygen-ui';
+import {extendTheme} from '@wso2/oxygen-ui';
 import {useContext, useMemo} from 'react';
-import DesignContext, {DesignContextType} from './DesignContext';
+import DesignContext from './DesignContext';
+import type {DesignContextType} from './DesignContext';
 import type {Theme} from '../../models/theme';
 
 /**

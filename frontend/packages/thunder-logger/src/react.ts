@@ -27,7 +27,7 @@ export {default as useLogger} from './react/contexts/Logger/useLogger';
 
 // Re-export core logger class and types for convenience
 export {default as Logger} from './core/Logger';
-export {default as LogLevel} from './models/log-level';
+export {LogLevel} from './models/log-level';
 export type {default as LoggerConfig} from './models/logger-config';
 export type {default as LogContext} from './models/log-context';
 

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {CssVarsTheme, Theme as OxygenUITheme} from '@wso2/oxygen-ui';
+import type {CssVarsTheme, Theme as OxygenUITheme} from '@wso2/oxygen-ui';
 
 /**
  * Theme configuration containing color schemes, shape, and typography

@@ -25,7 +25,7 @@ import {Pencil, Trash2} from '@wso2/oxygen-ui-icons-react';
 import {useCallback, useMemo, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import TranslationDeleteDialog from '@/components/TranslationDeleteDialog';
+import TranslationDeleteDialog from './TranslationDeleteDialog';
 
 export default function TranslationsList(): JSX.Element {
   const theme = useTheme();

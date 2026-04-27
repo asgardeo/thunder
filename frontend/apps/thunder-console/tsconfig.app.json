@@ -25,7 +25,19 @@
       "@/contexts/*": ["./src/contexts/*"],
       "@/lib/*": ["./src/lib/*"],
       "@/hooks/*": ["./src/hooks/*"],
-      "@/types/*": ["./src/types/*"]
+      "@/types/*": ["./src/types/*"],
+      "@thunder/contexts": ["../../packages/thunder-contexts/src/index.ts"],
+      "@thunder/logger": ["../../packages/thunder-logger/src/index.ts"],
+      "@thunder/logger/react": ["../../packages/thunder-logger/src/react.ts"],
+      "@thunder/design": ["../../packages/thunder-design/src/index.ts"],
+      "@thunder/i18n": ["../../packages/thunder-i18n/src/index.ts"],
+      "@thunder/i18n/locales/en-US": ["../../packages/thunder-i18n/src/locales/en-US.ts"],
+      "@thunder/hooks": ["../../packages/thunder-hooks/src/index.ts"],
+      "@thunder/utils": ["../../packages/thunder-utils/src/index.ts"],
+      "@thunder/components": ["../../packages/thunder-components/src/index.ts"],
+      "@thunder/configure-users": ["../../packages/thunder-configure-users/src/index.ts"],
+      "@thunder/configure-organization-units": ["../../packages/thunder-configure-organization-units/src/index.ts"],
+      "@thunder/configure-translations": ["../../packages/thunder-configure-translations/src/index.ts"]
     },
 
     /* Linting */

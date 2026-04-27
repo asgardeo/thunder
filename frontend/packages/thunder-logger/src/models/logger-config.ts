@@ -60,4 +60,4 @@ interface LoggerConfig {
   maskSensitiveData?: boolean;
 }
 
-export default LoggerConfig;
+export type {LoggerConfig as default};

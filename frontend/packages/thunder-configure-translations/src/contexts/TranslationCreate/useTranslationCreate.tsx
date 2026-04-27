@@ -19,7 +19,7 @@
 import {useContext} from 'react';
 import TranslationCreateContext, {
   type TranslationCreateContextType,
-} from '@/contexts/TranslationCreate/TranslationCreateContext';
+} from './TranslationCreateContext';
 
 /**
  * React hook for accessing translation creation state throughout the wizard.

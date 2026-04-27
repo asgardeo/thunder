@@ -16,7 +16,8 @@
  * under the License.
  */
 
-import {Context, createContext} from 'react';
+import type {Context} from 'react';
+import {createContext} from 'react';
 import type Logger from '../../../core/Logger';
 
 /**

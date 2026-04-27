@@ -20,6 +20,8 @@
 
 import type RuntimeEnvironment from '../models/runtime-environment';
 
+declare const process: {versions?: {node?: string}; env: Record<string, string | undefined>; stdout?: unknown};
+
 interface ImportMetaEnv {
   DEV?: boolean;
   PROD?: boolean;

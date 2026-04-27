@@ -21,8 +21,8 @@ import type {PropsWithChildren} from 'react';
 import {useState, useMemo, useCallback} from 'react';
 import TranslationCreateContext, {
   type TranslationCreateContextType,
-} from '@/contexts/TranslationCreate/TranslationCreateContext';
-import {TranslationCreateFlowStep} from '@/models/translation-create-flow';
+} from './TranslationCreateContext';
+import {TranslationCreateFlowStep} from '../../models/translation-create-flow';
 
 /**
  * Props for the {@link TranslationCreateProvider} component.

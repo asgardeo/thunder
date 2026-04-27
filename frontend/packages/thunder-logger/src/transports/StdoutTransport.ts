@@ -19,9 +19,12 @@
 import BaseTransport from '../core/BaseTransport';
 import type LogEntry from '../models/log-entry';
 import type LogLevel from '../models/log-level';
+
 import {hasProcess} from '../utils/detectEnvironment';
 import formatTimestamp from '../utils/formatTimestamp';
 import serializeError from '../utils/serializeError';
+
+declare const process: {stdout: {write: (data: string) => void}};
 
 /**
  * Options for configuring the stdout transport.

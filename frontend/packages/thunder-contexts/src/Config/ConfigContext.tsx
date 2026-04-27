@@ -16,8 +16,9 @@
  * under the License.
  */
 
-import {Context, createContext} from 'react';
-import {ThunderConfig} from './types';
+import type {Context} from 'react';
+import {createContext} from 'react';
+import type {ThunderConfig} from './types';
 
 /**
  * Configuration context interface that provides access to Thunder runtime configuration

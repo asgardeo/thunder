@@ -21,7 +21,7 @@ import {useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {useConfig} from '@thunder/contexts';
 import type {ApiFilteringParams} from '@thunder/types';
 import OrganizationUnitQueryKeys from '../constants/organization-unit-query-keys';
-import {OrganizationUnitUserListResponse} from '../models/responses';
+import type {OrganizationUnitUserListResponse} from '../models/responses';
 
 /**
  * Custom React hook to fetch users belonging to a specific organization unit.

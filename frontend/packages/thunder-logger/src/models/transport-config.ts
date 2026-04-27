@@ -47,4 +47,4 @@ export interface TransportConfig {
  */
 export type TransportFactory = (config: TransportConfig) => Transport;
 
-export default TransportConfig;
+export type {TransportConfig as default};

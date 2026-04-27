@@ -54,4 +54,4 @@ interface LogEntry {
   error?: Error;
 }
 
-export default LogEntry;
+export type {LogEntry as default};

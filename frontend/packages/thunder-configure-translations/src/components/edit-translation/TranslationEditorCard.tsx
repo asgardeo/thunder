@@ -20,8 +20,8 @@ import {Box, Card, CircularProgress, Divider, InputAdornment, Tab, Tabs, TextFie
 import {Search} from '@wso2/oxygen-ui-icons-react';
 import {type JSX, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
-import TranslationFieldsView from '@/components/edit-translation/TranslationFieldsView';
-import TranslationJsonEditor from '@/components/edit-translation/TranslationJsonEditor';
+import TranslationFieldsView from './TranslationFieldsView';
+import TranslationJsonEditor from './TranslationJsonEditor';
 
 /**
  * Props for the {@link TranslationEditorCard} component.

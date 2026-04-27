@@ -31,14 +31,18 @@ export const FUNCTION_CALL_REGEX = /^(\w+)\(([^)]+)\)$/;
 /**
  * Template literal types supported by the resolver.
  */
-export enum TemplateLiteralType {
+const TemplateLiteralType = {
   /** Translation template literal using t() function */
-  TRANSLATION = 't',
+  TRANSLATION: 't',
   /** Meta template literal using meta() function — resolves against flow/page meta data */
-  META = 'meta',
+  META: 'meta',
   /** Unknown or unsupported template literal format */
-  UNKNOWN = 'unknown',
-}
+  UNKNOWN: 'unknown',
+} as const;
+
+type TemplateLiteralType = (typeof TemplateLiteralType)[keyof typeof TemplateLiteralType];
+
+export {TemplateLiteralType};
 
 /**
  * Result of parsing a template literal.

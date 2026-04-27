@@ -27,7 +27,7 @@ export {default as StdoutTransport} from './transports/StdoutTransport';
 export {default as HttpTransport} from './transports/HttpTransport';
 
 // Type exports from models
-export {default as LogLevel, LOG_LEVEL_PRIORITY} from './models/log-level';
+export {LogLevel, LOG_LEVEL_PRIORITY} from './models/log-level';
 export type {default as LogContext} from './models/log-context';
 export type {default as LogEntry} from './models/log-entry';
 export type {default as LoggerConfig} from './models/logger-config';

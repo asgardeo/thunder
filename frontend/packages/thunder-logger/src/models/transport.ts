@@ -60,4 +60,4 @@ interface Transport {
   shouldLog(level: LogLevel): boolean;
 }
 
-export default Transport;
+export type {Transport as default};

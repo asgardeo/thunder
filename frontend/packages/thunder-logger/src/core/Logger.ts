@@ -18,7 +18,7 @@
 
 import type LogContext from '../models/log-context';
 import type LogEntry from '../models/log-entry';
-import LogLevel, {LOG_LEVEL_PRIORITY} from '../models/log-level';
+import {LogLevel, LOG_LEVEL_PRIORITY} from '../models/log-level';
 import type LoggerConfig from '../models/logger-config';
 import type Transport from '../models/transport';
 import ConsoleTransport from '../transports/ConsoleTransport';

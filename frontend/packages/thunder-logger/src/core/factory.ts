@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import LogLevel from '../models/log-level';
+import {LogLevel} from '../models/log-level';
 import type Transport from '../models/transport';
 import type {TransportConfig, TransportFactory} from '../models/transport-config';
 import ConsoleTransport from '../transports/ConsoleTransport';

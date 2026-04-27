@@ -20,13 +20,15 @@
  * Log level enumeration.
  * Defines the severity levels for log messages.
  */
-enum LogLevel {
-  DEBUG = 'debug',
-  INFO = 'info',
-  WARN = 'warn',
-  ERROR = 'error',
-  NONE = 'none',
-}
+const LogLevel = {
+  DEBUG: 'debug',
+  INFO: 'info',
+  WARN: 'warn',
+  ERROR: 'error',
+  NONE: 'none',
+} as const;
+
+type LogLevel = (typeof LogLevel)[keyof typeof LogLevel];
 
 /**
  * Numeric representation of log levels for comparison.
@@ -40,4 +42,5 @@ export const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
   [LogLevel.NONE]: 4,
 };
 
-export default LogLevel;
+export {LogLevel};
+export type {LogLevel as default};

@@ -22,4 +22,4 @@
  */
 type LogContext = Record<string, unknown>;
 
-export default LogContext;
+export type {LogContext as default};

@@ -41,4 +41,4 @@ interface RuntimeEnvironment {
   isProduction: boolean;
 }
 
-export default RuntimeEnvironment;
+export type {RuntimeEnvironment as default};

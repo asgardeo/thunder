@@ -22,9 +22,9 @@ import {Alert, PageContent, Snackbar, useColorScheme} from '@wso2/oxygen-ui';
 import {useCallback, useMemo, useState, type JSX, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate, useParams} from 'react-router';
-import NamespaceSelector from '@/components/edit-translation/NamespaceSelector';
-import TranslationEditorCard from '@/components/edit-translation/TranslationEditorCard';
-import TranslationEditorHeader from '@/components/edit-translation/TranslationEditorHeader';
+import NamespaceSelector from '../components/edit-translation/NamespaceSelector';
+import TranslationEditorCard from '../components/edit-translation/TranslationEditorCard';
+import TranslationEditorHeader from '../components/edit-translation/TranslationEditorHeader';
 
 interface ToastState {
   open: boolean;

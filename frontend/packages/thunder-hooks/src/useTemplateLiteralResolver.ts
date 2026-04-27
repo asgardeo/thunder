@@ -16,12 +16,8 @@
  * under the License.
  */
 
-import {
-  TEMPLATE_LITERAL_REGEX,
-  TemplateLiteralHandlers,
-  TemplateLiteralResult,
-  parseTemplateLiteral,
-} from '@thunder/utils';
+import {TEMPLATE_LITERAL_REGEX, parseTemplateLiteral} from '@thunder/utils';
+import type {TemplateLiteralHandlers, TemplateLiteralResult} from '@thunder/utils';
 import {useMemo} from 'react';
 
 /**

@@ -23,12 +23,12 @@ import {ChevronRight, X} from '@wso2/oxygen-ui-icons-react';
 import {useCallback, useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
-import InitializeLanguage from '@/components/create-translation/InitializeLanguage';
-import ReviewLocaleCode from '@/components/create-translation/ReviewLocaleCode';
-import SelectCountry from '@/components/create-translation/SelectCountry';
-import SelectLanguage from '@/components/create-translation/SelectLanguage';
-import useTranslationCreate from '@/contexts/TranslationCreate/useTranslationCreate';
-import {TranslationCreateFlowStep} from '@/models/translation-create-flow';
+import InitializeLanguage from '../components/create-translation/InitializeLanguage';
+import ReviewLocaleCode from '../components/create-translation/ReviewLocaleCode';
+import SelectCountry from '../components/create-translation/SelectCountry';
+import SelectLanguage from '../components/create-translation/SelectLanguage';
+import useTranslationCreate from '../contexts/TranslationCreate/useTranslationCreate';
+import {TranslationCreateFlowStep} from '../models/translation-create-flow';
 
 const STEPS: TranslationCreateFlowStep[] = [
   TranslationCreateFlowStep.COUNTRY,

@@ -19,7 +19,7 @@
 import type {CountryOption, LocaleOption} from '@thunder/i18n';
 import type {Context} from 'react';
 import {createContext} from 'react';
-import type {TranslationCreateFlowStep} from '@/models/translation-create-flow';
+import type {TranslationCreateFlowStep} from '../../models/translation-create-flow';
 
 /**
  * Translation creation context state interface.
