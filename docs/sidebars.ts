@@ -20,10 +20,14 @@
 
 import type {SidebarsConfig} from '@docusaurus/plugin-content-docs';
 import reactSdkSidebar from './content/sdks/react/sidebar';
+import thunderConfig from './docusaurus.thunder.config';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 // TODO: Use `@wso2/oxygen-ui-icons` in the sidebar. Currently, there's only a React wrapper available, so we need to create custom SVG icons for the sidebar until we have a web component version of the icons.
+
+const productionBaseUrl = thunderConfig.documentation.deployment.production.baseUrl.replace(/^\/+|\/+$/g, '');
+const llmsTxtHref = `pathname:///${productionBaseUrl}/llms.txt`;
 
 /**
  * Creating a sidebar enables you to:
@@ -87,6 +91,11 @@ const sidebars: SidebarsConfig = {
           type: 'doc',
           id: 'guides/working-with-ai/mcp-server',
           label: 'MCP Server',
+        },
+        {
+          type: 'link',
+          href: llmsTxtHref,
+          label: 'llms.txt',
         },
       ],
     },

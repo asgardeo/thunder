@@ -60,6 +60,7 @@
     "@docusaurus/module-type-aliases": "3.9.2",
     "@docusaurus/tsconfig": "3.9.2",
     "@docusaurus/types": "3.9.2",
+    "docusaurus-plugin-llms": "0.4.0",
     "openapi-to-postmanv2": "4.23.0",
     "typescript": "catalog:",
     "yaml": "2.8.2"

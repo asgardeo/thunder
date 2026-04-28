@@ -19,8 +19,9 @@
 import type * as Preset from '@docusaurus/preset-classic';
 import type {Config} from '@docusaurus/types';
 import {themes as prismThemes} from 'prism-react-renderer';
-import personaPlugin from './plugins/personaPlugin';
 import thunderConfig from './docusaurus.thunder.config';
+import llmsOriginRelativePlugin from './plugins/llmsOriginRelativePlugin';
+import personaPlugin from './plugins/personaPlugin';
 import webpackPlugin from './plugins/webpackPlugin';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
@@ -67,7 +68,24 @@ const config: Config = {
     },
   },
 
-  plugins: [webpackPlugin, personaPlugin],
+  plugins: [
+    webpackPlugin,
+    personaPlugin,
+    [
+      'docusaurus-plugin-llms',
+      {
+        docsDir: 'content',
+        excludeImports: true,
+        generateLLMsFullTxt: true,
+        generateLLMsTxt: true,
+        generateMarkdownFiles: true,
+        removeDuplicateHeadings: true,
+        title: `${thunderConfig.project.name} Documentation`,
+        description: thunderConfig.project.description,
+      },
+    ],
+    llmsOriginRelativePlugin,
+  ],
 
   presets: [
     [
