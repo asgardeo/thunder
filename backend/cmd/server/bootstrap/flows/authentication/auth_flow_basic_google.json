@@ -11,16 +11,97 @@
         {
             "id": "choose_auth",
             "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "alt": "{{ t(signin:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "text_001",
+                        "label": "{{ t(signin:forms.choose_auth_method.title) }}",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_basic",
+                        "components": [
+                            {
+                                "id": "input_username",
+                                "ref": "username",
+                                "type": "TEXT_INPUT",
+                                "label": "{{ t(signin:forms.choose_auth_method.fields.username.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(signin:forms.choose_auth_method.fields.username.placeholder) }}"
+                            },
+                            {
+                                "id": "input_password",
+                                "ref": "password",
+                                "type": "PASSWORD_INPUT",
+                                "label": "{{ t(signin:forms.choose_auth_method.fields.password.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(signin:forms.choose_auth_method.fields.password.placeholder) }}"
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_basic",
+                                "label": "{{ t(signin:forms.choose_auth_method.actions.submit.label) }}",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "DIVIDER",
+                        "id": "divider_001"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_google",
+                        "components": [
+                            {
+                                "type": "ACTION",
+                                "id": "action_google",
+                                "label": "{{ t(signin:forms.choose_auth_method.actions.google.label) }}",
+                                "variant": "SECONDARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
             "prompts": [
                 {
+                    "inputs": [
+                        {
+                            "ref": "input_username",
+                            "identifier": "username",
+                            "type": "TEXT_INPUT",
+                            "required": true
+                        },
+                        {
+                            "ref": "input_password",
+                            "identifier": "password",
+                            "type": "PASSWORD_INPUT",
+                            "required": true
+                        }
+                    ],
                     "action": {
-                        "ref": "action_001",
+                        "ref": "action_basic",
                         "nextNode": "basic_auth"
                     }
                 },
                 {
                     "action": {
-                        "ref": "action_002",
+                        "ref": "action_google",
                         "nextNode": "google_auth"
                     }
                 }
@@ -31,6 +112,15 @@
             "type": "TASK_EXECUTION",
             "executor": {
                 "name": "BasicAuthExecutor"
+            },
+            "onSuccess": "authorization_check",
+            "onIncomplete": "choose_auth"
+        },
+        {
+            "id": "authorization_check",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AuthorizationExecutor"
             },
             "onSuccess": "auth_assert"
         },

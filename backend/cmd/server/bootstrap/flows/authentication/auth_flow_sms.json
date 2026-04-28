@@ -11,18 +11,60 @@
         {
             "id": "prompt_mobile",
             "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "alt": "{{ t(signin:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "text_mobile",
+                        "label": "{{ t(signin:forms.mobile_number.title) }}",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_mobile",
+                        "components": [
+                            {
+                                "id": "input_mobile",
+                                "ref": "mobileNumber",
+                                "type": "PHONE_INPUT",
+                                "label": "{{ t(signin:forms.mobile_number.fields.mobile.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(signin:forms.mobile_number.fields.mobile.placeholder) }}"
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_send_sms",
+                                "label": "{{ t(signin:forms.mobile_number.actions.submit.label) }}",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
             "prompts": [
                 {
                     "inputs": [
                         {
-                            "ref": "input_001",
+                            "ref": "input_mobile",
                             "identifier": "mobileNumber",
                             "type": "PHONE_INPUT",
                             "required": true
                         }
                     ],
                     "action": {
-                        "ref": "action_001",
+                        "ref": "action_send_sms",
                         "nextNode": "send_sms"
                     }
                 }
@@ -43,18 +85,60 @@
         {
             "id": "prompt_otp",
             "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "alt": "{{ t(signin:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logo_url) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "text_otp",
+                        "label": "{{ t(signin:forms.otp.title) }}",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_otp",
+                        "components": [
+                            {
+                                "id": "input_otp",
+                                "ref": "otp",
+                                "type": "OTP_INPUT",
+                                "label": "{{ t(signin:forms.otp.fields.otp.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(signin:forms.otp.fields.otp.placeholder) }}"
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_verify_otp",
+                                "label": "{{ t(signin:forms.otp.actions.submit.label) }}",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
             "prompts": [
                 {
                     "inputs": [
                         {
-                            "ref": "input_002",
+                            "ref": "input_otp",
                             "identifier": "otp",
                             "type": "OTP_INPUT",
                             "required": true
                         }
                     ],
                     "action": {
-                        "ref": "action_001",
+                        "ref": "action_verify_otp",
                         "nextNode": "verify_sms"
                     }
                 }
