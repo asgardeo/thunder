@@ -90,6 +90,7 @@ func (e *inviteExecutor) executeGenerate(ctx *core.NodeContext) (*common.Executo
 	execResp := &common.ExecutorResponse{
 		AdditionalData: make(map[string]string),
 		RuntimeData:    make(map[string]string),
+		ForwardedData:  make(map[string]interface{}),
 	}
 
 	inviteToken, err := e.getOrGenerateToken(ctx)
@@ -103,6 +104,10 @@ func (e *inviteExecutor) executeGenerate(ctx *core.NodeContext) (*common.Executo
 
 	execResp.RuntimeData[common.RuntimeKeyStoredInviteToken] = inviteToken
 	execResp.RuntimeData[common.RuntimeKeyInviteLink] = inviteLink
+
+	execResp.ForwardedData[common.ForwardedDataKeyTemplateData] = map[string]interface{}{
+		"inviteLink": inviteLink,
+	}
 
 	if ctx.FlowType == common.FlowTypeUserOnboarding {
 		execResp.AdditionalData[common.DataInviteLink] = inviteLink

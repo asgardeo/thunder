@@ -229,6 +229,33 @@ func (suite *InviteExecutorTestSuite) TestExecute_InvalidMode() {
 	assert.Contains(suite.T(), err.Error(), "invalid executor mode for InviteExecutor")
 }
 
+func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_PopulatesTemplateData() {
+	ctx := &core.NodeContext{
+		ExecutionID:  "test-execution-id",
+		ExecutorMode: ExecutorModeGenerate,
+		FlowType:     common.FlowTypeRegistration,
+		RuntimeData:  make(map[string]string),
+	}
+
+	resp, err := suite.executor.Execute(ctx)
+
+	suite.NoError(err)
+	suite.Equal(common.ExecComplete, resp.Status)
+
+	// 1. Ensure TemplateName is completely gone
+	_, hasTemplateName := resp.ForwardedData["templateName"]
+	suite.False(hasTemplateName, "Template name should no longer be set by Invite Executor")
+
+	// 2. Ensure TemplateData IS set with the link
+	templateData, ok := resp.ForwardedData[common.ForwardedDataKeyTemplateData].(map[string]interface{})
+	suite.True(ok, "Expected template data to be map[string]interface{}")
+	suite.NotEmpty(templateData["inviteLink"], "inviteLink must be present")
+
+	// 3. Ensure appName was removed
+	_, hasAppName := templateData["appName"]
+	suite.False(hasAppName, "appName should not be present")
+}
+
 func (suite *InviteExecutorTestSuite) TestGetExecutionPolicy_GenerateMode_ReturnsNil() {
 	policy := suite.executor.GetExecutionPolicy(ExecutorModeGenerate)
 	assert.Nil(suite.T(), policy)

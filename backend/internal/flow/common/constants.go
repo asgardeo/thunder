@@ -253,4 +253,6 @@ const (
 	ForwardedDataKeyConsentPrompt = "consent_prompt"
 	// ForwardedDataKeyActionType holds the action type selected by the user for the immediate next node
 	ForwardedDataKeyActionType = "actionType"
+	// ForwardedDataKeyTemplateData holds template parameters for notification executors
+	ForwardedDataKeyTemplateData = "templateData"
 )
