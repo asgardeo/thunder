@@ -250,7 +250,7 @@ Log-Info "Creating React SDK Sample App application..."
 
 $reactSdkAppData = @{
     name = "React SDK Sample"
-    description = "Sample React application using Thunder React SDK"
+    description = "Sample React application using $PRODUCT_NAME React SDK"
     ouId = $CUSTOMER_OU_ID
     clientId = "REACT_SDK_SAMPLE"
     url = "https://localhost:3000"

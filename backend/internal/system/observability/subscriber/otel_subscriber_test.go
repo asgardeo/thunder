@@ -722,10 +722,10 @@ func setupTestConfig(t *testing.T) {
 		},
 	}
 
-	// Initialize Thunder runtime with test config
+	// Initialize server runtime with test config
 	err := config.InitializeThunderRuntime("/tmp/thunder-test", testConfig)
 	if err != nil {
-		t.Fatalf("Failed to initialize Thunder runtime: %v", err)
+		t.Fatalf("Failed to initialize server runtime: %v", err)
 	}
 }
 

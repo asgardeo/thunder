@@ -1,15 +1,15 @@
 # React Vanilla Sample Application
 
-This sample React application demonstrates integrating Thunder authentication into your application. It supports two authentication approaches:
+This sample React application demonstrates integrating authentication into your application. It supports two authentication approaches:
 
-- **Native Flow**: App-native authentication using Thunder's flow orchestration API
+- **Native Flow**: App-native authentication using  flow orchestration API
 - **OAuth 2.0 / OIDC**: Standards-based authentication using OAuth 2.0 Authorization Code flow
 
 ## Prerequisites
 
 - Node.js 20+
-- A running Thunder server instance (default: `https://localhost:8090`)
-- An application registered in Thunder
+- A running server instance (default: `https://localhost:8090`)
+- An application registered in the server
 
 ## Quick Start (Pre-built Application)
 
@@ -21,7 +21,7 @@ Open `app/runtime.json` and configure the settings based on your preferred authe
 
 #### Option A: Native Flow Configuration
 
-For app-native authentication using Thunder's flow API:
+For app-native authentication using flow API:
 
 ```json
 {
@@ -34,10 +34,10 @@ For app-native authentication using Thunder's flow API:
 
 | Property | Description |
 |----------|-------------|
-| `flowEndpoint` | Thunder's flow orchestration endpoint |
-| `applicationsEndpoint` | Thunder's applications API endpoint |
+| `flowEndpoint` | Flow orchestration endpoint |
+| `applicationsEndpoint` | Applications API endpoint |
 | `redirectBasedLogin` | Set to `false` for native flow |
-| `applicationID` | The application ID registered in Thunder (obtained during Thunder setup) |
+| `applicationID` | The application ID registered in the server (obtained during server setup) |
 
 #### Option B: OAuth 2.0 / OIDC Configuration
 
@@ -60,7 +60,7 @@ For standards-based OAuth 2.0 authentication with redirect-based login:
 | `authorizationEndpoint` | OAuth 2.0 authorization endpoint |
 | `tokenEndpoint` | OAuth 2.0 token endpoint |
 | `clientId` | OAuth client ID for the application |
-| `redirectUri` | Callback URL where Thunder redirects after authentication |
+| `redirectUri` | Callback URL where the server redirects after authentication |
 | `scope` | OAuth scopes (e.g., `openid`, `profile`, `email`) |
 
 #### Expected Flow Node IDs
@@ -102,10 +102,10 @@ npm install
 
 ### 2. Set Up SSL Certificates
 
-For HTTPS support, copy the SSL certificates from your Thunder distribution to the project root:
+For HTTPS support, copy the SSL certificates from your server distribution to the project root:
 
 ```bash
-# From Thunder distribution
+# From distribution
 cp /path/to/thunder/repository/resources/security/server.key .
 cp /path/to/thunder/repository/resources/security/server.cert .
 

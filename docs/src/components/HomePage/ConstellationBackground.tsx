@@ -20,17 +20,17 @@ import React, {JSX} from 'react';
 import useIsDarkMode from '../../hooks/useIsDarkMode';
 
 /**
- * Thunder (lightning bolt) outline vertices, based on the path:
+ * Lightning bolt outline vertices, based on the path:
  *   M13.5,1 L4,18 L11,18 L9.5,31 L20,14 L13,14 L13.5,1 Z
  * Normalized to a 24x32 unit coordinate space.
  */
 const BOLT_VERTICES: [number, number][] = [
-  [13.5, 1],   // top point
-  [4, 18],     // lower-left bend
-  [11, 18],    // inner-left step
-  [9.5, 31],   // bottom point
-  [20, 14],    // upper-right bend
-  [13, 14],    // inner-right step
+  [13.5, 1], // top point
+  [4, 18], // lower-left bend
+  [11, 18], // inner-left step
+  [9.5, 31], // bottom point
+  [20, 14], // upper-right bend
+  [13, 14], // inner-right step
 ];
 
 const BOLT_CX = 12;
@@ -38,14 +38,14 @@ const BOLT_CY = 16;
 
 /** Generate SVG path `d` for a thunder bolt at given position and scale. */
 function boltPath(cx: number, cy: number, scale: number): string {
-  return BOLT_VERTICES
-    .map(([px, py], i) => {
+  return (
+    BOLT_VERTICES.map(([px, py], i) => {
       const x = (px - BOLT_CX) * scale + cx;
       const y = (py - BOLT_CY) * scale + cy;
 
       return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' ') + ' Z';
+    }).join(' ') + ' Z'
+  );
 }
 
 /** Get all vertices of the thunder bolt for drawing nodes. */
@@ -109,7 +109,9 @@ const ConstellationBackground = React.memo(function ConstellationBackground(): J
       <rect width="1440" height="900" fill="url(#hero-orange-glow-2)" />
 
       {/* Single large thunder bolt outline — dashed stroke with slow float */}
-      <g style={{transformOrigin: `${shapeCx}px ${shapeCy}px`, animation: 'constellationFloat 20s ease-in-out infinite'}}>
+      <g
+        style={{transformOrigin: `${shapeCx}px ${shapeCy}px`, animation: 'constellationFloat 20s ease-in-out infinite'}}
+      >
         <path
           d={boltPath(shapeCx, shapeCy, shapeScale)}
           fill="none"
@@ -125,7 +127,13 @@ const ConstellationBackground = React.memo(function ConstellationBackground(): J
         <g fill={isDark ? 'white' : '#1a1a2e'}>
           {vertices.map((v, i) => (
             <circle key={i} cx={v.x} cy={v.y} r="3" opacity={isDark ? 0.35 : 0.2}>
-              <animate attributeName="opacity" values={`${isDark ? 0.2 : 0.1};${isDark ? 0.5 : 0.3};${isDark ? 0.2 : 0.1}`} dur={`${3 + (i % 3)}s`} begin={`${i * 0.3}s`} repeatCount="indefinite" />
+              <animate
+                attributeName="opacity"
+                values={`${isDark ? 0.2 : 0.1};${isDark ? 0.5 : 0.3};${isDark ? 0.2 : 0.1}`}
+                dur={`${3 + (i % 3)}s`}
+                begin={`${i * 0.3}s`}
+                repeatCount="indefinite"
+              />
             </circle>
           ))}
         </g>

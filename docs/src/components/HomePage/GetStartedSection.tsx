@@ -16,17 +16,19 @@
  * under the License.
  */
 
-import React, {JSX} from 'react';
 import Link from '@docusaurus/Link';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import type {DocusaurusThunderConfig} from '@site/docusaurus.thunder.config';
 import {Box, Container, Typography, Stack, Button} from '@wso2/oxygen-ui';
+import React, {JSX} from 'react';
 import useIsDarkMode from '../../hooks/useIsDarkMode';
 import useScrollAnimation from '../../hooks/useScrollAnimation';
-import ReactLogo from '../icons/ReactLogo';
-import NextLogo from '../icons/NextLogo';
-import VueLogo from '../icons/VueLogo';
 import ExpressLogo from '../icons/ExpressLogo';
-import GoLogo from '../icons/GoLogo';
 import FlutterLogo from '../icons/FlutterLogo';
+import GoLogo from '../icons/GoLogo';
+import NextLogo from '../icons/NextLogo';
+import ReactLogo from '../icons/ReactLogo';
+import VueLogo from '../icons/VueLogo';
 
 interface StepProps {
   number: number;
@@ -207,6 +209,9 @@ function TechIconBox({
 
 export default function GetStartedSection(): JSX.Element {
   const isDark = useIsDarkMode();
+  const {siteConfig} = useDocusaurusContext();
+  const {project} = siteConfig.customFields?.thunder as DocusaurusThunderConfig;
+  const productName = project.name;
   const {ref: titleRef, isVisible: titleVisible} = useScrollAnimation({threshold: 0.2});
   const {ref: stepsRef, isVisible: stepsVisible} = useScrollAnimation({threshold: 0.1});
 
@@ -277,7 +282,7 @@ export default function GetStartedSection(): JSX.Element {
               'opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s',
           }}
         >
-          <Step number={1} title="Pick your technology and register your app in Thunder">
+          <Step number={1} title={`Pick your technology and register your app in ${productName}`}>
             <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1.5, alignItems: 'flex-start'}}>
               <TechIconBox selected>
                 <ReactLogo size={26} />

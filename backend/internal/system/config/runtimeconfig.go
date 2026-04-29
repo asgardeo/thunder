@@ -22,7 +22,7 @@ import (
 	"sync"
 )
 
-// ThunderRuntime holds the runtime configuration for the Thunder server.
+// ThunderRuntime holds the runtime configuration for the server.
 type ThunderRuntime struct {
 	ThunderHome string `yaml:"thunder_home"`
 	Config      Config `yaml:"config"`

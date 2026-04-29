@@ -13,6 +13,8 @@ permissions:
 
 env:
   GOFLAGS: "-mod=readonly"
+  PRODUCT_NAME: "Thunder"
+  PRODUCT_NAME_LOWER: "thunder"
 
 jobs:
   dependency-guard:
@@ -106,12 +108,12 @@ jobs:
         run: |
           $distPath = "target/dist"
           if (Test-Path $distPath) {
-            $artifacts = Get-ChildItem -Path $distPath -Filter "thunder-*.zip"
+            $artifacts = Get-ChildItem -Path $distPath -Filter "$env:PRODUCT_NAME_LOWER-*.zip"
             if ($artifacts.Count -gt 0) {
               Write-Host "✅ Build artifacts found:"
               $artifacts | ForEach-Object { Write-Host "  - $($_.Name)" }
             } else {
-              Write-Host "❌ No thunder distribution zip files found in $distPath"
+              Write-Host "❌ No distribution zip files found in $distPath"
               exit 1
             }
           } else {
@@ -131,8 +133,8 @@ jobs:
       - name: 📦 Upload Windows Distribution
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: thunder-windows-distribution-${{ github.run_id }}
-          path: target/dist/thunder-*-win-*.zip
+          name: ${{ env.PRODUCT_NAME_LOWER }}-windows-distribution-${{ github.run_id }}
+          path: target/dist/${{ env.PRODUCT_NAME_LOWER }}-*-win-*.zip
           if-no-files-found: error
 
   build-samples-windows:
@@ -203,7 +205,7 @@ jobs:
       - name: 📥 Download Built Distribution
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: thunder-windows-distribution-${{ github.run_id }}
+          name: ${{ env.PRODUCT_NAME_LOWER }}-windows-distribution-${{ github.run_id }}
           path: target/dist/
 
       - name: 📦 Install Dependencies
@@ -240,7 +242,7 @@ jobs:
       - name: 📥 Download Built Distribution
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: thunder-windows-distribution-${{ github.run_id }}
+          name: ${{ env.PRODUCT_NAME_LOWER }}-windows-distribution-${{ github.run_id }}
           path: target/dist/
 
       - name: 📥 Download Built Sample App
@@ -253,9 +255,9 @@ jobs:
         shell: pwsh
         run: |
           New-Item -Path "tests/e2e/server" -ItemType Directory -Force | Out-Null
-          $zipFile = Get-ChildItem -Path "target/dist" -Filter "thunder-*.zip" | Select-Object -First 1
+          $zipFile = Get-ChildItem -Path "target/dist" -Filter "$env:PRODUCT_NAME_LOWER-*.zip" | Select-Object -First 1
           if (-not $zipFile) {
-            Write-Host "❌ Thunder distribution zip not found in target/dist"
+            Write-Host "❌ Distribution zip not found in target/dist"
             Get-ChildItem -Path "target/dist"
             exit 1
           }
@@ -263,7 +265,7 @@ jobs:
           Expand-Archive -Path $zipFile.FullName -DestinationPath "tests/e2e/server" -Force
 
           # Move contents from the extracted subfolder to server root
-          $extractedDir = Get-ChildItem -Path "tests/e2e/server" -Directory -Filter "thunder-*" | Select-Object -First 1
+          $extractedDir = Get-ChildItem -Path "tests/e2e/server" -Directory -Filter "$env:PRODUCT_NAME_LOWER-*" | Select-Object -First 1
           if ($extractedDir) {
             Get-ChildItem -Path $extractedDir.FullName -Force | Move-Item -Destination "tests/e2e/server" -Force
             Remove-Item -Path $extractedDir.FullName -Recurse -Force
@@ -275,11 +277,11 @@ jobs:
           Set-Location "tests/e2e/server"
           ./setup.ps1
 
-      - name: 🚀 Start Thunder Server (Without Security)
+      - name: 🚀 Start Server (Without Security)
         shell: bash
         run: |
           cd tests/e2e/server
-          SKIP_SECURITY=true ./thunder.exe > server.log 2>&1 &
+          SKIP_SECURITY=true ./${PRODUCT_NAME_LOWER}.exe > server.log 2>&1 &
           echo "SERVER_PID=$!" >> $GITHUB_ENV
           sleep 5
 
@@ -306,7 +308,7 @@ jobs:
         id: extract-app-id
         shell: bash
         run: |
-          echo "Fetching applications from Thunder..."
+          echo "Fetching applications from server..."
           response=$(curl -sk https://localhost:8090/applications)
           sample_app_id=$(echo "$response" | jq -r '.applications[] | select(.name == "Sample App") | .id')
 
@@ -319,15 +321,15 @@ jobs:
             exit 1
           fi
 
-      - name: 🔄 Restart Thunder Server with Security Enabled
+      - name: 🔄 Restart Server with Security Enabled
         shell: bash
         run: |
-          echo "Stopping Thunder server..."
+          echo "Stopping server..."
           kill $SERVER_PID || true
           sleep 5
 
           cd tests/e2e/server
-          ./thunder.exe > server-secure.log 2>&1 &
+          ./${PRODUCT_NAME_LOWER}.exe > server-secure.log 2>&1 &
           echo "SERVER_PID=$!" >> $GITHUB_ENV
           sleep 5
 
@@ -427,12 +429,12 @@ jobs:
       - name: 🔍 Verify Services Before Tests
         shell: pwsh
         run: |
-          Write-Host "Checking Thunder server..."
-          $thunderProcs = Get-Process -Name "thunder" -ErrorAction SilentlyContinue
-          if ($thunderProcs) {
-            Write-Host "✅ Thunder process running (PID: $($thunderProcs.Id -join ', '))"
+          Write-Host "Checking server..."
+          $serverProcs = Get-Process -Name "$env:PRODUCT_NAME_LOWER" -ErrorAction SilentlyContinue
+          if ($serverProcs) {
+            Write-Host "✅ Server process running (PID: $($serverProcs.Id -join ', '))"
           } else {
-            Write-Host "❌ Thunder process NOT found"
+            Write-Host "❌ Server process NOT found"
             Write-Host "Server log:"
             $logPath = "tests/e2e/server/server-secure.log"
             if (Test-Path $logPath) { Get-Content $logPath } else { Write-Host "(no log)" }
@@ -441,9 +443,9 @@ jobs:
           }
           try {
             $response = Invoke-WebRequest -Uri "https://localhost:8090/health/liveness" -SkipCertificateCheck -TimeoutSec 5
-            Write-Host "✅ Thunder server responding (status: $($response.StatusCode))"
+            Write-Host "✅ Server responding (status: $($response.StatusCode))"
           } catch {
-            Write-Host "❌ Thunder server not responding: $_"
+            Write-Host "❌ Server not responding: $_"
           }
 
           Write-Host "Checking Sample App..."

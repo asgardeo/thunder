@@ -32,7 +32,7 @@ import (
 )
 
 // NewTokenVerifier creates a TokenVerifier function that verifies tokens
-// issued by Thunder's OAuth server. This implements the auth.TokenVerifier
+// issued by the OAuth server. This implements the auth.TokenVerifier
 // function type from the MCP SDK.
 func NewTokenVerifier(
 	jwtService jwt.JWTServiceInterface,

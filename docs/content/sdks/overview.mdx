@@ -11,9 +11,8 @@ import {Search} from '@wso2/oxygen-ui-icons-react';
 import {useState} from 'react';
 import thunderConfig from '@site/docusaurus.thunder.config';
 
-const productName = thunderConfig.project.name;
-
 export const SDKsContent = () => {
+  const productName = thunderConfig.project.name;
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
 

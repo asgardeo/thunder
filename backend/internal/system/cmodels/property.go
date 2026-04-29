@@ -16,7 +16,7 @@
  * under the License.
  */
 
-// Package cmodels provides common data models used across Thunder modules.
+// Package cmodels provides common data models used across server modules.
 package cmodels
 
 import (

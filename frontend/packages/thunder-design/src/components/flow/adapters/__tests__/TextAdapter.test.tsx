@@ -45,7 +45,7 @@ describe('TextAdapter', () => {
     expect(screen.getByText('Resolved Text')).toBeTruthy();
   });
 
-  it('applies Thunder CSS class names', () => {
+  it('applies product prefix CSS class names', () => {
     renderWithProviders(<TextAdapter component={baseComponent} resolve={(s) => s} />);
     const el = screen.getByText('Hello World');
     expect(el.className).toContain('ThunderFlow--text');

@@ -38,7 +38,7 @@ describe('DividerAdapter', () => {
     expect(screen.getByText('OR')).toBeTruthy();
   });
 
-  it('applies Thunder CSS class names', () => {
+  it('applies product prefix CSS class names', () => {
     const component: FlowComponent = {id: 'div-1', type: 'DIVIDER'};
     renderWithProviders(<DividerAdapter component={component} resolve={(s) => s} />);
     const divider = document.querySelector(`.${TEST_CN_PREFIX}Divider--root`);

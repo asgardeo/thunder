@@ -16,15 +16,20 @@
  * under the License.
  */
 
-import React, {JSX, useEffect, useState} from 'react';
 import Link from '@docusaurus/Link';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import type {DocusaurusThunderConfig} from '@site/docusaurus.thunder.config';
 import {Box, Container, Typography, Stack, Button} from '@wso2/oxygen-ui';
+import React, {JSX, useEffect, useState} from 'react';
+import ConstellationBackground from './ConstellationBackground';
 import useIsDarkMode from '../../hooks/useIsDarkMode';
 import LoginBox from '../LoginBox';
-import ConstellationBackground from './ConstellationBackground';
 
 export default function HeroSection(): JSX.Element {
   const isDark = useIsDarkMode();
+  const {siteConfig} = useDocusaurusContext();
+  const {project} = siteConfig.customFields?.thunder as DocusaurusThunderConfig;
+  const productName = project.name;
 
   // After entry animations finish, clear them so CSS transitions can take over.
   // animation-fill-mode: both locks the transform, preventing smooth hover transitions.
@@ -166,7 +171,7 @@ export default function HeroSection(): JSX.Element {
               animation: 'fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both',
             }}
           >
-            [ THUNDER ]
+            [ {productName.toUpperCase()} ]
           </Typography>
 
           {/* Main heading */}
@@ -279,7 +284,8 @@ export default function HeroSection(): JSX.Element {
                 color: '#FF8C00',
                 position: 'relative',
                 overflow: 'hidden',
-                transition: 'transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease',
+                transition:
+                  'transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease',
                 // Subtle radial glow on hover
                 '&::before': {
                   content: '""',

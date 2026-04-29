@@ -665,8 +665,8 @@ jobs:
           kill $SERVER_PID 2>/dev/null || true
 
           # Also kill any process still listening on port 8090
-          # (start.sh backgrounds the thunder binary, so killing start.sh
-          # may leave the thunder process running as an orphan)
+          # (start.sh backgrounds the server binary, so killing start.sh
+          # may leave the server process running as an orphan)
           sleep 2
           if lsof -ti tcp:8090 >/dev/null 2>&1; then
             echo "Port 8090 still in use, killing remaining processes..."

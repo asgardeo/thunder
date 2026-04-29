@@ -16,7 +16,7 @@
  * under the License.
  */
 
-// Package email provides a reusable email sending capability for the Thunder platform.
+// Package email provides a reusable email sending capability for the server.
 // It defines a common interface and implementations for sending emails via various transports.
 package email
 

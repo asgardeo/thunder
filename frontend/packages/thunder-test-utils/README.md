@@ -1,14 +1,14 @@
 # @thunder/test-utils
 
 Shared testing utilities for ⚡️ Thunder applications. Provides common test setup, render helpers, and mocks for
-consistent testing across all Thunder apps.
+consistent testing across all apps.
 
 ## Features
 
 - **Unified Test Setup** - Common test configuration for Vitest, jsdom, and React Testing Library
 - **Custom Render Functions** - Pre-configured render with all necessary providers (QueryClient, Router, Config, Logger,
   Theme)
-- **App Configuration** - Configurable settings for different Thunder apps (console, gate)
+- **App Configuration** - Configurable settings for different apps (console, gate)
 - **Ready-to-Use Mocks** - Common mocks for i18n, IntersectionObserver, ResizeObserver, and more
 - **Re-exported Utilities** - Convenient re-exports from @testing-library/react and user-event
 
@@ -179,7 +179,7 @@ await user.click(button);
 Import this in your test setup file. It provides:
 
 - **Jest-DOM matchers** - `toBeInTheDocument()`, `toHaveClass()`, etc.
-- **i18n initialization** - Pre-configured with all Thunder translations
+- **i18n initialization** - Pre-configured with all translations
 - **Automatic cleanup** - Cleanup after each test
 - **Browser API mocks**:
   - `IntersectionObserver`
@@ -335,13 +335,13 @@ The custom render functions wrap components with the following providers:
 
 1. **MemoryRouter** - React Router for navigation
 2. **QueryClientProvider** - TanStack Query with retry disabled for tests
-3. **ConfigProvider** - Thunder configuration context
-4. **LoggerProvider** - Thunder logger with ERROR level for minimal test output
+3. **ConfigProvider** - Configuration context
+4. **LoggerProvider** - Logger with ERROR level for minimal test output
 5. **OxygenUIThemeProvider** - WSO2 Oxygen UI theming
 
 ## App-Specific Setup
 
-### Thunder Console
+### Console
 
 ```typescript
 // src/test/setup.ts
@@ -349,7 +349,7 @@ import '@thunder/test-utils/setup';
 // Uses default config: base='/console', clientId='CONSOLE'
 ```
 
-### Thunder Gate
+### Gate
 
 ```typescript
 // src/test/setup.ts

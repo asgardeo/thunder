@@ -16,14 +16,19 @@
  * under the License.
  */
 
-import React, {JSX} from 'react';
+import Link from '@docusaurus/Link';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import type {DocusaurusThunderConfig} from '@site/docusaurus.thunder.config';
 import {Box, Card, Typography, Container, Stack} from '@wso2/oxygen-ui';
+import React, {JSX} from 'react';
 import useIsDarkMode from '../../hooks/useIsDarkMode';
 import useScrollAnimation from '../../hooks/useScrollAnimation';
-import Link from '@docusaurus/Link';
 
 export default function APIReferenceSection(): JSX.Element {
   const isDark = useIsDarkMode();
+  const {siteConfig} = useDocusaurusContext();
+  const {project} = siteConfig.customFields?.thunder as DocusaurusThunderConfig;
+  const productName = project.name;
   const {ref: textRef, isVisible: textVisible} = useScrollAnimation({threshold: 0.2});
   const {ref: cardRef, isVisible: cardVisible} = useScrollAnimation({threshold: 0.1});
 
@@ -51,9 +56,12 @@ export default function APIReferenceSection(): JSX.Element {
             <Typography variant="h3" fontWeight={600} sx={{mb: 2, color: isDark ? '#ffffff' : '#1a1a2e'}}>
               REST API Reference
             </Typography>
-            <Typography variant="body1" sx={{color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.55)', mb: 2}}>
-              Integrate Thunder&apos;s authentication and identity management capabilities into your applications with
-              our comprehensive REST APIs. Manage users, applications, flows, and more programmatically.
+            <Typography
+              variant="body1"
+              sx={{color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.55)', mb: 2}}
+            >
+              Integrate {productName}&apos;s authentication and identity management capabilities into your applications
+              with our comprehensive REST APIs. Manage users, applications, flows, and more programmatically.
             </Typography>
             <Link
               href="/docs/next/apis"
@@ -63,7 +71,7 @@ export default function APIReferenceSection(): JSX.Element {
                 textDecoration: 'none',
               }}
             >
-              Get started with Thunder REST APIs →
+              Get started with {productName} REST APIs →
             </Link>
 
             <Stack spacing={2} sx={{mt: 5, textAlign: 'left'}}>
@@ -96,7 +104,10 @@ export default function APIReferenceSection(): JSX.Element {
                     →
                   </Box>
                 </Link>
-                <Typography variant="body2" sx={{color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.45)', mt: 0.5}}>
+                <Typography
+                  variant="body2"
+                  sx={{color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.45)', mt: 0.5}}
+                >
                   Register OAuth applications with custom flows
                 </Typography>
               </Box>
@@ -130,7 +141,10 @@ export default function APIReferenceSection(): JSX.Element {
                     →
                   </Box>
                 </Link>
-                <Typography variant="body2" sx={{color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.45)', mt: 0.5}}>
+                <Typography
+                  variant="body2"
+                  sx={{color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.45)', mt: 0.5}}
+                >
                   Build custom authentication flows with executors
                 </Typography>
               </Box>
@@ -164,7 +178,10 @@ export default function APIReferenceSection(): JSX.Element {
                     →
                   </Box>
                 </Link>
-                <Typography variant="body2" sx={{color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.45)', mt: 0.5}}>
+                <Typography
+                  variant="body2"
+                  sx={{color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.45)', mt: 0.5}}
+                >
                   Create, update, and manage user accounts
                 </Typography>
               </Box>
@@ -180,7 +197,8 @@ export default function APIReferenceSection(): JSX.Element {
               maxWidth: {lg: '550px'},
               opacity: cardVisible ? 1 : 0,
               transform: cardVisible ? 'translateX(0)' : 'translateX(32px)',
-              transition: 'opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s',
+              transition:
+                'opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.15s',
             }}
           >
             <Card

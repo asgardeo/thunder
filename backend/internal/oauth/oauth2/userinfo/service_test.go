@@ -83,7 +83,7 @@ func (s *UserInfoServiceTestSuite) SetupTest() {
 		s.mockInboundClient, s.mockOUService,
 		s.mockAttributeCacheService, s.mockTransactioner)
 
-	// Initialize Thunder runtime for tests
+	// Initialize server runtime for tests
 	config.ResetThunderRuntime()
 	_ = config.InitializeThunderRuntime(
 		"test-home",

@@ -17,8 +17,8 @@
  */
 
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
-import type {ReactNode} from 'react';
 import type {DocusaurusThunderConfig} from '@site/docusaurus.thunder.config';
+import type {ReactNode} from 'react';
 
 export default function ProductName(): ReactNode {
   const {siteConfig} = useDocusaurusContext();

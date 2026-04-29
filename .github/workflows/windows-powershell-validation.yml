@@ -1,4 +1,4 @@
-# Builds Thunder for Windows on Ubuntu and validates its build and startup on Windows runner
+# Builds for Windows on Ubuntu and validates its build and startup on Windows runner
 # Can be called from pr-builder.yml and release-builder.yml
 
 name: 🪟 Windows PowerShell Validation
@@ -11,10 +11,12 @@ permissions:
 
 env:
   GOFLAGS: "-mod=readonly"
+  PRODUCT_NAME: "Thunder"
+  PRODUCT_NAME_LOWER: "thunder"
 
 jobs:
   build-windows:
-    name: 🔨 Build Thunder for Windows
+    name: 🔨 Build for Windows
     runs-on: ubuntu-latest
 
     steps:
@@ -47,19 +49,19 @@ jobs:
           openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
             -keyout target/out/.cert/server.key \
             -out target/out/.cert/server.cert \
-            -subj "/O=WSO2/OU=Thunder/CN=localhost"
+            -subj "/O=WSO2/OU=${PRODUCT_NAME}/CN=localhost"
 
           echo "✅ Shared certificates generated:"
           ls -la target/out/.cert/
           echo "📄 Certificate info:"
           openssl x509 -in target/out/.cert/server.cert -text -noout | head -10
 
-      - name: 🔨 Build Thunder for Windows
+      - name: 🔨 Build for Windows
         run: |
-          echo "🔨 Building Thunder backend for Windows/amd64..."
+          echo "🔨 Building backend for Windows/amd64..."
           make build_backend OS=windows ARCH=amd64
 
-          echo "✅ Thunder built for Windows successfully!"
+          echo "✅ Built for Windows successfully!"
 
           echo "📦 Built artifacts:"
           ls -lah target/dist/
@@ -67,12 +69,12 @@ jobs:
       - name: 📦 Upload Windows Distribution
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: thunder-windows-distribution-${{ github.run_id }}
-          path: target/dist/thunder-*-win-*.zip
+          name: ${{ env.PRODUCT_NAME_LOWER }}-windows-distribution-${{ github.run_id }}
+          path: target/dist/${{ env.PRODUCT_NAME_LOWER }}-*-win-*.zip
           if-no-files-found: error
 
   test-windows:
-    name: 🧪 Test Thunder on Windows
+    name: 🧪 Test on Windows
     runs-on: windows-latest
     needs: build-windows
 
@@ -80,18 +82,18 @@ jobs:
       - name: 📥 Download Windows Build Artifact
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: thunder-windows-distribution-${{ github.run_id }}
+          name: ${{ env.PRODUCT_NAME_LOWER }}-windows-distribution-${{ github.run_id }}
           path: .
 
       - name: 📂 Extract Windows Build
         run: |
-          Write-Host "📂 Extracting Thunder build..."
+          Write-Host "📂 Extracting build..."
 
           # Find the zip file
-          $zipFile = Get-ChildItem -Filter "thunder-*-win-*.zip" | Select-Object -First 1
+          $zipFile = Get-ChildItem -Filter "$env:PRODUCT_NAME_LOWER-*-win-*.zip" | Select-Object -First 1
 
           if (-not $zipFile) {
-            Write-Host "❌ No Thunder zip file found"
+            Write-Host "❌ No distribution zip found"
             exit 1
           }
 
@@ -101,7 +103,7 @@ jobs:
           Expand-Archive -Path $zipFile.FullName -DestinationPath "." -Force
 
           # Find the extracted directory
-          $extractedDir = Get-ChildItem -Directory -Filter "thunder-*-win-*" | Select-Object -First 1
+          $extractedDir = Get-ChildItem -Directory -Filter "$env:PRODUCT_NAME_LOWER-*-win-*" | Select-Object -First 1
 
           if (-not $extractedDir) {
             Write-Host "❌ No extracted directory found"
@@ -112,7 +114,7 @@ jobs:
           Write-Host "📁 Extracted to: $($extractedDir.Name)"
 
           # Save the directory name for later steps
-          $extractedDir.Name | Out-File -FilePath "thunder-dir.txt"
+          $extractedDir.Name | Out-File -FilePath "server-dir.txt"
 
           Write-Host "📁 Contents:"
           Get-ChildItem -Path $extractedDir.FullName | Select-Object Name, Length
@@ -120,13 +122,13 @@ jobs:
 
       - name: ⚙️ Run setup.ps1
         run: |
-          # Get the Thunder directory name
-          $thunderDir = Get-Content "thunder-dir.txt" -Raw
-          $thunderDir = $thunderDir.Trim()
+          # Get the server directory name
+          $serverDir = Get-Content "server-dir.txt" -Raw
+          $serverDir = $serverDir.Trim()
 
           Write-Host "⚙️ Running setup.ps1..."
 
-          cd $thunderDir
+          cd $serverDir
 
           # Set environment variables for setup
           $env:BOOTSTRAP_FAIL_FAST = "true"
@@ -139,16 +141,16 @@ jobs:
         shell: pwsh
         timeout-minutes: 10
 
-      - name: 🚀 Start Thunder Server
+      - name: 🚀 Start Server
         run: |
-          # Get the Thunder directory name
-          $thunderDir = Get-Content "thunder-dir.txt" -Raw
-          $thunderDir = $thunderDir.Trim()
+          # Get the server directory name
+          $serverDir = Get-Content "server-dir.txt" -Raw
+          $serverDir = $serverDir.Trim()
 
-          Write-Host "Starting Thunder server in background..."
-          Write-Host "Working directory: $thunderDir"
+          Write-Host "Starting server in background..."
+          Write-Host "Working directory: $serverDir"
 
-          cd $thunderDir
+          cd $serverDir
 
           # Start server in background using Start-Process
           # This ensures the server runs in the same session context and ports are accessible
@@ -168,7 +170,7 @@ jobs:
             exit 1
           }
 
-          Write-Host "✅ Thunder server process is running (PID: $($proc.Id))"
+          Write-Host "✅ Server process is running (PID: $($proc.Id))"
 
           # Wait additional time for server to be fully ready
           Write-Host "Waiting for server to be fully ready..."
@@ -181,10 +183,10 @@ jobs:
         timeout-minutes: 5
         shell: pwsh
 
-      - name: 🛑 Stop Thunder Server
+      - name: 🛑 Stop Server
         if: always()
         run: |
-          Write-Host "🛑 Cleaning up Thunder server..."
+          Write-Host "🛑 Cleaning up server..."
 
           # Stop the server process using saved PID
           $pidFilePath = Join-Path $env:GITHUB_WORKSPACE "server-pid.txt"
@@ -204,17 +206,17 @@ jobs:
             Write-Host "ℹ️ PID file not found (server may not have started)"
           }
 
-          # Also find and kill any remaining Thunder server processes by name
-          $thunderProcesses = Get-Process -Name "thunder" -ErrorAction SilentlyContinue
-          if ($thunderProcesses) {
-            Write-Host "⏹️ Found Thunder process(es), stopping..."
-            foreach ($proc in $thunderProcesses) {
-              Write-Host "  Stopping Thunder process (PID: $($proc.Id))"
+          # Also find and kill any remaining server processes by name
+          $serverProcesses = Get-Process -Name "$env:PRODUCT_NAME_LOWER" -ErrorAction SilentlyContinue
+          if ($serverProcesses) {
+            Write-Host "⏹️ Found server process(es), stopping..."
+            foreach ($proc in $serverProcesses) {
+              Write-Host "  Stopping server process (PID: $($proc.Id))"
               Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
             }
-            Write-Host "✅ All Thunder processes stopped"
+            Write-Host "✅ All server processes stopped"
           } else {
-            Write-Host "✅ No running Thunder processes found"
+            Write-Host "✅ No running server processes found"
           }
 
           Write-Host "✅ Cleanup complete"

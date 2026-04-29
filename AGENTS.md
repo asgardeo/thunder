@@ -6,8 +6,8 @@ Thunder is a lightweight user and identity management product. Go backend + Reac
 - For build and running - [Makefile](Makefile) and [README.md](README.md)
 - Documentation at [docs/content](docs/content)
 
-Thunder's login gate leverages v2 of the [Asgardeo JavaScript SDK](https://github.com/asgardeo/javascript), consumed via its published package in typical setups.
-Clone the SDK repository only if you are developing or debugging the SDK itself, or testing Thunder against unreleased SDK changes.
+Login Gate leverages v2 of the [Asgardeo JavaScript SDK](https://github.com/asgardeo/javascript), consumed via its published package in typical setups.
+Clone the SDK repository only if you are developing or debugging the SDK itself, or testing the product against unreleased SDK changes.
 
 ## General Rules
 
@@ -38,7 +38,7 @@ Clone the SDK repository only if you are developing or debugging the SDK itself,
 
 ## Agent Skills
 
-- [Thunder Console Navigator](.agent/skills/console/SKILL.md) — Browse and interact with the Thunder Console UI using `playwright-cli`. Use when asked to navigate the console, test UI changes, or create/edit resources through the browser.
+- [Console Navigator](.agent/skills/console/SKILL.md) — Browse and interact with the Console UI using `playwright-cli`. Use when asked to navigate the console, test UI changes, or create/edit resources through the browser.
 
 ## Contributing Guidelines
 

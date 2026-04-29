@@ -16,7 +16,7 @@
  * under the License.
  */
 
-// Package observability provides observability capabilities for Thunder including
+// Package observability provides observability capabilities for the server including
 // event logging and distributed tracing.
 package observability
 

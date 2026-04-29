@@ -13,7 +13,7 @@ Individual authentication endpoints that can be used independently for specific 
 - **Asgardeo Login** - OAuth-based login with Asgardeo
 
 ### 2. Authenticate with Flow Native APIs
-Orchestrated authentication flows using Thunder's flow execution engine:
+Orchestrated authentication flows using flow execution engine:
 - **Login with Username & Password** - Basic username/password flow
 - **Login with Username & Password (Verbose)** - Detailed flow execution with frontend metadata
 - **Login with SMS OTP** - SMS OTP-based authentication flow
@@ -70,10 +70,10 @@ Import the `environment.json` file into Postman and fill in the required values.
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `scheme` | Thunder server scheme | `https` |
-| `host` | Thunder server host | `localhost` |
-| `port` | Thunder server port | `8090` |
-| `baseUrl` | Thunder server base URL | `{{scheme}}://{{host}}:{{port}}` (`https://localhost:8090`) |
+| `scheme` | Server scheme | `https` |
+| `host` | Server host | `localhost` |
+| `port` | Server port | `8090` |
+| `baseUrl` | Server base URL | `{{scheme}}://{{host}}:{{port}}` (`https://localhost:8090`) |
 
 ### Management Token App (for obtaining access tokens)
 

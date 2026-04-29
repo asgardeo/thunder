@@ -1235,7 +1235,7 @@ logger.error('Failed to save', {error, userId: user.id});
 
 ## Package Structure
 
-The `@thunder/logger` package follows Thunder's standard coding practices with a clean, modular structure:
+The `@thunder/logger` package follows standard coding practices with a clean, modular structure:
 
 ```
 src/
@@ -1277,7 +1277,7 @@ src/
 2. **Single Responsibility** - Each file has one clear purpose
 3. **Type Organization** - All types in dedicated `models/` folder
 4. **React Isolation** - React-specific code in dedicated `react/` folder
-5. **Context Pattern** - React integration follows Thunder's standard Context/Provider/Hook pattern
+5. **Context Pattern** - React integration follows standard Context/Provider/Hook pattern
 
 ## Best Practices
 

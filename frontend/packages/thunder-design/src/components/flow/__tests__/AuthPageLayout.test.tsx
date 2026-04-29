@@ -76,7 +76,7 @@ describe('AuthPageLayout', () => {
       expect(main.classList.contains('ThunderSignIn--root')).toBe(true);
     });
 
-    it('does not apply Thunder CSS class when variant is not provided', () => {
+    it('does not apply product prefix CSS class when variant is not provided', () => {
       renderWithProviders(
         <AuthPageLayout isLoading={false}>
           <span>Content</span>

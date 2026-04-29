@@ -233,7 +233,7 @@ log_info "Creating React SDK Sample App application..."
 read -r -d '' REACT_SDK_APP_PAYLOAD <<JSON || true
 {
   "name": "React SDK Sample",
-  "description": "Sample React application using Thunder React SDK",
+  "description": "Sample React application using ${PRODUCT_NAME} React SDK",
   "ouId": "${CUSTOMER_OU_ID}",
   "clientId": "REACT_SDK_SAMPLE",
   "url": "https://localhost:3000",

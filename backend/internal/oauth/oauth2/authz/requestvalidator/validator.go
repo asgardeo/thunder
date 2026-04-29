@@ -115,12 +115,12 @@ func ValidatePromptParameter(prompt string) (string, string) {
 				"prompt value 'none' must not be combined with other values"
 		}
 
-		// Thunder does not support server-side sessions as of now.
+		// The server does not support server-side sessions as of now.
 		return constants.ErrorLoginRequired,
 			"User authentication is required"
 	}
 
-	// Thunder does not support consent or account selection prompts as of now.
+	// The server does not support consent or account selection prompts as of now.
 	if slices.Contains(values, constants.PromptConsent) {
 		return constants.ErrorConsentRequired,
 			"Consent is not supported"

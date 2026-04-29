@@ -47,7 +47,7 @@ func TestInitTestSuite(t *testing.T) {
 }
 
 func (suite *InitTestSuite) SetupTest() {
-	// Initialize Thunder Runtime config with basic test config
+	// Initialize Runtime config with basic test config
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{

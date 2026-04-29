@@ -63,8 +63,8 @@ func newSMTPClient(config smtpConfig) (EmailClientInterface, error) {
 	}, nil
 }
 
-// NewSMTPClientFromConfig creates a new smtpClient using the global Thunder configuration.
-// It reads the email.smtp section from the Thunder runtime config.
+// NewSMTPClientFromConfig creates a new smtpClient using the global server configuration.
+// It reads the email.smtp section from the server runtime config.
 // Returns an error if the configuration is invalid (e.g., missing sender address)
 // or if the runtime is not initialized.
 func NewSMTPClientFromConfig() (EmailClientInterface, error) {

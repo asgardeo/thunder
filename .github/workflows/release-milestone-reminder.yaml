@@ -6,6 +6,9 @@ on:
     - cron: '30 0 * * 4'
   workflow_dispatch: # Allows you to trigger it manually for testing
 
+env:
+  PRODUCT_NAME: "Thunder"
+
 jobs:
   notify-chat:
     runs-on: ubuntu-latest
@@ -14,6 +17,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WEBHOOK_URL: ${{ secrets.RELEASE_REMINDER }}
+          PRODUCT_NAME: ${{ env.PRODUCT_NAME }}
         run: |
           # Apply shell hardening: exit on error, undefined vars, and pipe failures
           set -euo pipefail
@@ -86,7 +90,7 @@ jobs:
             fi
             
             # 8. Construct the dynamic message with exact formatting and indents
-            BODY="*Preparing for the Thunder Release %s ⚡️*\n\nThunder %s release build is scheduled to run tomorrow at 12:00 PM.\n\n📊 *Current milestone status*\n  • Open Issues: *%s*"
+            BODY="*Preparing for the ${PRODUCT_NAME} Release %s ⚡️*\n\n${PRODUCT_NAME} %s release build is scheduled to run tomorrow at 12:00 PM.\n\n📊 *Current milestone status*\n  • Open Issues: *%s*"
             
             if [ "$PR_COUNT" -gt 0 ]; then
               BODY="$BODY\n  • Open PRs: *%s*"

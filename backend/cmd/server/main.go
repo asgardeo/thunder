@@ -16,7 +16,7 @@
  * under the License.
  */
 
-// Package main is the entry point for starting the Thunder server.
+// Package main is the entry point for starting the server.
 package main
 
 import (
@@ -113,7 +113,7 @@ func main() {
 	gracefulShutdown(logger, server)
 }
 
-// getThunderHome retrieves and return the Thunder home directory.
+// getThunderHome retrieves and return the home directory.
 func getThunderHome(logger *log.Logger) string {
 	// Parse project directory from command line arguments.
 	projectHome := ""
@@ -135,7 +135,7 @@ func getThunderHome(logger *log.Logger) string {
 	return projectHome
 }
 
-// initThunderConfigurations initializes the Thunder configurations.
+// initThunderConfigurations initializes the configurations.
 func initThunderConfigurations(logger *log.Logger, thunderHome string) *config.Config {
 	// Load the configurations.
 	configFilePath := path.Join(thunderHome, "repository/conf/deployment.yaml")

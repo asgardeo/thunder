@@ -9,6 +9,12 @@ reviews:
   path_instructions:
     - path: "**/*.go"
       instructions: |
+        Scan for hardcoded occurrences of the string literals `Thunder` or `ThunderID` in this file.
+        For each occurrence, flag it and ask: **"Is this hardcoded brand name intentional?"**
+        If it can be replaced, suggest using a named constant or a value sourced from runtime config
+        (e.g., an environment variable or a config struct field) rather than a raw string literal.
+        Do not flag occurrences inside comments or import paths.
+
         Check whether this change introduces or modifies any of the following:
         - Public REST/OAuth2/OIDC API endpoints (new routes, changed request/response schemas, new query/path/header parameters)
         - Configuration options (YAML/TOML keys, environment variables, deployment settings)
@@ -29,8 +35,33 @@ reviews:
         Be specific about WHAT documentation is missing — name the endpoint, config key,
         or feature that needs to be documented and suggest which doc file should be updated or created.
 
+    - path: "**/*.ts"
+      instructions: |
+        Scan for hardcoded occurrences of the string literals `Thunder` or `ThunderID` in this file.
+        For each occurrence, flag it and ask: **"Is this hardcoded brand name intentional?"**
+        If it can be replaced, suggest reading the value from the app's config system using the
+        `useConfig` hook (e.g., `const { productName } = useConfig();`) rather than a raw string literal.
+        Do not flag occurrences inside comments, type names, or import paths.
+
+    - path: "**/*.tsx"
+      instructions: |
+        Scan for hardcoded occurrences of the string literals `Thunder` or `ThunderID` in this file.
+        For each occurrence, flag it and ask: **"Is this hardcoded brand name intentional?"**
+        If it can be replaced, suggest reading the value from the app's config system using the
+        `useConfig` hook (e.g., `const { productName } = useConfig();`) rather than a raw string literal.
+        For JSX string content, prefer the `<ProductName />` component if it is available in this context.
+        Do not flag occurrences inside comments, type names, or import paths.
+
     - path: "docs/**"
       instructions: |
+        Scan for hardcoded occurrences of the string literals `Thunder` or `ThunderID` in prose, headings,
+        code callouts, or link text.
+        For each occurrence, flag it and ask: **"Is this hardcoded brand name intentional?"**
+        If it refers to the product name, suggest replacing it with the `<ProductName />` MDX component.
+        If it appears in a repository URL or link, suggest replacing it with the `<RepoLink />` MDX component.
+        Do not flag occurrences inside fenced code blocks that demonstrate real command-line output or
+        literal configuration values where the exact string is required.
+
         Review documentation changes for:
         - Technical accuracy: do code examples and parameter descriptions match the actual implementation in this PR?
         - Completeness: are all new endpoints, config keys, and behavioral changes covered?

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-// Package mcp provides MCP (Model Context Protocol) server functionality for Thunder.
+// Package mcp provides MCP (Model Context Protocol) server functionality.
 package mcp
 
 import (

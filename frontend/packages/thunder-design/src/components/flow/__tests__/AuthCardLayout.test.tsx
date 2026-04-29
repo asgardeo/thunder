@@ -37,7 +37,7 @@ describe('AuthCardLayout', () => {
   });
 
   describe('variant prop', () => {
-    it('applies Thunder CSS root class when variant is provided', () => {
+    it('applies product prefix CSS root class when variant is provided', () => {
       const {container} = renderWithProviders(
         <AuthCardLayout variant="SignInBox">
           <span>Content</span>
@@ -46,7 +46,7 @@ describe('AuthCardLayout', () => {
       expect(container.querySelector(`.${TEST_CN_PREFIX}SignInBox--root`)).toBeTruthy();
     });
 
-    it('applies Thunder CSS paper class when variant is provided', () => {
+    it('applies product prefix CSS paper class when variant is provided', () => {
       const {container} = renderWithProviders(
         <AuthCardLayout variant="SignInBox">
           <span>Content</span>
@@ -55,7 +55,7 @@ describe('AuthCardLayout', () => {
       expect(container.querySelector(`.${TEST_CN_PREFIX}SignInBox--paper`)).toBeTruthy();
     });
 
-    it('does not apply Thunder CSS classes when variant is not provided', () => {
+    it('does not apply product prefix CSS classes when variant is not provided', () => {
       const {container} = renderWithProviders(
         <AuthCardLayout>
           <span>Content</span>
@@ -80,7 +80,7 @@ describe('AuthCardLayout', () => {
       expect(img).toBeTruthy();
     });
 
-    it('applies Thunder CSS logo class when variant and logo are provided', () => {
+    it('applies product prefix CSS logo class when variant and logo are provided', () => {
       const logo = {
         src: {light: '/logo-light.svg', dark: '/logo-dark.svg'},
       };

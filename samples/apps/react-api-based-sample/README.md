@@ -1,11 +1,11 @@
 # Thunder API-Based Authentication Sample Application
 
-This sample application demonstrates how to integrate Thunder authentication into a React application using direct API calls instead of SDK-based OAuth redirects. It showcases API-based user registration (sign-up) and authentication (sign-in) flows.
+This sample application demonstrates how to integrate authentication into a React application using direct API calls instead of SDK-based OAuth redirects. It showcases API-based user registration (sign-up) and authentication (sign-in) flows.
 
 ## Features
 
-- User registration via Thunder's User Management API
-- User authentication via Thunder's Credentials Authentication API
+- User registration via User Management API
+- User authentication via Credentials Authentication API
 - JWT assertion token handling and display
 - Dashboard with user list view
 - User profile modal with decoded token information
@@ -14,8 +14,8 @@ This sample application demonstrates how to integrate Thunder authentication int
 ## Prerequisites
 
 - Node.js 20+
-- A running Thunder server instance (default: `https://localhost:8090`)
-- Thunder server configured with appropriate CORS settings
+- A running server instance (default: `https://localhost:8090`)
+- Server configured with appropriate CORS settings
 - SSL certificates (`server.key` and `server.cert`) in the project root
 - The "Customer" user schema and "customers" organization unit created (via `02-sample-resources.sh` bootstrap script)
 
@@ -23,7 +23,7 @@ This sample application demonstrates how to integrate Thunder authentication int
 
 ### 1. Configure the Application
 
-Edit `public/config.json` with your Thunder server settings:
+Edit `public/config.json` with your server settings:
 
 ```json
 {
@@ -33,14 +33,14 @@ Edit `public/config.json` with your Thunder server settings:
 
 | Property | Description |
 |----------|-------------|
-| `baseUrl` | The base URL of your Thunder server |
+| `baseUrl` | The base URL of your server |
 
 ### 2. Set Up SSL Certificates
 
-The application runs on HTTPS. Copy the SSL certificates from your Thunder distribution:
+The application runs on HTTPS. Copy the SSL certificates from your distribution:
 
 ```bash
-# From Thunder distribution
+# From distribution
 cp /path/to/thunder/repository/resources/security/server.key .
 cp /path/to/thunder/repository/resources/security/server.cert .
 
@@ -83,7 +83,7 @@ The application will be available at [https://localhost:3000](https://localhost:
 
 ## Important: Sign-Up Requirements
 
-To use the sign-up functionality, you need to temporarily disable Thunder security by setting the following environment variable before starting the Thunder server:
+To use the sign-up functionality, you need to temporarily disable security by setting the following environment variable before starting the server:
 
 ```bash
 export SKIP_SECURITY=true
@@ -109,7 +109,7 @@ src/
 │   ├── SignUpPage.tsx       # User registration form
 │   └── DashboardPage.tsx    # Authenticated user dashboard
 ├── utils/
-│   ├── api.ts               # Thunder API utilities
+│   ├── api.ts               # API utilities
 │   └── jwt.ts               # JWT decoding utilities
 ├── config.ts                # Runtime configuration loader
 ├── router.tsx               # Application routes
@@ -118,7 +118,7 @@ src/
 
 ## API Endpoints Used
 
-This sample interacts with the following Thunder APIs:
+This sample interacts with the following APIs:
 
 ### Authentication
 - `POST /auth/credentials/authenticate` - Authenticate user with username/password
@@ -155,8 +155,8 @@ This sample interacts with the following Thunder APIs:
 ### Common Issues
 
 **Issue**: "Failed to fetch" errors
-- Ensure Thunder server is running and accessible at the configured base URL
-- Check CORS configuration in Thunder's `deployment.yaml`
+- Ensure server is running and accessible at the configured base URL
+- Check CORS configuration in `deployment.yaml`
 
 **Issue**: "User schema not found" error during sign-up
 - Run the `02-sample-resources.sh` bootstrap script to create the "Customer" user schema
@@ -165,10 +165,10 @@ This sample interacts with the following Thunder APIs:
 - Run the `02-sample-resources.sh` bootstrap script to create the "customers" organization unit
 
 **Issue**: Sign-up fails with authentication/authorization errors
-- Ensure `SKIP_SECURITY=true` is set when starting the Thunder server
+- Ensure `SKIP_SECURITY=true` is set when starting the server
 
 **Issue**: CORS errors
-- Add your application URL to "Allowed Origins" in Thunder's configuration:
+- Add your application URL to "Allowed Origins" in configuration:
   ```yaml
   cors:
     allowed_origins:

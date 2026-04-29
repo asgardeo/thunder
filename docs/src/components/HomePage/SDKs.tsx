@@ -16,9 +16,11 @@
  * under the License.
  */
 
-import React, {JSX} from 'react';
 import Link from '@docusaurus/Link';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import type {DocusaurusThunderConfig} from '@site/docusaurus.thunder.config';
 import {Box, Typography, Container, Card} from '@wso2/oxygen-ui';
+import React, {JSX} from 'react';
 
 function SDK({icon, to = '#', name}: {icon: string; name: string; to?: string}): JSX.Element {
   return (
@@ -51,6 +53,10 @@ function SDK({icon, to = '#', name}: {icon: string; name: string; to?: string}):
 }
 
 export default function SDKs() {
+  const {siteConfig} = useDocusaurusContext();
+  const {project} = siteConfig.customFields?.thunder as DocusaurusThunderConfig;
+  const productName = project.name;
+
   return (
     <Container
       maxWidth="lg"
@@ -64,7 +70,7 @@ export default function SDKs() {
       </Typography>
 
       <Typography variant="h3" fontWeight={600} sx={{mb: 6}}>
-        Build with Thunder in your favorite stack
+        Build with {productName} in your favorite stack
       </Typography>
 
       <Box sx={{mb: 5}}>
@@ -73,7 +79,7 @@ export default function SDKs() {
         </Typography>
 
         <Typography variant="body2" color="text.secondary" sx={{mb: 3}}>
-          Official SDKs and libraries for integrating Thunder authentication into your applications.
+          Official SDKs and libraries for integrating {productName} authentication into your applications.
         </Typography>
 
         <Box

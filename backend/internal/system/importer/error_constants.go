@@ -16,7 +16,7 @@
  * under the License.
  */
 
-// Package importer provides functionality for importing resources into Thunder.
+// Package importer provides functionality for importing resources into the server.
 package importer
 
 import (

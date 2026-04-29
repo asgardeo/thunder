@@ -9,7 +9,7 @@ These tests verify the complete MFA authentication process:
 1. **First Factor**: Username and password authentication
 2. **Second Factor**: SMS OTP verification
 
-The tests use a mock SMS server to capture OTP messages sent by Thunder, eliminating the need for real SMS providers during testing.
+The tests use a mock SMS server to capture OTP messages sent by the server, eliminating the need for real SMS providers during testing.
 
 ## Test Files
 
@@ -47,21 +47,21 @@ The automated setup will:
 
 ### Minimal Requirements (with Automated Setup)
 
-1. ✅ **Thunder server running** at `https://localhost:8090`
+1. ✅ **Server running** at `https://localhost:8090`
 2. ✅ **Sample app running** (e.g., at `https://localhost:3000`)
-3. ✅ **Application ID** - Get from Thunder setup
+3. ✅ **Application ID** - Get from server setup
 
 ### Full Requirements (Manual Setup)
 
 If you prefer manual setup or `AUTO_SETUP_MFA=false`:
 
-1. ✅ **Thunder server running** at `https://localhost:8090`
+1. ✅ **Server running** at `https://localhost:8090`
 2. ✅ **Sample app running** (e.g., at `https://localhost:3000`)
 3. ✅ **Admin access token** available for configuration
 4. ✅ **Notification sender configured** to use mock SMS server
-5. ✅ **MFA authentication flow configured** in Thunder
-6. ✅ **Test user with mobile number** created in Thunder
-7. ✅ **Application created with MFA flow attached** in Thunder
+5. ✅ **MFA authentication flow configured** in server
+6. ✅ **Test user with mobile number** created in server
+7. ✅ **Application created with MFA flow attached** in server
 
 ## Setup Instructions
 
@@ -109,13 +109,13 @@ npm test tests/sample-app-authentication/sample-app-mfa-login.spec.ts
 
 That's it! The setup will be performed automatically before tests run.
 
-### Option 2: Manual Setup (Thunder Configuration)
+### Option 2: Manual Setup (Server Configuration)
 
 If you prefer manual configuration or need to troubleshoot, follow these steps:
 
 #### Admin Access Token
 
-Run the following command, replacing `<application_id>` with your sample app ID (created during Thunder setup).
+Run the following command, replacing `<application_id>` with your sample app ID (created during server setup).
 
 ```bash
 FLOW_RESPONSE=$(curl -k -s -X POST 'https://localhost:8090/flow/execute' \
@@ -533,7 +533,7 @@ USER_RESPONSE=$(curl --location 'https://localhost:8090/users' \
 ### Update the sample application
 
 Follow these steps:
-1. Fetch all applications from Thunder
+1. Fetch all applications from the server
 2. Find the "React SDK Sample" application
 3. Get its full configuration
 4. Update the `auth_flow_id` with the new MFA flow
@@ -569,10 +569,10 @@ curl -k -X PUT "https://localhost:8090/applications/$APP_ID" \
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `SAMPLE_APP_URL` | Yes | - | URL of the sample app (e.g., `https://localhost:3000`) |
-| `SAMPLE_APP_ID` | Yes* | - | Application ID in Thunder (*required for automated setup) |
-| `SERVER_URL` | No | `https://localhost:8090` | URL of Thunder server |
-| `ADMIN_USERNAME` | No | `admin` | Admin username for Thunder |
-| `ADMIN_PASSWORD` | No | `admin` | Admin password for Thunder |
+| `SAMPLE_APP_ID` | Yes* | - | Application ID in the server (*required for automated setup) |
+| `SERVER_URL` | No | `https://localhost:8090` | URL of the server |
+| `ADMIN_USERNAME` | No | `admin` | Admin username for the server |
+| `ADMIN_PASSWORD` | No | `admin` | Admin password for the server |
 | `SAMPLE_APP_USERNAME` | No | `e2e-test-user` | Test user username |
 | `SAMPLE_APP_PASSWORD` | No | `e2e-test-password` | Test user password |
 | `MOCK_SMS_SERVER_PORT` | No | `8098` | Port for mock SMS server |
@@ -731,10 +731,10 @@ The `MFASetup` utility (`utils/server-setup/mfa-setup.ts`) automates the complet
 
 The tests use a TypeScript-based mock SMS server that:
 
-- **Captures SMS messages** sent by Thunder
+- **Captures SMS messages** sent by the server
 - **Extracts OTP codes** automatically using pattern matching
 - **Provides HTTP endpoints** for test access:
-  - `POST /send-sms` - Receives SMS from Thunder
+  - `POST /send-sms` - Receives SMS from the server
   - `GET /messages` - Retrieve all messages
   - `GET /messages/last` - Get last message
   - `POST /clear` - Clear message history
@@ -837,7 +837,7 @@ The tests use a TypeScript-based mock SMS server that:
 
 **Solutions**:
 1. Ensure `SAMPLE_APP_ID` is set in `.env` file
-2. Get application ID from Thunder:
+2. Get application ID from the server:
    ```bash
    curl -k 'https://localhost:8090/applications' \
      -H "Authorization: Bearer <admin-token>"
@@ -849,22 +849,22 @@ The tests use a TypeScript-based mock SMS server that:
 **Issue**: `Admin authentication failed`
 
 **Solutions**:
-1. Verify Thunder server is running at `SERVER_URL`
+1. Verify server is running at `SERVER_URL`
 2. Check `ADMIN_USERNAME` and `ADMIN_PASSWORD` are correct
 3. Verify application has basic authentication flow configured
-4. Check Thunder logs for authentication errors
+4. Check server logs for authentication errors
 
 #### Setup Fails - Resource Creation Error
 
 **Issue**: Failed to create notification sender, flow, or user
 
 **Solutions**:
-1. Check Thunder server logs for detailed error messages
+1. Check server logs for detailed error messages
 2. Verify admin user has necessary permissions
 3. Check if resources already exist (setup handles this gracefully)
 4. Try manual cleanup and re-run:
    ```bash
-   # Delete existing resources via Thunder API
+   # Delete existing resources via API
    # Then re-run tests
    ```
 
@@ -874,7 +874,7 @@ The tests use a TypeScript-based mock SMS server that:
 
 **Explanation**: Cleanup errors are non-fatal and logged as warnings. This is expected behavior if resources were already deleted or don't exist.
 
-**If Persistent**: Manually delete resources via Thunder API if needed.
+**If Persistent**: Manually delete resources via API if needed.
 
 ### Tests Are Skipped
 
@@ -905,7 +905,7 @@ The tests use a TypeScript-based mock SMS server that:
 
 **Solutions**:
 1. Verify notification sender configuration points to `http://localhost:8098/send-sms`
-2. Check Thunder server logs for SMS sending errors
+2. Check server logs for SMS sending errors
 3. Verify MFA flow has correct `senderId` in OTP nodes
 4. Increase wait time: `await page.waitForTimeout(3000);`
 
@@ -927,14 +927,14 @@ The tests use a TypeScript-based mock SMS server that:
 1. Verify OTP executor has correct `senderId` in verify node
 2. Check OTP is being extracted correctly from SMS
 3. Verify test user has mobile number attribute
-4. Check Thunder server logs for OTP verification errors
+4. Check server logs for OTP verification errors
 
 ### Test User Issues
 
 **Issue**: User not found or authentication fails
 
 **Solutions**:
-1. Verify test user exists in Thunder
+1. Verify test user exists in the server
 2. Ensure user has `mobileNumber` attribute
 3. Check user is in correct organization unit
 4. Verify user credentials in `.env` file
@@ -944,22 +944,22 @@ The tests use a TypeScript-based mock SMS server that:
 1. **Always clear messages** between tests to avoid OTP conflicts
 2. **Use appropriate wait times** for SMS delivery (1-2 seconds)
 3. **Check mock server is running** before executing tests
-4. **Verify Thunder configuration** matches test expectations
+4. **Verify server configuration** matches test expectations
 5. **Use headed mode** for debugging: `npm run test:headed`
 6. **Check trace files** for detailed execution: `npm run test:trace`
 7. **Review screenshots** in `test-results/` after failures
 
 ## Additional Resources
 
-- [Thunder MFA Setup Guide](../../../../docs/guides/authentication/GUIDE-SMS-OTP-MFA-LOGIN.md)
+- [MFA Setup Guide](../../../../docs/guides/authentication/GUIDE-SMS-OTP-MFA-LOGIN.md)
 - [Sample App Documentation](../../../samples/apps/README.md)
 - [Playwright Documentation](https://playwright.dev/docs/intro)
-- [Thunder Flow Management API](../../../../docs/guides/flows/)
+- [Flow Management API](../../../../docs/guides/flows/)
 
 ## Support
 
 For issues or questions:
-1. Check Thunder server logs: `tail -f backend/server.log`
+1. Check server logs: `tail -f backend/server.log`
 2. Review test trace files: `test-results/*/trace.zip`
 3. Run tests in debug mode: `npm run test:debug`
 4. Check mock SMS server console output during test execution

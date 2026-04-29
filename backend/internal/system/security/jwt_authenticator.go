@@ -146,7 +146,7 @@ func extractToken(authHeader string) (string, error) {
 
 // extractScopes extracts permissions from JWT claims.
 // Permissions can be in "scope" (string with space-separated values), "scopes" (array) claim,
-// or "authorized_permissions" (Thunder-specific) claim.
+// or "authorized_permissions" (server-specific) claim.
 func extractScopes(attributes map[string]interface{}) []string {
 	// Try "scope" claim (OAuth2 standard - space-separated string)
 	if scopeStr, ok := attributes["scope"].(string); ok && scopeStr != "" {
@@ -169,7 +169,7 @@ func extractScopes(attributes map[string]interface{}) []string {
 		}
 	}
 
-	// Try "authorized_permissions" from the Thunder assertion
+	// Try "authorized_permissions" from the server assertion
 	if permsStr, ok := attributes["authorized_permissions"].(string); ok && permsStr != "" {
 		return strings.Fields(permsStr)
 	}

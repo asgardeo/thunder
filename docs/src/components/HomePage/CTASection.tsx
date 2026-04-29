@@ -16,11 +16,17 @@
  * under the License.
  */
 
-import React, {JSX} from 'react';
 import Link from '@docusaurus/Link';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import type {DocusaurusThunderConfig} from '@site/docusaurus.thunder.config';
 import {Box, Container, Typography, Button} from '@wso2/oxygen-ui';
+import React, {JSX} from 'react';
 
 export default function CTASection(): JSX.Element {
+  const {siteConfig} = useDocusaurusContext();
+  const {project} = siteConfig.customFields?.thunder as DocusaurusThunderConfig;
+  const productName = project.name;
+
   return (
     <Box sx={{py: {xs: 10, lg: 14}}}>
       <Container maxWidth="lg" sx={{px: {xs: 2, sm: 4}}}>
@@ -47,7 +53,7 @@ export default function CTASection(): JSX.Element {
               color: 'rgba(255, 255, 255, 0.6)',
             }}
           >
-            Launch your next project on Thunder&apos;s generous free tier. No credit card required.
+            Launch your next project on {productName}&apos;s generous free tier. No credit card required.
           </Typography>
           <Button
             component={Link}
@@ -68,7 +74,10 @@ export default function CTASection(): JSX.Element {
               },
             }}
           >
-            Start building for <Box component="span" sx={{fontWeight: 800, ml: 0.5}}>FREE</Box>
+            Start building for{' '}
+            <Box component="span" sx={{fontWeight: 800, ml: 0.5}}>
+              FREE
+            </Box>
           </Button>
         </Box>
       </Container>

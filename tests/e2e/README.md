@@ -1,6 +1,6 @@
 # Thunder Console E2E Tests
 
-End-to-end automation test suite for the Thunder Console, built with [Playwright](https://playwright.dev/).
+End-to-end automation test suite for the Console, built with [Playwright](https://playwright.dev/).
 
 ## 📋 Overview
 

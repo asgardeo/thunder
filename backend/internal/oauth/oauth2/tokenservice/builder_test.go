@@ -57,7 +57,7 @@ func TestTokenBuilderTestSuite(t *testing.T) {
 }
 
 func (suite *TokenBuilderTestSuite) SetupTest() {
-	// Initialize Thunder Runtime for tests
+	// Initialize Runtime for tests
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "https://thunder.io",
@@ -330,7 +330,7 @@ func (suite *TokenBuilderTestSuite) TestBuildAccessToken_Success_CustomValidityP
 
 	suite.mockJWTService.On("GenerateJWT",
 		"user123",
-		"https://thunder.io", // Thunder-level issuer always used
+		"https://thunder.io", // Server-level issuer always used
 		int64(7200),
 		mock.Anything, mock.Anything, mock.Anything,
 	).Return(expectedToken, expectedIat, nil)

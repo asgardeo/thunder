@@ -55,7 +55,7 @@ describe('TextInputAdapter', () => {
     expect(input?.getAttribute('type')).toBe('email');
   });
 
-  it('applies Thunder CSS class names', () => {
+  it('applies product prefix CSS class names', () => {
     renderWithProviders(<TextInputAdapter {...baseProps} />);
     const formControl = document.querySelector(`.${TEST_CN_PREFIX}Flow--textInput`);
     expect(formControl).toBeTruthy();

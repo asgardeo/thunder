@@ -78,7 +78,7 @@ func TestAuthAssertExecutorSuite(t *testing.T) {
 }
 
 func (suite *AuthAssertExecutorTestSuite) SetupTest() {
-	// Initialize Thunder runtime for JWT config access
+	// Initialize runtime for JWT config access
 	_ = initializeTestRuntime()
 
 	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
@@ -564,7 +564,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
-	// App-level assertion config (validity period only — issuer always comes from Thunder config)
+	// App-level assertion config (validity period only — issuer always comes from  config)
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
 		AppID:       "app-123",

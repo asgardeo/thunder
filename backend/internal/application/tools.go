@@ -30,7 +30,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/mcp/tool"
 )
 
-// applicationTools provides MCP tools for managing Thunder applications.
+// applicationTools provides MCP tools for managing  applications.
 type applicationTools struct {
 	appService ApplicationServiceInterface
 }

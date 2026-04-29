@@ -78,7 +78,7 @@ func (suite *UtilsTestSuite) TestGetValidIssuers_WithOnlyDefaultIssuer() {
 }
 
 func (suite *UtilsTestSuite) TestGetValidIssuers_WithTokenConfig() {
-	// OAuthApp with a Token config should still use Thunder-level issuer from config
+	// OAuthApp with a Token config should still use server-level issuer from config
 	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token:    &inboundmodel.OAuthTokenConfig{},
@@ -92,7 +92,7 @@ func (suite *UtilsTestSuite) TestGetValidIssuers_WithTokenConfig() {
 }
 
 func (suite *UtilsTestSuite) TestGetValidIssuers_WithAccessTokenConfig() {
-	// OAuthApp with Token and AccessToken config should still use Thunder-level issuer from config
+	// OAuthApp with Token and AccessToken config should still use server-level issuer from config
 	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
@@ -110,7 +110,7 @@ func (suite *UtilsTestSuite) TestGetValidIssuers_WithAccessTokenConfig() {
 }
 
 func (suite *UtilsTestSuite) TestGetValidIssuers_WithIDTokenConfig() {
-	// OAuthApp with Token and IDToken config should still use Thunder-level issuer from config
+	// OAuthApp with Token and IDToken config should still use server-level issuer from config
 	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
@@ -128,7 +128,7 @@ func (suite *UtilsTestSuite) TestGetValidIssuers_WithIDTokenConfig() {
 }
 
 func (suite *UtilsTestSuite) TestGetValidIssuers_AlwaysUsesThunderIssuer() {
-	// Valid issuers always come from Thunder config, never empty strings
+	// Valid issuers always come from server config, never empty strings
 	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
@@ -158,7 +158,7 @@ func (suite *UtilsTestSuite) TestvalidateIssuer_WithValidDefaultIssuer() {
 }
 
 func (suite *UtilsTestSuite) TestvalidateIssuer_WithThunderIssuerAndTokenConfig() {
-	// Thunder-level issuer is always valid regardless of token config presence
+	// Server-level issuer is always valid regardless of token config presence
 	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token:    &inboundmodel.OAuthTokenConfig{},
@@ -170,7 +170,7 @@ func (suite *UtilsTestSuite) TestvalidateIssuer_WithThunderIssuerAndTokenConfig(
 }
 
 func (suite *UtilsTestSuite) TestvalidateIssuer_WithThunderIssuerAndAccessTokenConfig() {
-	// Thunder-level issuer is always valid regardless of access token config presence
+	// Server-level issuer is always valid regardless of access token config presence
 	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
@@ -223,7 +223,7 @@ func (suite *UtilsTestSuite) TestvalidateIssuer_WithNilOAuthAppInvalidIssuer() {
 }
 
 func (suite *UtilsTestSuite) TestFederationScenario_OnlyThunderIssuerIsValid() {
-	// Only the Thunder-level issuer from config is accepted; app-level issuers are no longer supported
+	// Only the server-level issuer from config is accepted; app-level issuers are no longer supported
 	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
@@ -233,10 +233,10 @@ func (suite *UtilsTestSuite) TestFederationScenario_OnlyThunderIssuerIsValid() {
 
 	validIssuers := getValidIssuers(oauthApp)
 
-	// Only the Thunder-level issuer from config is returned
+	// Only the server-level issuer from config is returned
 	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
 
-	// Validate the Thunder-level issuer passes
+	// Validate the server-level issuer passes
 	assert.NoError(suite.T(), validateIssuer("https://thunder.io", oauthApp))
 
 	// Should reject unknown issuers
@@ -255,7 +255,7 @@ func (suite *UtilsTestSuite) TestFederationScenario_FutureExternalIssuerSupport(
 
 	validIssuers := getValidIssuers(oauthApp)
 
-	// Currently only the Thunder-level issuer from config is returned
+	// Currently only the server-level issuer from config is returned
 	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
 
 	// In the future, external issuers should also be included
@@ -805,7 +805,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithNilOAuthApp
 }
 
 func (suite *UtilsTestSuite) TestResolveTokenConfig_RefreshToken_WithTokenConfig() {
-	// Refresh token always uses Thunder-level issuer from config
+	// Refresh token always uses server-level issuer from config
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
@@ -991,7 +991,7 @@ func (suite *UtilsTestSuite) TestResolveTokenConfig_WithTokenConfig_UsesThunderI
 	}
 	_ = config.InitializeThunderRuntime("test", testConfig)
 
-	// OAuthApp with token config always uses Thunder-level issuer from config
+	// OAuthApp with token config always uses server-level issuer from config
 	oauthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token:    &inboundmodel.OAuthTokenConfig{},

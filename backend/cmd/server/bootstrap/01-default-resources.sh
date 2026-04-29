@@ -1159,7 +1159,7 @@ fi
 
 RESPONSE=$(api_call POST "/applications" "{
   \"name\": \"Console\",
-  \"description\": \"Management application for Thunder\",
+  \"description\": \"Management application for ${PRODUCT_NAME}\",
   \"ouId\": \"${DEFAULT_OU_ID}\",
   \"url\": \"${PUBLIC_URL}/console\",
     \"logoUrl\": \"emoji:👨‍💻\",
