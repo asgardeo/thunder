@@ -48,13 +48,17 @@ func (p *boolean) isUnique() bool {
 }
 
 func (p *boolean) validateValue(value interface{}, path string, logger *log.Logger) (bool, error) {
-	_, ok := value.(bool)
-	if !ok {
-		logger.Debug("Expected boolean but got different type",
-			log.String("property", path), log.String("value", fmt.Sprintf("%v", value)))
-		return false, nil
+	switch v := value.(type) {
+	case bool:
+		return true, nil
+	case string:
+		if v == "true" || v == "false" {
+			return true, nil
+		}
 	}
-	return true, nil
+	logger.Debug("Expected boolean but got different type",
+		log.String("property", path), log.String("value", fmt.Sprintf("%v", value)))
+	return false, nil
 }
 
 func (p *boolean) validateUniqueness(
