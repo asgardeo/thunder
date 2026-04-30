@@ -245,7 +245,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthStartSuccess() {
 	suite.Contains(redirectURL, "client_id=test-oidc-client")
 	suite.Contains(redirectURL, "response_type=code")
 	suite.Contains(redirectURL, "scope=")
-	// Note: Server's OIDC implementation does not currently generate nonce values
+	// Note: Thunder's OIDC implementation does not currently generate nonce values
 }
 
 func (suite *OIDCAuthTestSuite) TestOIDCAuthStartInvalidIDPID() {
@@ -386,7 +386,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthFinishMissingCode() {
 }
 
 func (suite *OIDCAuthTestSuite) TestOIDCAuthWithNonce() {
-	// Note: Server's current OIDC implementation does not generate nonce values.
+	// Note: Thunder's current OIDC implementation does not generate nonce values.
 	// This test verifies that authentication still works without nonce.
 
 	// Start authentication
@@ -420,7 +420,7 @@ func (suite *OIDCAuthTestSuite) TestOIDCAuthWithNonce() {
 	suite.NotEmpty(query.Get("client_id"), "client_id should be present")
 	suite.NotEmpty(query.Get("response_type"), "response_type should be present")
 	suite.NotEmpty(query.Get("scope"), "scope should be present")
-	// nonce is optional - Server doesn't generate it currently
+	// nonce is optional - Thunder doesn't generate it currently
 }
 
 // TestOIDCAuthCompleteFlowWithSkipAssertionFalse tests complete OIDC flow with skipAssertion=false

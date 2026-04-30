@@ -2,12 +2,12 @@
 title: Docker
 sidebar_position: 1
 persona: iam
-description: Deploy using Docker or Docker Compose, from a quick single-container run to a production setup with an external PostgreSQL database.
+description: Deploy Thunder using Docker or Docker Compose, from a quick single-container run to a production setup with an external PostgreSQL database.
 ---
 
-# Deploy <ProductName /> with Docker
+# Deploy Thunder with Docker
 
-This guide walks you through deploying <ProductName /> using Docker. You can run <ProductName /> as a single container for development or pair it with an external PostgreSQL database for production use.
+This guide walks you through deploying Thunder using Docker. You can run Thunder as a single container for development or pair it with an external PostgreSQL database for production use.
 
 ## Prerequisites
 
@@ -26,9 +26,9 @@ docker compose version
 docker run hello-world
 ```
 
-<ProductName /> listens on port `8090` by default. Ensure that port is available on your host.
+Thunder listens on port `8090` by default. Ensure that port is available on your host.
 
-## Run <ProductName /> with Docker
+## Run Thunder with Docker
 
 ### Step 1: Pull the Image
 
@@ -38,7 +38,7 @@ docker pull ghcr.io/asgardeo/thunder:latest
 
 ### Step 2: Set Up the Server
 
-Run the one-time setup script before starting <ProductName /> for the first time. The setup initializes the configuration and database:
+Run the one-time setup script before starting Thunder for the first time. The setup initializes the configuration and database:
 
 ```bash
 docker run -it --rm \
@@ -56,11 +56,11 @@ docker run --rm \
   ghcr.io/asgardeo/thunder:latest
 ```
 
-<ProductName /> is now running at `https://localhost:8090`.
+Thunder is now running at `https://localhost:8090`.
 
 ### Customize the Configuration
 
-To override the default server configuration, mount a custom `deployment.yaml` file. Create a `deployment.yaml` based on the <RepoLink path="/blob/main/backend/cmd/server/repository/conf/deployment.yaml">default configuration</RepoLink> and pass it to the container:
+To override the default server configuration, mount a custom `deployment.yaml` file. Create a `deployment.yaml` based on the [default configuration](https://github.com/asgardeo/thunder/blob/main/backend/cmd/server/repository/conf/deployment.yaml) and pass it to the container:
 
 ```bash
 docker run --rm \
@@ -80,25 +80,25 @@ docker run --rm \
   ghcr.io/asgardeo/thunder:latest
 ```
 
-## Access <ProductName />
+## Access Thunder
 
-Once the container is running, access <ProductName /> at the following endpoints:
+Once the container is running, access Thunder at the following endpoints:
 
 | Endpoint | URL |
 |----------|-----|
 | Application | `https://localhost:8090` |
 | Sign-in / Register | `https://localhost:8090/signin` |
-| <ProductName /> Console | `https://localhost:8090/console` |
+| Thunder Console | `https://localhost:8090/console` |
 
 ## Database Setup
 
 ### Embedded SQLite (Default)
 
-<ProductName /> uses SQLite by default. No additional setup is required for development or local testing.
+Thunder uses SQLite by default. No additional setup is required for development or local testing.
 
 ### External PostgreSQL
 
-For production deployments, use an external PostgreSQL database. <ProductName /> ships with a Docker Compose file for running a local PostgreSQL instance.
+For production deployments, use an external PostgreSQL database. Thunder ships with a Docker Compose file for running a local PostgreSQL instance.
 
 1. Navigate to the `install/local-development` directory:
 
@@ -132,5 +132,5 @@ For production deployments, use an external PostgreSQL database. <ProductName />
 
 ## Next Steps
 
-- [Deploy <ProductName /> on Kubernetes](./kubernetes) — Deploy <ProductName /> to a Kubernetes cluster using Helm.
-- [Deploy <ProductName /> on OpenChoreo](./openchoreo) — Deploy <ProductName /> on the OpenChoreo platform.
+- [Deploy Thunder on Kubernetes](./kubernetes) — Deploy Thunder to a Kubernetes cluster using Helm.
+- [Deploy Thunder on OpenChoreo](./openchoreo) — Deploy Thunder on the OpenChoreo platform.

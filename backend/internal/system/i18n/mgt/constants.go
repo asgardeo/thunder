@@ -44,21 +44,6 @@ var namespaceRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 // Keys can contain alphanumeric characters, dots, underscores, and hyphens.
 var keyRegex = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
 
-const maxBCP47TagLength = 35
-
-// NormaliseBCP47Tag returns the canonical BCP 47 form of tag (e.g. "en-US" for "en-us").
-// Returns ("", false) if the tag is empty, exceeds the length limit, or is not a valid BCP 47 tag.
-func NormaliseBCP47Tag(tag string) (string, bool) {
-	if tag == "" || len(tag) > maxBCP47TagLength {
-		return "", false
-	}
-	t, err := goi18n.Parse(tag)
-	if err != nil {
-		return "", false
-	}
-	return t.String(), true
-}
-
 // ValidateLanguage validates that a language tag is in the canonical form according to BCP 47 format.
 func ValidateLanguage(language string) bool {
 	tag, err := goi18n.BCP47.Parse(language)

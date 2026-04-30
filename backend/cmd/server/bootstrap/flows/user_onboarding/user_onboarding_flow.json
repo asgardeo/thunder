@@ -606,8 +606,7 @@
             "executor": {
                 "name": "ProvisioningExecutor"
             },
-            "onSuccess": "registration_complete",
-            "onIncomplete": "prompt_credential"
+            "onSuccess": "registration_complete"
         },
         {
             "id": "registration_complete",

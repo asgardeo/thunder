@@ -2,40 +2,40 @@
 title: Quickstart
 sidebar_position: 1
 persona: app
-description: Get started — register your first application, create a user, and test sign-in in minutes.
+description: Get started with Thunder — register your first application, create a user, and test sign-in in minutes.
 ---
 
 # Quickstart
 
-You can get started with <ProductName /> in minutes. This guide walks you through registering an application and creating a test user so you are ready to integrate <ProductName /> into your app.
+You can get started with Thunder in minutes. This guide walks you through registering an application and creating a test user so you are ready to integrate Thunder into your app.
 
 ## Prerequisites
 
-- <ProductName /> is up and running. See [Get <ProductName />](../getting-started/get-thunder) to get started.
-- You have access to the <ProductName /> Console.
+- Thunder is up and running. See [Get Thunder](../getting-started/get-thunder) to get started.
+- You have access to the Thunder Console.
 
 <Stepper>
 
 ## Step 1: Create an Application
 
-An application in <ProductName /> defines how your users authenticate and what they can access. Register one to get a **Client ID** and use it to integrate your own application with <ProductName />.
+An application in Thunder defines how your users authenticate and what they can access. Register one to get a **Client ID** and use it to integrate your own application with Thunder.
 
-1. Sign in to the <ProductName /> Console at [https://localhost:8090/console](https://localhost:8090/console).
+1. Sign in to the Thunder Console at [https://localhost:8090/console](https://localhost:8090/console).
 2. Navigate to **Applications** → **New Application**.
 3. Enter an **Application Name**.
 4. Select the **Sign-In Options**. Users will use these methods to sign in to your application (for example, Username & Password or social login).
 5. Configure the **Sign-In Experience**. Select how and who can access your application:
 
    - **Sign-In Approach** - choose how your users reach the sign-in experience.
-     - **Redirect to <ProductName /> sign-in/sign-up handling pages** (recommended) - When signing in, users are taken to <ProductName />-hosted pages that you can customize with the Flow Designer and wire up with your app in just a few steps.
-     - **Embedded sign-in/sign-up components in your app** - bring the sign-in experience right into your app using <ProductName />'s UI components or APIs.
+     - **Redirect to Thunder sign-in/sign-up handling pages** (recommended) - When signing in, users are taken to Thunder-hosted pages that you can customize with the Flow Designer and wire up with your app in just a few steps.
+     - **Embedded sign-in/sign-up components in your app** - bring the sign-in experience right into your app using Thunder's UI components or APIs.
 
    - **User Access**: Select which user types can access this application. **Customer**, **Person**, or both.
 
       <details>
         <summary>User Types</summary>
 
-        User types define the profile and attributes for different categories of users. <ProductName /> includes the following default user types:
+        User types define the profile and attributes for different categories of users. Thunder includes the following default user types:
 
         - **Customer**: End users who interact with your application. This type allows self-registration.
         - **Person**: Administrator-managed general-purpose user accounts. <br/><br/>
@@ -48,7 +48,7 @@ An application in <ProductName /> defines how your users authenticate and what t
     <details>
       <summary>Application Types</summary>
       
-      <ProductName /> supports the following application types. The application type decides the configuration
+      Thunder supports the following application types. The application type decides the configuration
 
       | Application Type       | Description                                                                                                                                                                             |
       | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -69,7 +69,7 @@ Note the **Client ID** from the application details page. You need it to configu
 
 Now that you have created an application, you'll need a user to test sign-in flows with your application.
 
-1. In the <ProductName /> Console, navigate to the **Users** section.
+1. In the Thunder Console, navigate to the **Users** section.
 2. Click **Add User** and select a **User Type**.
 3. Fill in the user attributes. For example, `username`, `email`, `given_name`, `family_name`, `password`.
 4. Click **Create User**.

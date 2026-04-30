@@ -260,7 +260,7 @@ func exportTokenStateToEnv() error {
 
 	// Encode as base64 for safe environment variable storage
 	encoded := base64.StdEncoding.EncodeToString(jsonBytes)
-	os.Setenv("TEST_ADMIN_TOKEN", encoded)
+	os.Setenv("THUNDER_TEST_ADMIN_TOKEN", encoded)
 
 	log.Printf("Token state exported to environment")
 	return nil
@@ -268,7 +268,7 @@ func exportTokenStateToEnv() error {
 
 // loadTokenStateFromEnv deserializes token state from environment variable
 func loadTokenStateFromEnv() (*TokenResponse, error) {
-	encoded := os.Getenv("TEST_ADMIN_TOKEN")
+	encoded := os.Getenv("THUNDER_TEST_ADMIN_TOKEN")
 	if encoded == "" {
 		return nil, nil // No token state in environment
 	}

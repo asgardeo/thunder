@@ -137,7 +137,15 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		scenario = template.ScenarioUserInvite
 	}
 
-	templateData := e.resolveTemplateData(ctx)
+	inviteLink := ctx.RuntimeData[common.RuntimeKeyInviteLink]
+	if (scenario == template.ScenarioUserInvite || scenario == template.ScenarioSelfRegistration) && inviteLink == "" {
+		return nil, errors.New("invite link not found in runtime data")
+	}
+
+	templateData := template.TemplateData{
+		"inviteLink": inviteLink,
+		"appName":    ctx.Application.Name,
+	}
 	rendered, svcErr := e.templateService.Render(ctx.Context, scenario, template.TemplateTypeEmail, templateData)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to render email template: %s", svcErr.Code)
@@ -203,23 +211,6 @@ func (e *emailExecutor) resolveRecipientEmail(ctx *core.NodeContext, logger *log
 	}
 
 	return "", nil
-}
-
-// resolveTemplateData extracts template data from forwarded data or initializes an empty map if not present.
-func (e *emailExecutor) resolveTemplateData(ctx *core.NodeContext) template.TemplateData {
-	if ctx.ForwardedData != nil {
-		if forwardedTemplateData, ok := ctx.ForwardedData[common.ForwardedDataKeyTemplateData]; ok {
-			if interfaceData, isInterfaceMap := forwardedTemplateData.(map[string]interface{}); isInterfaceMap {
-				templateData := template.TemplateData{}
-				for k, v := range interfaceData {
-					templateData[k] = fmt.Sprintf("%v", v)
-				}
-				return templateData
-			}
-		}
-	}
-
-	return template.TemplateData{}
 }
 
 // isEmailError returns true if the error originated from the email subsystem,

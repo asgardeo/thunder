@@ -29,8 +29,6 @@ const (
 	AssigneeTypeUser AssigneeType = "user"
 	// AssigneeTypeApp is the public type for application principals.
 	AssigneeTypeApp AssigneeType = "app"
-	// AssigneeTypeAgent is the public type for agent principals.
-	AssigneeTypeAgent AssigneeType = "agent"
 	// AssigneeTypeGroup is the public type for group principals.
 	AssigneeTypeGroup AssigneeType = "group"
 )
@@ -40,11 +38,11 @@ const (
 	assigneeTypeEntity AssigneeType = "entity"
 )
 
-// IsEntityType reports whether t is an entity type (user, app, agent) that maps
+// IsEntityType reports whether t is an entity type (user, app) that maps
 // to the internal entity storage type.
 func (t AssigneeType) IsEntityType() bool {
 	switch t {
-	case AssigneeTypeUser, AssigneeTypeApp, AssigneeTypeAgent:
+	case AssigneeTypeUser, AssigneeTypeApp:
 		return true
 	}
 	return false

@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/entityprovider"
@@ -31,18 +32,16 @@ import (
 	"github.com/asgardeo/thunder/internal/group"
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 // provisioningExecutor implements the ExecutorInterface for user provisioning in a flow.
 type provisioningExecutor struct {
 	core.ExecutorInterface
 	identifyingExecutorInterface
-	entityProvider    entityprovider.EntityProviderInterface
-	groupService      group.GroupServiceInterface
-	roleService       role.RoleServiceInterface
-	userSchemaService userschema.UserSchemaServiceInterface
-	logger            *log.Logger
+	entityProvider entityprovider.EntityProviderInterface
+	groupService   group.GroupServiceInterface
+	roleService    role.RoleServiceInterface
+	logger         *log.Logger
 }
 
 var _ core.ExecutorInterface = (*provisioningExecutor)(nil)
@@ -54,7 +53,6 @@ func newProvisioningExecutor(
 	groupService group.GroupServiceInterface,
 	roleService role.RoleServiceInterface,
 	entityProvider entityprovider.EntityProviderInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
 ) *provisioningExecutor {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, ExecutorNameProvisioning),
 		log.String(log.LoggerKeyExecutorName, ExecutorNameProvisioning))
@@ -71,7 +69,6 @@ func newProvisioningExecutor(
 		entityProvider:               entityProvider,
 		groupService:                 groupService,
 		roleService:                  roleService,
-		userSchemaService:            userSchemaService,
 		logger:                       logger,
 	}
 }
@@ -106,10 +103,7 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 		return execResp, nil
 	}
 
-	userAttributes, err := p.getAttributesForProvisioning(ctx)
-	if err != nil {
-		return nil, err
-	}
+	userAttributes := p.getAttributesForProvisioning(ctx)
 	if len(userAttributes) == 0 {
 		logger.Debug("No user attributes provided for provisioning")
 		execResp.Status = common.ExecFailure
@@ -128,13 +122,55 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 		return execResp, nil
 	}
 	if userID != nil && *userID != "" {
-		shouldContinue, err := p.handleExistingUser(ctx, *userID, execResp, logger)
-		if err != nil {
-			return nil, err
+		logger.Debug("User already exists", log.MaskedString(log.LoggerKeyUserID, *userID))
+
+		// If it's a registration flow, check if proceeding with an existing user
+		if ctx.FlowType == common.FlowTypeRegistration {
+			existing, ok := ctx.RuntimeData[common.RuntimeKeySkipProvisioning]
+			if ok && existing == dataValueTrue {
+				logger.Debug("Proceeding with an existing user in registration flow, skipping execution")
+				execResp.RuntimeData[userAttributeUserID] = *userID
+				execResp.Status = common.ExecComplete
+				return execResp, nil
+			}
 		}
-		if !shouldContinue {
+
+		// Check if cross-OU provisioning is explicitly enabled for this node.
+		allowCrossOUProvisioning := false
+		if val, ok := ctx.NodeProperties[common.NodePropertyAllowCrossOUProvisioning]; ok {
+			if boolVal, ok := val.(bool); ok {
+				allowCrossOUProvisioning = boolVal
+			}
+		}
+
+		if !allowCrossOUProvisioning {
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = "User already exists"
 			return execResp, nil
 		}
+
+		// Cross-OU provisioning: verify the existing user is in a different OU than the target.
+		targetOUID := p.getOUID(ctx)
+		if targetOUID == "" {
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = "Target OU is not set for cross-OU provisioning"
+			return execResp, nil
+		}
+
+		existingUser, getUserErr := p.entityProvider.GetEntity(*userID)
+		if getUserErr != nil {
+			return nil, errors.New("failed to retrieve existing user")
+		}
+
+		if existingUser.OUID == targetOUID {
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = "User already exists in the target organization"
+			return execResp, nil
+		}
+
+		logger.Debug("Existing user is in a different OU, proceeding with cross-OU provisioning",
+			log.String("existingOUID", existingUser.OUID),
+			log.String("targetOUID", targetOUID))
 	}
 
 	// Create the user in the store.
@@ -194,242 +230,100 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 	return execResp, nil
 }
 
-// handleExistingUser handles the case where a user with the given ID already exists.
-// Returns true if provisioning should proceed (cross-OU case), false if execution should stop.
-func (p *provisioningExecutor) handleExistingUser(ctx *core.NodeContext, userID string,
-	execResp *common.ExecutorResponse, logger *log.Logger) (bool, error) {
-	logger.Debug("User already exists", log.MaskedString(log.LoggerKeyUserID, userID))
-
-	// If it's a registration flow, check if proceeding with an existing user
-	if ctx.FlowType == common.FlowTypeRegistration {
-		existing, ok := ctx.RuntimeData[common.RuntimeKeySkipProvisioning]
-		if ok && existing == dataValueTrue {
-			logger.Debug("Proceeding with an existing user in registration flow, skipping execution")
-			execResp.RuntimeData[userAttributeUserID] = userID
-			execResp.Status = common.ExecComplete
-			return false, nil
-		}
-	}
-
-	// Check if cross-OU provisioning is explicitly enabled for this node.
-	allowCrossOUProvisioning := false
-	if val, ok := ctx.NodeProperties[common.NodePropertyAllowCrossOUProvisioning]; ok {
-		if boolVal, ok := val.(bool); ok {
-			allowCrossOUProvisioning = boolVal
-		}
-	}
-
-	if !allowCrossOUProvisioning {
-		if ctx.FlowType == common.FlowTypeRegistration {
-			execResp.Status = common.ExecUserInputRequired
-			execResp.Inputs = p.GetRequiredInputs(ctx)
-		} else {
-			execResp.Status = common.ExecFailure
-		}
-		execResp.FailureReason = "User already exists"
-		return false, nil
-	}
-
-	// Cross-OU provisioning: verify the existing user is in a different OU than the target.
-	targetOUID := p.getOUID(ctx)
-	if targetOUID == "" {
-		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Target OU is not set for cross-OU provisioning"
-		return false, nil
-	}
-
-	existingUser, getUserErr := p.entityProvider.GetEntity(userID)
-	if getUserErr != nil {
-		return false, errors.New("failed to retrieve existing user")
-	}
-
-	if existingUser.OUID == targetOUID {
-		if ctx.FlowType == common.FlowTypeRegistration {
-			execResp.Status = common.ExecUserInputRequired
-			execResp.Inputs = p.GetRequiredInputs(ctx)
-		} else {
-			execResp.Status = common.ExecFailure
-		}
-		execResp.FailureReason = "User already exists in the target organization"
-		return false, nil
-	}
-
-	logger.Debug("Existing user is in a different OU, proceeding with cross-OU provisioning",
-		log.String("existingOUID", existingUser.OUID),
-		log.String("targetOUID", targetOUID))
-	return true, nil
-}
-
 // HasRequiredInputs checks if the required inputs are provided in the context and appends any
-// missing inputs to the executor response. Returns true if all required inputs — both
-// node-defined and schema-derived — are satisfied, otherwise false.
+// missing inputs to the executor response. Returns true if required inputs are found, otherwise false.
 func (p *provisioningExecutor) HasRequiredInputs(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) bool {
 	logger := p.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Checking inputs for the provisioning executor")
 
-	if execResp.RuntimeData == nil {
-		execResp.RuntimeData = make(map[string]string)
-	}
-
-	// run the base executor check for node-defined inputs.
-	nodeInputsSatisfied := p.checkNodeInputs(ctx, execResp, logger)
-
-	// fetch required non-credential attributes from the user schema.
-	schemaAttrs, err := p.fetchSchemaAttributes(ctx, logger)
-	if err != nil {
-		execResp.Status = common.ExecFailure
-		return false
-	}
-	if len(schemaAttrs) == 0 {
-		return nodeInputsSatisfied
-	}
-
-	schemaMissingAttrs := make([]common.Input, 0, len(schemaAttrs))
-	for _, attr := range schemaAttrs {
-		if p.isAttrSatisfied(ctx, attr.Attribute) {
-			continue
-		}
-
-		schemaMissingAttrs = append(schemaMissingAttrs, common.Input{
-			Identifier:  attr.Attribute,
-			Type:        common.InputTypeText,
-			Required:    true,
-			DisplayName: attr.DisplayName,
-		})
-	}
-
-	if len(schemaMissingAttrs) == 0 {
-		return nodeInputsSatisfied
-	}
-
-	execResp.Inputs = upsertInputs(execResp.Inputs, schemaMissingAttrs)
-	if execResp.ForwardedData == nil {
-		execResp.ForwardedData = make(map[string]interface{})
-	}
-	execResp.ForwardedData[common.ForwardedDataKeyInputs] = schemaMissingAttrs
-	logger.Debug("Schema-required attributes are missing, requesting via prompt",
-		log.Int("missingCount", len(schemaMissingAttrs)))
-	return false
-}
-
-// checkNodeInputs runs the base executor's input check, then clears any inputs satisfied by authenticated user attrs.
-func (p *provisioningExecutor) checkNodeInputs(ctx *core.NodeContext,
-	execResp *common.ExecutorResponse, logger *log.Logger) bool {
-	nodeInputsSatisfied := p.ExecutorInterface.HasRequiredInputs(ctx, execResp)
-	if nodeInputsSatisfied || len(execResp.Inputs) == 0 {
-		return nodeInputsSatisfied
-	}
-
-	authnAttrs := ctx.AuthenticatedUser.Attributes
-	if len(authnAttrs) == 0 {
-		return false
-	}
-
-	logger.Debug("Authenticated user attributes found, checking missing node inputs")
-	remaining := execResp.Inputs[:0]
-	for _, input := range execResp.Inputs {
-		val, exists := authnAttrs[input.Identifier]
-		strVal, isStr := val.(string)
-		if exists && isStr && strVal != "" {
-			continue
-		}
-		remaining = append(remaining, input)
-	}
-	execResp.Inputs = remaining
-	return len(remaining) == 0
-}
-
-// fetchSchemaAttributes retrieves required non-credential attributes from the user schema service.
-func (p *provisioningExecutor) fetchSchemaAttributes(
-	ctx *core.NodeContext, logger *log.Logger,
-) ([]userschema.AttributeInfo, error) {
-	if p.userSchemaService == nil {
-		return nil, nil
-	}
-	userType := p.getUserType(ctx)
-	if userType == "" {
-		return nil, fmt.Errorf("user type not found")
-	}
-	attrs, svcErr := p.userSchemaService.GetNonCredentialAttributes(ctx.Context, userType, true)
-	if svcErr != nil {
-		logger.Warn("Failed to fetch schema attributes for provisioning, skipping schema check",
-			log.Any("error", svcErr))
-		return nil, nil
-	}
-	return attrs, nil
-}
-
-// isAttrSatisfied returns true if the attribute has a non-empty usable value in any context source.
-func (p *provisioningExecutor) isAttrSatisfied(ctx *core.NodeContext, attr string) bool {
-	if val, ok := ctx.UserInputs[attr]; ok && val != "" {
+	if p.ExecutorInterface.HasRequiredInputs(ctx, execResp) {
 		return true
 	}
-	if val, ok := ctx.RuntimeData[attr]; ok && val != "" {
+	if len(execResp.Inputs) == 0 {
 		return true
 	}
-	if val, ok := ctx.AuthenticatedUser.Attributes[attr]; ok {
-		if strVal, ok := val.(string); ok && strVal != "" {
+
+	// Update the executor response with the required inputs retrieved from authenticated user attributes.
+	authnUserAttrs := ctx.AuthenticatedUser.Attributes
+	if len(authnUserAttrs) > 0 {
+		logger.Debug("Authenticated user attributes found, updating executor response required inputs")
+
+		// Clear the required data in the executor response to avoid duplicates.
+		missingAttributes := execResp.Inputs
+		execResp.Inputs = make([]common.Input, 0)
+		if execResp.RuntimeData == nil {
+			execResp.RuntimeData = make(map[string]string)
+		}
+
+		for _, input := range missingAttributes {
+			attribute, exists := authnUserAttrs[input.Identifier]
+			if exists {
+				attributeStr, ok := attribute.(string)
+				if ok {
+					logger.Debug("Input exists in authenticated user attributes, adding to runtime data",
+						log.String("attributeName", input.Identifier))
+					execResp.RuntimeData[input.Identifier] = attributeStr
+				}
+			} else {
+				logger.Debug("Input does not exist in authenticated user attributes, adding to required inputs",
+					log.String("attributeName", input.Identifier))
+				execResp.Inputs = append(execResp.Inputs, input)
+			}
+		}
+
+		if len(execResp.Inputs) == 0 {
+			logger.Debug("All required inputs are available in authenticated user attributes, " +
+				"no further action needed")
 			return true
 		}
 	}
+
 	return false
 }
 
-// getAttributesForProvisioning returns the user profile attributes to store.
-// Schema is the whitelist: required attrs always collected, optional attrs only if in node inputs.
-func (p *provisioningExecutor) getAttributesForProvisioning(ctx *core.NodeContext) (map[string]interface{}, error) {
-	nodeInputAttrs := p.GetRequiredInputs(ctx)
-	schemaAttrs, err := p.fetchAllNonCredentialAttributes(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if len(schemaAttrs) == 0 {
-		return make(map[string]interface{}), nil
-	}
-	nodeInputSet := make(map[string]struct{}, len(nodeInputAttrs))
-	for _, inp := range nodeInputAttrs {
-		nodeInputSet[inp.Identifier] = struct{}{}
+// getAttributesForProvisioning retrieves the input attributes from the context to be stored in user profile.
+func (p *provisioningExecutor) getAttributesForProvisioning(ctx *core.NodeContext) map[string]interface{} {
+	attributesMap := make(map[string]interface{})
+	requiredInputAttrs := p.GetRequiredInputs(ctx)
+
+	// If no input attributes are defined, get all user attributes from the context.
+	if len(requiredInputAttrs) == 0 {
+		for key, value := range ctx.UserInputs {
+			if !slices.Contains(nonUserAttributes, key) {
+				attributesMap[key] = value
+			}
+		}
+		for key, value := range ctx.AuthenticatedUser.Attributes {
+			if !slices.Contains(nonUserAttributes, key) {
+				attributesMap[key] = value
+			}
+		}
+		for key, value := range ctx.RuntimeData {
+			if !slices.Contains(nonUserAttributes, key) {
+				attributesMap[key] = value
+			}
+		}
+		return attributesMap
 	}
 
-	attributesMap := make(map[string]interface{})
-	for _, a := range schemaAttrs {
-		_, inNodeInputs := nodeInputSet[a.Attribute]
-		if len(nodeInputSet) > 0 && !a.Required && !inNodeInputs {
+	// Otherwise, filter the required input attributes and get their values from the context.
+	for _, inputAttr := range requiredInputAttrs {
+		if slices.Contains(nonUserAttributes, inputAttr.Identifier) {
 			continue
 		}
 
-		if value, exists := ctx.UserInputs[a.Attribute]; exists && value != "" {
-			attributesMap[a.Attribute] = value
-		} else if runtimeValue, exists := ctx.RuntimeData[a.Attribute]; exists && runtimeValue != "" {
-			attributesMap[a.Attribute] = runtimeValue
-		} else if authnValue, exists := ctx.AuthenticatedUser.Attributes[a.Attribute]; exists {
-			if strVal, ok := authnValue.(string); ok && strVal != "" {
-				attributesMap[a.Attribute] = authnValue
-			}
+		value, exists := ctx.UserInputs[inputAttr.Identifier]
+		if exists {
+			attributesMap[inputAttr.Identifier] = value
+		} else if runtimeValue, exists := ctx.RuntimeData[inputAttr.Identifier]; exists {
+			attributesMap[inputAttr.Identifier] = runtimeValue
+		} else if authnValue, exists := ctx.AuthenticatedUser.Attributes[inputAttr.Identifier]; exists {
+			attributesMap[inputAttr.Identifier] = authnValue
 		}
 	}
 
-	return attributesMap, nil
-}
-
-// fetchAllNonCredentialAttributes retrieves all non-credential schema attributes with their required status.
-func (p *provisioningExecutor) fetchAllNonCredentialAttributes(
-	ctx *core.NodeContext,
-) ([]userschema.AttributeInfo, error) {
-	if p.userSchemaService == nil {
-		return nil, nil
-	}
-	userType := p.getUserType(ctx)
-	if userType == "" {
-		return nil, fmt.Errorf("user type not found")
-	}
-	attrs, svcErr := p.userSchemaService.GetNonCredentialAttributes(ctx.Context, userType, false)
-	if svcErr != nil {
-		return nil, fmt.Errorf("failed to fetch schema attributes for user type %q: %s",
-			userType, svcErr.Error.DefaultValue)
-	}
-	return attrs, nil
+	return attributesMap
 }
 
 // appendNonIdentifyingAttributes appends non-identifying attributes to the provided attributes map.

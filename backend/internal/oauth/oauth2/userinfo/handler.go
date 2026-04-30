@@ -77,7 +77,7 @@ func (h *userInfoHandler) HandleUserInfo(w http.ResponseWriter, r *http.Request)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(result.JWTBody))
 	case inboundmodel.UserInfoResponseTypeJWE, inboundmodel.UserInfoResponseTypeNESTEDJWT:
-		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJWT)
+		w.Header().Set(serverconst.ContentTypeHeaderName, serverconst.ContentTypeJOSE)
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(result.JWTBody))
 	default:

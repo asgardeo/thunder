@@ -5,26 +5,26 @@ sidebar_position: 3
 
 # Configuration
 
-<ProductName />'s behavior is controlled by a combination of default configurations and deployment-specific overrides. This page covers all available configuration options and how to customize them.
+Thunder's behavior is controlled by a combination of default configurations and deployment-specific overrides. This page covers all available configuration options and how to customize them.
 
 ## Configuration System
 
-<ProductName /> uses a two-tier configuration system:
+Thunder uses a two-tier configuration system:
 
-1. **Default Configuration** — Provides sensible defaults for all settings. These are built into <ProductName />.
-2. **Deployment Configuration** — Located at `repository/conf/deployment.yaml` in your <ProductName /> installation directory. This file overrides specific defaults for your deployment.
+1. **Default Configuration** — Provides sensible defaults for all settings. These are built into Thunder.
+2. **Deployment Configuration** — Located at `repository/conf/deployment.yaml` in your Thunder installation directory. This file overrides specific defaults for your deployment.
 
 :::note
 Only settings you want to override need to be specified in `deployment.yaml`. All other values will use the built-in defaults.
 :::
 
 :::tip
-<ProductName /> must be restarted after any configuration change.
+Thunder must be restarted after any configuration change.
 :::
 
 ## Server Configuration
 
-Controls the <ProductName /> server's network settings and identity.
+Controls the Thunder server's network settings and identity.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
@@ -35,14 +35,14 @@ Controls the <ProductName /> server's network settings and identity.
 
 ## Gate Client Configuration
 
-Configures the connection to <ProductName /> Gate (the login UI).
+Configures the connection to Thunder Gate (the login UI).
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `gate_client.hostname` | `localhost` | The hostname where <ProductName /> Gate is hosted |
-| `gate_client.port` | `8090` | Port where <ProductName /> Gate is accessible |
+| `gate_client.hostname` | `localhost` | The hostname where Thunder Gate is hosted |
+| `gate_client.port` | `8090` | Port where Thunder Gate is accessible |
 | `gate_client.scheme` | `https` | Protocol scheme (`http` or `https`) |
-| `gate_client.path` | `/gate` | Base path for <ProductName /> Gate |
+| `gate_client.path` | `/gate` | Base path for Thunder Gate |
 
 ## TLS Configuration
 
@@ -55,12 +55,12 @@ Controls HTTPS/TLS settings for secure communication.
 | `tls.key_file` | `repository/resources/security/server.key` | Path to TLS private key file |
 
 :::warning Self-Signed Certificate
-<ProductName /> ships with a self-signed certificate for local development at `repository/resources/security/server.cert`. For production, replace it with a certificate from a trusted Certificate Authority.
+Thunder ships with a self-signed certificate for local development at `repository/resources/security/server.cert`. For production, replace it with a certificate from a trusted Certificate Authority.
 :::
 
 ## Database Configuration
 
-<ProductName /> uses three separate databases for different purposes. Each database can be configured independently.
+Thunder uses three separate databases for different purposes. Each database can be configured independently.
 
 Connection parameters are grouped under a type-specific sub-key (`postgres`, `sqlite`, or `redis`). Only `type` is a top-level field; all other settings belong under the matching sub-key.
 
@@ -148,7 +148,7 @@ Stores runtime data like sessions, tokens, and temporary data. The runtime datab
 | `database.runtime.redis.username` | `""` | Redis ACL username — leave empty if ACLs are not configured |
 | `database.runtime.redis.password` | `""` | Redis password or ACL user password |
 | `database.runtime.redis.db` | `0` | Redis logical database index (0–15) |
-| `database.runtime.redis.key_prefix` | `""` | Prefix applied to all Redis keys written by <ProductName />, for example `thunder:` |
+| `database.runtime.redis.key_prefix` | `""` | Prefix applied to all Redis keys written by Thunder, for example `thunder:` |
 | `database.runtime.redis.max_retries` | `5` | Maximum retry attempts for transient Redis network and timeout issues |
 | `database.runtime.redis.min_retry_backoff_ms` | `10` | Minimum delay before Redis retries in milliseconds |
 | `database.runtime.redis.max_retry_backoff_ms` | `100` | Maximum delay before Redis retries in milliseconds |
@@ -158,16 +158,16 @@ Stores runtime data like sessions, tokens, and temporary data. The runtime datab
 
 #### Redis Connection Requirements
 
-- <ProductName /> requires Redis 6.0 or later.
-- <ProductName /> connects to a single Redis node. Cluster mode and Sentinel mode are not currently supported.
-- The default Redis port is `6379`. Ensure the port is reachable from the <ProductName /> server.
-- <ProductName /> does not enforce TLS at the client configuration level. To encrypt traffic, place a TLS-terminating proxy in front of Redis and point `database.runtime.redis.address` at the proxy endpoint.
+- Thunder requires Redis 6.0 or later.
+- Thunder connects to a single Redis node. Cluster mode and Sentinel mode are not currently supported.
+- The default Redis port is `6379`. Ensure the port is reachable from the Thunder server.
+- Thunder does not enforce TLS at the client configuration level. To encrypt traffic, place a TLS-terminating proxy in front of Redis and point `database.runtime.redis.address` at the proxy endpoint.
 - If your Redis deployment uses Access Control Lists (ACLs), create a dedicated user and grant the following commands: `GET`, `SET`, `DEL`, `EXPIRE`, `EVAL`, `EVALSHA`. Set `database.runtime.redis.username` and `database.runtime.redis.password` accordingly.
-- <ProductName /> calls `PING` at startup to verify connectivity. The process terminates if the Redis server is unreachable.
+- Thunder calls `PING` at startup to verify connectivity. The process terminates if the Redis server is unreachable.
 
 #### Database Retry Behavior
 
-<ProductName /> applies exponential backoff with jitter for transient failures on non-transactional SQL read operations (`Query` path). Retry behavior is configurable per database via `max_retries`, `min_retry_backoff_ms`, and `max_retry_backoff_ms` under the relevant `postgres` or `sqlite` sub-key.
+Thunder applies exponential backoff with jitter for transient failures on non-transactional SQL read operations (`Query` path). Retry behavior is configurable per database via `max_retries`, `min_retry_backoff_ms`, and `max_retry_backoff_ms` under the relevant `postgres` or `sqlite` sub-key.
 
 - Retryable classes include transient connectivity errors (`ErrBadConn`, `ErrConnDone`, connection reset/refused), timeouts, deadlocks (`40P01`), and PostgreSQL resource/availability states (`53xxx`, `57P01`, `57P02`, `57P03`, too-many-connections).
 - Non-retryable conditions include no-row outcomes (`ErrNoRows`), syntax/validation issues, and other permanent SQL conditions.
@@ -214,12 +214,12 @@ Stores user profiles and credentials.
 
 ## Cache Configuration
 
-<ProductName /> includes both in-memory and Redis-backed caching to improve performance.
+Thunder includes both in-memory and Redis-backed caching to improve performance.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `cache.disabled` | `false` | If `true`, disables caching entirely |
-| `cache.type` | `inmemory` | Cache type (`inmemory` or `redis`). When `cache.type` is `redis`, <ProductName /> does not use the periodic cleanup routine. |
+| `cache.type` | `inmemory` | Cache type (`inmemory` or `redis`). When `cache.type` is `redis`, Thunder does not use the periodic cleanup routine. |
 | `cache.size` | `1000` | Maximum number of cache entries |
 | `cache.ttl` | `3600` | Default time-to-live for cache entries in seconds |
 | `cache.eviction_policy` | `LRU` | Cache eviction policy (`LRU` - Least Recently Used) |
@@ -251,11 +251,11 @@ Each item in `cache.properties` supports these fields:
 | `ttl` | No | Time-to-live for that cache in seconds. |
 | `eviction_policy` | No | Eviction policy for that cache. Supported values are `LRU` and `LFU`. This setting applies to in-memory caches only. |
 
-If you omit a field in a `cache.properties` entry, <ProductName /> falls back to the corresponding global `cache.*` setting.
+If you omit a field in a `cache.properties` entry, Thunder falls back to the corresponding global `cache.*` setting.
 
-That means you can override only the fields you need. <ProductName /> continues to use the global cache settings for any fields you leave unset.
+That means you can override only the fields you need. Thunder continues to use the global cache settings for any fields you leave unset.
 
-<ProductName /> currently uses cache names such as:
+Thunder currently uses cache names such as:
 
 - `ApplicationByIDCache`
 - `ApplicationByNameCache`
@@ -299,11 +299,11 @@ cache:
 ```
 
 :::note
-When Redis caching is enabled, <ProductName /> expires keys automatically based on TTL.
+When Redis caching is enabled, Thunder expires keys automatically based on TTL.
 :::
 
 :::warning
-If <ProductName /> cannot connect to Redis during startup, it disables the cache layer.
+If Thunder cannot connect to Redis during startup, it disables the cache layer.
 :::
 
 ## JWT Configuration
@@ -360,7 +360,7 @@ Controls declarative configuration support.
 |---------|---------|-------------|
 | `declarative_resources.enabled` | `false` | If `true`, enables declarative resource configuration |
 
-For Helm deployments, this setting is managed through `declarativeResources.enabled` in the Helm values. When enabled, the chart also mounts declarative resource files from either a ConfigMap or Secret into the <ProductName /> `repository/resources` directory.
+For Helm deployments, this setting is managed through `declarativeResources.enabled` in the Helm values. When enabled, the chart also mounts declarative resource files from either a ConfigMap or Secret into the Thunder `repository/resources` directory.
 
 Example Helm values:
 
@@ -508,29 +508,17 @@ External authentication provider settings.
 
 Cross-Origin Resource Sharing settings (typically defined in `deployment.yaml`).
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `cors.allowed_origins` | `[]` | List of allowed origins. Each entry is either a literal origin string (scheme and host are case-insensitive, trailing dots are stripped, IDN labels are Punycode-encoded, IPv6 hosts are bracketed, ports are preserved verbatim — list each port variant separately) or an object of the shape `{ regex: "..." }` whose RE2 pattern is matched against the raw `Origin` header. The special string `"null"` matches the CORS null origin. The literal `"*"` is rejected — list explicit origins or use a regex. Requests from any other origin are rejected. |
-
-The methods, headers, credentials, and preflight cache TTL applied to each allowed response are configured per route in code; only the allowed-origins list is operator-tunable. Preflight responses default to a 600-second `Access-Control-Max-Age`.
+| Setting | Description |
+|---------|-------------|
+| `cors.allowed_origins` | Array of allowed origins for CORS requests |
 
 **Example:**
 ```yaml
 cors:
   allowed_origins:
-    - "https://app.example.com"
-    - "https://münchen.example"           # IDN — equal to its Punycode form
-    - "http://[::1]:8080"                 # IPv6 in bracketed form
-    - regex: '^https://[a-z0-9-]+\.staging\.example\.com(:[0-9]+)?$'
+    - "https://localhost:3000"
+    - "http://localhost:5173"
 ```
-
-:::note
-Regex patterns are taken as-is and matched against the raw `Origin` header byte-for-byte. Make patterns strict (anchor with `^` and `$`, escape `.` literals) so that a hostile origin cannot match them. Invalid patterns cause the server to fail at startup, and patterns that lack `^`/`$` anchors are flagged with a startup warning because they permit partial matches.
-:::
-
-:::warning
-The `null` origin is shared by sandboxed iframes, `file://` and `data:` documents, and some cross-origin redirects. Because multiple unrelated contexts all emit it, allowing `"null"` cannot identify the caller. List it only when those contexts are intentionally trusted — combined with credentialed responses, it lets any sandboxed page in any browser tab issue authenticated requests.
-:::
 
 ## Passkey Configuration
 
@@ -557,7 +545,7 @@ Controls server-wide security behavior that is not specific to any single authen
 
 ## Trusted Issuer Configuration
 
-Maps to `TrustedIssuerConfig` in the backend, nested under `server.security.trusted_issuer`. Setting `server.security.trusted_issuer.issuer` activates the feature: <ProductName /> trusts access tokens issued by an external authorization server and validates them against the external server's JWKS endpoint. When `issuer` is set, `jwks_url` and `audience` are required and <ProductName /> fails to start if either is missing. This is used for federated authentication scenarios where a central <ProductName /> instance issues tokens that tenant instances accept.
+Maps to `TrustedIssuerConfig` in the backend, nested under `server.security.trusted_issuer`. Setting `server.security.trusted_issuer.issuer` activates the feature: Thunder trusts access tokens issued by an external authorization server and validates them against the external server's JWKS endpoint. When `issuer` is set, `jwks_url` and `audience` are required and Thunder fails to start if either is missing. This is used for federated authentication scenarios where a central Thunder instance issues tokens that tenant instances accept.
 
 | Setting | Default | Description |
 |---------|---------|-------------|

@@ -33,13 +33,13 @@ import (
 // Initialize initializes the group service and registers its routes.
 func Initialize(
 	mux *http.ServeMux,
-	dbProvider provider.DBProviderInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	entityService entity.EntityServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
 ) (GroupServiceInterface, oupkg.OUGroupResolver, error) {
-	transactioner, err := dbProvider.GetUserDBTransactioner()
+	// Get transactioner from DB provider
+	transactioner, err := provider.GetDBProvider().GetUserDBTransactioner()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -60,10 +60,9 @@ func Initialize(
 // registerRoutes registers the routes for group management operations.
 func registerRoutes(mux *http.ServeMux, groupHandler *groupHandler) {
 	opts1 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "POST"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, POST",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /groups", groupHandler.HandleGroupPostRequest, opts1))
 	mux.HandleFunc(middleware.WithCORS("GET /groups", groupHandler.HandleGroupListRequest, opts1))
@@ -72,10 +71,9 @@ func registerRoutes(mux *http.ServeMux, groupHandler *groupHandler) {
 	}, opts1))
 
 	opts2 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, POST, PUT, DELETE",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	// Special handling for /groups/{id} and /groups/{id}/members
 	mux.HandleFunc(middleware.WithCORS("GET /groups/",
@@ -102,10 +100,9 @@ func registerRoutes(mux *http.ServeMux, groupHandler *groupHandler) {
 		}, opts2))
 
 	opts3 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "POST"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, POST",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /groups/tree/{path...}",
 		groupHandler.HandleGroupListByPathRequest, opts3))
@@ -118,10 +115,9 @@ func registerRoutes(mux *http.ServeMux, groupHandler *groupHandler) {
 	// POST routes for /groups/{id}/members/add and /groups/{id}/members/remove.
 	// These use a catch-all pattern to avoid route conflicts with /groups/tree/{path...}.
 	opts4 := middleware.CORSOptions{
-		AllowedMethods:   []string{"POST"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "POST",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /groups/",
 		func(w http.ResponseWriter, r *http.Request) {

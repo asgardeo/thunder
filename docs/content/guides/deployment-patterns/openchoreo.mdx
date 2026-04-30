@@ -2,12 +2,12 @@
 title: OpenChoreo
 sidebar_position: 3
 persona: iam
-description: Deploy on the OpenChoreo platform using Helm, with PostgreSQL as the backing database.
+description: Deploy Thunder on the OpenChoreo platform using Helm, with PostgreSQL as the backing database.
 ---
 
-# Deploy <ProductName /> on OpenChoreo
+# Deploy Thunder on OpenChoreo
 
-This guide walks you through deploying <ProductName /> on OpenChoreo using Helm. It covers prerequisites, installation, database configuration, and the built-in environment management that OpenChoreo provides.
+This guide walks you through deploying Thunder on OpenChoreo using Helm. It covers prerequisites, installation, database configuration, and the built-in environment management that OpenChoreo provides.
 
 ## Prerequisites
 
@@ -35,7 +35,7 @@ helm version
 kubectl get crd | grep openchoreo
 ```
 
-## Install <ProductName />
+## Install Thunder
 
 ### Step 1: Configure Database Credentials
 
@@ -49,7 +49,7 @@ export DB_PASS="<your-database-password>"
 
 ### Step 2: Install the Helm Chart
 
-Clone the <ProductName /> repository if you have not already done so. Then install <ProductName /> using the OpenChoreo Helm chart:
+Clone the Thunder repository if you have not already done so. Then install Thunder using the OpenChoreo Helm chart:
 
 ```bash
 helm install thunder install/openchoreo/helm/ \
@@ -190,9 +190,9 @@ For a repeatable deployment, use a values file:
 
 ## Database Setup
 
-<ProductName /> requires PostgreSQL for the identity, runtime, and user databases.
+Thunder requires PostgreSQL for the identity, runtime, and user databases.
 
-Before deploying <ProductName />, prepare the PostgreSQL instance:
+Before deploying Thunder, prepare the PostgreSQL instance:
 
 1. Create the three required databases:
 
@@ -281,5 +281,5 @@ OpenChoreo provides built-in environment management with promotion workflows. Th
 
 ## Next Steps
 
-- [Deploy <ProductName /> on Kubernetes](./kubernetes) — Deploy <ProductName /> to Kubernetes without OpenChoreo.
-- [Deploy <ProductName /> with Docker](./docker) — Run <ProductName /> locally using Docker.
+- [Deploy Thunder on Kubernetes](./kubernetes) — Deploy Thunder to Kubernetes without OpenChoreo.
+- [Deploy Thunder with Docker](./docker) — Run Thunder locally using Docker.

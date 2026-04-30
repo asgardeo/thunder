@@ -132,10 +132,6 @@ var (
 	// ErrOAuthUserInfoNestedJWTRequiresAll is returned when responseType is NESTED_JWT but fields are missing.
 	ErrOAuthUserInfoNestedJWTRequiresAll = errors.New(
 		"signingAlg, encryptionAlg, and encryptionEnc are required when userinfo responseType is NESTED_JWT")
-	// ErrOAuthUserInfoAlgRequiresResponseType is returned when algorithm fields
-	// are set without an explicit responseType.
-	ErrOAuthUserInfoAlgRequiresResponseType = errors.New(
-		"userinfo responseType is required when signingAlg or encryptionAlg is set")
 )
 
 // Certificate operation labels used in CertOperationError.

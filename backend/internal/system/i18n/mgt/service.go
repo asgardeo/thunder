@@ -20,9 +20,7 @@
 package mgt
 
 import (
-	"context"
 	"slices"
-	"strings"
 
 	goi18n "golang.org/x/text/language"
 
@@ -46,14 +44,7 @@ type I18nServiceInterface interface {
 		*TranslationResponse, *serviceerror.ServiceError)
 	SetTranslationOverrideForKey(language string, namespace string, key string, value string) (
 		*TranslationResponse, *serviceerror.ServiceError)
-	SetTranslationOverridesForNamespace(ctx context.Context, namespace string,
-		entries map[string]map[string]string) *serviceerror.ServiceError
 	ClearTranslationOverrideForKey(language string, namespace string, key string) *serviceerror.ServiceError
-	DeleteTranslationsByNamespace(ctx context.Context, namespace string) *serviceerror.ServiceError
-	DeleteTranslationsByKey(ctx context.Context, namespace string, key string) *serviceerror.ServiceError
-	// GetTranslationsByNamespace returns all raw translations for a namespace as
-	// map[key]map[language]value without locale resolution or best-match logic.
-	GetTranslationsByNamespace(namespace string) (map[string]map[string]string, *serviceerror.ServiceError)
 }
 
 // i18nService is the default implementation of I18nServiceInterface.
@@ -175,50 +166,6 @@ func (s *i18nService) SetTranslationOverrideForKey(
 	}, nil
 }
 
-// SetTranslationOverridesForNamespace creates or updates all provided key/language/value entries
-// for a single namespace. When ctx carries an outer configDB transaction the writes join it.
-// entries is map[key]map[language]value.
-func (s *i18nService) SetTranslationOverridesForNamespace(
-	ctx context.Context, namespace string, entries map[string]map[string]string) *serviceerror.ServiceError {
-	if err := declarativeresource.CheckDeclarativeUpdate(); err != nil {
-		return err
-	}
-	if !ValidateNamespace(namespace) {
-		return &ErrorInvalidNamespace
-	}
-	translations := make([]Translation, 0)
-	for key, langMap := range entries {
-		if !ValidateKey(key) {
-			return &ErrorInvalidKey
-		}
-		for language, value := range langMap {
-			if language == "" {
-				return &ErrorMissingLanguage
-			}
-			if !ValidateLanguage(language) {
-				return &ErrorInvalidLanguage
-			}
-			if value == "" {
-				return &ErrorMissingValue
-			}
-			translations = append(translations, Translation{
-				Key:       key,
-				Language:  language,
-				Namespace: namespace,
-				Value:     value,
-			})
-		}
-	}
-	if len(translations) == 0 {
-		return nil
-	}
-	if err := s.store.UpsertTranslations(ctx, translations); err != nil {
-		s.logger.Error("Failed to set translation overrides for namespace", log.Error(err))
-		return &serviceerror.InternalServerError
-	}
-	return nil
-}
-
 // ClearTranslationOverrideForKey removes the custom override for a single translation.
 func (s *i18nService) ClearTranslationOverrideForKey(
 	language string, namespace string, key string) *serviceerror.ServiceError {
@@ -296,10 +243,6 @@ func (s *i18nService) ResolveTranslations(
 	result := make(map[string]map[string]string)
 	for _, translations := range allTranslations {
 		translation := selectBestTranslation(translations, requestedLang)
-
-		if translation.Value == "" {
-			continue
-		}
 		if result[translation.Namespace] == nil {
 			result[translation.Namespace] = make(map[string]string)
 		}
@@ -388,67 +331,6 @@ func (s *i18nService) ClearTranslationOverrides(language string) *serviceerror.S
 	}
 
 	return nil
-}
-
-// DeleteTranslationsByKey removes all translations for a specific namespace+key pair.
-func (s *i18nService) DeleteTranslationsByKey(
-	ctx context.Context, namespace string, key string) *serviceerror.ServiceError {
-	if !ValidateNamespace(namespace) {
-		return &ErrorInvalidNamespace
-	}
-	if !ValidateKey(key) {
-		return &ErrorInvalidKey
-	}
-	if err := s.store.DeleteTranslationsByKey(ctx, namespace, key); err != nil {
-		s.logger.Error("Failed to delete translations by namespace and key", log.Error(err))
-		return &serviceerror.InternalServerError
-	}
-	return nil
-}
-
-// DeleteTranslationsByNamespace removes all translations under the given namespace.
-// When ctx carries an outer configDB transaction the delete joins it.
-func (s *i18nService) DeleteTranslationsByNamespace(
-	ctx context.Context, namespace string) *serviceerror.ServiceError {
-	if !ValidateNamespace(namespace) {
-		return &ErrorInvalidNamespace
-	}
-	if err := s.store.DeleteTranslationsByNamespace(ctx, namespace); err != nil {
-		s.logger.Error("Failed to delete translations by namespace", log.Error(err))
-		return &serviceerror.InternalServerError
-	}
-	return nil
-}
-
-// GetTranslationsByNamespace returns all raw translations for a namespace as
-// map[key]map[language]value without locale resolution. Used to load all locale
-// variants for a resource in a single query.
-func (s *i18nService) GetTranslationsByNamespace(
-	namespace string) (map[string]map[string]string, *serviceerror.ServiceError) {
-	if !ValidateNamespace(namespace) {
-		return nil, &ErrorInvalidNamespace
-	}
-	byNs, err := s.store.GetTranslationsByNamespace(namespace)
-	if err != nil {
-		s.logger.Error("Failed to get translations by namespace", log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-	result := make(map[string]map[string]string, len(byNs))
-	for compositeKey, langs := range byNs {
-		// compositeKey is "namespace|key" — drop the namespace prefix.
-		idx := strings.Index(compositeKey, "|")
-		if idx < 0 {
-			continue
-		}
-		fieldKey := compositeKey[idx+1:]
-		for lang, trans := range langs {
-			if result[fieldKey] == nil {
-				result[fieldKey] = make(map[string]string)
-			}
-			result[fieldKey][lang] = trans.Value
-		}
-	}
-	return result, nil
 }
 
 func (s *i18nService) clearAllOverrides(language string) error {

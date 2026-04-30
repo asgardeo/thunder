@@ -5,17 +5,17 @@ persona: iam
 hide_table_of_contents: true
 ---
 
-# <ProductName /> MCP Server
+# Thunder MCP Server
 
-<ProductName /> provides a Model Context Protocol (MCP) server that enables AI assistants and development tools to interact with <ProductName />'s identity management capabilities. The MCP server exposes tools for managing applications, authentication flows, and React SDK integration.
+Thunder provides a Model Context Protocol (MCP) server that enables AI assistants and development tools to interact with Thunder's identity management capabilities. The MCP server exposes tools for managing applications, authentication flows, and React SDK integration.
 
 ## Overview
 
-The MCP server is available at the `/mcp` endpoint on your <ProductName /> instance (default: `https://localhost:8090/mcp`). See [Available Tools](#available-tools) for the complete list of capabilities.
+The MCP server is available at the `/mcp` endpoint on your Thunder instance (default: `https://localhost:8090/mcp`). See [Available Tools](#available-tools) for the complete list of capabilities.
 
 ### Authentication
 
-The MCP endpoint is secured with OAuth 2.0 Bearer Token authentication following the [MCP Authorization Specification](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization). Clients must present a valid JWT access token with the `system` scope. <ProductName /> validates the token signature, issuer, audience (set to the MCP server URL), and expiry. See [Step 3](#step-3-add-thunder-mcp-server-to-vs-code) for setup instructions.
+The MCP endpoint is secured with OAuth 2.0 Bearer Token authentication following the [MCP Authorization Specification](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization). Clients must present a valid JWT access token with the `system` scope. Thunder validates the token signature, issuer, audience (set to the MCP server URL), and expiry. See [Step 3](#step-3-add-thunder-mcp-server-to-vs-code) for setup instructions.
 
 ## Available Tools
 
@@ -44,27 +44,27 @@ The MCP endpoint is secured with OAuth 2.0 Bearer Token authentication following
 
 | Tool Name | Description | Parameters |
 |---|---|---|
-| `thunder_integrate_react_sdk` | Provides instructions and code snippets for integrating <ProductName /> authentication via the Asgardeo React SDK. Supports redirect-based (Mode 1) and self-hosted login (Mode 2). | `thunder_url` (string, optional) |
+| `thunder_integrate_react_sdk` | Provides instructions and code snippets for integrating Thunder authentication via the Asgardeo React SDK. Supports redirect-based (Mode 1) and self-hosted login (Mode 2). | `thunder_url` (string, optional) |
 
 ## Prerequisites
 
-- <ProductName /> server running (default: `https://localhost:8090`)
+- Thunder server running (default: `https://localhost:8090`)
 - VS Code with MCP support (or another MCP-compatible client)
 - Choose an authentication approach — see [Step 3](#step-3-add-thunder-mcp-server-to-vs-code) for detailed setup:
   - **Option A**: Standard MCP authorization flow using DCR (recommended)
   - **Option B**: Client credentials with a pre-registered application
 
-## Step 1: Add <ProductName /> Certificate to System Certificates
+## Step 1: Add Thunder Certificate to System Certificates
 
-<ProductName /> uses HTTPS with a self-signed certificate by default. Add the <ProductName /> certificate (`backend/cmd/server/repository/resources/security/server.cert`) to your system's trusted certificates (Keychain on macOS, certificate store on Linux/Windows).
+Thunder uses HTTPS with a self-signed certificate by default. Add the Thunder certificate (`backend/cmd/server/repository/resources/security/server.cert`) to your system's trusted certificates (Keychain on macOS, certificate store on Linux/Windows).
 
 ## Step 2: Configure MCP Client to Trust System Certificates
 
 The MCP client (VS Code) needs to be configured to trust system certificates and should be restarted.
 
-## Step 3: Add <ProductName /> MCP Server to VS Code
+## Step 3: Add Thunder MCP Server to VS Code
 
-Two approaches are available to authenticate with the <ProductName /> MCP server: the standard MCP authorization flow using DCR (recommended), or client credentials with a pre-registered application.
+Two approaches are available to authenticate with the Thunder MCP server: the standard MCP authorization flow using DCR (recommended), or client credentials with a pre-registered application.
 
 ### Option A: Standard MCP Authorization Flow (DCR)
 
@@ -98,7 +98,7 @@ This approach follows the MCP Authorization Specification. The MCP client handle
 
 If you prefer not to enable open DCR, you can pre-register an application and use client credentials to get a token manually.
 
-1. **Create an M2M application** via the <ProductName /> REST API with the `client_credentials` grant type and `system` scope:
+1. **Create an M2M application** via the Thunder REST API with the `client_credentials` grant type and `system` scope:
 
    ```bash
    curl -kL -X POST https://localhost:8090/applications \
@@ -155,12 +155,12 @@ Check the MCP server status in VS Code's MCP panel or output logs.
 
 ## Sample Use Case: Integrating Login via React SDK
 
-Here's a complete example of using the <ProductName /> MCP server to set up React SDK authentication:
+Here's a complete example of using the Thunder MCP server to set up React SDK authentication:
 
 ### Step 1: Create an Application
 
 Ask your AI assistant:
-> "Create a new SPA application in <ProductName /> for React SDK integration"
+> "Create a new SPA application in Thunder for React SDK integration"
 
 The assistant will:
 
@@ -175,7 +175,7 @@ Ask your AI assistant:
 
 The assistant will:
 
-1. Use `thunder_integrate_react_sdk` with your <ProductName /> URL
+1. Use `thunder_integrate_react_sdk` with your Thunder URL
 2. Provide complete integration instructions including:
    - Provider configuration
    - Component usage examples
@@ -206,13 +206,13 @@ The assistant will:
 
 ## Troubleshooting
 
-Common issues and solutions when setting up the <ProductName /> MCP server:
+Common issues and solutions when setting up the Thunder MCP server:
 
 ### Authentication Errors
 
 If you encounter 401 Unauthorized errors:
 
-1. **Complete the login flow**: When prompted by your MCP client, log in to <ProductName /> to authorize access
+1. **Complete the login flow**: When prompted by your MCP client, log in to Thunder to authorize access
 2. **Verify DCR is available**: Ensure the DCR endpoint is accessible at `/oauth2/dcr/register`
 3. **Check the scopes**: The MCP server requires the `system` scope. Verify that the authorization server metadata at `/.well-known/oauth-authorization-server` includes `system` in `scopes_supported`
 4. **Check the protected resource metadata**: Verify the discovery endpoint is accessible:
@@ -233,7 +233,7 @@ If you encounter certificate/TLS errors:
 
 ### Connection Issues
 
-1. **Verify <ProductName /> is running**:
+1. **Verify Thunder is running**:
 
    ```bash
    curl -k https://localhost:8090/health/liveness

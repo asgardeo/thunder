@@ -113,10 +113,9 @@ func Initialize(
 // registerRoutes registers the routes for the authentication.
 func registerRoutes(mux *http.ServeMux, authnHandler *authenticationHandler) {
 	opts := middleware.CORSOptions{
-		AllowedMethods:   []string{"POST"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "POST",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 
 	// Credentials authentication routes

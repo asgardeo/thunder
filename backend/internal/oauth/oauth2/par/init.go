@@ -70,10 +70,9 @@ func registerRoutes(
 	discoveryService discovery.DiscoveryServiceInterface,
 ) {
 	corsOpts := middleware.CORSOptions{
-		AllowedMethods:   []string{"POST"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "POST",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 
 	metadata := discoveryService.GetOAuth2AuthorizationServerMetadata(context.Background())

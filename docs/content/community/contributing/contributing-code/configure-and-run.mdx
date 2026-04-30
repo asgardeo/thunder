@@ -1,6 +1,6 @@
 ---
 title: Configure and Run
-description: Learn how to build from source, configure the server, and run the backend and frontend together.
+description: Learn how to build Thunder from source, configure the server, and run the backend and frontend together.
 sidebar_position: 2
 hide_table_of_contents: false
 ---
@@ -24,7 +24,7 @@ Building from source produces a distributable `.zip` file at `THUNDER_ROOT/targe
 
 - Compiles the Go backend binary
 - Initializes SQLite databases (config, runtime, user)
-- Builds the frontend React apps (<ProductName /> Gate + <ProductName /> Console)
+- Builds the frontend React apps (Thunder Gate + Thunder Console)
 - Builds the documentation
 - Builds sample apps
 
@@ -42,7 +42,7 @@ cors:
 ```
 
 :::tip
-This configuration allows the <ProductName /> Gate and <ProductName /> Console applications to communicate with the backend server during development.
+This configuration allows the Thunder Gate and Thunder Console applications to communicate with the backend server during development.
 :::
 
 **Configure the Gate client:**
@@ -53,14 +53,14 @@ gate_client:
 ```
 
 :::tip
-This configuration points the backend server to the local <ProductName /> Gate application for authentication.
+This configuration points the backend server to the local Thunder Gate application for authentication.
 :::
 
 ## Run the Server
 
 ### Option A: All-in-one (Backend + Frontend together)
 
-Start the <ProductName /> server and apps in development mode.
+Start the Thunder server and apps in development mode.
 
 <CodeGroup>
   <CodeBlock lang="bash" label="Linux/macOS">
@@ -88,8 +88,8 @@ This command will automatically set up your complete development environment:
 **Services that start:**
 
 - **Backend server**: [https://localhost:8090](https://localhost:8090)
-- **<ProductName /> Gate** (Login/Register): [https://localhost:5190/gate](https://localhost:5190/gate)
-- **<ProductName /> Console** (Admin Console): [https://localhost:5191/console](https://localhost:5191/console)
+- **Thunder Gate** (Login/Register): [https://localhost:5190/gate](https://localhost:5190/gate)
+- **Thunder Console** (Admin Console): [https://localhost:5191/console](https://localhost:5191/console)
 :::
 
 ### Option B: Separate terminals (for debugging independently)
@@ -122,12 +122,12 @@ Use this approach when you need to debug the backend and frontend independently.
 
 <CodeGroup>
   <CodeBlock lang="bash" label="Linux/macOS">
-    {`SKIP_SECURITY=true THUNDER_API_BASE="https://localhost:8090" \\
+    {`THUNDER_SKIP_SECURITY=true THUNDER_API_BASE="https://localhost:8090" \\
   backend/cmd/server/bootstrap/01-default-resources.sh \\
   --console-redirect-uris "https://localhost:5191/console"`}
   </CodeBlock>
   <CodeBlock lang="powershell" label="Windows">
-    {`$env:SKIP_SECURITY = "true"
+    {`$env:THUNDER_SKIP_SECURITY = "true"
 $env:THUNDER_API_BASE = "https://localhost:8090"
 & backend\\cmd\\server\\bootstrap\\01-default-resources.ps1 \`
   --console-redirect-uris "https://localhost:5191/console"`}
@@ -142,7 +142,7 @@ Don't use `./setup.sh` here. That script is designed for the packaged distributi
 
 ## Setup and Data Seeding
 
-<ProductName /> provides two different data seeding paths, depending on how the system is initialized.
+Thunder provides two different data seeding paths, depending on how the system is initialized.
 
 | Command | Use Case | Seeded Data |
 |---------|----------|-------------|
@@ -164,7 +164,7 @@ For development environments, `make run` executes the `backend/cmd/server/bootst
 
 For release artifacts and deployment environments, `./setup.sh` performs a one-time initialization:
 
-1. Starts <ProductName /> temporarily with `SKIP_SECURITY=true`
+1. Starts Thunder temporarily with `THUNDER_SKIP_SECURITY=true`
 2. Waits until the server becomes ready (`/health/readiness`)
 3. Executes all scripts in the `./bootstrap` directory in filename order
 4. Stops the temporary server after initialization is complete
@@ -181,7 +181,7 @@ For release artifacts and deployment environments, `./setup.sh` performs a one-t
 The setup logs also print the sample application IDs, which can be used when configuring the sample applications.
 
 **In short:**
-- Use `make run` when running <ProductName /> from source.
+- Use `make run` when running Thunder from source.
 - Use `./setup.sh` when initializing a fresh runtime environment with the full bootstrap data.
 
 ## Advanced Setup (Manual Mode)
@@ -193,7 +193,7 @@ For developers who want to run frontend components separately without using `mak
 
 ### Installing Dependencies
 
-1. Navigate to the <ProductName /> frontend directory.
+1. Navigate to the Thunder frontend directory.
 
 ```bash
 cd frontend
@@ -225,9 +225,9 @@ THUNDER_API_BASE="https://localhost:8090" \
   --console-redirect-uris "https://localhost:5191/console"
 ```
 
-### Setting up the <ProductName /> Gate Application
+### Setting up the Thunder Gate Application
 
-1. Point the `gate_client` in `deployment.yaml` to the local <ProductName /> Gate application.
+1. Point the `gate_client` in `deployment.yaml` to the local Thunder Gate application.
 
    - If you are running `make run`, change the `gate_client` section in `backend/cmd/server/repository/conf/deployment.yaml`
    - If you are running the backend server manually, change the `gate_client` section in `<THUNDER_HOME>/repository/conf/deployment.yaml`
@@ -237,7 +237,7 @@ gate_client:
   port: 5190
 ```
 
-2. Add the local development origin of the <ProductName /> Gate application (https://localhost:5190) to the CORS allowed origins in `<THUNDER_HOME>/repository/conf/deployment.yaml`.
+2. Add the local development origin of the Thunder Gate application (https://localhost:5190) to the CORS allowed origins in `<THUNDER_HOME>/repository/conf/deployment.yaml`.
 
 ```yaml
 cors:
@@ -245,18 +245,18 @@ cors:
     - "https://localhost:5190"
 ```
 
-3. Run the <ProductName /> Gate application.
+3. Run the Thunder Gate application.
 
 ```bash
 cd frontend
 pnpm --filter @thunder/gate dev
 ```
 
-### Setting up the <ProductName /> Console Application
+### Setting up the Thunder Console Application
 
 **IMPORTANT**: This section assumes that you have already created the `Console` application using the initial data setup script. If not, please refer to the [Seed Data](#seed-data-optional) section above.
 
-1. First, retrieve the application ID of the **Console** application from the <ProductName /> server. This will be the application with the `client_id` **CONSOLE**.
+1. First, retrieve the application ID of the **Console** application from the Thunder server. This will be the application with the `client_id` **CONSOLE**.
 
 ```bash
 curl -k -X GET "https://localhost:8090/applications"
@@ -295,12 +295,12 @@ cors:
     - "https://localhost:5191"
 ```
 
-6. Run the <ProductName /> Console application.
+6. Run the Thunder Console application.
 
 ```bash
 pnpm --filter @thunder/console dev
 ```
 
-This will run the <ProductName /> Console application on `https://localhost:5191/console`.
+This will run the Thunder Console application on `https://localhost:5191/console`.
 
 </details>

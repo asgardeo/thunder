@@ -89,7 +89,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Suc
 		ctx.Context,
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
-		template.TemplateData{},
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
+			"appName":    "",
+		},
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
 		Body:    "<html><body>Complete Registration</body></html>",
@@ -131,7 +134,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_Invit
 		ctx.Context,
 		template.ScenarioSelfRegistration,
 		template.TemplateTypeEmail,
-		template.TemplateData{},
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
+			"appName":    "",
+		},
 	).Return(&template.RenderedTemplate{
 		Subject: "Complete Your Registration",
 		Body:    "<html><body>Click to register</body></html>",
@@ -175,7 +181,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UsesRuntimeRecipientOv
 		ctx.Context,
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
-		template.TemplateData{},
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
+			"appName":    "",
+		},
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
 		Body:    "<html><body>Complete Registration</body></html>",
@@ -214,7 +223,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailFromRuntimeData()
 		ctx.Context,
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
-		template.TemplateData{},
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
+			"appName":    "",
+		},
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
 		Body:    "<html><body>Complete Registration</body></html>",
@@ -269,29 +281,12 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingInviteLink() {
 		},
 	}
 
-	suite.mockTemplateService.On("Render",
-		ctx.Context,
-		template.ScenarioUserInvite,
-		template.TemplateTypeEmail,
-		template.TemplateData{},
-	).Return(&template.RenderedTemplate{
-		Subject: "You're Invited to Register",
-		Body:    "<html><body>Complete Registration</body></html>",
-		IsHTML:  true,
-	}, nil)
-
-	expectedEmail := email.EmailData{
-		To:      []string{"user@example.com"},
-		Subject: "You're Invited to Register",
-		Body:    "<html><body>Complete Registration</body></html>",
-		IsHTML:  true,
-	}
-	suite.mockEmailClient.On("Send", expectedEmail).Return(nil)
-
 	resp, err := suite.executor.Execute(ctx)
 
-	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status)
+	suite.Error(err)
+	suite.Nil(resp)
+	suite.Contains(err.Error(), "invite link not found")
+	suite.mockEmailClient.AssertNumberOfCalls(suite.T(), "Send", 0)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_MissingInviteLink() {
@@ -308,29 +303,12 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_Missi
 		},
 	}
 
-	suite.mockTemplateService.On("Render",
-		ctx.Context,
-		template.ScenarioSelfRegistration,
-		template.TemplateTypeEmail,
-		template.TemplateData{},
-	).Return(&template.RenderedTemplate{
-		Subject: "Complete Your Registration",
-		Body:    "<html><body>Click to register</body></html>",
-		IsHTML:  true,
-	}, nil)
-
-	expectedEmail := email.EmailData{
-		To:      []string{"user@example.com"},
-		Subject: "Complete Your Registration",
-		Body:    "<html><body>Click to register</body></html>",
-		IsHTML:  true,
-	}
-	suite.mockEmailClient.On("Send", expectedEmail).Return(nil)
-
 	resp, err := suite.executor.Execute(ctx)
 
-	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status)
+	suite.Error(err)
+	suite.Nil(resp)
+	suite.Contains(err.Error(), "invite link not found")
+	suite.mockEmailClient.AssertNumberOfCalls(suite.T(), "Send", 0)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingTemplateProperty_DefaultsToUserInvite() {
@@ -351,7 +329,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingTemplatePropert
 		ctx.Context,
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
-		template.TemplateData{},
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
+			"appName":    "",
+		},
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
 		Body:    "<html><body>Complete Registration</body></html>",
@@ -391,7 +372,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmptyTemplateString_De
 		ctx.Context,
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
-		template.TemplateData{},
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
+			"appName":    "",
+		},
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
 		Body:    "<html><body>Complete Registration</body></html>",
@@ -453,7 +437,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_TemplateRenderError() 
 		ctx.Context,
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
-		template.TemplateData{},
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
+			"appName":    "",
+		},
 	).Return(nil, &serviceerror.ServiceError{Code: "TMP-5000"})
 
 	resp, err := suite.executor.Execute(ctx)
@@ -518,7 +505,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ClientError() {
 		ctx.Context,
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
-		template.TemplateData{},
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
+			"appName":    "",
+		},
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
 		Body:    "<html><body>Complete Registration</body></html>",
@@ -572,7 +562,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_KnownSMTPErrors() {
 				ctx.Context,
 				template.ScenarioUserInvite,
 				template.TemplateTypeEmail,
-				template.TemplateData{},
+				template.TemplateData{
+					"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
+					"appName":    "",
+				},
 			).Return(&template.RenderedTemplate{
 				Subject: "You're Invited to Register",
 				Body:    "<html><body>Complete Registration</body></html>",
@@ -616,7 +609,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UnexpectedError() {
 		ctx.Context,
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
-		template.TemplateData{},
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
+			"appName":    "",
+		},
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
 		Body:    "<html><body>Complete Registration</body></html>",
@@ -712,63 +708,20 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ResolvesEmailFromForwa
 		ctx.Context,
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
-		template.TemplateData{},
-	).Return(&template.RenderedTemplate{
-		Subject: "You're Invited to Register",
-		Body:    "<html><body>Complete Registration</body></html>",
-		IsHTML:  true,
-	}, nil)
-
-	expectedEmail := email.EmailData{
-		To:      []string{"forwarded@example.com"},
-		Subject: "You're Invited to Register",
-		Body:    "<html><body>Complete Registration</body></html>",
-		IsHTML:  true,
-	}
-	suite.mockEmailClient.On("Send", expectedEmail).Return(nil)
-
-	resp, err := suite.executor.Execute(ctx)
-
-	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status)
-}
-
-func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UsesNodePropertiesAndForwardedData() {
-	ctx := &core.NodeContext{
-		ExecutionID:  "test-execution-id",
-		ExecutorMode: ExecutorModeSend,
-		ForwardedData: map[string]interface{}{
-			userAttributeEmail: "forwarded@example.com",
-			// Notice: We completely removed the template name from here!
-			common.ForwardedDataKeyTemplateData: map[string]interface{}{
-				"magicLink":     "https://localhost:5190/gate/signin?token=abc",
-				"expiryMinutes": "5",
-			},
-		},
-		RuntimeData: map[string]string{},
-		NodeProperties: map[string]interface{}{
-			"emailTemplate": "USER_INVITE", // The JSON is now the single source of truth
-		},
-	}
-
-	suite.mockTemplateService.On("Render",
-		ctx.Context,
-		template.ScenarioUserInvite,
-		template.TemplateTypeEmail,
 		template.TemplateData{
-			"magicLink":     "https://localhost:5190/gate/signin?token=abc",
-			"expiryMinutes": "5",
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
+			"appName":    "",
 		},
 	).Return(&template.RenderedTemplate{
-		Subject: "Sign in to your account",
-		Body:    "<html><body>Magic Link</body></html>",
+		Subject: "You're Invited to Register",
+		Body:    "<html><body>Complete Registration</body></html>",
 		IsHTML:  true,
 	}, nil)
 
 	expectedEmail := email.EmailData{
 		To:      []string{"forwarded@example.com"},
-		Subject: "Sign in to your account",
-		Body:    "<html><body>Magic Link</body></html>",
+		Subject: "You're Invited to Register",
+		Body:    "<html><body>Complete Registration</body></html>",
 		IsHTML:  true,
 	}
 	suite.mockEmailClient.On("Send", expectedEmail).Return(nil)
@@ -801,7 +754,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ResolvesEmailUsingConf
 		ctx.Context,
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
-		template.TemplateData{},
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
+			"appName":    "",
+		},
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
 		Body:    "<html><body>Complete Registration</body></html>",
@@ -848,7 +804,10 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_ResolvesEmailFromEntit
 		ctx.Context,
 		template.ScenarioUserInvite,
 		template.TemplateTypeEmail,
-		template.TemplateData{},
+		template.TemplateData{
+			"inviteLink": "https://localhost:5190/gate/invite?executionId=test&inviteToken=abc",
+			"appName":    "",
+		},
 	).Return(&template.RenderedTemplate{
 		Subject: "You're Invited to Register",
 		Body:    "<html><body>Complete Registration</body></html>",
@@ -1009,31 +968,4 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_NilEntityProvider_Retu
 	suite.Nil(resp)
 	suite.Contains(err.Error(), "entity provider is not configured for email resolution")
 	suite.mockEmailClient.AssertNumberOfCalls(suite.T(), "Send", 0)
-}
-
-func (suite *EmailExecutorTestSuite) TestExecute_SendMode_InvalidNodePropertyScenario() {
-	ctx := &core.NodeContext{
-		ExecutionID:  "test-execution-id",
-		ExecutorMode: ExecutorModeSend,
-		ForwardedData: map[string]interface{}{
-			userAttributeEmail: "forwarded@example.com",
-		},
-		RuntimeData: map[string]string{},
-		NodeProperties: map[string]interface{}{
-			"emailTemplate": "NON_EXISTENT_TEMPLATE", // Moved the bad string to NodeProperties
-		},
-	}
-
-	suite.mockTemplateService.On("Render",
-		ctx.Context,
-		template.ScenarioType("NON_EXISTENT_TEMPLATE"),
-		template.TemplateTypeEmail,
-		template.TemplateData{},
-	).Return(nil, &serviceerror.ServiceError{Code: "TMP-404"})
-
-	resp, err := suite.executor.Execute(ctx)
-
-	suite.Error(err)
-	suite.Contains(err.Error(), "failed to render email template")
-	suite.Nil(resp)
 }

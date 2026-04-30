@@ -40,8 +40,8 @@ Authentication/registration are JSON node graphs (`START → PROMPT → TASK →
 
 | Mode | `AsgardeoProvider` props | Used in |
 |------|--------------------------|---------|
-| Redirect (Thunder-hosted login) | `clientId` + `baseUrl` + `platform="AsgardeoV2"` | `Console`, `react-sdk-sample` |
-| App-native (Flow API) | `applicationId` + `baseUrl` + `platform="AsgardeoV2"` | `Gate`, `react-api-based-sample` |
+| Redirect (Thunder-hosted login) | `clientId` + `baseUrl` + `platform="AsgardeoV2"` | `thunder-console`, `react-sdk-sample` |
+| App-native (Flow API) | `applicationId` + `baseUrl` + `platform="AsgardeoV2"` | `thunder-gate`, `react-api-based-sample` |
 
 `clientId` vs `applicationId` is the critical distinction. Common primitives: `useAsgardeo()`, `<SignedIn/Out>`, `<SignInButton/SignOutButton>`, `<ProtectedRoute>` (`@asgardeo/react-router@2.0`).
 

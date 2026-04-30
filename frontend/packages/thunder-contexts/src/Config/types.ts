@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -15,8 +15,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-import {OxygenThemeType} from '@wso2/oxygen-ui/styles/index';
 
 /**
  * Server configuration interface that defines connection parameters
@@ -103,30 +101,6 @@ export interface ClientConfig {
 }
 
 /**
- * Theme configuration interface that defines theming options for Thunder applications.
- */
-export interface ThemeConfig {
-  /** Unique key for the theme */
-  key: string;
-
-  /** Display name for the theme */
-  label: string;
-
-  /** Theme object compatible with Oxygen UI theming system or relative path to a theme config file */
-  theme: string | Partial<OxygenThemeType>;
-}
-
-/**
- * Design configuration interface that defines theming and UI customization settings.
- *
- * @public
- */
-export interface DesignConfig {
-  initialTheme?: string;
-  themes?: ThemeConfig[];
-}
-
-/**
  * Branding configuration interface that defines product name and other branding-related settings.
  *
  * @public
@@ -137,11 +111,6 @@ export interface BrandConfig {
    * @example "My Product", "Awesome Product"
    */
   product_name: string;
-
-  /**
-   * Design configuration for theming and UI customization.
-   */
-  design?: DesignConfig;
 }
 
 /**
@@ -223,9 +192,6 @@ export interface ThunderConfig {
 
   /** Optional trusted issuer configuration for external token validation */
   trusted_issuer?: TrustedIssuerConfig;
-
-  /** Optional design configuration for theming and UI customization */
-  design?: DesignConfig;
 }
 
 /**

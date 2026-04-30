@@ -44,10 +44,6 @@ func (p *array) isDisplayable() bool {
 	return false
 }
 
-func (p *array) getDisplayName() string {
-	return p.displayName
-}
-
 func (p *array) isUnique() bool {
 	return false
 }

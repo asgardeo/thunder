@@ -315,7 +315,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_NotI
 	result, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+	assert.Equal(suite.T(), common.ExecFailure, result.Status)
 	assert.Contains(suite.T(), result.FailureReason, "not valid for the chosen user type")
 	suite.mockOUService.AssertExpectations(suite.T())
 }
@@ -381,7 +381,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_Clie
 	result, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+	assert.Equal(suite.T(), common.ExecFailure, result.Status)
 	assert.Contains(suite.T(), result.FailureReason, "not valid")
 	suite.mockOUService.AssertExpectations(suite.T())
 }
@@ -537,7 +537,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_PromptAll_NonExistentOU() 
 	result, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+	assert.Equal(suite.T(), common.ExecFailure, result.Status)
 	assert.Equal(suite.T(), "The selected organization unit does not exist.", result.FailureReason)
 	suite.mockOUService.AssertExpectations(suite.T())
 }

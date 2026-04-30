@@ -215,25 +215,12 @@ const (
 	InputTypePhone = "PHONE_INPUT"
 	// InputTypeConsent represents a consent decisions input type.
 	InputTypeConsent = "CONSENT_INPUT"
-	// InputTypeSelect represents a select (dropdown) input type.
-	InputTypeSelect = "SELECT"
 
 	// TODO: Add support for other sensitive input types:
 	// - Passkey credential fields (credentialId, clientDataJSON, authenticatorData, signature, userHandle)
 	// - OAuth/OIDC authorization codes
 	// - OIDC nonce
 	// - Invite tokens
-)
-
-// MetaComponentType constants define known component types used in flow meta definitions.
-const (
-	// MetaComponentTypeBlock represents a block container component.
-	MetaComponentTypeBlock = "BLOCK"
-	// MetaComponentTypeAction represents an action (button) component.
-	MetaComponentTypeAction = "ACTION"
-	// MetaComponentTypeDynamicInputPlaceholder marks the insertion point for dynamically
-	// derived input components. The renderer replaces this component with the resolved inputs.
-	MetaComponentTypeDynamicInputPlaceholder = "DYNAMIC_INPUT_PLACEHOLDER"
 )
 
 // Attribute name constants for well-known user attributes used across flow executors.
@@ -266,6 +253,4 @@ const (
 	ForwardedDataKeyConsentPrompt = "consent_prompt"
 	// ForwardedDataKeyActionType holds the action type selected by the user for the immediate next node
 	ForwardedDataKeyActionType = "actionType"
-	// ForwardedDataKeyTemplateData holds template parameters for notification executors
-	ForwardedDataKeyTemplateData = "templateData"
 )

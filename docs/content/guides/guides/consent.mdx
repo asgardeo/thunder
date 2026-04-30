@@ -10,15 +10,15 @@ import ConsentLoginScreenDark from './assets/images/consent-login-screen-dark.pn
 
 # Consent
 
-<ProductName /> provides built-in support for capturing user consent during the login flow. A lightweight default consent server is packed with the <ProductName /> distribution and is enabled by default to seamlessly handle consent approvals.
+Thunder provides built-in support for capturing user consent during the login flow. A lightweight default consent server is packed with the Thunder distribution and is enabled by default to seamlessly handle consent approvals.
 
 :::note
-As of now, <ProductName /> only supports **attribute consent**.
+As of now, Thunder only supports **attribute consent**.
 :::
 
 ## Startup Flags
 
-<ProductName /> automatically starts the default consent server when running the startup script. You can disable this behavior if you prefer to use an external consent server or want to run <ProductName /> without consent capabilities.
+Thunder automatically starts the default consent server when running the startup script. You can disable this behavior if you prefer to use an external consent server or want to run Thunder without consent capabilities.
 
 #### Zip distribution
 For Zip distributions, you can pass the `--without-consent` flag when executing the startup script:
@@ -41,7 +41,7 @@ environment:
 
 ## Server Configurations
 
-<ProductName /> communicates with the consent server via a REST API. You can configure the connection details in the `repository/conf/deployment.yaml` file.
+Thunder communicates with the consent server via a REST API. You can configure the connection details in the `repository/conf/deployment.yaml` file.
 
 The default configuration block looks like this:
 
@@ -60,15 +60,15 @@ consent:
 
 ## Attribute Consent in Login Flows
 
-When users authenticate with an application that requires specific profile attributes, <ProductName /> can prompt them to consent to sharing specific attributes with the application.
+When users authenticate with an application that requires specific profile attributes, Thunder can prompt them to consent to sharing specific attributes with the application.
 
 Attribute consent requirements are driven by the requested attributes during application configuration. If an application requires specific user attributes (e.g., username, email), the user will be asked to grant consent before the login process completes.
 
 ## Configuring Consent in Flows
 
-To enable the consent prompt during authentication flows, configure it within the <ProductName /> flow builder:
+To enable the consent prompt during authentication flows, configure it within the Thunder flow builder:
 
-1. Navigate to the **Flows** section in the <ProductName /> console and select the flow you want to update (e.g., the default login flow).
+1. Navigate to the **Flows** section in the Thunder console and select the flow you want to update (e.g., the default login flow).
 2. In the flow builder, expand the **Executors** section and add the **User Consent** executor node. It should be placed after the necessary authentication steps and before the **Auth Assert Generator** node.
 3. Connect the `onSuccess` edge of the preceding node to the input of the **User Consent** node, and then connect the `onSuccess` edge of the **User Consent** node to the next node in the flow (e.g., **Auth Assert Generator**).
 4. Expand the **Steps** section and add the **Consent View** step to the flow. This step will render the consent page to the user during the login process.

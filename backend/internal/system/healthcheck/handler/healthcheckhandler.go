@@ -23,20 +23,20 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/system/healthcheck/model"
-	"github.com/asgardeo/thunder/internal/system/healthcheck/service"
+	"github.com/asgardeo/thunder/internal/system/healthcheck/provider"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
 // HealthCheckHandler defines the handler for managing health check API requests.
 type HealthCheckHandler struct {
-	Service service.HealthCheckServiceInterface
+	Provider provider.HealthCheckProviderInterface
 }
 
-// NewHealthCheckHandler creates a new instance of HealthCheckHandler with the provided service.
-func NewHealthCheckHandler(svc service.HealthCheckServiceInterface) *HealthCheckHandler {
+// NewHealthCheckHandler creates a new instance of HealthCheckHandler.
+func NewHealthCheckHandler() *HealthCheckHandler {
 	return &HealthCheckHandler{
-		Service: svc,
+		Provider: provider.NewHealthCheckProvider(),
 	}
 }
 
@@ -51,7 +51,8 @@ func (hch *HealthCheckHandler) HandleLivenessRequest(w http.ResponseWriter, r *h
 func (hch *HealthCheckHandler) HandleReadinessRequest(w http.ResponseWriter, r *http.Request) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "HealthCheckHandler"))
 
-	serverstatus := hch.Service.CheckReadiness()
+	healthcheckService := hch.Provider.GetHealthCheckService()
+	serverstatus := healthcheckService.CheckReadiness()
 
 	statusCode := http.StatusOK
 	if serverstatus.Status != model.StatusUp {

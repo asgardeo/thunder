@@ -82,7 +82,6 @@
     "react-i18next": "catalog:",
     "react-router": "catalog:",
     "react-syntax-highlighter": "^16.1.0",
-    "yaml": "2.8.3",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -110,7 +109,6 @@
     "sass-embedded": "1.98.0",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plugin-svgr": "catalog:",
     "vitest": "catalog:"
   }
 }

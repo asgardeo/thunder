@@ -1,6 +1,6 @@
 ---
 title: Development Pipeline
-description: Understand the development pipeline for contributing code.
+description: Understand the development pipeline for contributing code to Thunder.
 sidebar_position: 3
 hide_table_of_contents: false
 ---
@@ -210,7 +210,7 @@ make lint
 
 ### Generating Mocks
 
-<ProductName /> uses `mockery` to generate mocks for unit tests.
+Thunder uses `mockery` to generate mocks for unit tests.
 
 **Generate mocks:**
 ```bash
@@ -257,7 +257,7 @@ For developers who want to run frontend components separately without using `mak
 
 ### Installing Dependencies
 
-1. Navigate to the <ProductName /> frontend directory.
+1. Navigate to the Thunder frontend directory.
 
 ```bash
 cd frontend
@@ -289,9 +289,9 @@ THUNDER_API_BASE="https://localhost:8090" \
   --console-redirect-uris "https://localhost:5191/console"
 ```
 
-### Setting up the <ProductName /> Gate Application
+### Setting up the Thunder Gate Application
 
-1. Point the `gate_client` in `deployment.yaml` to the local <ProductName /> Gate application.
+1. Point the `gate_client` in `deployment.yaml` to the local Thunder Gate application.
 
    - If you are running `make run`, change the `gate_client` section in `backend/cmd/server/repository/conf/deployment.yaml`
    - If you are running the backend server manually, change the `gate_client` section in `<THUNDER_HOME>/repository/conf/deployment.yaml`
@@ -301,7 +301,7 @@ gate_client:
   port: 5190
 ```
 
-2. Add the local development origin of the <ProductName /> Gate application (https://localhost:5190) to the CORS allowed origins in `<THUNDER_HOME>/repository/conf/deployment.yaml`.
+2. Add the local development origin of the Thunder Gate application (https://localhost:5190) to the CORS allowed origins in `<THUNDER_HOME>/repository/conf/deployment.yaml`.
 
 ```yaml
 cors:
@@ -309,18 +309,18 @@ cors:
     - "https://localhost:5190"
 ```
 
-3. Run the <ProductName /> Gate application.
+3. Run the Thunder Gate application.
 
 ```bash
 cd frontend
 pnpm --filter @thunder/gate dev
 ```
 
-### Setting up the <ProductName /> Console Application
+### Setting up the Thunder Console Application
 
 **IMPORTANT**: This section assumes that you have already created the `Console` application using the initial data setup script. If not, please refer to the [Seed Data](#seed-data-optional) section above.
 
-1. First, retrieve the application ID of the **Console** application from the <ProductName /> server. This will be the application with the `client_id` **CONSOLE**.
+1. First, retrieve the application ID of the **Console** application from the Thunder server. This will be the application with the `client_id` **CONSOLE**.
 
 ```bash
 curl -k -X GET "https://localhost:8090/applications"
@@ -359,13 +359,13 @@ cors:
     - "https://localhost:5191"
 ```
 
-6. Run the <ProductName /> Console application.
+6. Run the Thunder Console application.
 
 ```bash
 pnpm --filter @thunder/console dev
 ```
 
-This will run the <ProductName /> Console application on `https://localhost:5191/console`.
+This will run the Thunder Console application on `https://localhost:5191/console`.
 
 </details>
 

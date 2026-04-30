@@ -26,24 +26,8 @@ const mockClearSession = vi.fn();
 const mockLoggerError = vi.fn();
 const mockLoggerWarn = vi.fn();
 const mockUserData = vi.fn();
-interface MockUseGetApplicationsResult {
-  data?: {
-    applications?: {
-      clientId?: string;
-      name?: string;
-      template?: string;
-    }[];
-  };
-  isLoading: boolean;
-}
-
-const mockUseGetApplications = vi.fn<(params: unknown) => MockUseGetApplicationsResult>();
 let mockDiscovery: {wellKnown?: {end_session_endpoint?: string}} | undefined;
 let mockIsTrustedIssuerGenericOidc = false;
-
-vi.mock('../../features/applications/api/useGetApplications', () => ({
-  default: (params: unknown) => mockUseGetApplications(params),
-}));
 
 // Mock Asgardeo
 vi.mock('@asgardeo/react', () => ({
@@ -104,14 +88,9 @@ vi.mock('react-router', async () => {
 describe('DashboardLayout', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    sessionStorage.clear();
     mockUserData.mockReturnValue({name: 'Test User', email: 'test@example.com'});
     mockIsTrustedIssuerGenericOidc = false;
     mockDiscovery = undefined;
-    mockUseGetApplications.mockReturnValue({
-      data: {applications: []},
-      isLoading: false,
-    });
   });
 
   it('renders AppShell layout', () => {

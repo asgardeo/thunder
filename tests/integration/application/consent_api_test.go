@@ -35,7 +35,7 @@ const (
 	mockConsentServerPort = 8096
 	// mockConsentServerBaseURL is the inspection/test base URL of the mock server.
 	mockConsentServerBaseURL = "http://localhost:8096"
-	// mockConsentServerAPIBaseURL is the API base URL passed to the server's consent config.
+	// mockConsentServerAPIBaseURL is the API base URL passed to Thunder's consent config.
 	mockConsentServerAPIBaseURL = "http://localhost:8096/api/v1"
 )
 
@@ -107,10 +107,10 @@ func (ts *ConsentAPITestSuite) SetupSuite() {
 		"failed to patch deployment config to enable consent",
 	)
 
-	// 4. Restart the server and wait for it to be ready
+	// 4. Restart Thunder and wait for it to be ready
 	ts.Require().NoError(
 		testutils.RestartServer(),
-		"failed to restart the server with consent-enabled config",
+		"failed to restart Thunder with consent-enabled config",
 	)
 
 	// 5. Re-obtain admin token after restart
@@ -133,9 +133,9 @@ func (ts *ConsentAPITestSuite) TearDownSuite() {
 		ts.T().Logf("teardown: failed to restore consent config: %v", err)
 	}
 
-	// Restart the server with the restored config
+	// Restart Thunder with the restored config
 	if err := testutils.RestartServer(); err != nil {
-		ts.T().Logf("teardown: Server did not come back after config restore: %v", err)
+		ts.T().Logf("teardown: Thunder did not come back after config restore: %v", err)
 	}
 
 	// Re-obtain admin token

@@ -152,8 +152,7 @@ func (e *ouResolverExecutor) resolveFromPrompt(ctx *core.NodeContext,
 		isDescendant, svcErr := e.ouService.IsParent(ctx.Context, parentOUID, selectedOUID)
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ClientErrorType {
-				execResp.Status = common.ExecUserInputRequired
-				execResp.Inputs = e.GetDefaultInputs()
+				execResp.Status = common.ExecFailure
 				execResp.FailureReason = "The selected organization unit is not valid."
 				return execResp, nil
 			}
@@ -164,8 +163,7 @@ func (e *ouResolverExecutor) resolveFromPrompt(ctx *core.NodeContext,
 			logger.Debug("Selected OU is not a descendant of the parent OU",
 				log.String(ouIDKey, selectedOUID),
 				log.String("parentOUID", parentOUID))
-			execResp.Status = common.ExecUserInputRequired
-			execResp.Inputs = e.GetDefaultInputs()
+			execResp.Status = common.ExecFailure
 			execResp.FailureReason = "The selected organization unit is not valid for the chosen user type."
 			return execResp, nil
 		}
@@ -224,8 +222,7 @@ func (e *ouResolverExecutor) resolveFromPromptAll(ctx *core.NodeContext,
 			return nil, errors.New("failed to validate selected organization unit: " + svcErr.Error.DefaultValue)
 		}
 		if !exists {
-			execResp.Status = common.ExecUserInputRequired
-			execResp.Inputs = e.GetDefaultInputs()
+			execResp.Status = common.ExecFailure
 			execResp.FailureReason = "The selected organization unit does not exist."
 			return execResp, nil
 		}

@@ -429,10 +429,8 @@ func (rs *roleService) GetRoleAssignmentsByType(ctx context.Context, id string, 
 		return nil, &ErrorRoleNotFound
 	}
 
-	// user/app/agent filters require fetching all entity assignments and post-filtering by category.
-	if assigneeType == string(entity.EntityCategoryUser) ||
-		assigneeType == string(entity.EntityCategoryApp) ||
-		assigneeType == string(entity.EntityCategoryAgent) {
+	// user/app filters require fetching all entity assignments and post-filtering by category,
+	if assigneeType == string(entity.EntityCategoryUser) || assigneeType == string(entity.EntityCategoryApp) {
 		return rs.getAssignmentsByEntityCategory(ctx, id, limit, offset, includeDisplay, assigneeType, logger)
 	}
 
@@ -934,7 +932,7 @@ func (rs *roleService) resolveAssignments(
 				logger.Warn("Skipping orphaned entity assignment", log.String("id", a.ID))
 				continue
 			}
-			// Set the public type from the entity category ("user", "app", or "agent").
+			// Set the public type from the entity category ("user" or "app").
 			ra.Type = AssigneeType(e.Category)
 			if includeDisplay {
 				if e.Category == entity.EntityCategoryUser {

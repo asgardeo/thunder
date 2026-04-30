@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
-	"time"
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/application/model"
@@ -33,10 +32,8 @@ import (
 	oauthutils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/transaction"
-	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
 
 // DCRServiceInterface defines the interface for the DCR service.
@@ -50,7 +47,6 @@ type DCRServiceInterface interface {
 type dcrService struct {
 	appService    application.ApplicationServiceInterface
 	ouService     ou.OrganizationUnitServiceInterface
-	i18nService   i18nmgt.I18nServiceInterface
 	transactioner transaction.Transactioner
 }
 
@@ -58,13 +54,11 @@ type dcrService struct {
 func newDCRService(
 	appService application.ApplicationServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
-	i18nService i18nmgt.I18nServiceInterface,
 	transactioner transaction.Transactioner,
 ) DCRServiceInterface {
 	return &dcrService{
 		appService:    appService,
 		ouService:     ouService,
-		i18nService:   i18nService,
 		transactioner: transactioner,
 	}
 }
@@ -105,10 +99,9 @@ func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrati
 
 	var response *DCRRegistrationResponse
 	var capturedErr *serviceerror.ServiceError
-	var createdAppID string
 
-	err := ds.transactioner.Transact(ctx, func(txCtx context.Context) error {
-		createdApp, svcErr := ds.appService.CreateApplication(txCtx, appDTO)
+	err := ds.transactioner.Transact(ctx, func(ctx context.Context) error {
+		createdApp, svcErr := ds.appService.CreateApplication(ctx, appDTO)
 		if svcErr != nil {
 			if svcErr.Type == serviceerror.ServerErrorType {
 				logger.Error("Failed to create application via Application service",
@@ -121,8 +114,6 @@ func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrati
 			capturedErr = ds.mapApplicationErrorToDCRError(svcErr)
 			return errors.New("failed to create application")
 		}
-
-		createdAppID = createdApp.ID
 
 		var convErr *serviceerror.ServiceError
 		response, convErr = ds.convertApplicationToDCRResponse(createdApp, request.ClientName)
@@ -142,38 +133,6 @@ func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrati
 		}
 		return nil, &ErrorServerError
 	}
-
-	// Write localized variants outside the transaction above because the i18n service
-	// uses a separate configDB connection and cannot join the same transaction.
-	// If writing fails, clean up any partial i18n rows and compensate by deleting the created app.
-	// Note: writeLocalizedVariants only returns an error when i18nService is non-nil,
-	// so calling DeleteTranslationsByKey here without a nil guard is safe.
-	// If the compensation DeleteApplication also fails, the app record is left without localized
-	// metadata — an accepted gap that can be cleaned up manually or via a future sweep.
-	if writeErr := ds.writeLocalizedVariants(ctx, createdAppID, request); writeErr != nil {
-		logger.Error("Failed to write localized variants for DCR client; compensating by deleting app",
-			log.String("appID", createdAppID), log.String("error", writeErr.Error.DefaultValue))
-		cleanupCtx, cleanupCancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
-		defer cleanupCancel()
-		for _, field := range []string{"name", "logo_uri", "tos_uri", "policy_uri"} {
-			if cleanErr := ds.i18nService.DeleteTranslationsByKey(
-				cleanupCtx, application.AppI18nNamespace(), application.AppI18nKey(createdAppID, field),
-			); cleanErr != nil {
-				logger.Error("Failed to clean up partial i18n row after write failure",
-					log.String("appID", createdAppID), log.String("field", field))
-			}
-		}
-		if delSvcErr := ds.appService.DeleteApplication(cleanupCtx, createdAppID); delSvcErr != nil {
-			logger.Error("Compensation delete failed after i18n write failure; app record may be orphaned",
-				log.String("appID", createdAppID))
-		}
-		return nil, writeErr
-	}
-
-	response.LocalizedClientName = request.LocalizedClientName
-	response.LocalizedLogoURI = request.LocalizedLogoURI
-	response.LocalizedTosURI = request.LocalizedTosURI
-	response.LocalizedPolicyURI = request.LocalizedPolicyURI
 
 	return response, nil
 }
@@ -206,15 +165,7 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 		scopes = strings.Fields(request.Scope)
 	}
 
-	// Pre-generate the application ID so we can build an i18n template reference if needed.
-	appID, uuidErr := sysutils.GenerateUUIDv7()
-	if uuidErr != nil {
-		return nil, &ErrorServerError
-	}
-
-	// Generate client ID if client_name is not provided and use it as both app name and client ID.
-	// When localized variants are present without a client_name, use an i18n ref as the app name
-	// so the UI resolves the display name from the i18n table rather than falling back to the clientID.
+	// Generate client ID if client_name is not provided and use it as both app name and client ID
 	var clientID string
 	appName := request.ClientName
 	if appName == "" {
@@ -223,14 +174,7 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 			return nil, &ErrorServerError
 		}
 		clientID = generatedClientID
-		if len(request.LocalizedClientName) > 0 {
-			appName = application.AppI18nRef(appID, "name")
-		} else {
-			appName = clientID
-		}
-	} else if len(request.LocalizedClientName) > 0 {
-		// Store a template reference so the UI can resolve the name from the i18n table.
-		appName = application.AppI18nRef(appID, "name")
+		appName = clientID
 	}
 
 	oauthAppConfig := &model.OAuthAppConfigDTO{
@@ -254,7 +198,6 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 	}
 
 	appDTO := &model.ApplicationDTO{
-		ID:                appID,
 		OUID:              request.OUID,
 		Name:              appName,
 		URL:               request.ClientURI,
@@ -358,73 +301,6 @@ func (ds *dcrService) convertApplicationToDCRResponse(appDTO *model.ApplicationD
 	}
 
 	return response, nil
-}
-
-// writeLocalizedVariants persists all localized variants from a DCR request to the i18n table.
-// The non-tagged default value for each field is also stored under SystemLanguage; an explicit
-// #SystemLanguage-tagged variant in the same request takes priority over the default.
-func (ds *dcrService) writeLocalizedVariants(
-	ctx context.Context, appID string, request *DCRRegistrationRequest) *serviceerror.ServiceError {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DCRService"))
-	if ds.i18nService == nil {
-		logger.Debug("i18n service not configured, skipping localized variant writes")
-		return nil
-	}
-	ns := application.AppI18nNamespace()
-	type fieldSpec struct {
-		variants    map[string]string
-		defaultVal  string
-		key         string
-		validateURI func(string) bool
-	}
-	fields := []fieldSpec{
-		{request.LocalizedClientName, request.ClientName, application.AppI18nKey(appID, "name"), nil},
-		{request.LocalizedLogoURI, request.LogoURI, application.AppI18nKey(appID, "logo_uri"), sysutils.IsValidLogoURI},
-		{request.LocalizedTosURI, request.TosURI, application.AppI18nKey(appID, "tos_uri"), sysutils.IsValidURI},
-		{request.LocalizedPolicyURI, request.PolicyURI,
-			application.AppI18nKey(appID, "policy_uri"), sysutils.IsValidURI},
-	}
-	entries := make(map[string]map[string]string)
-	for _, f := range fields {
-		for tag, val := range f.variants {
-			if f.validateURI != nil && !f.validateURI(val) {
-				return &ErrorInvalidClientMetadata
-			}
-			if entries[f.key] == nil {
-				entries[f.key] = make(map[string]string)
-			}
-			entries[f.key][tag] = val
-		}
-	}
-	for _, f := range fields {
-		if f.defaultVal == "" {
-			continue
-		}
-		if entries[f.key] == nil {
-			entries[f.key] = make(map[string]string)
-		}
-		if _, exists := entries[f.key][i18nmgt.SystemLanguage]; !exists {
-			entries[f.key][i18nmgt.SystemLanguage] = f.defaultVal
-		}
-	}
-	if len(entries) == 0 {
-		return nil
-	}
-	if svcErr := ds.i18nService.SetTranslationOverridesForNamespace(ctx, ns, entries); svcErr != nil {
-		if svcErr.Type == serviceerror.ClientErrorType {
-			logger.Debug("Invalid client metadata in localized variants",
-				log.String("appID", appID),
-				log.String("errorCode", svcErr.Code),
-				log.String("error", svcErr.Error.DefaultValue))
-			return &ErrorServerError
-		}
-		logger.Error("Failed to write localized variants",
-			log.String("appID", appID),
-			log.String("errorCode", svcErr.Code),
-			log.String("error", svcErr.Error.DefaultValue))
-		return &ErrorServerError
-	}
-	return nil
 }
 
 // mapApplicationErrorToDCRError maps Application service errors to DCR standard errors.

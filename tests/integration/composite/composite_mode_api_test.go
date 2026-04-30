@@ -19,7 +19,7 @@
 /*
 Composite Mode Integration Test Suite
 
-This suite validates the server behavior in composite mode, where declarative
+This suite validates Thunder behavior in composite mode, where declarative
 resources (YAML-based, file-backed) coexist with runtime resources (database-backed).
 
 Declarative resources are immutable and cannot be modified or deleted.

@@ -17,9 +17,9 @@
  */
 
 import type {Base} from './base';
+import type {Step} from './steps';
 import type {FlowType} from './flows';
 import type {FlowNode} from './responses';
-import type {Step} from './steps';
 
 /**
  * Template placeholder replacer.

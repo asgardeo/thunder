@@ -162,7 +162,97 @@
             "executor": {
                 "name": "BasicAuthExecutor"
             },
-            "onSuccess": "provisioning"
+            "onSuccess": "prompt_user_info"
+        },
+        {
+            "id": "prompt_user_info",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "alt": "{{ t(signup:images.app_logo.alt) }}",
+                        "category": "DISPLAY",
+                        "height": "60",
+                        "id": "image",
+                        "resourceType": "ELEMENT",
+                        "src": "{{ meta(application.logoUrl) }}",
+                        "type": "IMAGE",
+                        "width": ""
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "heading_user_info",
+                        "label": "{{ t(signup:forms.user_info.title) }}",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_user_info",
+                        "components": [
+                            {
+                                "type": "TEXT_INPUT",
+                                "id": "input_given_name",
+                                "ref": "given_name",
+                                "label": "{{ t(signup:forms.user_info.fields.first_name.label) }}",
+                                "placeholder": "{{ t(signup:forms.user_info.fields.first_name.placeholder) }}",
+                                "required": true
+                            },
+                            {
+                                "type": "TEXT_INPUT",
+                                "id": "input_family_name",
+                                "ref": "family_name",
+                                "label": "{{ t(signup:forms.user_info.fields.last_name.label) }}",
+                                "placeholder": "{{ t(signup:forms.user_info.fields.last_name.placeholder) }}",
+                                "required": true
+                            },
+                            {
+                                "type": "EMAIL_INPUT",
+                                "id": "input_email",
+                                "ref": "email",
+                                "label": "{{ t(signup:forms.user_info.fields.email_address.label) }}",
+                                "placeholder": "{{ t(signup:forms.user_info.fields.email_address.placeholder) }}",
+                                "required": true
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_user_info",
+                                "label": "{{ t(signup:forms.user_info.actions.submit.label) }}",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "prompts": [
+                {
+                    "inputs": [
+                        {
+                            "ref": "input_given_name",
+                            "identifier": "given_name",
+                            "type": "TEXT_INPUT",
+                            "required": true
+                        },
+                        {
+                            "ref": "input_family_name",
+                            "identifier": "family_name",
+                            "type": "TEXT_INPUT",
+                            "required": true
+                        },
+                        {
+                            "ref": "input_email",
+                            "identifier": "email",
+                            "type": "EMAIL_INPUT",
+                            "required": true
+                        }
+                    ],
+                    "action": {
+                        "ref": "action_user_info",
+                        "nextNode": "provisioning"
+                    }
+                }
+            ]
         },
         {
             "id": "provisioning",
@@ -181,62 +271,28 @@
                         "identifier": "password",
                         "type": "PASSWORD_INPUT",
                         "required": true
+                    },
+                    {
+                        "ref": "input_003",
+                        "identifier": "given_name",
+                        "type": "TEXT_INPUT",
+                        "required": true
+                    },
+                    {
+                        "ref": "input_004",
+                        "identifier": "family_name",
+                        "type": "TEXT_INPUT",
+                        "required": true
+                    },
+                    {
+                        "ref": "input_005",
+                        "identifier": "email",
+                        "type": "EMAIL_INPUT",
+                        "required": true
                     }
                 ]
             },
-            "onSuccess": "auth_assert",
-            "onIncomplete": "prompt_schema_attrs"
-        },
-        {
-            "id": "prompt_schema_attrs",
-            "type": "PROMPT",
-            "meta": {
-                "components": [
-                    {
-                        "alt": "{{ t(signup:images.app_logo.alt) }}",
-                        "category": "DISPLAY",
-                        "height": "60",
-                        "id": "image",
-                        "resourceType": "ELEMENT",
-                        "src": "{{ meta(application.logoUrl) }}",
-                        "type": "IMAGE",
-                        "width": ""
-                    },
-                    {
-                        "align": "center",
-                        "type": "TEXT",
-                        "id": "heading_schema_attrs",
-                        "label": "{{ t(signup:forms.user_info.title) }}",
-                        "variant": "HEADING_1"
-                    },
-                    {
-                        "type": "BLOCK",
-                        "id": "block_dynamic_user_inputs",
-                        "components": [
-                            {
-                                "type": "DYNAMIC_INPUT_PLACEHOLDER",
-                                "id": "dynamic_inputs"
-                            },
-                            {
-                                "type": "ACTION",
-                                "id": "action_schema_attrs",
-                                "label": "{{ t(signup:forms.user_info.actions.continue.label) }}",
-                                "variant": "PRIMARY",
-                                "eventType": "SUBMIT"
-                            }
-                        ]
-                    }
-                ]
-            },
-            "prompts": [
-                {
-                    "inputs": [],
-                    "action": {
-                        "ref": "action_schema_attrs",
-                        "nextNode": "provisioning"
-                    }
-                }
-            ]
+            "onSuccess": "auth_assert"
         },
         {
             "id": "auth_assert",

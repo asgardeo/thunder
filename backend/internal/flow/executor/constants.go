@@ -18,6 +18,8 @@
 
 package executor
 
+import "github.com/asgardeo/thunder/internal/flow/common"
+
 // Executor name constants
 const (
 	ExecutorNameBasicAuth = "BasicAuthExecutor"
@@ -98,6 +100,22 @@ const (
 
 // nonSearchableInputs contains the list of user inputs/ attributes that are non-searchable.
 var nonSearchableInputs = []string{"password", "code", "nonce", "otp"}
+
+// nonUserAttributes contains the list of user attributes that do not belong to user entity.
+var nonUserAttributes = []string{"userID", "code", "nonce", "state", "flowID",
+	"otp", "attemptCount", "expiryTimeInMillis", "otpSessionToken", "value",
+	"authorized_permissions",
+	common.RuntimeKeyRequiredOptionalAttributes, common.RuntimeKeyRequiredEssentialAttributes,
+	common.RuntimeKeyRequestedPermissions, common.RuntimeKeyRequiredLocales,
+	userTypeKey, ouIDKey, defaultOUIDKey, userInputOuName, userInputOuHandle, userInputOuDesc, userInputInviteToken,
+	common.RuntimeKeyUserEligibleForProvisioning, common.RuntimeKeySkipProvisioning,
+	common.RuntimeKeyUserAutoProvisioned, common.RuntimeKeyStoredInviteToken,
+	common.RuntimeKeyInviteLink,
+	common.RuntimeKeyConsentID, common.RuntimeKeyStepTimeout, userInputConsentDecisions,
+	common.RuntimeKeyConsentedAttributes, common.RuntimeKeyConsentSessionToken,
+	"applicationId", "idpId", "senderId",
+	common.RuntimeKeyCandidateUsers, common.RuntimeKeyClientID, common.RuntimeKeyUserAttributesCacheTTLSeconds,
+	common.RuntimeKeyUserAmbiguous, runtimeKeySMSOTPMobileNumber, runtimeKeySMSOTPPhoneAttr}
 
 // Failure reason constants
 const (

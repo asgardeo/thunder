@@ -33,8 +33,6 @@ const (
 	EntityCategoryUser EntityCategory = "user"
 	// EntityCategoryApp represents an application entity.
 	EntityCategoryApp EntityCategory = "app"
-	// EntityCategoryAgent represents an agent entity.
-	EntityCategoryAgent EntityCategory = "agent"
 )
 
 // String returns the string representation of the entity category.

@@ -148,12 +148,6 @@ func (n *taskExecutionNode) Execute(ctx *NodeContext) (*common.NodeResponse, *se
 				delete(ctx.UserInputs, input.Identifier)
 			}
 		}
-	} else if nodeResp.Status == common.NodeStatusIncomplete && nodeResp.Type == common.NodeResponseTypeView &&
-		len(nodeResp.Inputs) == 0 {
-		// Executor returned INCOMPLETE+VIEW with no inputs — broken executor implementation.
-		// There is nothing for the client to act on; surface as a server error.
-		logger.Error("Executor returned INCOMPLETE with VIEW type but no inputs")
-		return nil, &serviceerror.InternalServerError
 	}
 
 	return nodeResp, nil

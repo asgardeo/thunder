@@ -18,8 +18,6 @@ concurrency:
 
 env:
   GOFLAGS: "-mod=readonly"
-  PRODUCT_NAME: "Thunder"
-  PRODUCT_NAME_LOWER: "thunder"
 
 jobs:
   dependency-guard:
@@ -290,13 +288,13 @@ jobs:
           make build_with_coverage_only OS=$(go env GOOS) ARCH=$(go env GOARCH)
 
           # Find the built distribution
-          DIST_PATH=$(find target/dist -name "$PRODUCT_NAME_LOWER-*.zip" | head -1)
+          DIST_PATH=$(find target/dist -name "thunder-*.zip" | head -1)
           echo "Built distribution: $DIST_PATH"
 
       - name: 📦 Upload Built Distribution
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: product-distribution
+          name: thunder-distribution
           path: target/dist/*.zip
           if-no-files-found: error
 
@@ -484,8 +482,8 @@ jobs:
       postgres:
         image: postgres:latest
         env:
-          POSTGRES_USER: dbuser
-          POSTGRES_PASSWORD: dbpassword
+          POSTGRES_USER: asgthunder
+          POSTGRES_PASSWORD: asgthunder
           POSTGRES_DB: thunderdb
         ports:
           - 5432:5432
@@ -587,7 +585,7 @@ jobs:
       - name: 📥 Download Built Distribution
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: product-distribution
+          name: thunder-distribution
           path: target/dist/
 
       - name: 📥 Download Built Sample App
@@ -598,24 +596,24 @@ jobs:
 
       - name: 📂 Extract Server to E2E
         run: |
-          mkdir -p tests/e2e/server
-          unzip target/dist/$PRODUCT_NAME_LOWER-*.zip -d tests/e2e/server
-          cd tests/e2e/server
-          # Find the extracted folder (name includes version and arch) and move its contents to the root of tests/e2e/server
-          EXTRACTED_DIR=$(find . -maxdepth 1 -type d -name "$PRODUCT_NAME_LOWER-*" | head -n 1)
+          mkdir -p tests/e2e/thunder-server
+          unzip target/dist/thunder-*.zip -d tests/e2e/thunder-server
+          cd tests/e2e/thunder-server
+          # Find the extracted folder (name includes version and arch) and move its contents to the root of tests/e2e/thunder-server
+          EXTRACTED_DIR=$(find . -maxdepth 1 -type d -name "thunder-*" | head -n 1)
           if [ -n "$EXTRACTED_DIR" ]; then
             mv "$EXTRACTED_DIR"/* .
             rmdir "$EXTRACTED_DIR"
           fi
           chmod +x setup.sh start.sh
 
-      - name: 🚀 Start the Server
+      - name: 🚀 Start Thunder Server
         run: |
-          cd tests/e2e/server
+          cd tests/e2e/thunder-server
           ./setup.sh
           SKIP_SECURITY=true ./start.sh &
-          SERVER_PID=$!
-          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          THUNDER_PID=$!
+          echo "THUNDER_PID=$THUNDER_PID" >> $GITHUB_ENV
           # Wait for server to be ready
           echo "Waiting for server to be ready on https://localhost:8090..."
           for i in {1..60}; do
@@ -638,7 +636,7 @@ jobs:
       - name: 🔍 Extract Sample App ID
         id: extract-app-id
         run: |
-          echo "Fetching applications from the server..."
+          echo "Fetching applications from Thunder..."
           
           # Get applications list
           APPS_RESPONSE=$(curl -s -k https://localhost:8090/applications)
@@ -656,17 +654,17 @@ jobs:
             echo "sample_app_id=$SAMPLE_APP_ID" >> $GITHUB_OUTPUT
           fi
       
-      - name: 🔄 Restart the Server with Security Enabled
+      - name: 🔄 Restart Thunder Server with Security Enabled
         run: |
-          cd tests/e2e/server
+          cd tests/e2e/thunder-server
 
-          echo "Stopping the server..."
+          echo "Stopping Thunder server..."
           # Kill the start.sh wrapper process
-          kill $SERVER_PID 2>/dev/null || true
+          kill $THUNDER_PID 2>/dev/null || true
 
           # Also kill any process still listening on port 8090
-          # (start.sh backgrounds the server binary, so killing start.sh
-          # may leave the server process running as an orphan)
+          # (start.sh backgrounds the thunder binary, so killing start.sh
+          # may leave the thunder process running as an orphan)
           sleep 2
           if lsof -ti tcp:8090 >/dev/null 2>&1; then
             echo "Port 8090 still in use, killing remaining processes..."
@@ -676,10 +674,10 @@ jobs:
           # Wait for port to be fully released
           sleep 3
 
-          echo "Starting the server with security enabled..."
+          echo "Starting Thunder server with security enabled..."
           ./start.sh &
-          SERVER_PID=$!
-          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          THUNDER_PID=$!
+          echo "THUNDER_PID=$THUNDER_PID" >> $GITHUB_ENV
           
           # Wait for server to be ready
           echo "Waiting for server to be ready on https://localhost:8090..."
@@ -775,7 +773,7 @@ jobs:
           # MFA Test Configuration
           SAMPLE_APP_ID: ${{ steps.extract-app-id.outputs.sample_app_id }}
           SAMPLE_APP_URL: 'https://localhost:3000'
-          SERVER_URL: 'https://localhost:8090'
+          THUNDER_URL: 'https://localhost:8090'
           AUTO_SETUP_MFA: ${{ vars.AUTO_SETUP_MFA || 'true' }}
           MOCK_SMS_SERVER_PORT: ${{ vars.MOCK_SMS_SERVER_PORT || 8098 }}
           SAMPLE_APP_USERNAME: ${{ secrets.SAMPLE_APP_USERNAME || 'e2e-test-user' }}

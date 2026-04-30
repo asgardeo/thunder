@@ -2,18 +2,18 @@
 title: Kubernetes
 sidebar_position: 2
 persona: iam
-description: Deploy to a Kubernetes cluster using Helm, with support for SQLite for development and PostgreSQL for production.
+description: Deploy Thunder to a Kubernetes cluster using Helm, with support for SQLite for development and PostgreSQL for production.
 ---
 
-# Deploy <ProductName /> on Kubernetes
+# Deploy Thunder on Kubernetes
 
-This guide walks you through deploying <ProductName /> to a Kubernetes cluster using Helm charts. It covers a quick single-command install for development and a production-ready setup with external PostgreSQL.
+This guide walks you through deploying Thunder to a Kubernetes cluster using Helm charts. It covers a quick single-command install for development and a production-ready setup with external PostgreSQL.
 
 ## Architecture Overview
 
-![<ProductName /> Kubernetes Architecture](/assets/images/thunder-kubernetes-diagram.png)
+![Thunder Kubernetes Architecture](/assets/images/thunder-kubernetes-diagram.png)
 
-The diagram above shows the <ProductName /> deployment in Kubernetes, including the application pods, ingress controller, and database configuration.
+The diagram above shows the Thunder deployment in Kubernetes, including the application pods, ingress controller, and database configuration.
 
 ## Prerequisites
 
@@ -41,11 +41,11 @@ helm version
 kubectl get pods -n ingress-nginx
 ```
 
-## Install <ProductName />
+## Install Thunder
 
 ### Step 1: Install the Helm Chart
 
-Install <ProductName /> from the GitHub Container Registry:
+Install Thunder from the GitHub Container Registry:
 
 ```bash
 helm install thunder oci://ghcr.io/asgardeo/helm-charts/thunder
@@ -70,11 +70,11 @@ kubectl get services -l app.kubernetes.io/name=thunder
 kubectl get ingress
 ```
 
-### Step 3: Access <ProductName />
+### Step 3: Access Thunder
 
 1. Get the external IP address of your NGINX Ingress Controller.
 2. Add an entry to your `/etc/hosts` file that maps the IP address to `thunder.local`.
-3. Open <ProductName /> at `http://thunder.local`.
+3. Open Thunder at `http://thunder.local`.
 
 If you are using a cloud provider, the load balancer assigns the external IP automatically.
 
@@ -82,7 +82,7 @@ If you are using a cloud provider, the load balancer assigns the external IP aut
 
 ### Option 1: Inline Value Overrides
 
-Pass configuration values directly on the command line. The following example installs <ProductName /> with SQLite for development or testing:
+Pass configuration values directly on the command line. The following example installs Thunder with SQLite for development or testing:
 
 ```bash
 helm install thunder oci://ghcr.io/asgardeo/helm-charts/thunder \
@@ -146,11 +146,11 @@ For production deployments, use a values file to manage configuration:
 
 ## Database Setup
 
-<ProductName /> supports both PostgreSQL and SQLite. PostgreSQL is recommended for production.
+Thunder supports both PostgreSQL and SQLite. PostgreSQL is recommended for production.
 
 ### PostgreSQL
 
-Before deploying <ProductName />, prepare the PostgreSQL instance:
+Before deploying Thunder, prepare the PostgreSQL instance:
 
 1. Create the three required databases:
 
@@ -177,7 +177,7 @@ Before deploying <ProductName />, prepare the PostgreSQL instance:
 
 For a PostgreSQL setup using Helm, refer to the [Bitnami PostgreSQL Helm Chart](https://bitnami.com/stacks/postgresql).
 
-Once the databases are ready, configure <ProductName /> to connect to them:
+Once the databases are ready, configure Thunder to connect to them:
 
 ```yaml
 configuration:
@@ -210,7 +210,7 @@ configuration:
 
 ### SQLite
 
-For development or testing, configure <ProductName /> to use SQLite:
+For development or testing, configure Thunder to use SQLite:
 
 ```yaml
 configuration:
@@ -247,5 +247,5 @@ helm rollback thunder 1
 
 ## Next Steps
 
-- [Deploy <ProductName /> on OpenChoreo](./openchoreo) — Deploy <ProductName /> on the OpenChoreo platform.
-- [Deploy <ProductName /> with Docker](./docker) — Run <ProductName /> locally using Docker.
+- [Deploy Thunder on OpenChoreo](./openchoreo) — Deploy Thunder on the OpenChoreo platform.
+- [Deploy Thunder with Docker](./docker) — Run Thunder locally using Docker.

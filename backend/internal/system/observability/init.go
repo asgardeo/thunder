@@ -24,7 +24,7 @@ import (
 )
 
 // Initialize creates and initializes a new observability service instance.
-// This function follows the dependency injection pattern used throughout the server.
+// This function follows the dependency injection pattern used throughout Thunder.
 // It reads configuration, initializes subscribers via the registry pattern,
 // and returns a ready-to-use observability service.
 //

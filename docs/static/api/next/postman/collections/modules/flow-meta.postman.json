@@ -1,7 +1,7 @@
 {
   "item": [
     {
-      "id": "038e9849-75f7-493f-9737-3df58787dd67",
+      "id": "7287b26c-1bed-40b0-9771-f0305cf30c69",
       "name": "flow-meta",
       "description": {
         "content": "Operations for retrieving flow metadata",
@@ -9,7 +9,7 @@
       },
       "item": [
         {
-          "id": "2d26e9e6-952a-439b-b3f0-0b93d78753fb",
+          "id": "a9d79eff-1863-4093-bb65-aa1aefccefed",
           "name": "Get flow metadata",
           "request": {
             "name": "Get flow metadata",
@@ -83,7 +83,7 @@
           },
           "response": [
             {
-              "id": "8828c5aa-5749-47a1-b23d-d8782e332af3",
+              "id": "38dfb06d-6d0b-4e84-9226-98d7a97b6e58",
               "name": "Flow metadata retrieved successfully",
               "originalRequest": {
                 "url": {
@@ -150,12 +150,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"isRegistrationFlowEnabled\": \"<boolean>\",\n  \"design\": {\n    \"theme\": {\n      \"Ut881\": \"sint ad\",\n      \"ut9ff\": \"laboris\"\n    },\n    \"layout\": {\n      \"qui_c\": true\n    }\n  },\n  \"i18n\": {\n    \"languages\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"language\": \"<string>\",\n    \"translations\": {\n      \"ut_20\": {\n        \"ea35c\": \"<string>\",\n        \"dolor2d\": \"<string>\"\n      }\n    },\n    \"totalResults\": \"<integer>\"\n  },\n  \"application\": {\n    \"id\": \"<uuid>\",\n    \"name\": \"<string>\",\n    \"description\": \"<string>\",\n    \"logoUrl\": \"<uri>\",\n    \"url\": \"<uri>\",\n    \"tosUri\": \"<uri>\",\n    \"policyUri\": \"<uri>\"\n  },\n  \"ou\": {\n    \"id\": \"<uuid>\",\n    \"handle\": \"<string>\",\n    \"name\": \"<string>\",\n    \"description\": \"<string>\",\n    \"logoUrl\": \"<uri>\",\n    \"tosUri\": \"<uri>\",\n    \"policyUri\": \"<uri>\",\n    \"cookiePolicyUri\": \"<uri>\"\n  }\n}",
+              "body": "{\n  \"isRegistrationFlowEnabled\": \"<boolean>\",\n  \"design\": {\n    \"theme\": {\n      \"nostrud67\": false,\n      \"ine\": \"enim in irure\",\n      \"commodof5\": 66456615.75873166\n    },\n    \"layout\": {\n      \"occaecatc7\": 7941352.066798866,\n      \"dolore1c\": -92621795,\n      \"aute_44\": \"culpa exercita\",\n      \"aliqua82\": -9229374\n    }\n  },\n  \"i18n\": {\n    \"languages\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"language\": \"<string>\",\n    \"translations\": {\n      \"Ut_23\": {\n        \"qui_5\": \"<string>\"\n      }\n    },\n    \"totalResults\": \"<integer>\"\n  },\n  \"application\": {\n    \"id\": \"<uuid>\",\n    \"name\": \"<string>\",\n    \"description\": \"<string>\",\n    \"logoUrl\": \"<uri>\",\n    \"url\": \"<uri>\",\n    \"tosUri\": \"<uri>\",\n    \"policyUri\": \"<uri>\"\n  },\n  \"ou\": {\n    \"id\": \"<uuid>\",\n    \"handle\": \"<string>\",\n    \"name\": \"<string>\",\n    \"description\": \"<string>\",\n    \"logoUrl\": \"<uri>\",\n    \"tosUri\": \"<uri>\",\n    \"policyUri\": \"<uri>\",\n    \"cookiePolicyUri\": \"<uri>\"\n  }\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "84d19fa6-0be6-492c-9d76-63dcef0678b1",
+              "id": "eb0c57b6-a821-4e0f-a36f-a57666518b55",
               "name": "Bad request - Invalid input",
               "originalRequest": {
                 "url": {
@@ -222,12 +222,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "5ee43353-1fae-48b1-9af3-9c35630f21b0",
+              "id": "e4c5124e-0e5b-431f-93ef-743ca61e35e3",
               "name": "Resource not found",
               "originalRequest": {
                 "url": {
@@ -294,12 +294,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "07a9321c-1e3e-4204-a82f-e156c6cafaf0",
+              "id": "fedf422e-a385-4003-8beb-26798ac9e863",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -366,7 +366,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             }
@@ -407,7 +407,7 @@
     }
   ],
   "info": {
-    "_postman_id": "867da07d-16c3-4b2d-bc87-6b2cd09a1f8e",
+    "_postman_id": "04a3557f-00a2-4637-84b6-9e16bb2c4526",
     "name": "Flow Metadata API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": {

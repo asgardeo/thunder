@@ -43,15 +43,13 @@ permissions:
 
 env:
   GOFLAGS: "-mod=readonly"
-  PRODUCT_NAME: "Thunder"
-  PRODUCT_NAME_LOWER: "thunder"
   RELEASE_BRANCH: "release"
   RELEASE_GIT_USER_NAME: "thunder-automation-bot"
   RELEASE_GIT_USER_EMAIL: "thunder-bot@wso2.com"
 
 jobs:
-  build:
-    name: ⚡ Build
+  build-thunder:
+    name: ⚡ Build Thunder
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.get_version.outputs.version }}
@@ -180,8 +178,8 @@ jobs:
           echo "📝 Updating OpenChoreo Helm chart versions to $SEMVER_VERSION"
           sed -i -E "s/^version: .*/version: ${SEMVER_VERSION}/" install/openchoreo/helm/Chart.yaml
           sed -i -E "s/^appVersion: .*/appVersion: \"${SEMVER_VERSION}\"/" install/openchoreo/helm/Chart.yaml
-          sed -i -E "s/^version: .*/version: ${SEMVER_VERSION}/" install/openchoreo/helm/charts/${PRODUCT_NAME_LOWER}-oc-componenttype/Chart.yaml
-          sed -i -E "s/^version: .*/version: ${SEMVER_VERSION}/" install/openchoreo/helm/charts/${PRODUCT_NAME_LOWER}-component/Chart.yaml
+          sed -i -E "s/^version: .*/version: ${SEMVER_VERSION}/" install/openchoreo/helm/charts/thunder-oc-componenttype/Chart.yaml
+          sed -i -E "s/^version: .*/version: ${SEMVER_VERSION}/" install/openchoreo/helm/charts/thunder-component/Chart.yaml
           # Update sub-chart dependency versions in the umbrella chart (indented version: entries)
           sed -i -E "s/(^[[:space:]]+version: \")[^\"]*/\1${SEMVER_VERSION}/" install/openchoreo/helm/Chart.yaml
 
@@ -214,8 +212,8 @@ jobs:
             README.md \
             install/helm/Chart.yaml \
             install/openchoreo/helm/Chart.yaml \
-            install/openchoreo/helm/charts/${PRODUCT_NAME_LOWER}-oc-componenttype/Chart.yaml \
-            install/openchoreo/helm/charts/${PRODUCT_NAME_LOWER}-component/Chart.yaml \
+            install/openchoreo/helm/charts/thunder-oc-componenttype/Chart.yaml \
+            install/openchoreo/helm/charts/thunder-component/Chart.yaml \
             samples/apps/react-api-based-sample/package-lock.json \
             samples/apps/react-api-based-sample/package.json \
             samples/apps/react-sdk-sample/package-lock.json \
@@ -263,19 +261,19 @@ jobs:
           make build_with_coverage_only OS=$(go env GOOS) ARCH=$(go env GOARCH)
           
           # Find the built distribution
-          DIST_PATH=$(find target/dist -name "$PRODUCT_NAME_LOWER-*.zip" | head -1)
+          DIST_PATH=$(find target/dist -name "thunder-*.zip" | head -1)
           echo "Built distribution: $DIST_PATH"
 
       - name: 📦 Upload Built Distribution
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: product-distribution
+          name: thunder-distribution
           path: target/dist/*.zip
           if-no-files-found: error
 
   test-integration:
     name: 🧪 Integration Tests (${{ matrix.database }})
-    needs: build
+    needs: build-thunder
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -285,8 +283,8 @@ jobs:
       postgres:
         image: postgres:latest
         env:
-          POSTGRES_USER: dbuser
-          POSTGRES_PASSWORD: dbpassword
+          POSTGRES_USER: asgthunder
+          POSTGRES_PASSWORD: asgthunder
           POSTGRES_DB: thunderdb
         ports:
           - 5432:5432
@@ -337,13 +335,13 @@ jobs:
 
   validate-windows:
     name: 🪟 Validate Windows PowerShell
-    needs: build
+    needs: build-thunder
     uses: ./.github/workflows/windows-powershell-validation.yml
 
   build-and-package:
     name: 📦 Build and Package Release
     runs-on: ubuntu-latest
-    needs: [build, test-integration, validate-windows]
+    needs: [build-thunder, test-integration, validate-windows]
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -353,7 +351,7 @@ jobs:
 
       - name: 🏷️ Update Product Version
         run: |
-          VERSION="${{ needs.build.outputs.version }}"
+          VERSION="${{ needs.build-thunder.outputs.version }}"
           echo "$VERSION" > version.txt
 
       - name: ⚙️ Set up Go Environment
@@ -381,9 +379,8 @@ jobs:
         uses: ./.github/actions/generate-certificates
         with:
           show-cert-info: 'true'
-          product-name: ${{ env.PRODUCT_NAME }}
 
-      - name: 🔨 Build Release Artifacts
+      - name: 🔨 Build Thunder Release Artifacts
         uses: ./.github/actions/build-multiplatform
 
       - name: 📝 Read Updated Version
@@ -393,7 +390,7 @@ jobs:
       - name: 📦 Upload Backend Distribution Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: product-distribution
+          name: thunder-distribution
           path: target/dist/*.zip
           if-no-files-found: error
           overwrite: true
@@ -403,7 +400,7 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
 
-          TAG_VERSION="${{ needs.build.outputs.version }}"
+          TAG_VERSION="${{ needs.build-thunder.outputs.version }}"
           if [[ ! $TAG_VERSION == v* ]]; then
             TAG_VERSION="v$TAG_VERSION"
           fi
@@ -424,7 +421,7 @@ jobs:
       - name: 📥 Download Shared Certificates for Docker
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: ssl-certificates
+          name: thunder-certificates
           path: target/out/.cert/
 
       - name: 📋 Prepare Docker Build Context
@@ -442,7 +439,7 @@ jobs:
           IMAGE_NAME="ghcr.io/${REPO_NAME}"
           
           # Get version without 'v' prefix for Docker tags
-          DOCKER_VERSION="${{ needs.build.outputs.version }}"
+          DOCKER_VERSION="${{ needs.build-thunder.outputs.version }}"
           if [[ $DOCKER_VERSION == v* ]]; then
             DOCKER_VERSION="${DOCKER_VERSION#v}"
           fi
@@ -467,7 +464,7 @@ jobs:
       - name: 🏷️ Update Helm Values Image Tag
         run: |
           # Get version without 'v' prefix
-          CHART_VERSION="${{ needs.build.outputs.version }}"
+          CHART_VERSION="${{ needs.build-thunder.outputs.version }}"
           if [[ $CHART_VERSION == v* ]]; then
             CHART_VERSION="${CHART_VERSION#v}"
           fi
@@ -486,7 +483,7 @@ jobs:
 
           echo "📝 Updating OpenChoreo Helm values with image tag ${CHART_VERSION}"
           sed -i "s/tag: \"[^\"]*\"/tag: \"${CHART_VERSION}\"/" install/openchoreo/helm/values.yaml
-          sed -i "s/tag: \"[^\"]*\"/tag: \"${CHART_VERSION}\"/" install/openchoreo/helm/charts/${PRODUCT_NAME_LOWER}-component/values.yaml
+          sed -i "s/tag: \"[^\"]*\"/tag: \"${CHART_VERSION}\"/" install/openchoreo/helm/charts/thunder-component/values.yaml
           
           # Verify the replacement was successful
           if ! grep -q "tag: \"${CHART_VERSION}\"" install/helm/values.yaml; then
@@ -508,12 +505,12 @@ jobs:
 
       - name: 📦 Package and Push Helm Chart to GHCR
         run: |
-          CHART_NAME="$PRODUCT_NAME_LOWER"
+          CHART_NAME="thunder"
           OWNER_NAME=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           HELM_REGISTRY="ghcr.io/${OWNER_NAME}"
           
           # Get version without 'v' prefix for Helm chart version
-          CHART_VERSION="${{ needs.build.outputs.version }}"
+          CHART_VERSION="${{ needs.build-thunder.outputs.version }}"
           if [[ $CHART_VERSION == v* ]]; then
             CHART_VERSION="${CHART_VERSION#v}"
           fi
@@ -546,7 +543,7 @@ jobs:
           OWNER_NAME=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           HELM_REGISTRY="ghcr.io/${OWNER_NAME}/helm-charts"
 
-          CHART_VERSION="${{ needs.build.outputs.version }}"
+          CHART_VERSION="${{ needs.build-thunder.outputs.version }}"
           if [[ $CHART_VERSION == v* ]]; then
             CHART_VERSION="${CHART_VERSION#v}"
           fi
@@ -556,19 +553,19 @@ jobs:
           # Authenticate Helm to GHCR
           echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
 
-          # Package and push oc-componenttype
-          echo "📦 Packaging ${PRODUCT_NAME_LOWER}-oc-componenttype ${CHART_VERSION}"
-          helm package install/openchoreo/helm/charts/${PRODUCT_NAME_LOWER}-oc-componenttype \
+          # Package and push thunder-oc-componenttype
+          echo "📦 Packaging thunder-oc-componenttype ${CHART_VERSION}"
+          helm package install/openchoreo/helm/charts/thunder-oc-componenttype \
             --version "${CHART_VERSION}" --app-version "${CHART_VERSION}" \
             --destination target/dist/openchoreo/
-          helm push "target/dist/openchoreo/${PRODUCT_NAME_LOWER}-oc-componenttype-${CHART_VERSION}.tgz" "oci://${HELM_REGISTRY}"
-          echo "✅ ${PRODUCT_NAME_LOWER}-oc-componenttype pushed to oci://${HELM_REGISTRY}"
+          helm push "target/dist/openchoreo/thunder-oc-componenttype-${CHART_VERSION}.tgz" "oci://${HELM_REGISTRY}"
+          echo "✅ thunder-oc-componenttype pushed to oci://${HELM_REGISTRY}"
 
       - name: 📝 Calculate Next Version
         id: next_version
         run: |
           # Get the current release version and remove 'v' prefix
-          RELEASE_VERSION="${{ needs.build.outputs.version }}"
+          RELEASE_VERSION="${{ needs.build-thunder.outputs.version }}"
           if [[ $RELEASE_VERSION == v* ]]; then
             RELEASE_VERSION="${RELEASE_VERSION#v}"
           fi
@@ -646,7 +643,7 @@ jobs:
   package-samples-linux:
     name: 📦 Package Linux & Windows Samples
     runs-on: ubuntu-latest
-    needs: [build, build-and-package]
+    needs: [build-thunder, build-and-package]
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -660,7 +657,7 @@ jobs:
       - name: 📝 Update Sample Apps Version
         uses: ./.github/actions/update-sample-versions
         with:
-          version: ${{ needs.build.outputs.version }}
+          version: ${{ needs.build-thunder.outputs.version }}
 
       - name: 📦 Build and Package Linux Samples
         run: |
@@ -673,14 +670,14 @@ jobs:
       - name: 📦 Upload Linux & Windows Sample Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: ${{ env.PRODUCT_NAME_LOWER }}-samples-linux-windows
+          name: thunder-samples-linux-windows
           path: target/dist/*.zip
           if-no-files-found: error
 
   package-samples-macos:
     name: 📦 Package macOS Samples
     runs-on: macos-latest
-    needs: [build, build-and-package]
+    needs: [build-thunder, build-and-package]
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -694,7 +691,7 @@ jobs:
       - name: 📝 Update Sample Apps Version
         uses: ./.github/actions/update-sample-versions
         with:
-          version: ${{ needs.build.outputs.version }}
+          version: ${{ needs.build-thunder.outputs.version }}
 
       - name: 📦 Build and Package macOS Samples
         run: |
@@ -704,14 +701,14 @@ jobs:
       - name: 📦 Upload macOS Sample Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: ${{ env.PRODUCT_NAME_LOWER }}-samples-macos
+          name: thunder-samples-macos
           path: target/dist/*.zip
           if-no-files-found: error
 
   release:
     name: 🚀 Release
     runs-on: ubuntu-latest
-    needs: [build, build-and-package, package-samples-linux, package-samples-macos]
+    needs: [build-thunder, build-and-package, package-samples-linux, package-samples-macos]
     outputs:
       release_tag: ${{ steps.release_info.outputs.release_tag }}
     steps:
@@ -724,19 +721,19 @@ jobs:
       - name: 📥 Download Backend Artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: product-distribution
+          name: thunder-distribution
           path: ./backend-artifacts
 
       - name: 📥 Download Linux & Windows Sample Artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: ${{ env.PRODUCT_NAME_LOWER }}-samples-linux-windows
+          name: thunder-samples-linux-windows
           path: ./linux-windows-artifacts
 
       - name: 📥 Download macOS Sample Artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
-          name: ${{ env.PRODUCT_NAME_LOWER }}-samples-macos
+          name: thunder-samples-macos
           path: ./macos-artifacts
 
       - name: 📦 Combine All Distribution Artifacts
@@ -756,14 +753,14 @@ jobs:
       - name: 📦 Upload Final Combined Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: final-distribution
+          name: thunder-final-distribution
           path: target/dist/*.zip
           if-no-files-found: error
 
       - name: 📝 Read Version
         id: version
         run: |
-          VERSION="${{ needs.build.outputs.version }}"
+          VERSION="${{ needs.build-thunder.outputs.version }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: 📝 Generate Automatic Release Notes
@@ -771,7 +768,7 @@ jobs:
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
-            const currentTag = '${{ needs.build.outputs.version }}';
+            const currentTag = '${{ needs.build-thunder.outputs.version }}';
             
             try {
               // Get only the 2 most recent releases (current + previous)
@@ -850,7 +847,7 @@ jobs:
         id: readme_extract
         run: |
           # Get the release version without v prefix for replacement
-          RELEASE_VERSION="${{ needs.build.outputs.version }}"
+          RELEASE_VERSION="${{ needs.build-thunder.outputs.version }}"
           if [[ $RELEASE_VERSION == v* ]]; then
             RELEASE_VERSION="${RELEASE_VERSION#v}"
           fi
@@ -874,31 +871,31 @@ jobs:
           INTRO=$(echo "$INTRO" | sed "s/latest release/$RELEASE_VERSION release/g")
           QUICKSTART=$(echo "$QUICKSTART" | sed "s/latest release/$RELEASE_VERSION release/g")
           # Handle other 'latest' references
-          INTRO=$(echo "$INTRO" | sed "s/latest release of $PRODUCT_NAME/$RELEASE_VERSION release of $PRODUCT_NAME/g")
-          QUICKSTART=$(echo "$QUICKSTART" | sed "s/latest release of $PRODUCT_NAME/$RELEASE_VERSION release of $PRODUCT_NAME/g")
-
-          # Add direct download links for $PRODUCT_NAME server - replace download instruction and example paragraph
-          # Create the $PRODUCT_NAME downloads table with proper newlines using printf
-          PRODUCT_TABLE=$(printf "%s\n%s\n%s\n%s\n%s\n%s\n%s" \
+          INTRO=$(echo "$INTRO" | sed "s/latest release of WSO2 Thunder/$RELEASE_VERSION release of WSO2 Thunder/g")
+          QUICKSTART=$(echo "$QUICKSTART" | sed "s/latest release of WSO2 Thunder/$RELEASE_VERSION release of WSO2 Thunder/g")
+          
+          # Add direct download links for Thunder server - replace download instruction and example paragraph
+          # Create the Thunder downloads table with proper newlines using printf
+          THUNDER_TABLE=$(printf "%s\n%s\n%s\n%s\n%s\n%s\n%s" \
             "   | OS | Architecture | Download Link |" \
             "   |-------|-------------|-------------|" \
-            "   | macOS | ARM64 (Apple Silicon) | [${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-macos-arm64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-macos-arm64.zip) |" \
-            "   | macOS | x64 (Intel) | [${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-macos-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-macos-x64.zip) |" \
-            "   | Linux | x64 | [${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-linux-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-linux-x64.zip) |" \
-            "   | Linux | ARM64 | [${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-linux-arm64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-linux-arm64.zip) |" \
-            "   | Windows | x64 | [${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-win-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}-win-x64.zip) |")
-
+            "   | macOS | ARM64 (Apple Silicon) | [thunder-${RELEASE_VERSION}-macos-arm64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/thunder-${RELEASE_VERSION}-macos-arm64.zip) |" \
+            "   | macOS | x64 (Intel) | [thunder-${RELEASE_VERSION}-macos-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/thunder-${RELEASE_VERSION}-macos-x64.zip) |" \
+            "   | Linux | x64 | [thunder-${RELEASE_VERSION}-linux-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/thunder-${RELEASE_VERSION}-linux-x64.zip) |" \
+            "   | Linux | ARM64 | [thunder-${RELEASE_VERSION}-linux-arm64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/thunder-${RELEASE_VERSION}-linux-arm64.zip) |" \
+            "   | Windows | x64 | [thunder-${RELEASE_VERSION}-win-x64.zip](https://github.com/${{ github.repository }}/releases/download/v${RELEASE_VERSION}/thunder-${RELEASE_VERSION}-win-x64.zip) |")
+          
           # Replace the download instruction with the table using awk for proper handling
-          QUICKSTART=$(echo "$QUICKSTART" | awk -v table="$PRODUCT_TABLE" '
-            /Download `'"${PRODUCT_NAME_LOWER}"'-.*-<os>-<arch>\.zip` from the \[.*release\]/ {
+          QUICKSTART=$(echo "$QUICKSTART" | awk -v table="$THUNDER_TABLE" '
+            /Download `thunder-.*-<os>-<arch>\.zip` from the \[.*release\]/ {
               print table
               next
             }
             { print }
           ')
-
+          
           # Remove the example paragraph that follows (it's now redundant with the table)
-          QUICKSTART=$(echo "$QUICKSTART" | sed '/For example, if you are using a MacOS machine with a Apple Silicon (ARM64) processor, you would download `'"${PRODUCT_NAME_LOWER}-${RELEASE_VERSION}"'-macos-arm64\.zip`\./d')
+          QUICKSTART=$(echo "$QUICKSTART" | sed '/For example, if you are using a MacOS machine with a Apple Silicon (ARM64) processor, you would download `thunder-'"$RELEASE_VERSION"'-macos-arm64\.zip`\./d')
           
           # Create the React Vanilla Sample App downloads table with proper newlines using printf
           VANILLA_SAMPLE_TABLE=$(printf "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s" \
@@ -987,9 +984,9 @@ jobs:
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
         with:
           tag_name: ${{ steps.version.outputs.version }}
-          name: ${{ env.PRODUCT_NAME }} ${{ steps.version.outputs.version }}
+          name: Thunder ${{ steps.version.outputs.version }}
           draft: false
-          prerelease: ${{ needs.build.outputs.prerelease }}
+          prerelease: ${{ needs.build-thunder.outputs.prerelease }}
           files: target/dist/*.zip
           body: ${{ env.RELEASE_BODY }}
           generate_release_notes: false
@@ -998,7 +995,7 @@ jobs:
         id: release_info
         run: |
           RELEASE_VERSION="${{ steps.version.outputs.version }}"
-          echo "release_name=${PRODUCT_NAME} ${RELEASE_VERSION}" >> $GITHUB_OUTPUT
+          echo "release_name=Thunder ${RELEASE_VERSION}" >> $GITHUB_OUTPUT
           echo "release_tag=${RELEASE_VERSION}" >> $GITHUB_OUTPUT
           echo "release_url=https://github.com/${{ github.repository }}/releases/tag/${RELEASE_VERSION}" >> $GITHUB_OUTPUT
       
@@ -1006,7 +1003,6 @@ jobs:
         uses: ./.github/actions/release-notification
         with:
           webhook: ${{ secrets.GOOGLE_CHAT_WEBHOOK }}
-          product-name: ${{ env.PRODUCT_NAME }}
           release-name: ${{ steps.release_info.outputs.release_name }}
           release-tag: ${{ steps.release_info.outputs.release_tag }}
           release-url: ${{ steps.release_info.outputs.release_url }}
@@ -1014,8 +1010,8 @@ jobs:
   trigger-performance-test:
     name: 🧪 Trigger Performance Test
     runs-on: ubuntu-latest
-    needs: [build, release]
-    if: ${{ needs.build.outputs.run_performance_test == 'true' }}
+    needs: [build-thunder, release]
+    if: ${{ needs.build-thunder.outputs.run_performance_test == 'true' }}
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -1027,10 +1023,9 @@ jobs:
         with:
           github-token: ${{ secrets.THUNDER_GITHUB_BOT_TOKEN }}
           script: |
-            // Construct the pack URL using the release version
+            // Construct the Thunder pack URL using the release version
             const releaseTag = '${{ needs.release.outputs.release_tag }}';
-            const productNameLower = process.env.PRODUCT_NAME_LOWER;
-            const serverDistributionUrl = `https://github.com/${{ github.repository }}/releases/download/${releaseTag}/${productNameLower}-${releaseTag.replace('v', '')}-linux-x64.zip`;
+            const thunderPackUrl = `https://github.com/${{ github.repository }}/releases/download/${releaseTag}/thunder-${releaseTag.replace('v', '')}-linux-x64.zip`;
             const pushBenchmarkToGitHub = ${{ github.repository == 'asgardeo/thunder' }};
 
             try {
@@ -1041,7 +1036,7 @@ jobs:
                 workflow_id: 'vm-perf-workflow.yml',
                 ref: 'main',
                 inputs: {
-                  THUNDER_PACK_URL: serverDistributionUrl,
+                  THUNDER_PACK_URL: thunderPackUrl,
                   CONCURRENCY: '50,200,500',
                   PUSH_BENCHMARKS_TO_GITHUB: pushBenchmarkToGitHub
                 }
@@ -1057,7 +1052,7 @@ jobs:
   trigger-deploy-docs:
     name: 📚 Trigger Deploy Documentation
     runs-on: ubuntu-latest
-    needs: [build, release]
+    needs: [build-thunder, release]
     steps:
       - name: 📚 Trigger Deploy Documentation Workflow
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7

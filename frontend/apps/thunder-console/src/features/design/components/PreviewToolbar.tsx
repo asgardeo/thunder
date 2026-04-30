@@ -17,9 +17,9 @@
  */
 
 import type {ColorSchemeOption} from '@thunder/design';
-import {Box, IconButton, Tooltip, Typography, useColorScheme} from '@wso2/oxygen-ui';
+import {Box, IconButton, Tooltip, Typography} from '@wso2/oxygen-ui';
 import {Minus, Monitor, Plus, Smartphone, Tablet} from '@wso2/oxygen-ui-icons-react';
-import {type JSX, type ReactNode, useEffect, useMemo, useState} from 'react';
+import {type JSX, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {Viewport} from './ThemePreviewPanel';
 import {VIEWPORT_WIDTHS, VIEWPORT_HEIGHTS} from './viewportConstants';
@@ -28,22 +28,14 @@ import ColorSchemeOptions from '../constants/ColorSchemeOptions';
 export interface PreviewToolbarProps {
   viewport: Viewport;
   setViewport: (v: Viewport) => void;
-  previewColorScheme?: ColorSchemeOption;
-  setPreviewColorScheme?: (cs: ColorSchemeOption) => void;
-  /** Called whenever the color scheme changes (controlled or uncontrolled). */
-  onColorSchemeChange?: (cs: ColorSchemeOption) => void;
-  /** Called whenever the resolved effective scheme changes ('light' | 'dark'). */
-  onEffectiveSchemeChange?: (scheme: 'light' | 'dark') => void;
+  previewColorScheme: ColorSchemeOption;
+  setPreviewColorScheme: (cs: ColorSchemeOption) => void;
   zoom: number;
   setZoom: (z: number) => void;
   zoomIdx: number;
   showDimensions?: boolean;
   /** Extra content rendered at the end of the toolbar (after a divider). */
   extraContent?: ReactNode;
-  /** Whether to show viewport switching controls. Defaults to true. */
-  showViewportControls?: boolean;
-  /** Whether to show zoom controls. Defaults to true. */
-  showZoomControls?: boolean;
 }
 
 const ZOOM_STEPS = [25, 50, 75, 100, 125, 150];
@@ -61,50 +53,15 @@ const ASPECT_RATIO_LABELS: Record<Viewport, string> = {
 export default function PreviewToolbar({
   viewport,
   setViewport,
-  previewColorScheme: controlledScheme = undefined,
-  setPreviewColorScheme: setControlledScheme = undefined,
-  onColorSchemeChange = undefined,
-  onEffectiveSchemeChange = undefined,
+  previewColorScheme,
+  setPreviewColorScheme,
   showDimensions = false,
   zoom,
   setZoom,
   zoomIdx,
   extraContent = undefined,
-  showViewportControls = true,
-  showZoomControls = true,
 }: PreviewToolbarProps): JSX.Element {
   const {t} = useTranslation('design');
-  const {mode, systemMode} = useColorScheme();
-  const [internalScheme, setInternalScheme] = useState<ColorSchemeOption>(
-    (mode as ColorSchemeOption | undefined) ?? 'light',
-  );
-
-  const isControlled = controlledScheme !== undefined && setControlledScheme !== undefined;
-  const previewColorScheme = isControlled ? controlledScheme : internalScheme;
-
-  const resolvedSystemMode = useMemo<'light' | 'dark'>(
-    () => ((mode === 'system' ? systemMode : mode) === 'dark' ? 'dark' : 'light'),
-    [mode, systemMode],
-  );
-
-  const effectiveScheme = useMemo<'light' | 'dark'>(
-    () => (previewColorScheme !== 'system' ? previewColorScheme : resolvedSystemMode),
-    [previewColorScheme, resolvedSystemMode],
-  );
-
-  useEffect(() => {
-    onEffectiveSchemeChange?.(effectiveScheme);
-  }, [effectiveScheme, onEffectiveSchemeChange]);
-
-  const handleColorSchemeChange = (cs: ColorSchemeOption): void => {
-    if (isControlled) {
-      setControlledScheme(cs);
-    } else {
-      setInternalScheme(cs);
-    }
-    onColorSchemeChange?.(cs);
-  };
-
   const viewportOptions: {id: Viewport; label: string; icon: JSX.Element}[] = [
     {
       id: 'mobile',
@@ -122,7 +79,6 @@ export default function PreviewToolbar({
       icon: <Monitor size={14} />,
     },
   ];
-
   return (
     <Box
       sx={{
@@ -141,28 +97,24 @@ export default function PreviewToolbar({
       }}
     >
       {/* Viewport */}
-      {showViewportControls && (
-        <>
-          {viewportOptions.map((vp) => (
-            <Tooltip key={vp.id} title={vp.label}>
-              <IconButton
-                size="small"
-                onClick={() => setViewport(vp.id)}
-                sx={{
-                  borderRadius: 1,
-                  color: viewport === vp.id ? 'primary.main' : 'text.secondary',
-                  bgcolor: viewport === vp.id ? 'primary.50' : 'transparent',
-                  '&:hover': {bgcolor: viewport === vp.id ? 'primary.100' : 'action.hover'},
-                }}
-              >
-                {vp.icon}
-              </IconButton>
-            </Tooltip>
-          ))}
+      {viewportOptions.map((vp) => (
+        <Tooltip key={vp.id} title={vp.label}>
+          <IconButton
+            size="small"
+            onClick={() => setViewport(vp.id)}
+            sx={{
+              borderRadius: 1,
+              color: viewport === vp.id ? 'primary.main' : 'text.secondary',
+              bgcolor: viewport === vp.id ? 'primary.50' : 'transparent',
+              '&:hover': {bgcolor: viewport === vp.id ? 'primary.100' : 'action.hover'},
+            }}
+          >
+            {vp.icon}
+          </IconButton>
+        </Tooltip>
+      ))}
 
-          <ToolbarDivider />
-        </>
-      )}
+      <ToolbarDivider />
 
       {/* Dimensions */}
       {showDimensions && (
@@ -212,7 +164,7 @@ export default function PreviewToolbar({
           {ColorSchemeOptions.map((cs) => (
             <Tooltip key={cs.id} title={t(`common.color_scheme.options.${cs.id}.label`, cs.label)}>
               <Box
-                onClick={() => handleColorSchemeChange(cs.id)}
+                onClick={() => setPreviewColorScheme(cs.id)}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
@@ -232,52 +184,48 @@ export default function PreviewToolbar({
         </Box>
       </Box>
 
-      {showZoomControls && (
-        <>
-          <ToolbarDivider />
+      <ToolbarDivider />
 
-          {/* Zoom out */}
-          <Tooltip title={t('common.preview.toolbar.actions.zoom_out.tooltip', 'Zoom out')}>
-            <span>
-              <IconButton
-                size="small"
-                disabled={zoomIdx <= 0}
-                onClick={() => setZoom(ZOOM_STEPS[zoomIdx - 1] ?? zoom)}
-                sx={{borderRadius: 1, color: 'text.secondary'}}
-              >
-                <Minus size={12} />
-              </IconButton>
-            </span>
-          </Tooltip>
-
-          <Typography
-            variant="caption"
-            sx={{
-              fontSize: '0.7rem',
-              minWidth: 36,
-              textAlign: 'center',
-              color: 'text.secondary',
-              fontVariantNumeric: 'tabular-nums',
-            }}
+      {/* Zoom out */}
+      <Tooltip title={t('common.preview.toolbar.actions.zoom_out.tooltip', 'Zoom out')}>
+        <span>
+          <IconButton
+            size="small"
+            disabled={zoomIdx <= 0}
+            onClick={() => setZoom(ZOOM_STEPS[zoomIdx - 1] ?? zoom)}
+            sx={{borderRadius: 1, color: 'text.secondary'}}
           >
-            {zoom}%
-          </Typography>
+            <Minus size={12} />
+          </IconButton>
+        </span>
+      </Tooltip>
 
-          {/* Zoom in */}
-          <Tooltip title={t('common.preview.toolbar.actions.zoom_in.tooltip', 'Zoom in')}>
-            <span>
-              <IconButton
-                size="small"
-                disabled={zoomIdx >= ZOOM_STEPS.length - 1}
-                onClick={() => setZoom(ZOOM_STEPS[zoomIdx + 1] ?? zoom)}
-                sx={{borderRadius: 1, color: 'text.secondary'}}
-              >
-                <Plus size={12} />
-              </IconButton>
-            </span>
-          </Tooltip>
-        </>
-      )}
+      <Typography
+        variant="caption"
+        sx={{
+          fontSize: '0.7rem',
+          minWidth: 36,
+          textAlign: 'center',
+          color: 'text.secondary',
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {zoom}%
+      </Typography>
+
+      {/* Zoom in */}
+      <Tooltip title={t('common.preview.toolbar.actions.zoom_in.tooltip', 'Zoom in')}>
+        <span>
+          <IconButton
+            size="small"
+            disabled={zoomIdx >= ZOOM_STEPS.length - 1}
+            onClick={() => setZoom(ZOOM_STEPS[zoomIdx + 1] ?? zoom)}
+            sx={{borderRadius: 1, color: 'text.secondary'}}
+          >
+            <Plus size={12} />
+          </IconButton>
+        </span>
+      </Tooltip>
 
       {extraContent && (
         <>

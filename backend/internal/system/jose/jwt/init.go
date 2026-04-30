@@ -19,15 +19,9 @@
 // Package jwt provides functionalities for handling JSON Web Tokens (JWTs).
 package jwt
 
-import (
-	"time"
-
-	"github.com/asgardeo/thunder/internal/system/crypto/pki"
-	httpservice "github.com/asgardeo/thunder/internal/system/http"
-)
+import "github.com/asgardeo/thunder/internal/system/crypto/pki"
 
 // Initialize initializes the JWT service.
 func Initialize(pkiService pki.PKIServiceInterface) (JWTServiceInterface, error) {
-	httpClient := httpservice.NewHTTPClientWithTimeout(10 * time.Second)
-	return newJWTService(pkiService, httpClient)
+	return newJWTService(pkiService)
 }

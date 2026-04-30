@@ -146,8 +146,7 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 
 	// Include meta in the response if verbose mode is enabled
 	if ctx.Verbose && n.GetMeta() != nil {
-		trimmed := n.trimMetaToRequestedInputs(nodeResp.Inputs, nodeResp.Actions)
-		nodeResp.Meta = n.appendSyntheticMetaComponents(trimmed, nodeResp.Inputs)
+		nodeResp.Meta = n.trimMetaToRequestedInputs(nodeResp.Inputs, nodeResp.Actions)
 	}
 
 	nodeResp.Status = common.NodeStatusIncomplete
@@ -209,13 +208,8 @@ func (n *promptNode) resolvePromptInputs(ctx *NodeContext, nodeResp *common.Node
 	// Check for required inputs and collect missing ones
 	hasAllInputs := n.hasRequiredInputs(ctx, nodeResp)
 
-	// Enrich inputs from ForwardedData — may append dynamically derived inputs not in node prompts.
-	// If any new inputs are added they are unsatisfied by definition, so the node is incomplete.
-	prevCount := len(nodeResp.Inputs)
+	// Enrich inputs from ForwardedData
 	n.enrichInputsFromForwardedData(ctx, nodeResp)
-	if len(nodeResp.Inputs) > prevCount {
-		hasAllInputs = false
-	}
 
 	// Check for action selection
 	hasAction := n.hasSelectedAction(ctx, nodeResp)
@@ -291,66 +285,43 @@ func (n *promptNode) appendMissingInputs(ctx *NodeContext, nodeResp *common.Node
 }
 
 // enrichInputsFromForwardedData enriches the inputs in the node response with dynamic data
-// from ForwardedData. Inputs present in ForwardedData but absent from the node response are
-// appended (dynamically derived inputs). Options are propagated for all matched inputs.
+// from ForwardedData. Currently only enriches Options for inputs that match by Identifier.
 func (n *promptNode) enrichInputsFromForwardedData(ctx *NodeContext, nodeResp *common.NodeResponse) {
-	if ctx.ForwardedData == nil {
+	if ctx.ForwardedData == nil || len(nodeResp.Inputs) == 0 {
 		return
 	}
 
-	// Check if ForwardedData contains inputs.
+	// Check if ForwardedData contains inputs
 	forwardedInputsData, ok := ctx.ForwardedData[common.ForwardedDataKeyInputs]
 	if !ok {
 		return
 	}
 
-	// Type assert to []common.Input.
+	// Type assert to []common.Input
 	forwardedInputs, ok := forwardedInputsData.([]common.Input)
 	if !ok {
 		n.logger.Debug("ForwardedData contains 'inputs' key but value is not []common.Input, skipping enrichment")
 		return
 	}
 
-	// Build an index map of identifiers already in the response for O(1) lookup and in-place update.
-	existingIndexMap := make(map[string]int, len(nodeResp.Inputs))
-	for i, inp := range nodeResp.Inputs {
-		existingIndexMap[inp.Identifier] = i
+	// Build a map of forwarded inputs by Identifier for quick lookup
+	forwardedInputMap := make(map[string]common.Input)
+	for _, fwdInput := range forwardedInputs {
+		forwardedInputMap[fwdInput.Identifier] = fwdInput
 	}
 
-	// Single pass: upsert forwarded inputs — replace existing entries (updating required/options)
-	// or append dynamically derived inputs not yet satisfied by the user.
-	for _, fwdInput := range forwardedInputs {
-		if idx, exists := existingIndexMap[fwdInput.Identifier]; exists {
-			if fwdInput.Required && !nodeResp.Inputs[idx].Required {
-				nodeResp.Inputs[idx].Required = true
-				n.logger.Debug("Updated input required flag from ForwardedData",
-					log.String("identifier", fwdInput.Identifier))
-			}
-			if fwdInput.Type == common.InputTypeSelect &&
-				nodeResp.Inputs[idx].Type == common.InputTypeSelect &&
-				len(fwdInput.Options) > 0 {
-				nodeResp.Inputs[idx].Options = fwdInput.Options
+	// Enrich each prompt input with data from matching forwarded input
+	for i := range nodeResp.Inputs {
+		if fwdInput, found := forwardedInputMap[nodeResp.Inputs[i].Identifier]; found {
+			// Only enrich Options for SELECT-type inputs to avoid leaking
+			// candidate attribute values in free-text input responses.
+			if len(fwdInput.Options) > 0 && nodeResp.Inputs[i].Type == "SELECT" {
+				nodeResp.Inputs[i].Options = fwdInput.Options
 				n.logger.Debug("Enriched input with options from ForwardedData",
-					log.String("identifier", fwdInput.Identifier),
+					log.String("identifier", nodeResp.Inputs[i].Identifier),
 					log.Int("optionsCount", len(fwdInput.Options)))
 			}
-			continue
 		}
-		if _, ok := ctx.UserInputs[fwdInput.Identifier]; ok {
-			continue
-		}
-		if _, ok := ctx.RuntimeData[fwdInput.Identifier]; ok {
-			continue
-		}
-		if value, ok := ctx.ForwardedData[fwdInput.Identifier]; ok {
-			if _, isString := value.(string); isString {
-				continue
-			}
-		}
-		nodeResp.Inputs = append(nodeResp.Inputs, fwdInput)
-		existingIndexMap[fwdInput.Identifier] = len(nodeResp.Inputs) - 1
-		n.logger.Debug("Added dynamically-derived input from ForwardedData",
-			log.String("identifier", fwdInput.Identifier))
 	}
 }
 
@@ -527,182 +498,4 @@ func filterMetaComponents(comps []interface{}, allowedRefs, knownInputActionRefs
 		result = append(result, comp)
 	}
 	return result
-}
-
-// appendSyntheticMetaComponents ensures every input in the list has a corresponding meta
-// component. For inputs whose component already exists (matched by ref or id), the required
-// field is updated in-place if the input marks it required. For inputs with no existing
-// component, a minimal synthetic component is created and inserted into the first BLOCK
-// before any ACTION. If no BLOCK exists, a new one is appended.
-// The label uses DisplayName when set, falling back to Identifier.
-func (n *promptNode) appendSyntheticMetaComponents(trimmedMeta interface{}, inputs []common.Input) interface{} {
-	metaMap, ok := trimmedMeta.(map[string]interface{})
-	if !ok {
-		return trimmedMeta
-	}
-
-	// Build a set of refs/ids from the node's own configured prompt inputs —
-	// used to suppress synthesis for node-defined inputs with no meta component.
-	nodeInputRefs := make(map[string]struct{})
-	for _, inp := range n.getAllInputs() {
-		if inp.Ref != "" {
-			nodeInputRefs[inp.Ref] = struct{}{}
-		}
-		nodeInputRefs[inp.Identifier] = struct{}{}
-	}
-
-	// Build ref/id → component map for O(1) lookup and in-place required update.
-	metaCompByRef := make(map[string]map[string]interface{})
-	collectMetaComponentMap(metaMap["components"], metaCompByRef)
-
-	// Single pass: update required on existing components; collect synthetic for missing ones.
-	// For each input, try to find its meta component by Identifier first, then by Ref.
-	// Node-configured inputs with no meta component are skipped (no synthesis).
-	synthetic := make([]interface{}, 0, len(inputs))
-	for _, input := range inputs {
-		comp, inMeta := metaCompByRef[input.Identifier]
-		if !inMeta && input.Ref != "" {
-			comp, inMeta = metaCompByRef[input.Ref]
-		}
-		if inMeta {
-			if input.Required {
-				comp["required"] = true
-			}
-			continue
-		}
-		if _, isNodeInput := nodeInputRefs[input.Identifier]; isNodeInput {
-			continue
-		}
-		label := input.DisplayName
-		if label == "" {
-			label = input.Identifier
-		}
-		inputType := input.Type
-		if inputType == "" {
-			inputType = common.InputTypeText
-		}
-		synthetic = append(synthetic, map[string]interface{}{
-			"id":       input.Identifier,
-			"ref":      input.Identifier,
-			"type":     inputType,
-			"label":    label,
-			"required": input.Required,
-		})
-	}
-
-	// Walk the meta tree and either replace a DYNAMIC_INPUT_PLACEHOLDER with synthetic
-	// inputs (preferred — exact insertion point), or insert before the first ACTION in
-	// the first BLOCK (fallback). The placeholder is always stripped even when there are
-	// no synthetic inputs, so it never leaks to the client.
-	// Input components are only rendered inside a BLOCK by the UI renderer.
-	result := make(map[string]interface{}, len(metaMap))
-	for k, v := range metaMap {
-		result[k] = v
-	}
-	existing, _ := metaMap["components"].([]interface{})
-	updatedComponents := make([]interface{}, len(existing))
-	copy(updatedComponents, existing)
-
-	placeholderStripped := false
-	inserted := false
-	for i, comp := range updatedComponents {
-		compMap, ok := comp.(map[string]interface{})
-		if !ok || compMap["type"] != common.MetaComponentTypeBlock {
-			continue
-		}
-		children, _ := compMap["components"].([]interface{})
-
-		// Preferred path: find and replace DYNAMIC_INPUT_PLACEHOLDER.
-		// Always strip it, inserting synthetic inputs in its place (may be empty).
-		for j, child := range children {
-			childMap, ok := child.(map[string]interface{})
-			if !ok || childMap["type"] != common.MetaComponentTypeDynamicInputPlaceholder {
-				continue
-			}
-			newChildren := make([]interface{}, 0, len(children)-1+len(synthetic))
-			newChildren = append(newChildren, children[:j]...)
-			newChildren = append(newChildren, synthetic...)
-			newChildren = append(newChildren, children[j+1:]...)
-			newBlock := make(map[string]interface{}, len(compMap))
-			for k, v := range compMap {
-				newBlock[k] = v
-			}
-			newBlock["components"] = newChildren
-			updatedComponents[i] = newBlock
-			placeholderStripped = true
-			inserted = true
-			break
-		}
-		if placeholderStripped {
-			break
-		}
-
-		// Fallback (no placeholder): insert before the first ACTION, only when there
-		// are synthetic inputs to add.
-		if len(synthetic) == 0 {
-			break
-		}
-		insertIdx := len(children)
-		for j, child := range children {
-			childMap, ok := child.(map[string]interface{})
-			if ok && childMap["type"] == common.MetaComponentTypeAction {
-				insertIdx = j
-				break
-			}
-		}
-		newChildren := make([]interface{}, 0, len(children)+len(synthetic))
-		newChildren = append(newChildren, children[:insertIdx]...)
-		newChildren = append(newChildren, synthetic...)
-		newChildren = append(newChildren, children[insertIdx:]...)
-		newBlock := make(map[string]interface{}, len(compMap))
-		for k, v := range compMap {
-			newBlock[k] = v
-		}
-		newBlock["components"] = newChildren
-		updatedComponents[i] = newBlock
-		inserted = true
-		break
-	}
-
-	if len(synthetic) == 0 && !placeholderStripped {
-		return trimmedMeta
-	}
-
-	if !inserted && len(synthetic) > 0 {
-		// No BLOCK found — wrap synthetic inputs in a new BLOCK so the UI renderer
-		// can display them (input components are only supported inside a BLOCK).
-		updatedComponents = append(updatedComponents, map[string]interface{}{
-			"id":         "block_schema_dynamic",
-			"type":       common.MetaComponentTypeBlock,
-			"components": synthetic,
-		})
-	}
-
-	result["components"] = updatedComponents
-	return result
-}
-
-// collectMetaComponentMap recursively walks the meta components tree and builds a
-// ref/id → component map. ref takes priority over id for the same component so that
-// identifier-based lookups match the data-binding key rather than the element id.
-func collectMetaComponentMap(comps interface{}, compMap map[string]map[string]interface{}) {
-	compSlice, ok := comps.([]interface{})
-	if !ok {
-		return
-	}
-	for _, comp := range compSlice {
-		cm, ok := comp.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		if ref, ok := cm["ref"].(string); ok && ref != "" {
-			compMap[ref] = cm
-		}
-		if id, ok := cm["id"].(string); ok && id != "" {
-			if _, exists := compMap[id]; !exists {
-				compMap[id] = cm
-			}
-		}
-		collectMetaComponentMap(cm["components"], compMap)
-	}
 }

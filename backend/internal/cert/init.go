@@ -23,7 +23,8 @@ import (
 )
 
 // Initialize initializes and returns the certificate service.
-func Initialize(dbProvider provider.DBProviderInterface) (CertificateServiceInterface, error) {
+func Initialize() (CertificateServiceInterface, error) {
+	dbProvider := provider.GetDBProvider()
 	txn, err := dbProvider.GetConfigDBTransactioner()
 	if err != nil {
 		return nil, err

@@ -876,7 +876,6 @@ components:
           - user
           - group
           - app
-          - agent
       description: |
         Filter assignments by assignee type. When omitted, assignments of all types are returned.
     includeQueryParam:
@@ -899,15 +898,14 @@ components:
         id:
           type: string
           format: uuid
-          description: "ID of the user, app, agent, or group being assigned"
+          description: "ID of the user, app, or group being assigned"
         type:
           type: string
           enum:
             - user
             - group
             - app
-            - agent
-          description: "Type of entity being assigned (user, app, agent, or group)"
+          description: "Type of entity being assigned (user, app, or group)"
         display:
           type: string
           readOnly: true
@@ -920,15 +918,14 @@ components:
         id:
           type: string
           format: uuid
-          description: "ID of the user, app, agent, or group being assigned"
+          description: "ID of the user, app, or group being assigned"
         type:
           type: string
           enum:
             - user
             - group
             - app
-            - agent
-          description: "Type of entity being assigned (user, app, agent, or group)"
+          description: "Type of entity being assigned (user, app, or group)"
 
     ResourcePermissions:
       type: object

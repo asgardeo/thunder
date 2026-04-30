@@ -88,10 +88,9 @@ func getUserIndexedAttributes() []string {
 // registerRoutes registers the routes for user management operations.
 func registerRoutes(mux *http.ServeMux, userHandler *userHandler) {
 	opts1 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "POST"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, POST",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /users", userHandler.HandleUserPostRequest, opts1))
 	mux.HandleFunc(middleware.WithCORS("GET /users", userHandler.HandleUserListRequest, opts1))
@@ -100,10 +99,9 @@ func registerRoutes(mux *http.ServeMux, userHandler *userHandler) {
 	}, opts1))
 
 	opts2 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "PUT", "DELETE"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, PUT, DELETE",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /users/",
 		func(w http.ResponseWriter, r *http.Request) {
@@ -126,10 +124,9 @@ func registerRoutes(mux *http.ServeMux, userHandler *userHandler) {
 	}, opts2))
 
 	optsSelf := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "PUT"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, PUT",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /users/me", userHandler.HandleSelfUserGetRequest, optsSelf))
 	mux.HandleFunc(middleware.WithCORS("PUT /users/me", userHandler.HandleSelfUserPutRequest, optsSelf))
@@ -138,10 +135,9 @@ func registerRoutes(mux *http.ServeMux, userHandler *userHandler) {
 	}, optsSelf))
 
 	optsSelfCredentials := middleware.CORSOptions{
-		AllowedMethods:   []string{"POST"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "POST",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /users/me/update-credentials",
 		userHandler.HandleSelfUserCredentialUpdateRequest, optsSelfCredentials))
@@ -151,10 +147,9 @@ func registerRoutes(mux *http.ServeMux, userHandler *userHandler) {
 		}, optsSelfCredentials))
 
 	opts3 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "POST"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, POST",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /users/tree/{path...}",
 		userHandler.HandleUserListByPathRequest, opts3))

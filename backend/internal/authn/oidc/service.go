@@ -26,7 +26,9 @@ import (
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/entityprovider"
+	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	httpservice "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
@@ -57,13 +59,25 @@ type oidcAuthnService struct {
 }
 
 // newOIDCAuthnService creates a new instance of OIDC authenticator service.
-func newOIDCAuthnService(internal authnoauth.OAuthAuthnServiceInterface,
+func newOIDCAuthnService(httpClient httpservice.HTTPClientInterface,
+	idpSvc idp.IDPServiceInterface, entityProvider entityprovider.EntityProviderInterface,
 	jwtSvc jwt.JWTServiceInterface) OIDCAuthnServiceInterface {
+	internal := authnoauth.NewOAuthAuthnService(httpClient, idpSvc, entityProvider)
+
 	return &oidcAuthnService{
 		internal:   internal,
 		jwtService: jwtSvc,
 		logger:     log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName)),
 	}
+}
+
+// NewOIDCAuthnService creates a new instance of OIDC authenticator service.
+// [Deprecated: use dependency injection to get the instance instead].
+// TODO: Should be removed when executors are migrated to di pattern.
+func NewOIDCAuthnService(httpClient httpservice.HTTPClientInterface,
+	idpSvc idp.IDPServiceInterface, entityProvider entityprovider.EntityProviderInterface,
+	jwtSvc jwt.JWTServiceInterface) OIDCAuthnServiceInterface {
+	return newOIDCAuthnService(httpClient, idpSvc, entityProvider, jwtSvc)
 }
 
 // GetOAuthClientConfig retrieves the OAuth client configuration for the given identity provider ID.

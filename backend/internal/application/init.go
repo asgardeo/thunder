@@ -31,7 +31,6 @@ import (
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
-	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
@@ -43,10 +42,9 @@ func Initialize(
 	entityService entity.EntityServiceInterface,
 	inboundClient inboundclient.InboundClientServiceInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
-	i18nService i18nmgt.I18nServiceInterface,
 ) (ApplicationServiceInterface, declarativeresource.ResourceExporter, error) {
 	appService := newApplicationService(
-		inboundClient, entityProvider, ouService, i18nService,
+		inboundClient, entityProvider, ouService,
 	)
 
 	if err := entityService.LoadIndexedAttributes(getAppIndexedAttributes()); err != nil {
@@ -77,10 +75,9 @@ func Initialize(
 
 func registerRoutes(mux *http.ServeMux, appHandler *applicationHandler) {
 	opts1 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "POST"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, POST",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /applications",
 		appHandler.HandleApplicationPostRequest, opts1))
@@ -92,10 +89,9 @@ func registerRoutes(mux *http.ServeMux, appHandler *applicationHandler) {
 		}, opts1))
 
 	opts2 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "PUT", "DELETE"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, PUT, DELETE",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /applications/{id}",
 		appHandler.HandleApplicationGetRequest, opts2))

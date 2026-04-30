@@ -255,10 +255,10 @@ func (suite *HTTPClientTestSuite) TestSSRFSafeDialContext() {
 		assert.ErrorContains(suite.T(), err, "private address", "addr %s should be blocked", addr)
 	}
 
-	// Public IP: SSRF check passes; use an already-canceled context so the dial fails
-	// immediately and deterministically with context.Canceled.
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
+	// Public IP: SSRF check passes; use a 1 ms deadline so the TCP dial fails immediately
+	// without waiting for a real network round-trip.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+	defer cancel()
 	_, err := ssrfSafeDialContext(ctx, "tcp", "1.1.1.1:443")
 	assert.Error(suite.T(), err)
 	assert.NotContains(suite.T(), err.Error(), "private address")

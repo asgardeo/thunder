@@ -1,7 +1,7 @@
 {
   "item": [
     {
-      "id": "f65b136c-53e2-4cf8-bef8-f63b05dfaa78",
+      "id": "a74a5b2f-7627-4feb-afb2-4e69d6f5fa90",
       "name": "Execute a flow step",
       "description": {
         "content": "",
@@ -9,7 +9,7 @@
       },
       "item": [
         {
-          "id": "1b0e7002-43bf-4f4b-af42-c613f185aaf2",
+          "id": "18e4d9ac-db32-46c3-a476-7f27239abca3",
           "name": "Execute a flow step",
           "request": {
             "name": "Execute a flow step",
@@ -71,7 +71,7 @@
           },
           "response": [
             {
-              "id": "83450d7c-d984-4e4e-b25f-5c285ba37d30",
+              "id": "95a3314d-e83d-44a4-82fb-1276380b7341",
               "name": "Flow step executed successfully",
               "originalRequest": {
                 "url": {
@@ -129,12 +129,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"executionId\": \"<string>\",\n  \"flowStatus\": \"<string>\",\n  \"stepId\": \"<string>\",\n  \"type\": \"<string>\",\n  \"challengeToken\": \"<string>\",\n  \"data\": {\n    \"inputs\": [\n      {\n        \"ref\": \"<string>\",\n        \"identifier\": \"<string>\",\n        \"type\": \"<string>\",\n        \"required\": \"<boolean>\"\n      },\n      {\n        \"ref\": \"<string>\",\n        \"identifier\": \"<string>\",\n        \"type\": \"<string>\",\n        \"required\": \"<boolean>\"\n      }\n    ],\n    \"redirectURL\": \"<string>\",\n    \"additionalData\": {\n      \"animce0\": \"<string>\"\n    },\n    \"actions\": [\n      {\n        \"ref\": \"<string>\",\n        \"nextNode\": \"<string>\",\n        \"type\": \"<string>\"\n      },\n      {\n        \"ref\": \"<string>\",\n        \"nextNode\": \"<string>\",\n        \"type\": \"<string>\"\n      }\n    ],\n    \"meta\": \"<object>\"\n  }\n}",
+              "body": "{\n  \"executionId\": \"<string>\",\n  \"flowStatus\": \"<string>\",\n  \"stepId\": \"<string>\",\n  \"type\": \"<string>\",\n  \"challengeToken\": \"<string>\",\n  \"data\": {\n    \"inputs\": [\n      {\n        \"ref\": \"<string>\",\n        \"identifier\": \"<string>\",\n        \"type\": \"<string>\",\n        \"required\": \"<boolean>\"\n      },\n      {\n        \"ref\": \"<string>\",\n        \"identifier\": \"<string>\",\n        \"type\": \"<string>\",\n        \"required\": \"<boolean>\"\n      }\n    ],\n    \"redirectURL\": \"<string>\",\n    \"additionalData\": {\n      \"ullamco_a\": \"<string>\"\n    },\n    \"actions\": [\n      {\n        \"ref\": \"<string>\",\n        \"nextNode\": \"<string>\",\n        \"type\": \"<string>\"\n      },\n      {\n        \"ref\": \"<string>\",\n        \"nextNode\": \"<string>\",\n        \"type\": \"<string>\"\n      }\n    ],\n    \"meta\": \"<object>\"\n  }\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "a3f7ac77-0b3a-4608-9b5a-c0ed2f548ef0",
+              "id": "86277951-12b5-46cd-a14b-225c2ab9dba5",
               "name": "Bad Request: The request body is malformed or contains invalid data",
               "originalRequest": {
                 "url": {
@@ -192,12 +192,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "49a7a5d5-45b3-4249-8788-660d667b9053",
+              "id": "b483fd5f-681e-4ed2-905f-6f95995a0fce",
               "name": "Internal Server Error: An unexpected error occurred while processing the request",
               "originalRequest": {
                 "url": {
@@ -255,7 +255,7 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             }
@@ -296,7 +296,7 @@
     }
   ],
   "info": {
-    "_postman_id": "e9b103b8-fd23-4b84-9d4f-d669db3c9682",
+    "_postman_id": "ba5b7962-537c-4291-9b5f-266e2cc5cc40",
     "name": "Flow Execution API for App Native Authentication",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": {

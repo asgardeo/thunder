@@ -43,10 +43,6 @@ func (p *boolean) isDisplayable() bool {
 	return false
 }
 
-func (p *boolean) getDisplayName() string {
-	return p.displayName
-}
-
 func (p *boolean) isUnique() bool {
 	return false
 }

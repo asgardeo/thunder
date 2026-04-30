@@ -119,7 +119,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_BasicToke
 	claims := map[string]interface{}{
 		"sub":   "user123",
 		"iss":   "https://thunder.io",
-		"aud":   defaultAudience, // Use default audience for the issuer
+		"aud":   defaultAudience, // Use default audience for Thunder issuer
 		"exp":   float64(now + 3600),
 		"nbf":   float64(now - 60),
 		"scope": "read write",
@@ -139,7 +139,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_BasicToke
 }
 
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithTokenConfig() {
-	// App with token config should still validate using server-level issuer from config
+	// App with token config should still validate using Thunder-level issuer from config
 	customOAuthApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token:    &inboundmodel.OAuthTokenConfig{},
@@ -171,7 +171,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithoutNb
 	claims := map[string]interface{}{
 		"sub": "user123",
 		"iss": "https://thunder.io",
-		"aud": defaultAudience, // Use default audience for the issuer
+		"aud": defaultAudience, // Use default audience for Thunder issuer
 		"exp": float64(now + 3600),
 	}
 	token := suite.createTestJWT(claims)
@@ -192,7 +192,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithEmpty
 	claims := map[string]interface{}{
 		"sub": "user123",
 		"iss": "https://thunder.io",
-		"aud": defaultAudience, // Use default audience for the issuer
+		"aud": defaultAudience, // Use default audience for Thunder issuer
 		"exp": float64(now + 3600),
 		// No scope claim
 	}
@@ -400,7 +400,7 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Success_T
 }
 
 func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Success_WithTokenConfig() {
-	// App with token config should still use server-level issuer for signature verification
+	// App with token config should still use Thunder-level issuer for signature verification
 	customApp := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
@@ -440,7 +440,7 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Error_Sig
 }
 
 func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Error_ExternalIssuerNotSupported() {
-	// External issuer (not in trusted server issuers)
+	// External issuer (not in trusted Thunder issuers)
 	token := testJWTTokenString
 
 	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://external-idp.com", suite.oauthApp)
@@ -459,7 +459,7 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_DecodeBeforeVerify(
 	claims := map[string]interface{}{
 		"sub": "user123",
 		"iss": "https://thunder.io",
-		"aud": defaultAudience, // Use default audience for the issuer
+		"aud": defaultAudience, // Use default audience for Thunder issuer
 		"exp": float64(now + 3600),
 	}
 	token := suite.createTestJWT(claims)
@@ -495,7 +495,7 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_FailFastOnUntrusted
 }
 
 func (suite *TokenValidatorTestSuite) TestFederationScenario_OnlyThunderIssuerIsValid() {
-	// Only the server-level issuer from config is accepted; app-level issuers are no longer supported
+	// Only the Thunder-level issuer from config is accepted; app-level issuers are no longer supported
 	appWithTokenConfig := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
@@ -505,7 +505,7 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_OnlyThunderIssuerIs
 
 	now := time.Now().Unix()
 
-	// Test token from server issuer (matches config-level issuer)
+	// Test token from Thunder issuer (matches config-level issuer)
 	claimsValid := map[string]interface{}{
 		"sub": "user123",
 		"iss": "https://thunder.io",
@@ -593,7 +593,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_EdgeCase_VeryLong
 	largeClaims := map[string]interface{}{
 		"sub":   "user123",
 		"iss":   "https://thunder.io",
-		"aud":   defaultAudience, // Use default audience for the issuer
+		"aud":   defaultAudience, // Use default audience for Thunder issuer
 		"exp":   float64(now + 3600),
 		"large": string(make([]byte, 10000)), // 10KB of data
 	}

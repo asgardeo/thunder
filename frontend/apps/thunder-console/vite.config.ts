@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -22,7 +22,6 @@ import {fileURLToPath} from 'url';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import react from '@vitejs/plugin-react';
 import {visualizer} from 'rollup-plugin-visualizer';
-import svgr from 'vite-plugin-svgr';
 import {defineConfig} from 'vitest/config';
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
@@ -52,7 +51,6 @@ export default defineConfig({
   },
   plugins: [
     basicSsl(),
-    svgr(),
     react({
       babel: {
         plugins: [['babel-plugin-react-compiler']],

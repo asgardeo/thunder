@@ -36,15 +36,15 @@ Designed for extensibility, scalability, and seamless containerized deployment, 
 
 ## ⚡ Quickstart
 
-This Quickstart guide will help you get started with Thunder quickly. It walks you through downloading and running the product, trying out the sample app, and exploring registering a user, logging in, and using the Client Credentials flow.
+This Quickstart guide will help you get started with WSO2 Thunder quickly. It walks you through downloading and running the product, trying out the sample app, and exploring registering a user, logging in, and using the Client Credentials flow.
 
-### Download and Run Thunder
+### Download and Run WSO2 Thunder
 
-You can run Thunder either by downloading the release artifact or using the official Docker image.
+You can run WSO2 Thunder either by downloading the release artifact or using the official Docker image.
 
 #### Option 1: Run from Release Artifact
 
-Follow these steps to download the latest release of Thunder and run it locally.
+Follow these steps to download the latest release of WSO2 Thunder and run it locally.
 
 1. **Download the distribution from the latest release**
 
@@ -102,14 +102,14 @@ Follow these steps to download the latest release of Thunder and run it locally.
 
 #### Option 2: Run with Docker Compose
 
-Follow these steps to run Thunder using Docker Compose.
+Follow these steps to run WSO2 Thunder using Docker Compose.
 
 1. **Download the Docker Compose file**
 
     Download the `docker-compose.yml` file using the following command:
 
     ```bash
-    curl -o docker-compose.yml https://raw.githubusercontent.com/asgardeo/thunder/v0.36.0/install/quick-start/docker-compose.yml
+    curl -o docker-compose.yml https://raw.githubusercontent.com/asgardeo/thunder/v0.35.0/install/quick-start/docker-compose.yml
     ```
 
 2. **Start Thunder**
@@ -365,24 +365,24 @@ docker compose down -v
             hostname: "localhost"
             port: 5432
             name: "configdb"
-            username: "dbuser"
-            password: "dbpassword"
+            username: "asgthunder"
+            password: "asgthunder"
             sslmode: "disable"
         runtime:
             type: "postgres"
             hostname: "localhost"
             port: 5432
             name: "runtimedb"
-            username: "dbuser"
-            password: "dbpassword"
+            username: "asgthunder"
+            password: "asgthunder"
             sslmode: "disable"
         user:
             type: "postgres"
             hostname: "localhost"
             port: 5432
             name: "userdb"
-            username: "dbuser"
-            password: "dbpassword"
+            username: "asgthunder"
+            password: "asgthunder"
             sslmode: "disable"
     ```
 

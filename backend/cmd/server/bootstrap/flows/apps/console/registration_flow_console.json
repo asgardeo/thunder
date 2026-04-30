@@ -222,8 +222,7 @@
                     }
                 ]
             },
-            "onSuccess": "auth_assert",
-            "onIncomplete": "prompt_registration"
+            "onSuccess": "auth_assert"
         },
         {
             "id": "auth_assert",

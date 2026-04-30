@@ -26,7 +26,7 @@ const javascriptConfig: Linter.Config[] = [
   {
     name: 'thunder/javascript-overrides',
     rules: {
-      // Disallow the use of console in-favor of the Logger.
+      // Disallow the use of console in-favor of the Thunder Logger.
       // https://eslint.org/docs/latest/rules/no-console
       'no-console': 'error',
       // Disallow new operators outside of assignments or comparisons

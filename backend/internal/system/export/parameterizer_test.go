@@ -84,7 +84,7 @@ func TestToParameterizedYAML_WithOmitemptyFields(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(rules)
-	result, _, err := parameterizer.ToParameterizedYAML(
+	result, err := parameterizer.ToParameterizedYAML(
 		app, "Application", "TestApp", toDeclarativeResourceRules(rules.Application))
 
 	require.NoError(t, err)
@@ -136,7 +136,7 @@ func TestToParameterizedYAML_WithPopulatedFields(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(rules)
-	result, _, err := parameterizer.ToParameterizedYAML(
+	result, err := parameterizer.ToParameterizedYAML(
 		app, "Application", "TestApp", toDeclarativeResourceRules(rules.Application))
 
 	require.NoError(t, err)
@@ -188,7 +188,7 @@ func TestToParameterizedYAML_MixedEmptyAndPopulated(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(rules)
-	result, _, err := parameterizer.ToParameterizedYAML(
+	result, err := parameterizer.ToParameterizedYAML(
 		app, "Application", "TestApp", toDeclarativeResourceRules(rules.Application))
 
 	require.NoError(t, err)
@@ -317,7 +317,7 @@ func TestOmitempty_EmptyFieldsWithoutRules(t *testing.T) {
 
 	// No parameterization rules - omitempty should work normally
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(app, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(app, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 	require.NotEmpty(t, result)
@@ -344,7 +344,7 @@ func TestOmitempty_EmptyArraysOmitted(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(app, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(app, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 	assert.NotContains(t, result, "grantTypes:", "Empty GrantTypes array should be omitted")
@@ -362,7 +362,7 @@ func TestOmitempty_NilSlicesOmitted(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(app, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(app, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 	assert.NotContains(t, result, "grantTypes:", "Nil GrantTypes should be omitted")
@@ -377,7 +377,7 @@ func TestOmitempty_NilPointersOmitted(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(app, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(app, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 	assert.NotContains(t, result, "oauth:", "Nil OAuth pointer should be omitted")
@@ -407,7 +407,7 @@ func TestParameterization_OverridesOmitemptyForVariables(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(rules)
-	result, _, err := parameterizer.ToParameterizedYAML(
+	result, err := parameterizer.ToParameterizedYAML(
 		app, "Application", "TestApp", toDeclarativeResourceRules(rules.Application))
 
 	require.NoError(t, err)
@@ -437,7 +437,7 @@ func TestParameterization_OverridesOmitemptyForArrays(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(rules)
-	result, _, err := parameterizer.ToParameterizedYAML(
+	result, err := parameterizer.ToParameterizedYAML(
 		app, "Application", "TestApp", toDeclarativeResourceRules(rules.Application))
 
 	require.NoError(t, err)
@@ -470,7 +470,7 @@ func TestParameterization_NestedFieldsWithOmitempty(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(rules)
-	result, _, err := parameterizer.ToParameterizedYAML(
+	result, err := parameterizer.ToParameterizedYAML(
 		app, "Application", "TestApp", toDeclarativeResourceRules(rules.Application))
 
 	require.NoError(t, err)
@@ -507,7 +507,7 @@ func TestParameterization_MixedRulesAndOmitempty(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(rules)
-	result, _, err := parameterizer.ToParameterizedYAML(
+	result, err := parameterizer.ToParameterizedYAML(
 		app, "Application", "TestApp", toDeclarativeResourceRules(rules.Application))
 
 	require.NoError(t, err)
@@ -547,7 +547,7 @@ func TestFieldOrder_TopLevelFieldsPreserved(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 
@@ -575,7 +575,7 @@ func TestFieldOrder_WithOmittedFields(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 
@@ -617,7 +617,7 @@ func TestFieldOrder_NestedFieldsPreserved(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 
@@ -677,7 +677,7 @@ func TestEdgeCase_DeeplyNestedStructures(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 	assert.Contains(t, result, "level1:")
@@ -709,7 +709,7 @@ func TestEdgeCase_ArraysOfStructs(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 	assert.Contains(t, result, "items:")
@@ -732,7 +732,7 @@ func TestEdgeCase_EmptyStructWithOmitempty(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(app, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(app, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 
@@ -799,7 +799,7 @@ func TestIsEmptyValue_IntegerTypes(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 
@@ -822,7 +822,7 @@ func TestIsEmptyValue_UnsignedIntegerTypes(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 
@@ -842,7 +842,7 @@ func TestIsEmptyValue_FloatTypes(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 
@@ -858,7 +858,7 @@ func TestIsEmptyValue_BoolType(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 
@@ -877,7 +877,7 @@ func TestIsEmptyValue_NonZeroValues(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 
@@ -1029,7 +1029,7 @@ func TestRenderNode_ComplexTemplateStructures(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(rules)
-	result, _, err := parameterizer.ToParameterizedYAML(
+	result, err := parameterizer.ToParameterizedYAML(
 		obj, "Application", "TestApp", toDeclarativeResourceRules(rules.Application))
 
 	require.NoError(t, err)
@@ -1052,7 +1052,7 @@ func TestRenderNode_ArrayOfMaps(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 
@@ -1071,7 +1071,7 @@ func TestToParameterizedYAML_NilRules(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 	require.NotEmpty(t, result)
@@ -1094,7 +1094,7 @@ func TestToParameterizedYAML_NilRulesWithOmitempty(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(rules)
-	result, _, err := parameterizer.ToParameterizedYAML(
+	result, err := parameterizer.ToParameterizedYAML(
 		obj, "Application", "TestApp", toDeclarativeResourceRules(rules.Application))
 
 	require.NoError(t, err)
@@ -1144,7 +1144,7 @@ func TestRenderNode_NestedArraysInSequence(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 
@@ -1164,7 +1164,7 @@ func TestFieldToNode_NilPointer(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(templatingRules{})
-	result, _, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
+	result, err := parameterizer.ToParameterizedYAML(obj, "Application", "TestApp", nil)
 
 	require.NoError(t, err)
 
@@ -1188,7 +1188,7 @@ func TestConvertPathToYAMLPath_NonStructType(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(rules)
-	result, _, err := parameterizer.ToParameterizedYAML(
+	result, err := parameterizer.ToParameterizedYAML(
 		obj, "Application", "TestApp", toDeclarativeResourceRules(rules.Application))
 
 	require.NoError(t, err)
@@ -1211,7 +1211,7 @@ func TestFindFieldByNameCaseInsensitive_NotFound(t *testing.T) {
 	}
 
 	parameterizer := newParameterizer(rules)
-	result, _, err := parameterizer.ToParameterizedYAML(
+	result, err := parameterizer.ToParameterizedYAML(
 		obj, "Application", "TestApp", toDeclarativeResourceRules(rules.Application))
 
 	require.NoError(t, err)
@@ -1230,7 +1230,7 @@ func TestToParameterizedYAML_InvalidStruct(t *testing.T) {
 	// Pass non-struct type
 	var notAStruct int = 42
 
-	_, _, err := p.ToParameterizedYAML(notAStruct, "Application", "Test", nil)
+	_, err := p.ToParameterizedYAML(notAStruct, "Application", "Test", nil)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to convert object to node")
@@ -1643,7 +1643,7 @@ func TestToParameterizedYAML_JSONRawMessageInvalid(t *testing.T) {
 	}
 
 	// Should return an error
-	result, _, err := p.ToParameterizedYAML(schema, "UserSchema", "TestSchema", nil)
+	result, err := p.ToParameterizedYAML(schema, "UserSchema", "TestSchema", nil)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid JSON in RawMessage")
@@ -1675,7 +1675,7 @@ func TestToParameterizedYAML_NestedStructWithInvalidJSON(t *testing.T) {
 	}
 
 	// Should return an error from the nested structure
-	result, _, err := p.ToParameterizedYAML(obj, "Config", "TestConfig", nil)
+	result, err := p.ToParameterizedYAML(obj, "Config", "TestConfig", nil)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid JSON in RawMessage")
@@ -1720,7 +1720,7 @@ func TestUserSchemaImportExportSymmetry(t *testing.T) {
 
 	// Export using the parameterizer
 	p := newParameterizer(templatingRules{})
-	yamlOutput, _, err := p.ToParameterizedYAML(originalSchema, "UserSchema", "Person", nil)
+	yamlOutput, err := p.ToParameterizedYAML(originalSchema, "UserSchema", "Person", nil)
 	require.NoError(t, err)
 
 	t.Logf("Exported YAML:\n%s", yamlOutput)
@@ -1764,92 +1764,6 @@ func TestUserSchemaImportExportSymmetry(t *testing.T) {
 }
 
 // TestUserSchemaExportFormat verifies the exact export format
-// TestRenderNode_I18nRefsInSequenceItemAreQuoted tests that i18n template references
-// (e.g. {{ t(key) }}) in sequence-item mapping values are quoted in the exported YAML
-// so that the output is valid YAML and can be re-imported without parse errors.
-// Regression test for: message field in flow PROMPT nodes exported without quotes.
-func TestRenderNode_I18nRefsInSequenceItemAreQuoted(t *testing.T) {
-	type Node struct {
-		ID      string `yaml:"id"`
-		Type    string `yaml:"type"`
-		Message string `yaml:"message,omitempty"`
-		Next    string `yaml:"next,omitempty"`
-	}
-	type Flow struct {
-		Name  string `yaml:"name"`
-		Nodes []Node `yaml:"nodes"`
-	}
-
-	obj := &Flow{
-		Name: "User Onboarding Flow",
-		Nodes: []Node{
-			{
-				ID:      "invite_email_service_unavailable",
-				Type:    "PROMPT",
-				Message: "{{ t(onboarding:forms.invite_email_unavailable.title) }}",
-				Next:    "invite_link_status",
-			},
-			{
-				ID:      "invite_link_status",
-				Type:    "PROMPT",
-				Message: "The invite link is ready to share",
-				Next:    "invite_verify",
-			},
-		},
-	}
-
-	p := newParameterizer(templatingRules{})
-	// Use empty (non-nil) rules to exercise the custom renderNode path (same as flows)
-	result, _, err := p.ToParameterizedYAML(
-		obj, "Flow", "User Onboarding Flow",
-		toDeclarativeResourceRules(&resourceRules{}))
-	require.NoError(t, err)
-
-	// The i18n reference must be single-quoted so the output is valid YAML.
-	assert.Contains(t, result, `message: '{{ t(onboarding:forms.invite_email_unavailable.title) }}'`,
-		"i18n reference in message field should be quoted in exported YAML")
-
-	// Plain string messages must remain unquoted.
-	assert.Contains(t, result, "message: The invite link is ready to share",
-		"plain string message should remain unquoted")
-
-	// Verify the output parses as valid YAML and round-trips correctly.
-	var parsed Flow
-	require.NoError(t, yaml.Unmarshal([]byte(result), &parsed),
-		"exported YAML must be parseable")
-	assert.Equal(t, "{{ t(onboarding:forms.invite_email_unavailable.title) }}",
-		parsed.Nodes[0].Message)
-	assert.Equal(t, "The invite link is ready to share", parsed.Nodes[1].Message)
-}
-
-// TestRenderMappingValue_I18nRefsAreQuoted tests that i18n refs at the mapping level
-// are also quoted, distinguishing them from real parameterization variables.
-func TestRenderMappingValue_I18nRefsAreQuoted(t *testing.T) {
-	type Resource struct {
-		Name    string `yaml:"name"`
-		Message string `yaml:"message,omitempty"`
-		// A real parameterization variable placeholder (written unquoted)
-		Callback string `yaml:"callbackUrl,omitempty"`
-	}
-
-	obj := &Resource{
-		Name:     "Test",
-		Message:  "{{ t(signup:forms.credentials.title) }}",
-		Callback: "{{.TEST_CALLBACK_URL}}",
-	}
-
-	p := newParameterizer(templatingRules{})
-	result, _, err := p.ToParameterizedYAML(
-		obj, "Application", "Test",
-		toDeclarativeResourceRules(&resourceRules{Variables: []string{"Callback"}}))
-	require.NoError(t, err)
-
-	// i18n reference must be single-quoted.
-	assert.Contains(t, result, `message: '{{ t(signup:forms.credentials.title) }}'`)
-	// Real parameterization variable must remain unquoted (Go template syntax).
-	assert.Contains(t, result, `callbackUrl: {{.TEST_CALLBACK_URL}}`)
-}
-
 func TestUserSchemaExportFormat(t *testing.T) {
 	type UserSchema struct {
 		ID                    string          `yaml:"id"`
@@ -1868,7 +1782,7 @@ func TestUserSchemaExportFormat(t *testing.T) {
 	}
 
 	p := newParameterizer(templatingRules{})
-	yamlOutput, _, err := p.ToParameterizedYAML(schema, "UserSchema", "TestSchema", nil)
+	yamlOutput, err := p.ToParameterizedYAML(schema, "UserSchema", "TestSchema", nil)
 	require.NoError(t, err)
 
 	// Verify the schema field is a plain string in the YAML, not a structured object

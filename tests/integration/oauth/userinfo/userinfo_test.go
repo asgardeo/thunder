@@ -1020,7 +1020,6 @@ func (ts *UserInfoTestSuite) TestUserInfo_JWS_Response() {
 			},
 		},
 		"userInfo": map[string]interface{}{
-			"responseType":   "JWS",
 			"signingAlg":     "RS256",
 			"userAttributes": []string{"email", "given_name", "family_name"},
 		},
@@ -1084,7 +1083,7 @@ func buildRSAPublicJWKS() (jwksJSON string, privateKey *rsa.PrivateKey, err erro
 }
 
 // TestUserInfo_JWE_Response verifies that an application configured with encryptionAlg/encryptionEnc
-// returns a JWE compact serialisation (five dot-separated parts) with Content-Type: application/jwt.
+// returns a JWE compact serialisation (five dot-separated parts) with Content-Type: application/jose.
 func (ts *UserInfoTestSuite) TestUserInfo_JWE_Response() {
 	jwksJSON, _, err := buildRSAPublicJWKS()
 	ts.Require().NoError(err, "Failed to generate RSA key pair for JWE test")
@@ -1102,7 +1101,6 @@ func (ts *UserInfoTestSuite) TestUserInfo_JWE_Response() {
 			},
 		},
 		"userInfo": map[string]interface{}{
-			"responseType":   "JWE",
 			"encryptionAlg":  "RSA-OAEP-256",
 			"encryptionEnc":  "A256GCM",
 			"userAttributes": []string{"email", "given_name"},
@@ -1132,7 +1130,7 @@ func (ts *UserInfoTestSuite) TestUserInfo_JWE_Response() {
 	defer resp.Body.Close()
 
 	assert.Equal(ts.T(), http.StatusOK, resp.StatusCode)
-	assert.Equal(ts.T(), "application/jwt", resp.Header.Get("Content-Type"))
+	assert.Equal(ts.T(), "application/jose", resp.Header.Get("Content-Type"))
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	ts.Require().NoError(err)
@@ -1145,7 +1143,7 @@ func (ts *UserInfoTestSuite) TestUserInfo_JWE_Response() {
 
 // TestUserInfo_NestedJWT_Response verifies that an application configured with both signingAlg and
 // encryptionAlg/encryptionEnc returns a Nested JWT (sign-then-encrypt JWE) with
-// Content-Type: application/jwt.
+// Content-Type: application/jose.
 func (ts *UserInfoTestSuite) TestUserInfo_NestedJWT_Response() {
 	jwksJSON, _, err := buildRSAPublicJWKS()
 	ts.Require().NoError(err, "Failed to generate RSA key pair for Nested JWT test")
@@ -1163,7 +1161,6 @@ func (ts *UserInfoTestSuite) TestUserInfo_NestedJWT_Response() {
 			},
 		},
 		"userInfo": map[string]interface{}{
-			"responseType":   "NESTED_JWT",
 			"signingAlg":     "RS256",
 			"encryptionAlg":  "RSA-OAEP-256",
 			"encryptionEnc":  "A256GCM",
@@ -1194,7 +1191,7 @@ func (ts *UserInfoTestSuite) TestUserInfo_NestedJWT_Response() {
 	defer resp.Body.Close()
 
 	assert.Equal(ts.T(), http.StatusOK, resp.StatusCode)
-	assert.Equal(ts.T(), "application/jwt", resp.Header.Get("Content-Type"))
+	assert.Equal(ts.T(), "application/jose", resp.Header.Get("Content-Type"))
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	ts.Require().NoError(err)

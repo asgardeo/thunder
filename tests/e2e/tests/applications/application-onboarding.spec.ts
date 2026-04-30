@@ -31,12 +31,12 @@ import { test, expect } from "../../fixtures/console";
 import { TestDataFactory } from "../../utils/test-data";
 import { getAdminToken } from "../../utils/authentication";
 
-const serverUrl = process.env.SERVER_URL || "https://localhost:8090";
+const thunderUrl = process.env.THUNDER_URL || "https://localhost:8090";
 
 async function deleteApplication(request: import("@playwright/test").APIRequestContext, appId: string): Promise<void> {
   try {
     const token = await getAdminToken(request);
-    await request.delete(`${serverUrl}/applications/${appId}`, {
+    await request.delete(`${thunderUrl}/applications/${appId}`, {
       headers: { Authorization: `Bearer ${token}` },
       ignoreHTTPSErrors: true,
     });

@@ -32,8 +32,7 @@ import (
 	managerpkg "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/crypto"
-	cryptoruntime "github.com/asgardeo/thunder/internal/system/crypto/runtime"
+	cryptoconfig "github.com/asgardeo/thunder/internal/system/crypto/config"
 
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
@@ -301,8 +300,7 @@ func (s *StoreTestSuite) TestGetFlowContext_WithoutToken() {
 		GraphID:         "test-graph-id",
 	})
 	s.NoError(err)
-	encryptedContextBytes, _, err := cryptoruntime.GetRuntimeCryptoService().Encrypt(
-		context.Background(), crypto.KeyRef{}, crypto.AlgorithmParams{Algorithm: crypto.AlgorithmAESGCM}, contextJSON)
+	encryptedContextBytes, err := cryptoconfig.GetEncryptionService().Encrypt(context.Background(), contextJSON)
 	s.NoError(err)
 	encryptedContext := string(encryptedContextBytes)
 

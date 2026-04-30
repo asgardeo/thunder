@@ -19,7 +19,6 @@
 package mgt
 
 import (
-	"context"
 	"errors"
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
@@ -161,11 +160,6 @@ func (f *fileBasedStore) UpsertTranslation(trans Translation) error {
 	return errors.New("UpsertTranslation is not supported in file-based store")
 }
 
-// UpsertTranslations is not supported in file-based store.
-func (f *fileBasedStore) UpsertTranslations(_ context.Context, _ []Translation) error {
-	return errors.New("UpsertTranslations is not supported in file-based store")
-}
-
 // DeleteTranslationsByLanguage is not supported in file-based store.
 func (f *fileBasedStore) DeleteTranslationsByLanguage(language string) error {
 	return errors.New("DeleteTranslationsByLanguage is not supported in file-based store")
@@ -174,16 +168,6 @@ func (f *fileBasedStore) DeleteTranslationsByLanguage(language string) error {
 // DeleteTranslation is not supported in file-based store.
 func (f *fileBasedStore) DeleteTranslation(language string, key string, namespace string) error {
 	return errors.New("DeleteTranslation is not supported in file-based store")
-}
-
-// DeleteTranslationsByNamespace is not supported in file-based store.
-func (f *fileBasedStore) DeleteTranslationsByNamespace(_ context.Context, _ string) error {
-	return errors.New("DeleteTranslationsByNamespace is not supported in file-based store")
-}
-
-// DeleteTranslationsByKey is not supported in file-based store.
-func (f *fileBasedStore) DeleteTranslationsByKey(_ context.Context, namespace string, key string) error {
-	return errors.New("DeleteTranslationsByKey is not supported in file-based store")
 }
 
 // IsTranslationDeclarative checks if a translation is immutable (exists in file store).

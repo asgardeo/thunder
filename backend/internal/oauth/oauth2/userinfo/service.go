@@ -166,7 +166,7 @@ func (s *userInfoService) GetUserInfo(
 	}
 }
 
-// resolveRPPublicKey resolves the RP's public key from the application certificate.
+// resolveRPPublicKey resolves the RP's public key from the application certificate (AC-5a–5d).
 // It returns the public key and the kid from the matching JWK entry (empty string when absent).
 // encryptionAlg is the key-management algorithm (e.g. "RSA-OAEP-256") used to filter incompatible keys.
 func (s *userInfoService) resolveRPPublicKey(
@@ -268,7 +268,7 @@ func (s *userInfoService) parseEncryptionKeyFromJWKS(
 	return nil, "", &serviceerror.InternalServerError
 }
 
-// generateJWEUserInfo creates an encrypted JWE UserInfo response.
+// generateJWEUserInfo creates an encrypted JWE UserInfo response (AC-6a–6c).
 func (s *userInfoService) generateJWEUserInfo(
 	ctx context.Context,
 	response map[string]interface{},
@@ -301,7 +301,7 @@ func (s *userInfoService) generateJWEUserInfo(
 	return &UserInfoResponse{Type: inboundmodel.UserInfoResponseTypeJWE, JWTBody: compact}, nil
 }
 
-// generateNestedJWTUserInfo creates a sign-then-encrypt Nested JWT UserInfo response.
+// generateNestedJWTUserInfo creates a sign-then-encrypt Nested JWT UserInfo response (AC-7a–7c).
 func (s *userInfoService) generateNestedJWTUserInfo(
 	ctx context.Context,
 	sub string,

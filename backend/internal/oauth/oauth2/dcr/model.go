@@ -19,17 +19,12 @@
 package dcr
 
 import (
-	"encoding/json"
-	"strings"
-
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 )
 
 // Default values for DCR
 const (
-	ClientSecretExpiresAtNever   = 0 // Never expires
-	maxLocalizedVariantsPerField = 20
+	ClientSecretExpiresAtNever = 0 // Never expires
 )
 
 // DCRRegistrationRequest represents the RFC 7591 Dynamic Client Registration request.
@@ -49,78 +44,11 @@ type DCRRegistrationRequest struct {
 	TosURI                  string                              `json:"tos_uri,omitempty"`
 	PolicyURI               string                              `json:"policy_uri,omitempty"`
 
-	RequirePushedAuthorizationRequests bool   `json:"require_pushed_authorization_requests,omitempty"`
-	UserInfoSignedResponseAlg          string `json:"userinfo_signed_response_alg,omitempty"`
-	UserInfoEncryptedResponseAlg       string `json:"userinfo_encrypted_response_alg,omitempty"`
-	UserInfoEncryptedResponseEnc       string `json:"userinfo_encrypted_response_enc,omitempty"`
-	// Localized variant maps — populated from #-keyed JSON fields (e.g. "client_name#fr").
-	LocalizedClientName map[string]string `json:"-"`
-	LocalizedLogoURI    map[string]string `json:"-"`
-	LocalizedTosURI     map[string]string `json:"-"`
-	LocalizedPolicyURI  map[string]string `json:"-"`
-}
+	RequirePushedAuthorizationRequests bool `json:"require_pushed_authorization_requests,omitempty"`
 
-// UnmarshalJSON decodes DCRRegistrationRequest from JSON, extracting OIDC language-tagged fields
-// (e.g. "client_name#fr") into the localized variant maps.
-func (r *DCRRegistrationRequest) UnmarshalJSON(data []byte) error {
-	type Alias DCRRegistrationRequest
-	if err := json.Unmarshal(data, (*Alias)(r)); err != nil {
-		return err
-	}
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return err
-	}
-	return parseLocalizedFields(raw, r)
-}
-
-// parseLocalizedFields extracts language-tagged fields (e.g. "client_name#fr") from a raw JSON map
-// and populates the localized variant maps on r.
-func parseLocalizedFields(raw map[string]json.RawMessage, r *DCRRegistrationRequest) error {
-	for key, val := range raw {
-		field, tag, ok := strings.Cut(key, "#")
-		if !ok {
-			continue
-		}
-		canonical, valid := i18nmgt.NormaliseBCP47Tag(tag)
-		if !valid {
-			return &errInvalidBCP47Tag{key: key}
-		}
-		var s string
-		if err := json.Unmarshal(val, &s); err != nil {
-			continue
-		}
-		var target *map[string]string
-		switch field {
-		case "client_name":
-			target = &r.LocalizedClientName
-		case "logo_uri":
-			target = &r.LocalizedLogoURI
-		case "tos_uri":
-			target = &r.LocalizedTosURI
-		case "policy_uri":
-			target = &r.LocalizedPolicyURI
-		}
-		if target == nil {
-			continue
-		}
-		if err := setLocalizedVariant(target, field, canonical, s); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// setLocalizedVariant initializes the map if needed, stores the value, and enforces the variant limit.
-func setLocalizedVariant(m *map[string]string, field, tag, val string) error {
-	if *m == nil {
-		*m = make(map[string]string)
-	}
-	(*m)[tag] = val
-	if len(*m) > maxLocalizedVariantsPerField {
-		return &errTooManyLocalizedVariants{field: field}
-	}
-	return nil
+	UserInfoSignedResponseAlg    string `json:"userinfo_signed_response_alg,omitempty"`
+	UserInfoEncryptedResponseAlg string `json:"userinfo_encrypted_response_alg,omitempty"`
+	UserInfoEncryptedResponseEnc string `json:"userinfo_encrypted_response_enc,omitempty"`
 }
 
 // DCRRegistrationResponse represents the RFC 7591 Dynamic Client Registration response.
@@ -143,47 +71,11 @@ type DCRRegistrationResponse struct {
 	PolicyURI               string                              `json:"policy_uri,omitempty"`
 	AppID                   string                              `json:"app_id,omitempty"`
 
-	RequirePushedAuthorizationRequests bool   `json:"require_pushed_authorization_requests,omitempty"`
-	UserInfoSignedResponseAlg          string `json:"userinfo_signed_response_alg,omitempty"`
-	UserInfoEncryptedResponseAlg       string `json:"userinfo_encrypted_response_alg,omitempty"`
-	UserInfoEncryptedResponseEnc       string `json:"userinfo_encrypted_response_enc,omitempty"`
-	// Localized variant maps — injected as #-keyed top-level fields during serialization.
-	LocalizedClientName map[string]string `json:"-"`
-	LocalizedLogoURI    map[string]string `json:"-"`
-	LocalizedTosURI     map[string]string `json:"-"`
-	LocalizedPolicyURI  map[string]string `json:"-"`
-}
+	RequirePushedAuthorizationRequests bool `json:"require_pushed_authorization_requests,omitempty"`
 
-// MarshalJSON serializes DCRRegistrationResponse to JSON, injecting OIDC language-tagged
-// fields (e.g. "client_name#fr") as top-level keys.
-func (r DCRRegistrationResponse) MarshalJSON() ([]byte, error) {
-	type Alias DCRRegistrationResponse
-	base, err := json.Marshal(Alias(r))
-	if err != nil {
-		return nil, err
-	}
-	var m map[string]interface{}
-	if err := json.Unmarshal(base, &m); err != nil {
-		return nil, err
-	}
-	appendLocalizedFields(m, r)
-	return json.Marshal(m)
-}
-
-// appendLocalizedFields injects localized variant maps from r into m as #-keyed top-level entries.
-func appendLocalizedFields(m map[string]interface{}, r DCRRegistrationResponse) {
-	for tag, val := range r.LocalizedClientName {
-		m["client_name#"+tag] = val
-	}
-	for tag, val := range r.LocalizedLogoURI {
-		m["logo_uri#"+tag] = val
-	}
-	for tag, val := range r.LocalizedTosURI {
-		m["tos_uri#"+tag] = val
-	}
-	for tag, val := range r.LocalizedPolicyURI {
-		m["policy_uri#"+tag] = val
-	}
+	UserInfoSignedResponseAlg    string `json:"userinfo_signed_response_alg,omitempty"`
+	UserInfoEncryptedResponseAlg string `json:"userinfo_encrypted_response_alg,omitempty"`
+	UserInfoEncryptedResponseEnc string `json:"userinfo_encrypted_response_enc,omitempty"`
 }
 
 // DCRErrorResponse represents the RFC 7591 Dynamic Client Registration error response.

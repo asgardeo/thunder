@@ -101,10 +101,9 @@ func initializeStore() (themeMgtStoreInterface, error) {
 // registerRoutes registers the routes for theme management operations.
 func registerRoutes(mux *http.ServeMux, themeMgtHandler *themeMgtHandler) {
 	opts1 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "POST"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, POST",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /design/themes", themeMgtHandler.HandleThemePostRequest, opts1))
 	mux.HandleFunc(middleware.WithCORS("GET /design/themes", themeMgtHandler.HandleThemeListRequest, opts1))
@@ -113,10 +112,9 @@ func registerRoutes(mux *http.ServeMux, themeMgtHandler *themeMgtHandler) {
 	}, opts1))
 
 	opts2 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "PUT", "DELETE"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, PUT, DELETE",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /design/themes/{id}", themeMgtHandler.HandleThemeGetRequest, opts2))
 	mux.HandleFunc(middleware.WithCORS("PUT /design/themes/{id}", themeMgtHandler.HandleThemePutRequest, opts2))

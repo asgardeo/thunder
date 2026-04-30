@@ -49,10 +49,6 @@ func (p *number) isDisplayable() bool {
 	return true
 }
 
-func (p *number) getDisplayName() string {
-	return p.displayName
-}
-
 func (p *number) validateValue(value interface{}, path string, logger *log.Logger) (bool, error) {
 	numberValue, ok := convertToFloat64(value)
 	if !ok {

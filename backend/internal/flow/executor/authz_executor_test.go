@@ -38,8 +38,6 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 )
 
-const testExistingUser123ID = "existing-user-123"
-
 // createTestAuthzExecutor creates an authorization executor with mocks for testing
 func createTestAuthzExecutor(t *testing.T,
 	mockAuthzService *authzmock.AuthorizationServiceInterfaceMock,
@@ -632,13 +630,12 @@ func TestAuthorizationExecutor_Execute_RegistrationFlow_AuthenticatedWithPermiss
 	mockEntityProvider := new(entityprovidermock.EntityProviderInterfaceMock)
 	executor := createTestAuthzExecutor(t, mockAuthzService, mockEntityProvider)
 
-	existingUserID := testExistingUser123ID
 	ctx := &core.NodeContext{
 		ExecutionID: "test-registration-flow",
 		FlowType:    common.FlowTypeRegistration,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
-			UserID:          existingUserID,
+			UserID:          "existing-user-123",
 			Attributes: map[string]interface{}{
 				"groups": []string{"new-users"},
 			},
@@ -652,7 +649,7 @@ func TestAuthorizationExecutor_Execute_RegistrationFlow_AuthenticatedWithPermiss
 	mockAuthzService.On("GetAuthorizedPermissions",
 		mock.Anything,
 		mock.MatchedBy(func(req authzsvc.GetAuthorizedPermissionsRequest) bool {
-			return req.EntityID == existingUserID &&
+			return req.EntityID == "existing-user-123" &&
 				len(req.GroupIDs) == 1 &&
 				req.GroupIDs[0] == "new-users" &&
 				len(req.RequestedPermissions) == 2

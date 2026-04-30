@@ -21,12 +21,18 @@ package service
 
 import (
 	"context"
+	"sync"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	"github.com/asgardeo/thunder/internal/system/healthcheck/model"
 	"github.com/asgardeo/thunder/internal/system/log"
+)
+
+var (
+	instance *HealthCheckService
+	once     sync.Once
 )
 
 // HealthCheckServiceInterface defines the interface for the health check service.
@@ -40,13 +46,15 @@ type HealthCheckService struct {
 	RedisProvider provider.RedisProviderInterface
 }
 
-// Initialize creates a new instance of HealthCheckService with the provided dependencies.
-func Initialize(dbProvider provider.DBProviderInterface,
-	redisProvider provider.RedisProviderInterface) HealthCheckServiceInterface {
-	return &HealthCheckService{
-		DBProvider:    dbProvider,
-		RedisProvider: redisProvider,
-	}
+// GetHealthCheckService returns a singleton instance of HealthCheckService.
+func GetHealthCheckService() HealthCheckServiceInterface {
+	once.Do(func() {
+		instance = &HealthCheckService{
+			DBProvider:    provider.GetDBProvider(),
+			RedisProvider: provider.GetRedisProvider(),
+		}
+	})
+	return instance
 }
 
 // CheckReadiness checks the readiness of the server and its dependencies.

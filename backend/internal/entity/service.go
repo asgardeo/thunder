@@ -100,13 +100,6 @@ type entityService struct {
 	logger            *log.Logger
 }
 
-// usesUserSchema reports whether entities of the given category route through the user-schema
-// infrastructure for attribute validation, credential extraction, and uniqueness checks.
-// Agents currently share the user-schema path until a dedicated agent schema is introduced.
-func usesUserSchema(category EntityCategory) bool {
-	return category == EntityCategoryUser || category == EntityCategoryAgent
-}
-
 // newEntityService creates a new entity service.
 func newEntityService(
 	store entityStoreInterface,
@@ -631,7 +624,7 @@ func (s *entityService) UpdateCredentials(ctx context.Context, entityID string,
 func (s *entityService) validateCredentialKeys(
 	ctx context.Context, category EntityCategory, entityType string, updates map[string]interface{},
 ) error {
-	if !usesUserSchema(category) || s.userSchemaService == nil {
+	if category != EntityCategoryUser || s.userSchemaService == nil {
 		return nil
 	}
 
@@ -762,8 +755,8 @@ func (s *entityService) validateEntitySchema(
 	excludeEntityID string,
 	skipCredentialRequired bool,
 ) error {
-	// User and agent entities both use the user-schema infrastructure for now.
-	if !usesUserSchema(category) || s.userSchemaService == nil {
+	// Only user entities have schema validation for now.
+	if category != EntityCategoryUser || s.userSchemaService == nil {
 		return nil
 	}
 
@@ -839,8 +832,8 @@ func mergeCredentialJSON(existing, updates json.RawMessage) json.RawMessage {
 // extractAndHashSchemaCredentials extracts schema-defined credential fields from entity.Attributes,
 // hashes them, and returns the hashed credentials.
 func (s *entityService) extractAndHashSchemaCredentials(ctx context.Context, entity *Entity) (json.RawMessage, error) {
-	// User and agent entities both use schema-defined credentials for now.
-	if !usesUserSchema(entity.Category) {
+	// Only user entities have schema-defined credentials for now.
+	if entity.Category != EntityCategoryUser {
 		return nil, nil
 	}
 

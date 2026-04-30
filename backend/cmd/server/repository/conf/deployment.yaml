@@ -51,7 +51,6 @@ jwt:
 cors:
   allowed_origins:
     - "https://localhost:3000"
-    # - regex: '^https://[a-z0-9-]+\.staging\.example\.com(:[0-9]+)?$'
 
 passkey:
   allowed_origins:

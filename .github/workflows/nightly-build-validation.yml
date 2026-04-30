@@ -14,7 +14,6 @@ permissions:
 
 env:
   GOFLAGS: "-mod=readonly"
-  PRODUCT_NAME: "Thunder"
 
 jobs:
   dependency-guard:
@@ -50,8 +49,6 @@ jobs:
 
       - name: 🔐 Generate and Upload Certificates
         uses: ./.github/actions/generate-certificates
-        with:
-          product-name: ${{ env.PRODUCT_NAME }}
 
       - name: ✅ Verify All Build Artifacts
         run: ./scripts/verify-build-artifacts.sh

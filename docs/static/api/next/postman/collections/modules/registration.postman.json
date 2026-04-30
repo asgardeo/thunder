@@ -1,7 +1,7 @@
 {
   "item": [
     {
-      "id": "92e7bacb-6b75-4ae4-8419-dead4f13ef3d",
+      "id": "d3540b45-d2cf-44a1-8f62-adbf124783c9",
       "name": "Passkey / WebAuthn / FIDO2 Registration",
       "description": {
         "content": "",
@@ -9,7 +9,7 @@
       },
       "item": [
         {
-          "id": "2bbfef65-bd4d-4a73-be04-b67a24efac94",
+          "id": "baa4205f-c7a6-4827-be61-577c10750cc2",
           "name": "Start Passkey credential registration",
           "request": {
             "name": "Start Passkey credential registration",
@@ -72,7 +72,7 @@
           },
           "response": [
             {
-              "id": "04f5197f-d819-4c5e-84ba-fd756d324885",
+              "id": "11d93bce-3825-417e-af74-ccb3def3d7b0",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -136,7 +136,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "5e98d3d2-2f4c-4253-a3ca-1721a2a1c45c",
+              "id": "658e38db-f47e-439f-90ff-e9c8bdcd2e1e",
               "name": "Bad Request: The request body is malformed or contains invalid data",
               "originalRequest": {
                 "url": {
@@ -200,7 +200,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "319e02ed-4ce9-4024-b795-b98d5076b227",
+              "id": "b9fbb66f-34c3-4845-9f09-2cde7f3f5eb9",
               "name": "Not Found: The user could not be found",
               "originalRequest": {
                 "url": {
@@ -264,7 +264,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "88fe2496-cc70-4ac1-ac51-e8723189e88c",
+              "id": "eac616dc-737b-4caf-b4af-ec33e36729cc",
               "name": "Internal Server Error: An unexpected error occurred while processing the request",
               "originalRequest": {
                 "url": {
@@ -334,7 +334,7 @@
           }
         },
         {
-          "id": "3cd311b1-02da-440a-9924-026fb5a93014",
+          "id": "1410d2dd-21a2-4699-a120-8088a0491f5d",
           "name": "Finish Passkey credential registration",
           "request": {
             "name": "Finish Passkey credential registration",
@@ -397,7 +397,7 @@
           },
           "response": [
             {
-              "id": "5484b5e1-757d-4a1c-b6be-0704dba6e2d4",
+              "id": "79c32425-70ba-4202-b969-e18d01527cdb",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -461,7 +461,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "b4a6275e-8cbd-4dd0-82a9-6cca273bffb4",
+              "id": "52c1cb26-2cff-468f-8445-8804816429d6",
               "name": "Bad Request: The request body is malformed or contains invalid data",
               "originalRequest": {
                 "url": {
@@ -525,7 +525,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "4b2dd300-2258-44dc-a069-371ffad1cc27",
+              "id": "1a37ed4a-a03b-47da-a051-d38507596c7f",
               "name": "Unauthorized: Passkey registration verification failed",
               "originalRequest": {
                 "url": {
@@ -589,7 +589,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "85dc7571-74f3-4672-8f16-302504d9575c",
+              "id": "6aaffb70-61aa-4667-a697-22340de43bfc",
               "name": "Not Found: The user could not be found",
               "originalRequest": {
                 "url": {
@@ -653,7 +653,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "4af354b3-e762-4ca0-aa6c-561ecce9689b",
+              "id": "930af648-2260-4f91-ac37-701f9be9317a",
               "name": "Internal Server Error: An unexpected error occurred while processing the request",
               "originalRequest": {
                 "url": {
@@ -753,7 +753,7 @@
     }
   ],
   "info": {
-    "_postman_id": "da46357b-01d0-42f0-8ff3-86efa852e381",
+    "_postman_id": "46e54a98-e3ab-46e9-87eb-45352c5ba3b8",
     "name": "Registration API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": {

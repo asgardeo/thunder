@@ -19,12 +19,12 @@ services:
     image: redis:7-alpine
     restart: always
     environment:
-      REDIS_USERNAME: dbuser
-      REDIS_PASSWORD: dbpassword
+      REDIS_USERNAME: asgthunder
+      REDIS_PASSWORD: asgthunder
     command: >
       redis-server
       --user default off
-      --user dbuser on ">dbpassword" ~* &* +@all
+      --user asgthunder on ">asgthunder" ~* &* +@all
     ports:
       - "6379:6379"
     volumes:

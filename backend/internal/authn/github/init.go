@@ -19,12 +19,12 @@
 package github
 
 import (
-	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
-	syshttp "github.com/asgardeo/thunder/internal/system/http"
+	"github.com/asgardeo/thunder/internal/entityprovider"
+	"github.com/asgardeo/thunder/internal/idp"
 )
 
 // Initialize initializes the GitHub OAuth authentication service.
-func Initialize(oauthSvc authnoauth.OAuthAuthnServiceInterface) GithubOAuthAuthnServiceInterface {
-	httpClient := syshttp.NewHTTPClient()
-	return newGithubOAuthAuthnService(oauthSvc, httpClient)
+func Initialize(idpSvc idp.IDPServiceInterface,
+	entityProvider entityprovider.EntityProviderInterface) GithubOAuthAuthnServiceInterface {
+	return newGithubOAuthAuthnService(idpSvc, entityProvider)
 }

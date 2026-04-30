@@ -18,29 +18,27 @@
 
 import MDXComponents from '@theme-original/MDXComponents';
 import {Box, Card, CardContent, Typography} from '@wso2/oxygen-ui';
+import Stepper from '@site/src/components/Stepper';
+import TutorialHero, {TutorialHeroItem} from '@site/src/components/TutorialHero';
+import SDKCard from '@site/src/components/SDKCard';
+import ReactLogo from '@site/src/components/icons/ReactLogo';
+import NextLogo from '@site/src/components/icons/NextLogo';
+import VueLogo from '@site/src/components/icons/VueLogo';
+import NuxtLogo from '@site/src/components/icons/NuxtLogo';
+import AngularLogo from '@site/src/components/icons/AngularLogo';
+import BrowserLogo from '@site/src/components/icons/BrowserLogo';
+import NodeLogo from '@site/src/components/icons/NodeLogo';
+import ExpressLogo from '@site/src/components/icons/ExpressLogo';
+import GoLogo from '@site/src/components/icons/GoLogo';
+import PythonLogo from '@site/src/components/icons/PythonLogo';
+import FlutterLogo from '@site/src/components/icons/FlutterLogo';
+import IOSLogo from '@site/src/components/icons/IOSLogo';
+import AndroidLogo from '@site/src/components/icons/AndroidLogo';
+import ReactRouterLogo from '@site/src/components/icons/ReactRouterLogo';
 import ApiReference from '@site/src/components/ApiReference';
 import CodeBlock from '@site/src/components/CodeBlock';
 import CodeGroup from '@site/src/components/CodeGroup';
 import FloatingLogosBackground from '@site/src/components/FloatingLogosBackground';
-import AndroidLogo from '@site/src/components/icons/AndroidLogo';
-import AngularLogo from '@site/src/components/icons/AngularLogo';
-import BrowserLogo from '@site/src/components/icons/BrowserLogo';
-import ExpressLogo from '@site/src/components/icons/ExpressLogo';
-import FlutterLogo from '@site/src/components/icons/FlutterLogo';
-import GoLogo from '@site/src/components/icons/GoLogo';
-import IOSLogo from '@site/src/components/icons/IOSLogo';
-import NextLogo from '@site/src/components/icons/NextLogo';
-import NodeLogo from '@site/src/components/icons/NodeLogo';
-import NuxtLogo from '@site/src/components/icons/NuxtLogo';
-import PythonLogo from '@site/src/components/icons/PythonLogo';
-import ReactLogo from '@site/src/components/icons/ReactLogo';
-import ReactRouterLogo from '@site/src/components/icons/ReactRouterLogo';
-import VueLogo from '@site/src/components/icons/VueLogo';
-import ProductName from '@site/src/components/ProductName';
-import RepoLink from '@site/src/components/RepoLink';
-import SDKCard from '@site/src/components/SDKCard';
-import Stepper from '@site/src/components/Stepper';
-import TutorialHero, {TutorialHeroItem} from '@site/src/components/TutorialHero';
 
 export default {
   ...MDXComponents,
@@ -70,8 +68,6 @@ export default {
   CodeBlock,
   CodeGroup,
   FloatingLogosBackground,
-  ProductName,
-  RepoLink,
   // TODO: Heading styling is a bit off when oxygen-ui Typography is used.
   // After sorting that out, we can switch to using Oxygen UI Typography for headings as well.
   // ex: h1: (props: TypographyProps<'h1'>) => <Typography variant="h1" {...props} />,

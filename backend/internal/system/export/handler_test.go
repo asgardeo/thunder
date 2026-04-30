@@ -36,7 +36,6 @@ import (
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/cors"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -47,9 +46,7 @@ import (
 	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	yaml "gopkg.in/yaml.v3"
 )
 
 // HandlerTestSuite contains comprehensive tests for the export handler functions.
@@ -66,14 +63,11 @@ type HandlerTestSuite struct {
 func (suite *HandlerTestSuite) SetupTest() {
 	// Initialize config for tests
 	config.ResetThunderRuntime()
-	var allowedOrigins cors.OriginEntries
-	suite.Require().NoError(yaml.Unmarshal([]byte(`
-- https://localhost:3000
-`), &allowedOrigins))
 	testConfig := &config.Config{
-		CORS: config.CORSConfig{AllowedOrigins: allowedOrigins},
+		CORS: config.CORSConfig{
+			AllowedOrigins: []string{"https://localhost:3000"},
+		},
 	}
-	suite.Require().NoError(cors.InitializeMatcher(testConfig.CORS.AllowedOrigins))
 	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
 	suite.Require().NoError(err)
 
@@ -377,14 +371,11 @@ func TestGenerateAndSendZipResponse_Standalone(t *testing.T) {
 	logger := log.GetLogger()
 	// Setup config
 	config.ResetThunderRuntime()
-	var allowedOrigins cors.OriginEntries
-	assert.NoError(t, yaml.Unmarshal([]byte(`
-- https://localhost:3000
-`), &allowedOrigins))
 	testConfig := &config.Config{
-		CORS: config.CORSConfig{AllowedOrigins: allowedOrigins},
+		CORS: config.CORSConfig{
+			AllowedOrigins: []string{"*"},
+		},
 	}
-	require.NoError(t, cors.InitializeMatcher(testConfig.CORS.AllowedOrigins))
 	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
 	assert.NoError(t, err)
 	defer config.ResetThunderRuntime()

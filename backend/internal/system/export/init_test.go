@@ -28,7 +28,6 @@ import (
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/notification"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/cors"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
@@ -38,7 +37,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	yaml "gopkg.in/yaml.v3"
 )
 
 // InitTestSuite contains comprehensive tests for the init.go file.
@@ -62,16 +60,10 @@ func (suite *InitTestSuite) SetupTest() {
 	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
 	// Initialize config for CORS middleware
 	config.ResetThunderRuntime()
-	var allowedOrigins cors.OriginEntries
-	suite.Require().NoError(yaml.Unmarshal([]byte(`
-- https://example.com
-- https://localhost:3000
-`), &allowedOrigins))
 	testConfig := &config.Config{
-		CORS: config.CORSConfig{AllowedOrigins: allowedOrigins},
-	}
-	if err := cors.InitializeMatcher(testConfig.CORS.AllowedOrigins); err != nil {
-		suite.T().Fatalf("Failed to initialize CORS matcher: %v", err)
+		CORS: config.CORSConfig{
+			AllowedOrigins: []string{"https://example.com", "https://localhost:3000"},
+		},
 	}
 	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
 	if err != nil {
@@ -210,10 +202,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_OptionsEndpoint() {
 	assert.Equal(suite.T(), http.StatusNoContent, w.Code)
 }
 
-// TestRegisterRoutes_CORSHeaders tests that CORS headers are properly set on
-// a CORS preflight request (OPTIONS + Access-Control-Request-Method). Under
-// the Fetch spec the Allow-Methods/Allow-Headers/Max-Age response headers are
-// preflight-only, so the request must carry ACRM to elicit them.
+// TestRegisterRoutes_CORSHeaders tests that CORS headers are properly set
 func (suite *InitTestSuite) TestRegisterRoutes_CORSHeaders() {
 	mux := http.NewServeMux()
 	exporters := createTestExporters(suite.mockAppService, suite.mockIDPService,
@@ -223,20 +212,19 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSHeaders() {
 
 	registerRoutes(mux, exportHandler)
 
-	// Issue a real preflight: OPTIONS with Origin and Access-Control-Request-Method.
+	// Test CORS headers on OPTIONS request with Origin header
 	req := httptest.NewRequest("OPTIONS", "/export", nil)
-	req.Header.Set("Origin", "https://example.com")
-	req.Header.Set("Access-Control-Request-Method", "POST")
+	req.Header.Set("Origin", "https://example.com") // This is required for CORS headers
 	w := httptest.NewRecorder()
 
 	mux.ServeHTTP(w, req)
 
+	// Check that CORS headers are present when Origin is provided
 	headers := w.Header()
 	assert.Contains(suite.T(), headers, "Access-Control-Allow-Origin")
 	assert.Contains(suite.T(), headers, "Access-Control-Allow-Methods")
 	assert.Contains(suite.T(), headers, "Access-Control-Allow-Headers")
 	assert.Contains(suite.T(), headers, "Access-Control-Allow-Credentials")
-	assert.Contains(suite.T(), headers, "Vary")
 }
 
 // TestRegisterRoutes_InvalidMethod tests that invalid HTTP methods return appropriate responses
@@ -357,15 +345,11 @@ func BenchmarkRegisterRoutes(b *testing.B) {
 func TestInitialize_Standalone(t *testing.T) {
 	// Setup config for CORS middleware
 	config.ResetThunderRuntime()
-	var allowedOrigins cors.OriginEntries
-	assert.NoError(t, yaml.Unmarshal([]byte(`
-- https://example.com
-- https://localhost:3000
-`), &allowedOrigins))
 	testConfig := &config.Config{
-		CORS: config.CORSConfig{AllowedOrigins: allowedOrigins},
+		CORS: config.CORSConfig{
+			AllowedOrigins: []string{"https://example.com", "https://localhost:3000"},
+		},
 	}
-	assert.NoError(t, cors.InitializeMatcher(testConfig.CORS.AllowedOrigins))
 	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
 	assert.NoError(t, err)
 	defer config.ResetThunderRuntime()
@@ -389,15 +373,11 @@ func TestInitialize_Standalone(t *testing.T) {
 func TestRegisterRoutes_Standalone(t *testing.T) {
 	// Setup config for CORS middleware
 	config.ResetThunderRuntime()
-	var allowedOrigins cors.OriginEntries
-	assert.NoError(t, yaml.Unmarshal([]byte(`
-- https://example.com
-- https://localhost:3000
-`), &allowedOrigins))
 	testConfig := &config.Config{
-		CORS: config.CORSConfig{AllowedOrigins: allowedOrigins},
+		CORS: config.CORSConfig{
+			AllowedOrigins: []string{"https://example.com", "https://localhost:3000"},
+		},
 	}
-	assert.NoError(t, cors.InitializeMatcher(testConfig.CORS.AllowedOrigins))
 	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
 	assert.NoError(t, err)
 	defer config.ResetThunderRuntime()
@@ -421,15 +401,11 @@ func TestRegisterRoutes_Standalone(t *testing.T) {
 func TestRouteHandling_Standalone(t *testing.T) {
 	// Setup config for CORS middleware
 	config.ResetThunderRuntime()
-	var allowedOrigins cors.OriginEntries
-	assert.NoError(t, yaml.Unmarshal([]byte(`
-- https://example.com
-- https://localhost:3000
-`), &allowedOrigins))
 	testConfig := &config.Config{
-		CORS: config.CORSConfig{AllowedOrigins: allowedOrigins},
+		CORS: config.CORSConfig{
+			AllowedOrigins: []string{"https://example.com", "https://localhost:3000"},
+		},
 	}
-	assert.NoError(t, cors.InitializeMatcher(testConfig.CORS.AllowedOrigins))
 	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
 	assert.NoError(t, err)
 	defer config.ResetThunderRuntime()
@@ -481,15 +457,11 @@ func TestRouteHandling_Standalone(t *testing.T) {
 func TestCORSConfiguration_Standalone(t *testing.T) {
 	// Setup config for CORS middleware
 	config.ResetThunderRuntime()
-	var allowedOrigins cors.OriginEntries
-	assert.NoError(t, yaml.Unmarshal([]byte(`
-- https://example.com
-- https://localhost:3000
-`), &allowedOrigins))
 	testConfig := &config.Config{
-		CORS: config.CORSConfig{AllowedOrigins: allowedOrigins},
+		CORS: config.CORSConfig{
+			AllowedOrigins: []string{"https://example.com", "https://localhost:3000"},
+		},
 	}
-	assert.NoError(t, cors.InitializeMatcher(testConfig.CORS.AllowedOrigins))
 	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
 	assert.NoError(t, err)
 	defer config.ResetThunderRuntime()

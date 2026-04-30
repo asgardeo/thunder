@@ -7,7 +7,7 @@ description: Define user type schemas to control the attributes, validation rule
 
 # User Types
 
-Every user in <ProductName /> has a user type that represents a category of users in your organization. The user type determines:
+Every user in Thunder has a user type that represents a category of users in your organization. The user type determines:
 
 - Which attributes the user has in their profile and the data types of those attributes.
 - Which attributes must be unique across all users of that type.
@@ -23,7 +23,7 @@ User types work alongside **Organization Units (OUs)** to model your real-world 
 
 Each user type belongs to a single OU. Users of that type can only exist under that OU or one of its descendants. Learn more in [Organization Units](../organization-units/).
 
-<ProductName /> ships with two default user types. Learn more about the schemas of these default user types in [User Schema Reference](./user-schema-reference).
+Thunder ships with two default user types. Learn more about the schemas of these default user types in [User Schema Reference](./user-schema-reference).
 
 | User Type | Description | Organization Unit | Self-Registration |
 |-----------|-------------|-------------------|-------------------|
@@ -33,7 +33,7 @@ Each user type belongs to a single OU. Users of that type can only exist under t
 
 ## Create a User Type
 
-1. Navigate to **User Types** in the <ProductName /> Console and click **Create User Type**.
+1. Navigate to **User Types** in the Thunder Console and click **Create User Type**.
 2. Enter a **Name** for the user type. The name is used as the type identifier and must be unique.
 3. Select the **Organization Unit** this user type should belong. A user of this type can only be created under this OU or one of its descendants in the hierarchy. See [Organization Units](../organization-units/) for more information.
 4. Select whether to allow self-registration. Enabling this allows users of this type to sign up through the registration flow assigned to your application.

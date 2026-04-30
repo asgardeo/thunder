@@ -1,7 +1,7 @@
 {
   "item": [
     {
-      "id": "180aab81-0f01-4a5f-9d2f-97f97df2c2cf",
+      "id": "394f9d1f-9c12-4139-89d1-8a0120bf8141",
       "name": "Identity Providers",
       "description": {
         "content": "",
@@ -9,7 +9,7 @@
       },
       "item": [
         {
-          "id": "ca02e592-3a29-4472-9120-29ff4fd2a149",
+          "id": "0c90986a-889d-4ae6-b0c3-103f5e61e517",
           "name": "List identity providers",
           "request": {
             "name": "List identity providers",
@@ -57,7 +57,7 @@
           },
           "response": [
             {
-              "id": "03b469ce-d368-4ccf-9ba5-5f3ca058a6d4",
+              "id": "6c5ba0f8-14c7-4087-b44b-f8339fa0964e",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -119,7 +119,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "c749182d-ad7f-46b4-aa70-8f7c06ae95ad",
+              "id": "8cea3d0c-abe1-4f36-ac80-d776f38c60a3",
               "name": "Internal Server Error: An unexpected error occurred while processing the request",
               "originalRequest": {
                 "url": {
@@ -187,7 +187,7 @@
           }
         },
         {
-          "id": "b27712d8-a5fe-4d3d-9b6d-18322e85e67d",
+          "id": "cff41bd1-21aa-443e-aa1c-e826dca67b03",
           "name": "Create an identity provider",
           "request": {
             "name": "Create an identity provider",
@@ -248,7 +248,7 @@
           },
           "response": [
             {
-              "id": "a8a20967-2511-4492-8a1b-6217781cffa4",
+              "id": "37403040-76e7-4679-8f89-fb24309d2f1e",
               "name": "Created",
               "originalRequest": {
                 "url": {
@@ -318,7 +318,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "78ce06a3-a1a2-4aeb-bc9b-4821242cd892",
+              "id": "d7323c1b-c8f4-43d8-94eb-54e5687ecfe3",
               "name": "Bad Request: The request body is malformed or contains invalid data.",
               "originalRequest": {
                 "url": {
@@ -388,7 +388,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "7a7e9c94-0c4f-4b4f-8b9b-f1454e5c35d3",
+              "id": "ebe8738a-693f-43c5-b0fe-c811e0e266ab",
               "name": "Conflict: An identity provider with the same name already exists.",
               "originalRequest": {
                 "url": {
@@ -458,7 +458,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "1b2b5c2c-533a-48d7-8540-1545eb2afb2a",
+              "id": "d0e1816d-6121-4ff3-aff3-edd74626fb06",
               "name": "Internal Server Error: An unexpected error occurred while processing the request.",
               "originalRequest": {
                 "url": {
@@ -534,7 +534,7 @@
           }
         },
         {
-          "id": "502315eb-9f55-463e-b71a-462164e82000",
+          "id": "44468373-edf6-41af-94a3-3ef71991bbfb",
           "name": "Get an identity provider by ID",
           "request": {
             "name": "Get an identity provider by ID",
@@ -590,7 +590,7 @@
           },
           "response": [
             {
-              "id": "ba1c130c-57d8-445b-b81d-d19786790489",
+              "id": "1fc3d319-19b7-473b-8e01-7e07a07642c3",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -660,7 +660,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "40988ca9-bc4e-4a7a-a2de-077794388e4f",
+              "id": "182b26de-4288-466d-9794-29f4d1dbff51",
               "name": "Bad Request: The request body is malformed or contains invalid data.",
               "originalRequest": {
                 "url": {
@@ -730,7 +730,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "612c96de-8556-47a7-bd7f-e48788eaad2c",
+              "id": "7d34a02b-7302-44a5-9ad3-9f5e3dd5de40",
               "name": "Not Found: The identity provider with the specified ID does not exist.",
               "originalRequest": {
                 "url": {
@@ -800,7 +800,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "a0c17b4e-ced8-4445-825e-e0ac9301d3c9",
+              "id": "4816e266-f224-4e10-89cc-1b22aaaa646f",
               "name": "Internal Server Error: An unexpected error occurred while processing the request.",
               "originalRequest": {
                 "url": {
@@ -876,7 +876,7 @@
           }
         },
         {
-          "id": "fa002404-5136-416d-a5a5-99c3eed1c154",
+          "id": "8215a00b-1488-4363-bc98-31a1f370fba5",
           "name": "Update an identity provider",
           "request": {
             "name": "Update an identity provider",
@@ -945,7 +945,7 @@
           },
           "response": [
             {
-              "id": "38d069eb-ef2f-4b69-a938-048608339619",
+              "id": "00978cd4-cfc3-4888-b1f7-1f1168ba9a96",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -1023,7 +1023,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "c8d6dfb6-e413-4f8c-bec4-64b484288817",
+              "id": "748e1231-292a-4fa8-9fe5-725c11e9a30d",
               "name": "Bad Request: The request body is malformed or contains invalid data.",
               "originalRequest": {
                 "url": {
@@ -1101,7 +1101,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "aa64faed-6bb7-4572-b868-6696aaa2d0b9",
+              "id": "c2e3a39b-f267-4a2e-8f1e-372e549ff301",
               "name": "Not Found: The identity provider with the specified ID does not exist.",
               "originalRequest": {
                 "url": {
@@ -1179,7 +1179,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "a7eac07a-6208-440d-b248-5dc8d88cae88",
+              "id": "b9627fa8-c211-44c8-aa80-43b66ba764a5",
               "name": "Conflict: An identity provider with the same name already exists.",
               "originalRequest": {
                 "url": {
@@ -1257,7 +1257,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "8a2c2258-2eb9-4cd1-a569-a801e54f82e9",
+              "id": "2d2dc741-fae5-49f4-a27d-86307d9ae413",
               "name": "Internal Server Error: An unexpected error occurred while processing the request.",
               "originalRequest": {
                 "url": {
@@ -1341,7 +1341,7 @@
           }
         },
         {
-          "id": "cf663de1-7a76-45cc-aa2b-94af12a1ec23",
+          "id": "642aa6fb-d55e-40a3-b012-7fcbb9642357",
           "name": "Delete an identity provider",
           "request": {
             "name": "Delete an identity provider",
@@ -1397,7 +1397,7 @@
           },
           "response": [
             {
-              "id": "936de158-7d86-4157-857f-90607998ff47",
+              "id": "77dc25a2-d3e2-4210-980f-5c1b50df4a66",
               "name": "No Content",
               "originalRequest": {
                 "url": {
@@ -1463,7 +1463,7 @@
               "_postman_previewlanguage": "text"
             },
             {
-              "id": "fbd552fa-39db-4ea0-a14c-733724690271",
+              "id": "682cbfd5-b152-440b-93d5-be65470cd3a5",
               "name": "Bad Request: The request body is malformed or contains invalid data.",
               "originalRequest": {
                 "url": {
@@ -1533,7 +1533,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "d1e2276d-77fe-4659-b06f-021973c4f860",
+              "id": "093cca2e-ba4b-45c0-832c-75984ba8a40a",
               "name": "Internal Server Error: An unexpected error occurred while processing the request.",
               "originalRequest": {
                 "url": {
@@ -1660,7 +1660,7 @@
     ]
   },
   "info": {
-    "_postman_id": "96b0332e-9f13-4196-8d7d-5649163c2d15",
+    "_postman_id": "b15aa208-3746-4017-8c64-35e79bef9506",
     "name": "Identity Provider Management API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": {

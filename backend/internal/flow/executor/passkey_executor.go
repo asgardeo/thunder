@@ -313,7 +313,6 @@ func (p *passkeyAuthExecutor) validatePasskey(ctx *core.NodeContext, execResp *c
 				log.String("error", svcErr.ErrorDescription.DefaultValue))
 			// Return USER_INPUT_REQUIRED to allow retry on invalid passkey
 			execResp.Status = common.ExecUserInputRequired
-			execResp.Inputs = p.GetRequiredInputs(ctx)
 			execResp.FailureReason = errorInvalidPasskey
 			return nil
 		}
@@ -467,7 +466,6 @@ func (p *passkeyAuthExecutor) executeRegisterFinish(ctx *core.NodeContext,
 	if missingRequiredInputs {
 		logger.Debug("Required inputs for passkey registration are not provided")
 		execResp.Status = common.ExecUserInputRequired
-		execResp.Inputs = allInputs
 		return execResp, nil
 	}
 
@@ -504,7 +502,6 @@ func (p *passkeyAuthExecutor) executeRegisterFinish(ctx *core.NodeContext,
 			logger.Debug("Passkey registration failed", log.String("error", svcErr.ErrorDescription.DefaultValue))
 			// Return USER_INPUT_REQUIRED to allow retry on invalid registration
 			execResp.Status = common.ExecUserInputRequired
-			execResp.Inputs = allInputs
 			execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
 			return execResp, nil
 		}

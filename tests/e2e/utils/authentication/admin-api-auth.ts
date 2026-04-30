@@ -18,22 +18,24 @@
 
 /**
  * Obtain a short-lived admin bearer token via the flow execution API.
- * Reads SERVER_URL, ADMIN_USERNAME, ADMIN_PASSWORD, and SAMPLE_APP_ID from environment variables.
+ * Reads THUNDER_URL, ADMIN_USERNAME, ADMIN_PASSWORD, and SAMPLE_APP_ID from environment variables.
  */
-export async function getAdminToken(request: import("@playwright/test").APIRequestContext): Promise<string> {
-  const serverUrl = process.env.SERVER_URL || "https://localhost:8090";
+export async function getAdminToken(
+  request: import("@playwright/test").APIRequestContext
+): Promise<string> {
+  const thunderUrl = process.env.THUNDER_URL || "https://localhost:8090";
   const adminUsername = process.env.ADMIN_USERNAME || "admin";
   const adminPassword = process.env.ADMIN_PASSWORD || "admin";
   const applicationId = process.env.SAMPLE_APP_ID || "";
 
-  const flowResponse = await request.post(`${serverUrl}/flow/execute`, {
+  const flowResponse = await request.post(`${thunderUrl}/flow/execute`, {
     data: { applicationId, flowType: "AUTHENTICATION" },
     ignoreHTTPSErrors: true,
   });
   if (!flowResponse.ok()) throw new Error(`Failed to start authentication flow: ${await flowResponse.text()}`);
   const flowData = await flowResponse.json();
 
-  const authResponse = await request.post(`${serverUrl}/flow/execute`, {
+  const authResponse = await request.post(`${thunderUrl}/flow/execute`, {
     data: {
       executionId: flowData.executionId,
       ...(flowData.challengeToken && { challengeToken: flowData.challengeToken }),

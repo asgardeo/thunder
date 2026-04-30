@@ -5,8 +5,6 @@
 package mgtmock
 
 import (
-	"context"
-
 	"github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -101,69 +99,6 @@ func (_c *i18nStoreInterfaceMock_DeleteTranslation_Call) RunAndReturn(run func(l
 	return _c
 }
 
-// DeleteTranslationsByKey provides a mock function for the type i18nStoreInterfaceMock
-func (_mock *i18nStoreInterfaceMock) DeleteTranslationsByKey(ctx context.Context, namespace string, key string) error {
-	ret := _mock.Called(ctx, namespace, key)
-
-	if len(ret) == 0 {
-		panic("no return value specified for DeleteTranslationsByKey")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
-		r0 = returnFunc(ctx, namespace, key)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// i18nStoreInterfaceMock_DeleteTranslationsByKey_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteTranslationsByKey'
-type i18nStoreInterfaceMock_DeleteTranslationsByKey_Call struct {
-	*mock.Call
-}
-
-// DeleteTranslationsByKey is a helper method to define mock.On call
-//   - ctx context.Context
-//   - namespace string
-//   - key string
-func (_e *i18nStoreInterfaceMock_Expecter) DeleteTranslationsByKey(ctx interface{}, namespace interface{}, key interface{}) *i18nStoreInterfaceMock_DeleteTranslationsByKey_Call {
-	return &i18nStoreInterfaceMock_DeleteTranslationsByKey_Call{Call: _e.mock.On("DeleteTranslationsByKey", ctx, namespace, key)}
-}
-
-func (_c *i18nStoreInterfaceMock_DeleteTranslationsByKey_Call) Run(run func(ctx context.Context, namespace string, key string)) *i18nStoreInterfaceMock_DeleteTranslationsByKey_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
-		run(
-			arg0,
-			arg1,
-			arg2,
-		)
-	})
-	return _c
-}
-
-func (_c *i18nStoreInterfaceMock_DeleteTranslationsByKey_Call) Return(err error) *i18nStoreInterfaceMock_DeleteTranslationsByKey_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *i18nStoreInterfaceMock_DeleteTranslationsByKey_Call) RunAndReturn(run func(ctx context.Context, namespace string, key string) error) *i18nStoreInterfaceMock_DeleteTranslationsByKey_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
 // DeleteTranslationsByLanguage provides a mock function for the type i18nStoreInterfaceMock
 func (_mock *i18nStoreInterfaceMock) DeleteTranslationsByLanguage(language string) error {
 	ret := _mock.Called(language)
@@ -211,63 +146,6 @@ func (_c *i18nStoreInterfaceMock_DeleteTranslationsByLanguage_Call) Return(err e
 }
 
 func (_c *i18nStoreInterfaceMock_DeleteTranslationsByLanguage_Call) RunAndReturn(run func(language string) error) *i18nStoreInterfaceMock_DeleteTranslationsByLanguage_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// DeleteTranslationsByNamespace provides a mock function for the type i18nStoreInterfaceMock
-func (_mock *i18nStoreInterfaceMock) DeleteTranslationsByNamespace(ctx context.Context, namespace string) error {
-	ret := _mock.Called(ctx, namespace)
-
-	if len(ret) == 0 {
-		panic("no return value specified for DeleteTranslationsByNamespace")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = returnFunc(ctx, namespace)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// i18nStoreInterfaceMock_DeleteTranslationsByNamespace_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteTranslationsByNamespace'
-type i18nStoreInterfaceMock_DeleteTranslationsByNamespace_Call struct {
-	*mock.Call
-}
-
-// DeleteTranslationsByNamespace is a helper method to define mock.On call
-//   - ctx context.Context
-//   - namespace string
-func (_e *i18nStoreInterfaceMock_Expecter) DeleteTranslationsByNamespace(ctx interface{}, namespace interface{}) *i18nStoreInterfaceMock_DeleteTranslationsByNamespace_Call {
-	return &i18nStoreInterfaceMock_DeleteTranslationsByNamespace_Call{Call: _e.mock.On("DeleteTranslationsByNamespace", ctx, namespace)}
-}
-
-func (_c *i18nStoreInterfaceMock_DeleteTranslationsByNamespace_Call) Run(run func(ctx context.Context, namespace string)) *i18nStoreInterfaceMock_DeleteTranslationsByNamespace_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 string
-		if args[1] != nil {
-			arg1 = args[1].(string)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *i18nStoreInterfaceMock_DeleteTranslationsByNamespace_Call) Return(err error) *i18nStoreInterfaceMock_DeleteTranslationsByNamespace_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *i18nStoreInterfaceMock_DeleteTranslationsByNamespace_Call) RunAndReturn(run func(ctx context.Context, namespace string) error) *i18nStoreInterfaceMock_DeleteTranslationsByNamespace_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -559,63 +437,6 @@ func (_c *i18nStoreInterfaceMock_UpsertTranslation_Call) Return(err error) *i18n
 }
 
 func (_c *i18nStoreInterfaceMock_UpsertTranslation_Call) RunAndReturn(run func(trans mgt.Translation) error) *i18nStoreInterfaceMock_UpsertTranslation_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// UpsertTranslations provides a mock function for the type i18nStoreInterfaceMock
-func (_mock *i18nStoreInterfaceMock) UpsertTranslations(ctx context.Context, translations []mgt.Translation) error {
-	ret := _mock.Called(ctx, translations)
-
-	if len(ret) == 0 {
-		panic("no return value specified for UpsertTranslations")
-	}
-
-	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []mgt.Translation) error); ok {
-		r0 = returnFunc(ctx, translations)
-	} else {
-		r0 = ret.Error(0)
-	}
-	return r0
-}
-
-// i18nStoreInterfaceMock_UpsertTranslations_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpsertTranslations'
-type i18nStoreInterfaceMock_UpsertTranslations_Call struct {
-	*mock.Call
-}
-
-// UpsertTranslations is a helper method to define mock.On call
-//   - ctx context.Context
-//   - translations []mgt.Translation
-func (_e *i18nStoreInterfaceMock_Expecter) UpsertTranslations(ctx interface{}, translations interface{}) *i18nStoreInterfaceMock_UpsertTranslations_Call {
-	return &i18nStoreInterfaceMock_UpsertTranslations_Call{Call: _e.mock.On("UpsertTranslations", ctx, translations)}
-}
-
-func (_c *i18nStoreInterfaceMock_UpsertTranslations_Call) Run(run func(ctx context.Context, translations []mgt.Translation)) *i18nStoreInterfaceMock_UpsertTranslations_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		var arg1 []mgt.Translation
-		if args[1] != nil {
-			arg1 = args[1].([]mgt.Translation)
-		}
-		run(
-			arg0,
-			arg1,
-		)
-	})
-	return _c
-}
-
-func (_c *i18nStoreInterfaceMock_UpsertTranslations_Call) Return(err error) *i18nStoreInterfaceMock_UpsertTranslations_Call {
-	_c.Call.Return(err)
-	return _c
-}
-
-func (_c *i18nStoreInterfaceMock_UpsertTranslations_Call) RunAndReturn(run func(ctx context.Context, translations []mgt.Translation) error) *i18nStoreInterfaceMock_UpsertTranslations_Call {
 	_c.Call.Return(run)
 	return _c
 }

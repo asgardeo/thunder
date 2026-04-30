@@ -23,8 +23,8 @@ if [ "$DB_TYPE" = "postgres" ]; then
       hostname: localhost
       port: 5432
       name: configdb
-      username: dbuser
-      password: dbpassword
+      username: asgthunder
+      password: asgthunder
       sslmode: disable
 
   runtime:
@@ -33,8 +33,8 @@ if [ "$DB_TYPE" = "postgres" ]; then
       hostname: localhost
       port: 5432
       name: runtimedb
-      username: dbuser
-      password: dbpassword
+      username: asgthunder
+      password: asgthunder
       sslmode: disable
 
   user:
@@ -43,8 +43,8 @@ if [ "$DB_TYPE" = "postgres" ]; then
       hostname: localhost
       port: 5432
       name: userdb
-      username: dbuser
-      password: dbpassword
+      username: asgthunder
+      password: asgthunder
       sslmode: disable
 EOF
 elif [ "$DB_TYPE" = "redis" ]; then

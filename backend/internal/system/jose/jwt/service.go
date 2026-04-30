@@ -70,12 +70,10 @@ type jwtService struct {
 	kid        string
 	logger     *log.Logger
 	jwksCache  sync.Map
-	httpClient httpservice.HTTPClientInterface
 }
 
 // newJWTService creates a new JWT service instance.
-func newJWTService(pkiService pki.PKIServiceInterface,
-	httpClient httpservice.HTTPClientInterface) (JWTServiceInterface, error) {
+func newJWTService(pkiService pki.PKIServiceInterface) (JWTServiceInterface, error) {
 	preferredKid := config.GetThunderRuntime().Config.JWT.PreferredKeyID
 
 	privateKey, err := pkiService.GetPrivateKey(preferredKid)
@@ -95,7 +93,6 @@ func newJWTService(pkiService pki.PKIServiceInterface,
 			jwsAlg:     jws.RS256,
 			kid:        kid,
 			logger:     logger,
-			httpClient: httpClient,
 		}, nil
 	case *ecdsa.PrivateKey:
 		// Determine ECDSA algorithm based on curve
@@ -108,7 +105,6 @@ func newJWTService(pkiService pki.PKIServiceInterface,
 				jwsAlg:     jws.ES256,
 				kid:        kid,
 				logger:     logger,
-				httpClient: httpClient,
 			}, nil
 		case jws.P384:
 			return &jwtService{
@@ -117,7 +113,6 @@ func newJWTService(pkiService pki.PKIServiceInterface,
 				jwsAlg:     jws.ES384,
 				kid:        kid,
 				logger:     logger,
-				httpClient: httpClient,
 			}, nil
 		case jws.P521:
 			return &jwtService{
@@ -126,7 +121,6 @@ func newJWTService(pkiService pki.PKIServiceInterface,
 				jwsAlg:     jws.ES512,
 				kid:        kid,
 				logger:     logger,
-				httpClient: httpClient,
 			}, nil
 		default:
 			return nil, errors.New("unsupported EC curve: " + crvName + " only P-256, P-384 and P-521 are supported")
@@ -138,7 +132,6 @@ func newJWTService(pkiService pki.PKIServiceInterface,
 			jwsAlg:     jws.EdDSA,
 			kid:        kid,
 			logger:     logger,
-			httpClient: httpClient,
 		}, nil
 	default:
 		return nil, errors.New("unsupported private key type")
@@ -433,7 +426,8 @@ func (js *jwtService) getJWKSKeys(jwksURL string) ([]map[string]interface{}, *se
 		}
 	}
 
-	resp, err := js.httpClient.Get(jwksURL)
+	client := httpservice.NewHTTPClientWithTimeout(10 * time.Second)
+	resp, err := client.Get(jwksURL)
 	if err != nil {
 		js.logger.Debug("Failed to fetch JWKS from URL: " + err.Error())
 		return nil, &ErrorFailedToGetJWKS

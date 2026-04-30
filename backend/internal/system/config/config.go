@@ -30,7 +30,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/asgardeo/thunder/internal/system/cors"
 	"github.com/asgardeo/thunder/internal/system/utils"
 
 	yaml "gopkg.in/yaml.v3"
@@ -280,26 +279,9 @@ type SHA256Config struct {
 	SaltSize int `yaml:"salt_size" json:"salt_size"`
 }
 
-// CORSConfig holds the configuration details for the CORS middleware.
-//
-// AllowedOrigins is heterogeneous: each entry is either a bare string (a
-// literal origin matched after RFC-6454 canonicalization, with the special
-// value "null" denoting the CORS null origin) or an object of the shape
-// { regex: "..." } (an RE2 pattern matched against the raw request Origin
-// header byte for byte). See the CORS section of
-// docs/content/guides/getting-started/configuration.mdx.
+// CORSConfig holds the configuration details for the CORS.
 type CORSConfig struct {
-	AllowedOrigins cors.OriginEntries `yaml:"allowed_origins" json:"allowed_origins"`
-}
-
-// Validate checks every allowed-origins entry so configuration errors —
-// invalid literals, malformed regexes, the unsupported "*" wildcard — are
-// surfaced at server start rather than on the first cross-origin request.
-// Installation of the runtime matcher is the server bootstrap's
-// responsibility (see cors.InitializeMatcher); this config layer only owns
-// YAML validation.
-func (c *CORSConfig) Validate() error {
-	return cors.Validate(c.AllowedOrigins)
+	AllowedOrigins []string `yaml:"allowed_origins" json:"allowed_origins"`
 }
 
 // DeclarativeResources holds the configuration details for the declarative resources.
@@ -638,9 +620,6 @@ func LoadConfig(configPath string, defaultPath string, thunderHome string) (*Con
 	}
 
 	if err := cfg.Server.SecurityConfig.Validate(); err != nil {
-		return nil, err
-	}
-	if err := cfg.CORS.Validate(); err != nil {
 		return nil, err
 	}
 

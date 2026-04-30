@@ -36,7 +36,7 @@
  *
  * Prerequisites (automatically handled):
  * - Sample app running at SAMPLE_APP_URL
- * - The server running at SERVER_URL
+ * - The server running at THUNDER_URL
  * - Mock SMS server (automatically started)
  * - MFA authentication flow (automatically created)
  * - MFA registration flow
@@ -45,7 +45,7 @@
  *
  * Required environment variables:
  * - SAMPLE_APP_URL: URL of the sample app (e.g., https://localhost:3000)
- * - SERVER_URL: URL of the server (default: https://localhost:8090)
+ * - THUNDER_URL: URL of the server (default: https://localhost:8090)
  * - SAMPLE_APP_ID: Application ID in the Server
  * - ADMIN_USERNAME: Admin username (default: "admin")
  * - ADMIN_PASSWORD: Admin password (default: "admin")
@@ -57,10 +57,10 @@
 
 import { test, expect } from "../../fixtures/sample-app";
 import { MockSMSServer } from "../../utils/mock-sms-server";
-import { MFASetup, SetupResult } from "../../utils/server-setup";
+import { ThunderMFASetup, SetupResult } from "../../utils/thunder-setup";
 
 const sampleAppUrl = process.env.SAMPLE_APP_URL;
-const serverUrl = process.env.SERVER_URL || "https://localhost:8090";
+const thunderUrl = process.env.THUNDER_URL || "https://localhost:8090";
 const applicationId = process.env.SAMPLE_APP_ID || "";
 const adminUsername = process.env.ADMIN_USERNAME || "admin";
 const adminPassword = process.env.ADMIN_PASSWORD || "admin";
@@ -101,11 +101,11 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
     if (autoSetup) {
       if (!applicationId) {
         console.log("⚠️  SAMPLE_APP_ID not provided - skipping automated setup");
-        console.log("⚠️  Please configure the server manually as per README-MFA.md");
+        console.log("⚠️  Please configure Thunder manually as per README-MFA.md");
       } else {
-        console.log("\nPerforming automated server MFA setup...");
-        const setup = new MFASetup(request, {
-          serverUrl: serverUrl,
+        console.log("\nPerforming automated Thunder MFA setup...");
+        const setup = new ThunderMFASetup(request, {
+          thunderUrl,
           mockSmsUrl: mockSMSServer.getSendSMSURL(),
           adminUsername,
           adminPassword,
@@ -113,7 +113,7 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
           testUser: {
             username,
             password,
-            email: "e2e@example.com",
+            email: "e2e@thunder.com",
             mobileNumber: "+12345678920",
             given_name: "E2E Test User",
           },
@@ -124,13 +124,13 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
           console.log("✓ Automated setup completed successfully");
         } catch (error) {
           console.error("✗ Automated setup failed:", error);
-          console.log("⚠️  Please configure the server manually as per README-MFA.md");
+          console.log("⚠️  Please configure Thunder manually as per README-MFA.md");
           // Don't throw - allow tests to run with manual configuration
         }
       }
     } else {
       console.log("⚠️  Automated setup disabled (AUTO_SETUP_MFA=false)");
-      console.log("⚠️  Ensure the server is configured manually as per README-MFA.md");
+      console.log("⚠️  Ensure Thunder is configured manually as per README-MFA.md");
     }
 
     console.log("=========================\n");
@@ -141,12 +141,12 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
     console.log("\n=== MFA Test Suite Teardown ===");
 
     // Cleanup created test users
-    if (createdUserIds.length > 0 && serverUrl && adminUsername && adminPassword) {
+    if (createdUserIds.length > 0 && thunderUrl && adminUsername && adminPassword) {
       console.log(`Cleaning up ${createdUserIds.length} created test user(s)...`);
 
       // Get admin token for cleanup
       try {
-        const tokenResponse = await request.post(`${serverUrl}/oauth2/token`, {
+        const tokenResponse = await request.post(`${thunderUrl}/oauth2/token`, {
           form: {
             grant_type: "password",
             username: adminUsername,
@@ -162,7 +162,7 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
           // Delete each created user
           for (const userId of createdUserIds) {
             try {
-              const deleteResponse = await request.delete(`${serverUrl}/users/${userId}`, {
+              const deleteResponse = await request.delete(`${thunderUrl}/users/${userId}`, {
                 headers: {
                   Authorization: `Bearer ${adminToken}`,
                 },
@@ -186,7 +186,7 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
 
     // Cleanup server resources
     if (setupResult && autoSetup) {
-      const setup = new MFASetup(null as any, {} as any);
+      const setup = new ThunderMFASetup(null as any, {} as any);
       await setup.cleanup(setupResult.cleanupFunctions);
     }
 
@@ -246,7 +246,7 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
       console.log("✓ OTP verification page displayed");
     } catch (error) {
       // If OTP page doesn't load, MFA is not configured - skip test
-      console.log("⚠️  OTP page not displayed - MFA not configured on the server");
+      console.log("⚠️  OTP page not displayed - MFA not configured on Thunder server");
       console.log("⚠️  Skipping test - please configure MFA flow as per README-MFA.md");
       test.skip(true, "MFA not configured - OTP page not displayed after password authentication");
       return;
@@ -444,7 +444,9 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
     //   registration complete → OAuth authorize → redirect with ?code= → token exchange → logged-in UI
     // We wait for the avatar button which indicates the full flow completed successfully.
     console.log("\n[REGISTRATION] Step 10: Verifying auto-login after registration...");
-    const avatarOrLogout = page.locator('button[aria-haspopup="true"], button:has(div[class*="MuiAvatar"])').first();
+    const avatarOrLogout = page.locator(
+      'button[aria-haspopup="true"], button:has(div[class*="MuiAvatar"])'
+    ).first();
     await avatarOrLogout.waitFor({ state: "visible", timeout: 30000 });
     console.log("✓ User auto-logged in after registration");
 
@@ -519,7 +521,7 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
     // Step 20: Retrieve created user ID for cleanup
     console.log("\n[CLEANUP] Step 20: Retrieving created user ID for cleanup...");
     try {
-      const tokenResponse = await request.post(`${serverUrl}/oauth2/token`, {
+      const tokenResponse = await request.post(`${thunderUrl}/oauth2/token`, {
         form: {
           grant_type: "password",
           username: adminUsername,
@@ -532,7 +534,7 @@ describeOrSkip("Sample App - MFA Authentication with SMS OTP", () => {
         const tokenData = await tokenResponse.json();
         const adminToken = tokenData.access_token;
 
-        const userResponse = await request.get(`${serverUrl}/users?filter=username eq "${regUsername}"`, {
+        const userResponse = await request.get(`${thunderUrl}/users?filter=username eq "${regUsername}"`, {
           headers: {
             Authorization: `Bearer ${adminToken}`,
           },

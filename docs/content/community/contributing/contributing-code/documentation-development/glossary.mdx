@@ -1,26 +1,26 @@
 ---
 title: Glossary
 sidebar_position: 10
-description: Definitions of key terms and concepts used
+description: Definitions of key terms and concepts used in Thunder
 ---
 
 # Glossary
 
-This glossary defines key terms and concepts used throughout the <ProductName /> documentation.
+This glossary defines key terms and concepts used throughout the Thunder documentation.
 
 ## A
 
 ### Access Token
 
-A credential issued by the authorization server that an application uses to access protected resources on behalf of a user. <ProductName /> issues access tokens as JSON Web Tokens (JWT).
+A credential issued by the authorization server that an application uses to access protected resources on behalf of a user. Thunder issues access tokens as JSON Web Tokens (JWT).
 
 ### Application
 
-A registered entity in <ProductName /> that represents a client application (such as a web app, mobile app, or backend service). Each application has a unique client ID, an associated authentication flow, and an optional registration flow.
+A registered entity in Thunder that represents a client application (such as a web app, mobile app, or backend service). Each application has a unique client ID, an associated authentication flow, and an optional registration flow.
 
 ### Application Template
 
-A predefined configuration blueprint for creating applications. <ProductName /> provides four templates: `spa` (Browser App), `server` (Full-stack App), `mobile` (Mobile App), and `m2m` (Backend Service).
+A predefined configuration blueprint for creating applications. Thunder provides four templates: `spa` (Browser App), `server` (Full-stack App), `mobile` (Mobile App), and `m2m` (Backend Service).
 
 ### Authentication Flow
 
@@ -48,7 +48,7 @@ An OAuth 2.0 grant type for machine-to-machine communication. The application au
 
 ### Client ID
 
-A unique identifier assigned to each registered application. The client ID identifies the application when making OAuth 2.0 requests to <ProductName />.
+A unique identifier assigned to each registered application. The client ID identifies the application when making OAuth 2.0 requests to Thunder.
 
 ### Client Secret
 
@@ -58,7 +58,7 @@ A confidential key assigned to server-side (confidential) applications. The clie
 
 ### Flow
 
-A configurable sequence of steps that defines a user journey in <ProductName />. Flows use a node-based graph representation where each node represents an action or interaction. <ProductName /> supports three flow types: Authentication, Registration, and User Onboarding.
+A configurable sequence of steps that defines a user journey in Thunder. Flows use a node-based graph representation where each node represents an action or interaction. Thunder supports three flow types: Authentication, Registration, and User Onboarding.
 
 ### Flow Handle
 
@@ -72,7 +72,7 @@ An application type for server-rendered web applications built with frameworks s
 
 ### Grant Type
 
-The method an application uses to get an access token. <ProductName /> supports the following grant types: `authorization_code`, `client_credentials`, `refresh_token`, and `urn:ietf:params:oauth:grant-type:token-exchange`.
+The method an application uses to get an access token. Thunder supports the following grant types: `authorization_code`, `client_credentials`, `refresh_token`, and `urn:ietf:params:oauth:grant-type:token-exchange`.
 
 ### Group
 
@@ -82,11 +82,11 @@ A named collection of users within an organization unit. Groups enable role-base
 
 ### ID Token
 
-A JSON Web Token (JWT) issued by <ProductName /> that contains claims about the authenticated user, such as name, email, and profile information. ID tokens follow the OpenID Connect specification.
+A JSON Web Token (JWT) issued by Thunder that contains claims about the authenticated user, such as name, email, and profile information. ID tokens follow the OpenID Connect specification.
 
 ### Identity Provider
 
-An external authentication service (such as Google or GitHub) that <ProductName /> can integrate with for social login. Identity providers enable users to sign in using their existing accounts on third-party platforms.
+An external authentication service (such as Google or GitHub) that Thunder can integrate with for social login. Identity providers enable users to sign in using their existing accounts on third-party platforms.
 
 ### Introspection Endpoint
 
@@ -96,17 +96,17 @@ The OAuth 2.0 endpoint (`/oauth2/introspect`) that validates an access token and
 
 ### JSON Web Key Set (JWKS)
 
-A set of public keys published at the `/oauth2/jwks` endpoint. Applications and resource servers use JWKS to verify the signatures of tokens issued by <ProductName />.
+A set of public keys published at the `/oauth2/jwks` endpoint. Applications and resource servers use JWKS to verify the signatures of tokens issued by Thunder.
 
 ### JSON Web Token (JWT)
 
-A compact, URL-safe token format used by <ProductName /> for access tokens and ID tokens. Each JWT contains encoded claims and a digital signature for integrity verification.
+A compact, URL-safe token format used by Thunder for access tokens and ID tokens. Each JWT contains encoded claims and a digital signature for integrity verification.
 
 ## M
 
 ### MCP Server
 
-The Model Context Protocol (MCP) server built into <ProductName />. The MCP server exposes <ProductName /> management capabilities (such as application and flow management) to AI-powered development tools like VS Code Copilot.
+The Model Context Protocol (MCP) server built into Thunder. The MCP server exposes Thunder management capabilities (such as application and flow management) to AI-powered development tools like VS Code Copilot.
 
 ### Mobile App
 
@@ -120,19 +120,19 @@ See [Backend Service](#backend-service).
 
 ### OAuth 2.0
 
-An authorization framework that <ProductName /> implements to enable secure, delegated access to resources. <ProductName /> supports OAuth 2.0 endpoints including authorization, token, introspection, and JWKS.
+An authorization framework that Thunder implements to enable secure, delegated access to resources. Thunder supports OAuth 2.0 endpoints including authorization, token, introspection, and JWKS.
 
 ### One-Time Password (OTP)
 
-A temporary code sent to a user's phone number via SMS for authentication or verification. <ProductName /> supports SMS OTP as both an authentication and registration method.
+A temporary code sent to a user's phone number via SMS for authentication or verification. Thunder supports SMS OTP as both an authentication and registration method.
 
 ### OpenID Connect (OIDC)
 
-An identity layer built on top of OAuth 2.0 that <ProductName /> implements. OIDC enables applications to verify user identity and retrieve basic profile information through ID tokens and the UserInfo endpoint.
+An identity layer built on top of OAuth 2.0 that Thunder implements. OIDC enables applications to verify user identity and retrieve basic profile information through ID tokens and the UserInfo endpoint.
 
 ### Organization Unit
 
-A logical grouping of users within <ProductName />. Each organization unit can have its own user types, policies, and configurations. <ProductName /> includes two default organization units: **Default** and **Customers**.
+A logical grouping of users within Thunder. Each organization unit can have its own user types, policies, and configurations. Thunder includes two default organization units: **Default** and **Customers**.
 
 ## P
 
@@ -142,7 +142,7 @@ A passwordless authentication method based on the WebAuthn/FIDO2 standard. Passk
 
 ### PKCE (Proof Key for Code Exchange)
 
-A security extension for the OAuth 2.0 authorization code flow that prevents authorization code interception attacks. <ProductName /> requires PKCE for browser apps and mobile apps, and supports the `S256` and `plain` code challenge methods.
+A security extension for the OAuth 2.0 authorization code flow that prevents authorization code interception attacks. Thunder requires PKCE for browser apps and mobile apps, and supports the `S256` and `plain` code challenge methods.
 
 ### Prompt Node
 
@@ -156,11 +156,11 @@ An application that cannot securely store a client secret, such as a browser-bas
 
 ### Redirect URI
 
-The URL where <ProductName /> redirects the user after authentication. Each application must register one or more authorized redirect URIs. For mobile apps, this can be a deep link or universal link.
+The URL where Thunder redirects the user after authentication. Each application must register one or more authorized redirect URIs. For mobile apps, this can be a deep link or universal link.
 
 ### Refresh Token
 
-A long-lived token that an application uses to get new access tokens without requiring the user to sign in again. <ProductName /> issues refresh tokens alongside access tokens when the `refresh_token` grant type is enabled.
+A long-lived token that an application uses to get new access tokens without requiring the user to sign in again. Thunder issues refresh tokens alongside access tokens when the `refresh_token` grant type is enabled.
 
 ### Registration Flow
 
@@ -168,13 +168,13 @@ A flow that defines how new users create accounts. Registration flows can includ
 
 ### Role
 
-A named set of permissions within an organization unit. Roles define what actions a user can perform. <ProductName /> includes a default **Administrator** role with full system permissions.
+A named set of permissions within an organization unit. Roles define what actions a user can perform. Thunder includes a default **Administrator** role with full system permissions.
 
 ## S
 
 ### Scope
 
-A permission boundary that limits what an application can access. <ProductName /> supports the following OIDC scopes: `openid`, `profile`, `email`, `phone`, and `address`. The `system` scope grants access to <ProductName /> management APIs.
+A permission boundary that limits what an application can access. Thunder supports the following OIDC scopes: `openid`, `profile`, `email`, `phone`, and `address`. The `system` scope grants access to Thunder management APIs.
 
 ### Social Login
 
@@ -188,15 +188,15 @@ A flow node that performs a server-side operation such as credential validation,
 
 ### Theme
 
-A design configuration that controls the visual appearance of the sign-in experience. Themes define colors, typography, and styling for the <ProductName /> Gate UI.
+A design configuration that controls the visual appearance of the sign-in experience. Themes define colors, typography, and styling for the Thunder Gate UI.
 
-### <ProductName /> Console
+### Thunder Console
 
-The administrative web interface for managing <ProductName />. Access the <ProductName /> Console at `https://localhost:8090/console` to manage applications, users, flows, and other resources.
+The administrative web interface for managing Thunder. Access the Thunder Console at `https://localhost:8090/console` to manage applications, users, flows, and other resources.
 
-### <ProductName /> Gate
+### Thunder Gate
 
-The user-facing sign-in, registration, and recovery UI. <ProductName /> Gate renders the authentication and registration experiences defined by the application's flows and theme.
+The user-facing sign-in, registration, and recovery UI. Thunder Gate renders the authentication and registration experiences defined by the application's flows and theme.
 
 ### Token Endpoint
 
@@ -210,7 +210,7 @@ An OAuth 2.0 grant type (`urn:ietf:params:oauth:grant-type:token-exchange`) that
 
 ### User
 
-An entity in <ProductName /> that represents a person or account. Each user belongs to an organization unit, has a user type, and has a set of attributes defined by the user type schema.
+An entity in Thunder that represents a person or account. Each user belongs to an organization unit, has a user type, and has a set of attributes defined by the user type schema.
 
 ### User Attributes
 
@@ -226,7 +226,7 @@ A definition that specifies the attributes and validation rules for a user type.
 
 ### User Type
 
-A category of user defined by a user schema. <ProductName /> includes two default user types: **Customer** (allows self-registration, belongs to the Customers organization unit) and **Person** (managed by administrators, belongs to the Default organization unit).
+A category of user defined by a user schema. Thunder includes two default user types: **Customer** (allows self-registration, belongs to the Customers organization unit) and **Person** (managed by administrators, belongs to the Default organization unit).
 
 ## Backend Service
 

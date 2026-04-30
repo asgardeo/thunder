@@ -1,12 +1,12 @@
 ---
 title: Applications
 sidebar_position: 10
-description: Create and manage applications to enable OAuth 2.0 authentication for your services.
+description: Create and manage applications in Thunder to enable OAuth 2.0 authentication for your services.
 ---
 
 # Applications
 
-An application in <ProductName /> represents the client that your users sign in to. You register your web app, mobile app, or backend service as an application to get a **Client ID**, configure the authentication experience, and control which users can access it.
+An application in Thunder represents the client that your users sign in to. You register your web app, mobile app, or backend service as an application to get a **Client ID**, configure the authentication experience, and control which users can access it.
 
 Each application holds:
 
@@ -17,7 +17,7 @@ Each application holds:
 
 ## Application Types
 
-<ProductName /> provides four application types. Each type maps to an appropriate OAuth 2.0 flow and authentication method.
+Thunder provides four application types. Each type maps to an appropriate OAuth 2.0 flow and authentication method.
 
 | Type | Template | Use Case | OAuth 2.0 Flow | Client Secret |
 |------|----------|----------|----------------|---------------|
@@ -26,9 +26,9 @@ Each application holds:
 | 📱 **Mobile App** | `mobile` | Native and cross-platform mobile apps (Swift, Kotlin, React Native, Flutter) | Authorization Code + PKCE | No — public client |
 | 🤖 **Backend Service** | `m2m` | Server-to-server communication without user interaction | Client Credentials | Yes — confidential client |
 
-**Browser Apps** and **Mobile Apps** are public clients. They cannot store a client secret securely, so <ProductName /> uses Proof Key for Code Exchange (PKCE) to protect the authorization code flow.
+**Browser Apps** and **Mobile Apps** are public clients. They cannot store a client secret securely, so Thunder uses Proof Key for Code Exchange (PKCE) to protect the authorization code flow.
 
-**Full-stack Apps** and **Backend Services** are confidential clients. They hold a client secret on the server side and authenticate directly with <ProductName />'s token endpoint.
+**Full-stack Apps** and **Backend Services** are confidential clients. They hold a client secret on the server side and authenticate directly with Thunder's token endpoint.
 
 ## Create an Application
 
@@ -36,7 +36,7 @@ Each application holds:
 
 ### Step 1: Basic Details
 
-1. Sign in to the <ProductName /> Console.
+1. Sign in to the Thunder Console.
 2. Navigate to **Applications** → **New Application**.
 3. Enter an **Application Name**. This name identifies the application in the Console and may be visible to users on the consent screen.
 4. Optionally, enter a **Description**, **Application URL**, and **Logo URL**.
@@ -51,14 +51,14 @@ Select one or more sign-in options. At least one is required.
 
 **Sign-In Approach** determines how users reach the sign-in experience:
 
-- **Redirect to <ProductName /> sign-in/sign-up handling pages** (recommended) — users are redirected to <ProductName />-hosted sign-in pages. You can customize these pages with the Flow Designer and integrate with SDKs.
-- **Embedded sign-in/sign-up components in your app** — the sign-in experience renders inside your application using <ProductName />'s UI components or APIs. No redirect occurs.
+- **Redirect to Thunder sign-in/sign-up handling pages** (recommended) — users are redirected to Thunder-hosted sign-in pages. You can customize these pages with the Flow Designer and integrate with SDKs.
+- **Embedded sign-in/sign-up components in your app** — the sign-in experience renders inside your application using Thunder's UI components or APIs. No redirect occurs.
 
 **User Access** controls which user types can authenticate with this application. Select one or more of the allowed user types (for example, **Customer** or **Person**). Only users of the selected types can sign in.
 
 ### Step 4: Select Application Type and Configure Redirect
 
-Select the **Application Type** that matches your architecture. For Browser Apps, Full-stack Apps, and Mobile Apps, enter one or more **Authorized Redirect URIs** — the URLs <ProductName /> sends users back to after authentication.
+Select the **Application Type** that matches your architecture. For Browser Apps, Full-stack Apps, and Mobile Apps, enter one or more **Authorized Redirect URIs** — the URLs Thunder sends users back to after authentication.
 
 | Application Type | Redirect URI Format |
 |-----------------|---------------------|
@@ -69,7 +69,7 @@ Select the **Application Type** that matches your architecture. For Browser Apps
 
 ### Step 5: Create
 
-Click **Create Application**. <ProductName /> generates a **Client ID** (and a **Client Secret** for confidential clients).
+Click **Create Application**. Thunder generates a **Client ID** (and a **Client Secret** for confidential clients).
 
 :::tip
 Copy the **Client ID** from the application details page immediately after creation. You need it in your SDK or OAuth client configuration.
@@ -125,7 +125,7 @@ Login consent presents users with a consent screen before completing sign-in. Th
 
 **Allowed User Types** restrict which categories of users can authenticate with the application. Only users whose type matches one of the allowed types will be able to sign in.
 
-<ProductName />'s default user types are:
+Thunder's default user types are:
 
 | User Type | Description |
 |-----------|-------------|
@@ -136,11 +136,11 @@ You can select multiple user types. If no user types are configured, all user ty
 
 ## OAuth 2.0 Configuration
 
-<ProductName /> uses OAuth 2.0 and OpenID Connect (OIDC) for authentication. The OAuth 2.0 configuration for an application controls how tokens are issued and what they contain.
+Thunder uses OAuth 2.0 and OpenID Connect (OIDC) for authentication. The OAuth 2.0 configuration for an application controls how tokens are issued and what they contain.
 
 ### Client ID and Client Secret
 
-<ProductName /> generates a **Client ID** when you create an application. For confidential clients (Full-stack Apps and Backend Services), <ProductName /> also generates a **Client Secret**.
+Thunder generates a **Client ID** when you create an application. For confidential clients (Full-stack Apps and Backend Services), Thunder also generates a **Client Secret**.
 
 - Use the **Client ID** to identify your application in authorization requests.
 - Use the **Client Secret** to authenticate your application at the token endpoint. Store it securely — never expose it in browser-side JavaScript or mobile binaries.
@@ -149,7 +149,7 @@ To rotate the client secret, open the application's **OAuth** tab and click **Re
 
 ### Redirect URIs
 
-Redirect URIs are the URLs <ProductName /> sends the authorization code (or token) to after a successful sign-in. You must register every URI your application uses.
+Redirect URIs are the URLs Thunder sends the authorization code (or token) to after a successful sign-in. You must register every URI your application uses.
 
 - Register all environments separately (for example, `http://localhost:3000/callback` for development and `https://yourapp.example.com/callback` for production).
 - Wildcard patterns (`*`, `**`) in the path are supported when `oauth.allow_wildcard_redirect_uri` is enabled. Otherwise, each URI must match exactly. See [Use Wildcard Redirect URIs](/docs/next/guides/guides/applications/application-settings#use-wildcard-redirect-uris).
@@ -177,7 +177,7 @@ Proof Key for Code Exchange (PKCE) protects the authorization code from intercep
 
 ### Scopes
 
-Scopes define what information and access the application can request from <ProductName />. The application lists the scopes it needs; <ProductName /> returns only the user attributes associated with those scopes.
+Scopes define what information and access the application can request from Thunder. The application lists the scopes it needs; Thunder returns only the user attributes associated with those scopes.
 
 Standard OIDC scopes:
 
@@ -191,7 +191,7 @@ You can define custom scopes with custom claim mappings. See [Custom Scope-to-Cl
 
 ### Token Configuration
 
-<ProductName /> lets you control the lifetime and content of the tokens it issues for an application.
+Thunder lets you control the lifetime and content of the tokens it issues for an application.
 
 #### Access Token
 
@@ -216,7 +216,7 @@ You can define custom scopes with custom claim mappings. See [Custom Scope-to-Cl
 
 ### Custom Scope-to-Claims Mapping
 
-You can map custom scopes to specific user attributes. When a client requests a custom scope, <ProductName /> includes the mapped attributes in the ID token and the `/userinfo` response.
+You can map custom scopes to specific user attributes. When a client requests a custom scope, Thunder includes the mapped attributes in the ID token and the `/userinfo` response.
 
 Example:
 
@@ -236,7 +236,7 @@ For applications that sign JWT assertions or use mutual TLS, you can attach a ce
 | Certificate Type | Description |
 |-----------------|-------------|
 | `JWKS` | Provide the JSON Web Key Set (JWKS) inline. |
-| `JWKS_URI` | Provide the URL of the application's JWKS endpoint (for example, `https://yourapp.example.com/.well-known/jwks`). <ProductName /> fetches the public keys from this URL to verify signed requests. |
+| `JWKS_URI` | Provide the URL of the application's JWKS endpoint (for example, `https://yourapp.example.com/.well-known/jwks`). Thunder fetches the public keys from this URL to verify signed requests. |
 
 ## Update an Application
 
@@ -258,4 +258,4 @@ Deleting an application is permanent. Any client using the application's Client 
 ## Next Steps
 
 - [Flows](/docs/next/guides/guides/flows/what-is-flows) — Build and assign custom authentication and registration flows
-- [React Quickstart](/docs/next/guides/quick-start/connect-your-application/react) — Integrate <ProductName /> with a React single-page application
+- [React Quickstart](/docs/next/guides/quick-start/connect-your-application/react) — Integrate Thunder with a React single-page application

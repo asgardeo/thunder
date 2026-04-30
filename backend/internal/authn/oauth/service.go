@@ -78,6 +78,14 @@ func newOAuthAuthnService(httpClient syshttp.HTTPClientInterface,
 	}
 }
 
+// NewOAuthAuthnService creates a new instance of OAuth authenticator service.
+// [Deprecated: use dependency injection to get the instance instead].
+// TODO: Should be removed when executors are migrated to di pattern.
+func NewOAuthAuthnService(httpClient syshttp.HTTPClientInterface,
+	idpSvc idp.IDPServiceInterface, entityProvider entityprovider.EntityProviderInterface) OAuthAuthnServiceInterface {
+	return newOAuthAuthnService(httpClient, idpSvc, entityProvider)
+}
+
 // GetOAuthClientConfig retrieves the OAuth client configuration for the given identity provider ID.
 func (s *oAuthAuthnService) GetOAuthClientConfig(ctx context.Context, idpID string) (
 	*OAuthClientConfig, *serviceerror.ServiceError) {

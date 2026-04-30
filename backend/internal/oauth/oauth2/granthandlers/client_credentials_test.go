@@ -69,7 +69,7 @@ func TestClientCredentialsGrantHandlerSuite(t *testing.T) {
 }
 
 func (suite *ClientCredentialsGrantHandlerTestSuite) SetupTest() {
-	// Initialize Runtime for tests
+	// Initialize Thunder Runtime for tests
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
 			Issuer:         "https://test.thunder.io",

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"mime"
 	"net"
+	"net/mail"
 	"net/smtp"
 	"strings"
 	"time"
@@ -39,14 +40,12 @@ const (
 // The newSMTPClient creates a new instance of smtpClient.
 // It validates the configuration at creation time to avoid runtime errors.
 func newSMTPClient(config smtpConfig) (EmailClientInterface, error) {
-	sender := strings.TrimSpace(config.from)
-	if sender == "" {
+	if config.from == "" {
 		return nil, ErrorInvalidSender
 	}
-	if !IsValidEmail(sender) {
+	if _, error := mail.ParseAddress(config.from); error != nil {
 		return nil, ErrorInvalidSender
 	}
-	config.from = sender
 	if strings.TrimSpace(config.host) == "" {
 		return nil, ErrorInvalidHost
 	}
@@ -63,8 +62,8 @@ func newSMTPClient(config smtpConfig) (EmailClientInterface, error) {
 	}, nil
 }
 
-// NewSMTPClientFromConfig creates a new smtpClient using the global server configuration.
-// It reads the email.smtp section from the server runtime config.
+// NewSMTPClientFromConfig creates a new smtpClient using the global Thunder configuration.
+// It reads the email.smtp section from the Thunder runtime config.
 // Returns an error if the configuration is invalid (e.g., missing sender address)
 // or if the runtime is not initialized.
 func NewSMTPClientFromConfig() (EmailClientInterface, error) {
@@ -91,14 +90,13 @@ func NewSMTPClientFromConfig() (EmailClientInterface, error) {
 	})
 }
 
-// smtpClient implements the EmailClientInterface using SMTP.
 func (c *smtpClient) Send(emailData EmailData) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, smtpLoggerComponentName))
 
 	// 1. Validate, sanitize in place, and extract the flat envelope list
-	allRecipients, err := c.validateAndProcessRecipients(&emailData)
-	if err != nil {
-		return err
+	allRecipients, error := c.validateAndProcessRecipients(&emailData)
+	if error != nil {
+		return error
 	}
 
 	logger.Debug("Sending email via SMTP",
@@ -111,15 +109,14 @@ func (c *smtpClient) Send(emailData EmailData) error {
 	message := c.buildMessage(emailData)
 
 	// 3. Send via SMTP
-	if err := c.sendViaSMTP(serverAddress, allRecipients, message); err != nil {
-		return err
+	if error := c.sendViaSMTP(serverAddress, allRecipients, message); error != nil {
+		return error
 	}
 
 	logger.Debug("Email sent successfully")
 	return nil
 }
 
-// validateAndProcessRecipients validates the recipient email addresses in the To, CC, and BCC fields.
 func (c *smtpClient) validateAndProcessRecipients(emailData *EmailData) ([]string, error) {
 	var allRecipients []string
 	hasRecipient := false
@@ -132,8 +129,8 @@ func (c *smtpClient) validateAndProcessRecipients(emailData *EmailData) ([]strin
 			if trimmed == "" {
 				return nil, fmt.Errorf("%w: recipient address cannot be empty", ErrorInvalidRecipient)
 			}
-			if !IsValidEmail(trimmed) {
-				return nil, fmt.Errorf("%w: invalid recipient address '%s'", ErrorInvalidRecipient, trimmed)
+			if _, error := mail.ParseAddress(trimmed); error != nil {
+				return nil, fmt.Errorf("%w: invalid recipient address '%s': %w", ErrorInvalidRecipient, trimmed, error)
 			}
 			cleaned = append(cleaned, trimmed)
 			allRecipients = append(allRecipients, trimmed)
@@ -142,15 +139,15 @@ func (c *smtpClient) validateAndProcessRecipients(emailData *EmailData) ([]strin
 		return cleaned, nil
 	}
 
-	var err error
-	if emailData.To, err = processGroup(emailData.To); err != nil {
-		return nil, err
+	var error error
+	if emailData.To, error = processGroup(emailData.To); error != nil {
+		return nil, error
 	}
-	if emailData.CC, err = processGroup(emailData.CC); err != nil {
-		return nil, err
+	if emailData.CC, error = processGroup(emailData.CC); error != nil {
+		return nil, error
 	}
-	if emailData.BCC, err = processGroup(emailData.BCC); err != nil {
-		return nil, err
+	if emailData.BCC, error = processGroup(emailData.BCC); error != nil {
+		return nil, error
 	}
 
 	if !hasRecipient {
@@ -165,7 +162,6 @@ func (c *smtpClient) validateAndProcessRecipients(emailData *EmailData) ([]strin
 	return allRecipients, nil
 }
 
-// buildMessage constructs the raw email message string with headers and body.
 func (c *smtpClient) buildMessage(emailData EmailData) string {
 	var builder strings.Builder
 
@@ -196,18 +192,16 @@ func (c *smtpClient) buildMessage(emailData EmailData) string {
 	return builder.String()
 }
 
-// sendViaSMTP handles the low-level SMTP communication, connection setup,
-// optional TLS upgrade, authentication, and message transmission
 func (c *smtpClient) sendViaSMTP(serverAddress string, recipients []string, message string) error {
-	conn, err := net.DialTimeout("tcp", serverAddress, smtpDialTimeout)
-	if err != nil {
-		return fmt.Errorf("%w: %w", ErrorSMTPConnection, err)
+	conn, error := net.DialTimeout("tcp", serverAddress, smtpDialTimeout)
+	if error != nil {
+		return fmt.Errorf("%w: %w", ErrorSMTPConnection, error)
 	}
 
-	client, err := smtp.NewClient(conn, c.config.host)
-	if err != nil {
+	client, error := smtp.NewClient(conn, c.config.host)
+	if error != nil {
 		_ = conn.Close()
-		return fmt.Errorf("%w: %w", ErrorSMTPConnection, err)
+		return fmt.Errorf("%w: %w", ErrorSMTPConnection, error)
 	}
 	defer func() {
 		_ = client.Close()
@@ -222,41 +216,41 @@ func (c *smtpClient) sendViaSMTP(serverAddress string, recipients []string, mess
 			ServerName: c.config.host,
 			MinVersion: tls.VersionTLS12,
 		}
-		if err := client.StartTLS(tlsConfig); err != nil {
-			return fmt.Errorf("%w: %w", ErrorSMTPConnection, err)
+		if error := client.StartTLS(tlsConfig); error != nil {
+			return fmt.Errorf("%w: %w", ErrorSMTPConnection, error)
 		}
 	}
 
 	if c.config.enableAuthentication && c.config.username != "" && c.config.password != "" {
-		if err := client.Auth(smtp.PlainAuth("", c.config.username, c.config.password, c.config.host)); err != nil {
-			return fmt.Errorf("%w: %w", ErrorSMTPAuth, err)
+		if error := client.Auth(smtp.PlainAuth("", c.config.username, c.config.password, c.config.host)); error != nil {
+			return fmt.Errorf("%w: %w", ErrorSMTPAuth, error)
 		}
 	}
 
-	if err := client.Mail(c.config.from); err != nil {
-		return fmt.Errorf("%w: %w", ErrorEmailSendFailed, err)
+	if error := client.Mail(c.config.from); error != nil {
+		return fmt.Errorf("%w: %w", ErrorEmailSendFailed, error)
 	}
 
 	for _, recipient := range recipients {
-		if err := client.Rcpt(recipient); err != nil {
-			return fmt.Errorf("%w: %w", ErrorEmailSendFailed, err)
+		if error := client.Rcpt(recipient); error != nil {
+			return fmt.Errorf("%w: %w", ErrorEmailSendFailed, error)
 		}
 	}
 
-	writer, err := client.Data()
-	if err != nil {
-		return fmt.Errorf("%w: %w", ErrorEmailSendFailed, err)
+	writer, error := client.Data()
+	if error != nil {
+		return fmt.Errorf("%w: %w", ErrorEmailSendFailed, error)
 	}
-	if _, err := writer.Write([]byte(message)); err != nil {
-		return fmt.Errorf("%w: %w", ErrorEmailSendFailed, err)
+	if _, error := writer.Write([]byte(message)); error != nil {
+		return fmt.Errorf("%w: %w", ErrorEmailSendFailed, error)
 	}
-	if err := writer.Close(); err != nil {
-		return fmt.Errorf("%w: %w", ErrorEmailSendFailed, err)
+	if error := writer.Close(); error != nil {
+		return fmt.Errorf("%w: %w", ErrorEmailSendFailed, error)
 	}
 
-	if err := client.Quit(); err != nil {
+	if error := client.Quit(); error != nil {
 		log.GetLogger().With(log.String(log.LoggerKeyComponentName, smtpLoggerComponentName)).
-			Error("Failed to gracefully close SMTP client", log.Error(err))
+			Error("Failed to gracefully close SMTP client", log.Error(error))
 	}
 
 	return nil

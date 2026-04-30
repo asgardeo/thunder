@@ -91,7 +91,7 @@ func GetExtractedProductHome() string {
 	return abs
 }
 
-// GetServerPID returns the PID of the running the server process, or 0 if not started.
+// GetServerPID returns the PID of the running Thunder server process, or 0 if not started.
 // main.go uses this to propagate the PID to test subprocesses via an env var so that
 // they can stop and restart the server when required.
 func GetServerPID() int {
@@ -103,25 +103,25 @@ func GetServerPID() int {
 // test subprocess was started by runTests in main.go), it attempts a lazy
 // initialization from environment variables that main.go exports before running tests:
 //
-//	SERVER_EXTRACTED_HOME – path to the extracted product directory
-//	SERVER_PORT    – port the server is listening on
-//	ZIP_PATTERN    – zip file glob used to locate the product archive
-//	SERVER_PID     – PID of the running server process
+//	THUNDER_EXTRACTED_HOME – path to the extracted product directory
+//	THUNDER_SERVER_PORT    – port Thunder is listening on
+//	THUNDER_ZIP_PATTERN    – zip file glob used to locate the product archive
+//	THUNDER_SERVER_PID     – PID of the running Thunder server process
 func ensureInitialized() {
 	if isInitialized {
 		return
 	}
 
 	// Attempt lazy initialization from environment variables injected by main.go.
-	if home := os.Getenv("SERVER_EXTRACTED_HOME"); home != "" {
+	if home := os.Getenv("THUNDER_EXTRACTED_HOME"); home != "" {
 		extractedProductHome = home
-		serverPort = os.Getenv("SERVER_PORT")
-		zipFilePattern = os.Getenv("ZIP_PATTERN")
+		serverPort = os.Getenv("THUNDER_SERVER_PORT")
+		zipFilePattern = os.Getenv("THUNDER_ZIP_PATTERN")
 		dbType = os.Getenv("DB_TYPE")
 		if dbType == "" {
 			dbType = "sqlite"
 		}
-		if pidStr := os.Getenv("SERVER_PID"); pidStr != "" {
+		if pidStr := os.Getenv("THUNDER_SERVER_PID"); pidStr != "" {
 			if pid, err := strconv.Atoi(pidStr); err == nil {
 				serverPid = pid
 			}
@@ -596,7 +596,7 @@ func initSQLiteDB(name, schemaPath, dbPath string) error {
 }
 
 // pidFilePath returns the path to the well-known PID file that always reflects the
-// PID of the currently running the server process, even after subprocess restarts.
+// PID of the currently running Thunder process, even after subprocess restarts.
 // Returns an empty string when extractedProductHome is not yet set, so callers
 // can skip PID-file operations safely.
 func pidFilePath() string {
@@ -606,7 +606,7 @@ func pidFilePath() string {
 	return filepath.Join(extractedProductHome, "thunder.pid")
 }
 
-// writePidFile writes the given PID to the the server PID file.
+// writePidFile writes the given PID to the Thunder PID file.
 func writePidFile(pid int) {
 	path := pidFilePath()
 	if path == "" {
@@ -617,7 +617,7 @@ func writePidFile(pid int) {
 	}
 }
 
-// readPidFile reads the PID from the server PID file. Returns 0 if the file does
+// readPidFile reads the PID from the Thunder PID file. Returns 0 if the file does
 // not exist, cannot be parsed, or extractedProductHome is not set.
 func readPidFile() int {
 	path := pidFilePath()
@@ -635,7 +635,7 @@ func readPidFile() int {
 	return pid
 }
 
-// removePidFile deletes the server PID file.
+// removePidFile deletes the Thunder PID file.
 func removePidFile() {
 	path := pidFilePath()
 	if path == "" {
@@ -654,9 +654,9 @@ func StartServer(port string, zipFilePattern string) error {
 	// must close its copy after cmd.Start() so it does not leak the FD.
 	var logFile *os.File
 	if subprocessMode {
-		// Running inside a test binary (go test subprocess). Server's stdout/stderr
+		// Running inside a test binary (go test subprocess). Thunder's stdout/stderr
 		// must NOT inherit the test process's pipes — go test waits for all I/O to
-		// drain before declaring the test done, and the long-lived server process
+		// drain before declaring the test done, and the long-lived Thunder process
 		// would keep those pipes open indefinitely, causing a 60s WaitDelay timeout.
 		// Redirect to a log file in the extracted product home so output is not lost.
 		logPath := filepath.Join(extractedProductHome, "thunder-restart.log")
@@ -759,7 +759,7 @@ func StopServer() {
 	serverCmd = nil
 	serverPid = 0
 
-	// Kill any residual the server process that may have been started by a test
+	// Kill any residual Thunder process that may have been started by a test
 	// subprocess (e.g. after a config swap) whose PID is different from the one
 	// we just killed. The PID file is always updated by StartServer regardless of
 	// which process (parent or subprocess) called it.
@@ -823,7 +823,7 @@ func waitForServerReady(timeout time.Duration) error {
 
 // UpdateDeploymentConfig overwrites the extracted product's deployment.yaml with the
 // file at srcPath. srcPath should be relative to the calling test package's directory.
-// After calling this, restart the server with RestartServer for changes to take effect.
+// After calling this, restart Thunder with RestartServer for changes to take effect.
 func UpdateDeploymentConfig(srcPath string) error {
 	ensureInitialized()
 

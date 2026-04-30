@@ -360,15 +360,6 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_InvalidPasskey_Clie
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
 	assert.Contains(suite.T(), resp.FailureReason, "invalid passkey credentials")
-	assert.NotEmpty(suite.T(), resp.Inputs)
-	inputIDs := make([]string, 0, len(resp.Inputs))
-	for _, input := range resp.Inputs {
-		inputIDs = append(inputIDs, input.Identifier)
-	}
-	assert.Contains(suite.T(), inputIDs, inputCredentialID)
-	assert.Contains(suite.T(), inputIDs, inputClientDataJSON)
-	assert.Contains(suite.T(), inputIDs, inputAuthenticatorData)
-	assert.Contains(suite.T(), inputIDs, inputSignature)
 }
 
 func (suite *PasskeyAuthExecutorTestSuite) TestExecuteVerify_ServiceError_Server() {
@@ -573,47 +564,13 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_MissingInpu
 	ctx := createPasskeyNodeContext(passkeyExecutorModeRegFinish, common.FlowTypeRegistration)
 	ctx.RuntimeData[userAttributeUserID] = testPasskeyUserID
 	ctx.RuntimeData[runtimePasskeySessionToken] = testSessionToken
-	// Empty UserInputs — all required inputs are missing
+	// Empty UserInputs
 
 	resp, err := suite.executor.Execute(ctx)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
-	// All missing inputs must be listed so the client knows what to collect
-	assert.NotEmpty(suite.T(), resp.Inputs)
-	inputIDs := make([]string, 0, len(resp.Inputs))
-	for _, input := range resp.Inputs {
-		inputIDs = append(inputIDs, input.Identifier)
-	}
-	assert.Contains(suite.T(), inputIDs, inputCredentialID)
-	assert.Contains(suite.T(), inputIDs, inputClientDataJSON)
-	assert.Contains(suite.T(), inputIDs, inputAttestationObject)
-}
-
-func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_PartialInputs() {
-	ctx := createPasskeyNodeContext(passkeyExecutorModeRegFinish, common.FlowTypeRegistration)
-	ctx.RuntimeData[userAttributeUserID] = testPasskeyUserID
-	ctx.RuntimeData[runtimePasskeySessionToken] = testSessionToken
-	// Provide credentialID but omit the other required inputs
-	ctx.UserInputs = map[string]string{
-		inputCredentialID: testCredentialIDValue,
-	}
-
-	resp, err := suite.executor.Execute(ctx)
-
-	assert.NoError(suite.T(), err)
-	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
-	// The full input list is returned so the client can re-render the entire form
-	assert.NotEmpty(suite.T(), resp.Inputs)
-	inputIDs := make([]string, 0, len(resp.Inputs))
-	for _, input := range resp.Inputs {
-		inputIDs = append(inputIDs, input.Identifier)
-	}
-	assert.Contains(suite.T(), inputIDs, inputCredentialID)
-	assert.Contains(suite.T(), inputIDs, inputClientDataJSON)
-	assert.Contains(suite.T(), inputIDs, inputAttestationObject)
 }
 
 func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_MissingSessionToken() {
@@ -656,15 +613,6 @@ func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_ServiceErro
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status)
 	assert.Contains(suite.T(), resp.FailureReason, "Invalid attestation object")
-	// Client must receive the full input list so it can re-prompt the user
-	assert.NotEmpty(suite.T(), resp.Inputs)
-	inputIDs := make([]string, 0, len(resp.Inputs))
-	for _, input := range resp.Inputs {
-		inputIDs = append(inputIDs, input.Identifier)
-	}
-	assert.Contains(suite.T(), inputIDs, inputCredentialID)
-	assert.Contains(suite.T(), inputIDs, inputClientDataJSON)
-	assert.Contains(suite.T(), inputIDs, inputAttestationObject)
 }
 
 func (suite *PasskeyAuthExecutorTestSuite) TestExecuteRegisterFinish_ServiceError_Server() {

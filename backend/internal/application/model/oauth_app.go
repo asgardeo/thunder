@@ -46,7 +46,7 @@ type OAuthAppConfig struct {
 // OAuthAppConfigComplete represents the complete structure for OAuth application configuration.
 type OAuthAppConfigComplete struct {
 	ClientID                           string                              `json:"clientId" yaml:"client_id"`
-	ClientSecret                       string                              `json:"clientSecret,omitempty" yaml:"client_secret,omitempty"`
+	ClientSecret                       string                              `json:"clientSecret,omitempty" yaml:"client_secret"`
 	RedirectURIs                       []string                            `json:"redirectUris" yaml:"redirect_uris"`
 	GrantTypes                         []oauth2const.GrantType             `json:"grantTypes" yaml:"grant_types"`
 	ResponseTypes                      []oauth2const.ResponseType          `json:"responseTypes" yaml:"response_types"`

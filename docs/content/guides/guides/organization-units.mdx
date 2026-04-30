@@ -2,7 +2,7 @@
 title: Organization Units
 sidebar_position: 11
 persona: iam
-description: Create and manage organization units to structure your users.
+description: Create and manage organization units to structure your users in Thunder.
 ---
 
 import Tabs from '@theme/Tabs';
@@ -55,7 +55,7 @@ All users belong to an OU and each user also has a [user type](./user-types). A 
 
 - whether users can self-register.
 
-<ProductName /> ships with two default organization units, each with a predefined user type.
+Thunder ships with two default organization units, each with a predefined user type.
 
 | Organization Unit | Default User Type | Purpose |
 |-------------------|-----------|---------|
@@ -69,7 +69,7 @@ Each user type belongs to a single OU and inherited by its child OUs. This means
 
 Every OU has a **handle**, a short, URL-safe identifier used to reference the OU in the hierarchy. Handles must be unique within the same parent.
 
-<ProductName />'s two default OUs have fixed handles:
+Thunder's two default OUs have fixed handles:
 
 | Organization Unit | Handle |
 |-------------------|--------|
@@ -92,7 +92,7 @@ Handles must be unique within the same parent. Two sibling OUs cannot share the 
 
 ## Create an Organization Unit
 
-1. Navigate to **Organization Units** in the <ProductName /> Console.
+1. Navigate to **Organization Units** in the Thunder Console.
    - To create a root OU, click **Add Root Organization Unit**.
    - To create a child OU, expand the parent OU and click **Add Child Organization Unit**.
 2. Enter a **Name** - the human-readable display name for the OU.
@@ -103,7 +103,7 @@ Handles must be unique within the same parent. Two sibling OUs cannot share the 
 
 ## View an Organization Unit
 
-Navigate to **Organization Units** in the <ProductName /> Console to see all OUs. Click the three-dot menu on any OU and select **Edit** to view its details:
+Navigate to **Organization Units** in the Thunder Console to see all OUs. Click the three-dot menu on any OU and select **Edit** to view its details:
 
 - **Details** - name, handle, description, and parent OU.
 - **Child Organization Units** - nested OUs directly under this OU.

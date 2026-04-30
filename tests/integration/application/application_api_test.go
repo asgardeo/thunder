@@ -4903,7 +4903,6 @@ func (ts *ApplicationAPITestSuite) TestApplicationUserInfoResponseTypeJWS() {
 					ResponseTypes:           []string{"code"},
 					TokenEndpointAuthMethod: "client_secret_basic",
 					UserInfo: &UserInfoConfig{
-						ResponseType:   "JWS",
 						SigningAlg:     "RS256",
 						UserAttributes: []string{"email"},
 					},

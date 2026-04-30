@@ -78,11 +78,11 @@ type ResourceLoaderTestSuite struct {
 
 // SetupSuite runs once before all tests
 func (suite *ResourceLoaderTestSuite) SetupSuite() {
-	// Create a temporary directory for server home
+	// Create a temporary directory for Thunder home
 	tempThunderHome := suite.T().TempDir()
 	suite.thunderHome = tempThunderHome
 
-	// Initialize server runtime for testing
+	// Initialize ThunderRuntime for testing
 	testConfig := &config.Config{
 		Server: config.ServerConfig{
 			Hostname: "localhost",

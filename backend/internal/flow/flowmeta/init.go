@@ -49,10 +49,9 @@ func Initialize(
 func registerRoutes(mux *http.ServeMux, handler *flowMetaHandler) {
 	// CORS options for flow metadata endpoint (follows the same security as flow/execute)
 	opts := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "OPTIONS"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, OPTIONS",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 
 	// Register GET endpoint

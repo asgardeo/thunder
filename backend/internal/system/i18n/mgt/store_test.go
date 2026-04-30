@@ -19,12 +19,10 @@
 package mgt
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/tests/mocks/database/modelmock"
@@ -459,62 +457,4 @@ func (suite *I18nStoreTestSuite) TestGetDBClient_Error() {
 	err = suite.store.DeleteTranslationsByLanguage("en")
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to get database client")
-
-	err = suite.store.DeleteTranslationsByNamespace(context.Background(), "app-test")
-	suite.Error(err)
-	suite.Contains(err.Error(), "failed to get database client")
-
-	err = suite.store.DeleteTranslationsByKey(context.Background(), "custom", "app.test-id.name")
-	suite.Error(err)
-	suite.Contains(err.Error(), "failed to get database client")
-}
-
-// DeleteTranslationsByNamespace Tests
-
-func (suite *I18nStoreTestSuite) TestDeleteTranslationsByNamespace_Success() {
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("ExecuteContext", mock.Anything,
-		queryDeleteTranslationsByNamespace, "app-test", testDeploymentID).
-		Return(int64(1), nil)
-
-	err := suite.store.DeleteTranslationsByNamespace(context.Background(), "app-test")
-
-	suite.NoError(err)
-}
-
-func (suite *I18nStoreTestSuite) TestDeleteTranslationsByNamespace_Error() {
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("ExecuteContext", mock.Anything,
-		queryDeleteTranslationsByNamespace, "app-test", testDeploymentID).
-		Return(int64(0), errors.New("exec error"))
-
-	err := suite.store.DeleteTranslationsByNamespace(context.Background(), "app-test")
-
-	suite.Error(err)
-	suite.Contains(err.Error(), "failed to delete translations by namespace")
-}
-
-// DeleteTranslationsByKey Tests
-
-func (suite *I18nStoreTestSuite) TestDeleteTranslationsByKey_Success() {
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("ExecuteContext", mock.Anything,
-		queryDeleteTranslationsByKey, "custom", "app.test-id.name", testDeploymentID).
-		Return(int64(1), nil)
-
-	err := suite.store.DeleteTranslationsByKey(context.Background(), "custom", "app.test-id.name")
-
-	suite.NoError(err)
-}
-
-func (suite *I18nStoreTestSuite) TestDeleteTranslationsByKey_Error() {
-	suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
-	suite.mockDBClient.On("ExecuteContext", mock.Anything,
-		queryDeleteTranslationsByKey, "custom", "app.test-id.name", testDeploymentID).
-		Return(int64(0), errors.New("exec error"))
-
-	err := suite.store.DeleteTranslationsByKey(context.Background(), "custom", "app.test-id.name")
-
-	suite.Error(err)
-	suite.Contains(err.Error(), "failed to delete translations by namespace and key")
 }

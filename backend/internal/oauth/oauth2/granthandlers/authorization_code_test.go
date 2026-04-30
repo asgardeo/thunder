@@ -92,7 +92,7 @@ func TestAuthorizationCodeGrantHandlerSuite(t *testing.T) {
 }
 
 func (suite *AuthorizationCodeGrantHandlerTestSuite) SetupTest() {
-	// Initialize Runtime config with basic test config
+	// Initialize Thunder Runtime config with basic test config
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
 			ValidityPeriod: 3600,

@@ -27,12 +27,11 @@ import (
 
 // Input represents the inputs required for a node
 type Input struct {
-	Ref         string   `json:"ref,omitempty"`
-	Identifier  string   `json:"identifier"`
-	Type        string   `json:"type"`
-	Required    bool     `json:"required"`
-	Options     []string `json:"options,omitempty"`
-	DisplayName string   `json:"-"`
+	Ref        string   `json:"ref,omitempty"`
+	Identifier string   `json:"identifier"`
+	Type       string   `json:"type"`
+	Required   bool     `json:"required"`
+	Options    []string `json:"options,omitempty"`
 }
 
 // IsSensitive checks whether this input's type is considered sensitive.

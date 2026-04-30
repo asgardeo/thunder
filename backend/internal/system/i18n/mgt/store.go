@@ -19,7 +19,6 @@
 package mgt
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -35,11 +34,8 @@ type i18nStoreInterface interface {
 	GetTranslationsByKey(key string, namespace string) (map[string]Translation, error)
 	UpsertTranslationsByLanguage(language string, translations []Translation) error
 	UpsertTranslation(trans Translation) error
-	UpsertTranslations(ctx context.Context, translations []Translation) error
 	DeleteTranslationsByLanguage(language string) error
 	DeleteTranslation(language string, key string, namespace string) error
-	DeleteTranslationsByNamespace(ctx context.Context, namespace string) error
-	DeleteTranslationsByKey(ctx context.Context, namespace string, key string) error
 }
 
 // i18nStore is the default implementation of i18nStoreInterface.
@@ -191,24 +187,6 @@ func (s *i18nStore) UpsertTranslation(trans Translation) error {
 	return nil
 }
 
-// UpsertTranslations creates or updates multiple translations.
-// When ctx carries an outer configDB transaction the upserts join it atomically.
-// Without an outer transaction each upsert runs independently.
-func (s *i18nStore) UpsertTranslations(ctx context.Context, translations []Translation) error {
-	dbClient, err := s.getDBClient()
-	if err != nil {
-		return err
-	}
-
-	for _, trans := range translations {
-		if _, err = dbClient.ExecuteContext(ctx, queryUpsertTranslation, trans.Key, trans.Language,
-			trans.Namespace, trans.Value, s.deploymentID); err != nil {
-			return fmt.Errorf("failed to upsert translation: %w", err)
-		}
-	}
-	return nil
-}
-
 // DeleteTranslation deletes a translation by language, key, and namespace.
 func (s *i18nStore) DeleteTranslation(language string, key string, namespace string) error {
 	dbClient, err := s.getDBClient()
@@ -233,36 +211,6 @@ func (s *i18nStore) DeleteTranslationsByLanguage(language string) error {
 	_, err = dbClient.Execute(queryDeleteTranslationsByLanguage, language, s.deploymentID)
 	if err != nil {
 		return fmt.Errorf("failed to delete translation: %w", err)
-	}
-	return nil
-}
-
-// DeleteTranslationsByKey deletes all translations for the given namespace and key.
-// When ctx carries an outer configDB transaction the delete joins it atomically.
-func (s *i18nStore) DeleteTranslationsByKey(ctx context.Context, namespace string, key string) error {
-	dbClient, err := s.getDBClient()
-	if err != nil {
-		return err
-	}
-
-	_, err = dbClient.ExecuteContext(ctx, queryDeleteTranslationsByKey, namespace, key, s.deploymentID)
-	if err != nil {
-		return fmt.Errorf("failed to delete translations by namespace and key: %w", err)
-	}
-	return nil
-}
-
-// DeleteTranslationsByNamespace deletes all translations for the given namespace.
-// When ctx carries an outer configDB transaction the delete joins it atomically.
-func (s *i18nStore) DeleteTranslationsByNamespace(ctx context.Context, namespace string) error {
-	dbClient, err := s.getDBClient()
-	if err != nil {
-		return err
-	}
-
-	_, err = dbClient.ExecuteContext(ctx, queryDeleteTranslationsByNamespace, namespace, s.deploymentID)
-	if err != nil {
-		return fmt.Errorf("failed to delete translations by namespace: %w", err)
 	}
 	return nil
 }

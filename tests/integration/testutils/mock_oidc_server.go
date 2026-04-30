@@ -576,7 +576,7 @@ func (m *MockOIDCServer) generateIDToken(user *OIDCUserInfo, nonce, accessToken 
 		"aud": m.clientID,
 		"exp": now.Add(1 * time.Hour).Unix(),
 		"iat": now.Unix(),
-		"nbf": now.Unix(), // Add nbf (not before) claim required by server's JWT validation
+		"nbf": now.Unix(), // Add nbf (not before) claim required by Thunder's JWT validation
 	}
 
 	if user.Email != "" {

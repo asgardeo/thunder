@@ -26,10 +26,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	yaml "gopkg.in/yaml.v3"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/cors"
 	"github.com/asgardeo/thunder/tests/mocks/flow/flowexecmock"
 	"github.com/asgardeo/thunder/tests/mocks/inboundclientmock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
@@ -49,11 +47,7 @@ func TestInitTestSuite(t *testing.T) {
 }
 
 func (suite *InitTestSuite) SetupTest() {
-	// Initialize Runtime config with basic test config
-	var allowedOrigins cors.OriginEntries
-	suite.Require().NoError(yaml.Unmarshal([]byte(`
-- https://example.com
-`), &allowedOrigins))
+	// Initialize Thunder Runtime config with basic test config
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
@@ -72,9 +66,10 @@ func (suite *InitTestSuite) SetupTest() {
 			LoginPath: "/login",
 			ErrorPath: "/error",
 		},
-		CORS: config.CORSConfig{AllowedOrigins: allowedOrigins},
+		CORS: config.CORSConfig{
+			AllowedOrigins: []string{"https://example.com"},
+		},
 	}
-	suite.Require().NoError(cors.InitializeMatcher(testConfig.CORS.AllowedOrigins))
 	_ = config.InitializeThunderRuntime("", testConfig)
 
 	suite.mockInboundClient = inboundclientmock.NewInboundClientServiceInterfaceMock(suite.T())
@@ -202,12 +197,8 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSHeaders() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			// Allow-Methods/Allow-Headers are preflight-only response headers
-			// per the Fetch spec; the request must carry
-			// Access-Control-Request-Method to elicit them.
 			req := httptest.NewRequest(tc.method, tc.path, nil)
 			req.Header.Set("Origin", tc.origin)
-			req.Header.Set("Access-Control-Request-Method", "POST")
 			rec := httptest.NewRecorder()
 
 			mux.ServeHTTP(rec, req)

@@ -19,12 +19,15 @@
 package oidc
 
 import (
-	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
+	"github.com/asgardeo/thunder/internal/entityprovider"
+	"github.com/asgardeo/thunder/internal/idp"
+	syshttp "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 )
 
 // Initialize initializes the OIDC authentication service.
-func Initialize(oauthSvc authnoauth.OAuthAuthnServiceInterface,
+func Initialize(idpSvc idp.IDPServiceInterface, entityProvider entityprovider.EntityProviderInterface,
 	jwtSvc jwt.JWTServiceInterface) OIDCAuthnServiceInterface {
-	return newOIDCAuthnService(oauthSvc, jwtSvc)
+	httpClient := syshttp.NewHTTPClient()
+	return newOIDCAuthnService(httpClient, idpSvc, entityProvider, jwtSvc)
 }

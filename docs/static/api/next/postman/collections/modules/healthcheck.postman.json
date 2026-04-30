@@ -1,7 +1,7 @@
 {
   "item": [
     {
-      "id": "083876b4-2d17-45de-826c-d8a5ca31e19c",
+      "id": "e322f910-8080-4a96-9a32-3a7f2d98fc3d",
       "name": "health",
       "description": {
         "content": "Health check operations",
@@ -9,7 +9,7 @@
       },
       "item": [
         {
-          "id": "d2c0d5c1-136f-4ace-99ea-ad2420b6e0ac",
+          "id": "8260cc89-3c85-40d5-85cf-b05a0680310b",
           "name": "Liveness Check",
           "request": {
             "name": "Liveness Check",
@@ -49,7 +49,7 @@
           },
           "response": [
             {
-              "id": "a2938210-93d3-4155-ba4e-48b208f0626e",
+              "id": "1db4334a-b751-4f7d-813d-7ec8a7a5fcfd",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -98,7 +98,7 @@
               "_postman_previewlanguage": "text"
             },
             {
-              "id": "92ede044-0185-47da-82d9-958adedd9906",
+              "id": "8d8c72f0-b926-401c-8113-f21798c2b900",
               "name": "Service Unavailable",
               "originalRequest": {
                 "url": {
@@ -153,7 +153,7 @@
           }
         },
         {
-          "id": "ece65746-815d-49f8-8836-ba26bc20fc62",
+          "id": "d717d9c6-78a9-41ab-a072-edfd539989d7",
           "name": "Readiness check",
           "request": {
             "name": "Readiness check",
@@ -202,7 +202,7 @@
           },
           "response": [
             {
-              "id": "846bf40d-5d5e-4ab7-b580-63dbabbadf26",
+              "id": "41969c17-7b44-43d0-a6dd-2a69793e2fbe",
               "name": "Service is ready",
               "originalRequest": {
                 "url": {
@@ -257,7 +257,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "fb279771-08e2-4693-898b-3e65f8715827",
+              "id": "ff7e2ee5-c65a-45f8-af39-6b5cc84adf02",
               "name": "Service is not ready",
               "originalRequest": {
                 "url": {
@@ -348,7 +348,7 @@
     }
   ],
   "info": {
-    "_postman_id": "9cb7124a-6a22-4450-8ebd-0571211ddae4",
+    "_postman_id": "34a6cd91-b270-467c-ad1e-e6def2c4bd55",
     "name": "Health Check API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": {

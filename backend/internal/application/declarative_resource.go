@@ -232,31 +232,6 @@ func (e *applicationExporter) GetResourceRules() *declarativeresource.ResourceRu
 	}
 }
 
-// GetResourceRulesForResource returns parameterization rules tailored to the specific application
-// instance. Public clients do not have a client secret, so the ClientSecret variable is excluded
-// from their export to avoid injecting an empty or invalid placeholder into the YAML template.
-func (e *applicationExporter) GetResourceRulesForResource(resource interface{}) *declarativeresource.ResourceRules {
-	app, ok := resource.(*model.Application)
-	if !ok {
-		return e.GetResourceRules()
-	}
-
-	for _, inbound := range app.InboundAuthConfig {
-		if inbound.OAuthAppConfig != nil && inbound.OAuthAppConfig.PublicClient {
-			return &declarativeresource.ResourceRules{
-				Variables: []string{
-					"InboundAuthConfig[].OAuthAppConfig.ClientID",
-				},
-				ArrayVariables: []string{
-					"InboundAuthConfig[].OAuthAppConfig.RedirectURIs",
-				},
-			}
-		}
-	}
-
-	return e.GetResourceRules()
-}
-
 // makeAppDeclarativeConfig creates the declarative loader config for loading application
 // identity data into the entity file store.
 func makeAppDeclarativeConfig(appService ApplicationServiceInterface) entity.DeclarativeLoaderConfig {

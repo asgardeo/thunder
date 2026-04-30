@@ -372,7 +372,7 @@ func ValidateOAuth2ErrorRedirect(location string, expectedError string,
 		return nil
 	}
 
-	// Check for server error page parameters (errorCode, errorMessage)
+	// Check for Thunder error page parameters (errorCode, errorMessage)
 	actualErrorCode := queryParams.Get("errorCode")
 	if actualErrorCode != "" {
 		if actualErrorCode != expectedError {

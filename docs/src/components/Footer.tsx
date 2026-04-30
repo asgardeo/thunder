@@ -16,14 +16,12 @@
  * under the License.
  */
 
+import React, {JSX} from 'react';
 import Link from '@docusaurus/Link';
 import {useBaseUrlUtils} from '@docusaurus/useBaseUrl';
-import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
-import type {DocusaurusThunderConfig} from '@site/docusaurus.thunder.config';
-import ThemedImage from '@theme/ThemedImage';
 import {Box, Container, Typography} from '@wso2/oxygen-ui';
-import React, {JSX} from 'react';
 import useIsDarkMode from '../hooks/useIsDarkMode';
+import ThemedImage from '@theme/ThemedImage';
 
 interface FooterColumnProps {
   title: string;
@@ -73,9 +71,7 @@ function FooterColumn({title, links}: FooterColumnProps) {
 
 export default function Footer(): JSX.Element {
   const {withBaseUrl} = useBaseUrlUtils();
-  const {siteConfig} = useDocusaurusContext();
   const isDark = useIsDarkMode();
-  const thunderConfig = siteConfig.customFields?.thunder as DocusaurusThunderConfig;
 
   return (
     <Box
@@ -104,7 +100,7 @@ export default function Footer(): JSX.Element {
                   light: withBaseUrl('/assets/images/logo.svg'),
                   dark: withBaseUrl('/assets/images/logo-inverted.svg'),
                 }}
-                alt={`${thunderConfig.project.name} Logo`}
+                alt="Thunder Logo"
                 style={{height: 32}}
               />
             </Box>
@@ -147,11 +143,12 @@ export default function Footer(): JSX.Element {
             title="Resources"
             links={[
               {label: 'Community', href: '/docs/next/community/overview'},
-              {label: 'Releases', href: thunderConfig.project.source.github.releasesUrl},
-              {label: 'Discussions', href: thunderConfig.project.source.github.discussionsUrl},
-              {label: 'Report an Issue', href: thunderConfig.project.source.github.issuesUrl},
+              {label: 'Releases', href: 'https://github.com/asgardeo/thunder/releases'},
+              {label: 'Discussions', href: 'https://github.com/asgardeo/thunder/discussions'},
+              {label: 'Report an Issue', href: 'https://github.com/asgardeo/thunder/issues'},
             ]}
           />
+
         </Box>
 
         {/* Copyright */}

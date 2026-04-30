@@ -751,15 +751,15 @@ func TestValidateUserSchemaDefinitionWithNilSystemAttributes(t *testing.T) {
 	require.Nil(t, err)
 }
 
-type UserSchemaServiceTestSuite struct {
+type GetCredentialAttributesTestSuite struct {
 	suite.Suite
 }
 
-func TestUserSchemaServiceTestSuite(t *testing.T) {
-	suite.Run(t, new(UserSchemaServiceTestSuite))
+func TestGetCredentialAttributesTestSuite(t *testing.T) {
+	suite.Run(t, new(GetCredentialAttributesTestSuite))
 }
 
-func (s *UserSchemaServiceTestSuite) TestGetCredentialAttributes_ReturnsCredentialFieldNames() {
+func (s *GetCredentialAttributesTestSuite) TestReturnsCredentialFieldNames() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	storeMock.
 		On("GetUserSchemaByName", context.Background(), "customer").
@@ -786,7 +786,7 @@ func (s *UserSchemaServiceTestSuite) TestGetCredentialAttributes_ReturnsCredenti
 	s.Require().Equal([]string{"apiKey", "password"}, fields)
 }
 
-func (s *UserSchemaServiceTestSuite) TestGetCredentialAttributes_TestNoCredentials_ReturnsEmpty() {
+func (s *GetCredentialAttributesTestSuite) TestNoCredentials_ReturnsEmpty() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	storeMock.
 		On("GetUserSchemaByName", context.Background(), "customer").
@@ -810,7 +810,7 @@ func (s *UserSchemaServiceTestSuite) TestGetCredentialAttributes_TestNoCredentia
 	s.Require().Empty(fields)
 }
 
-func (s *UserSchemaServiceTestSuite) TestGetCredentialAttributes_TestSchemaNotFound_ReturnsError() {
+func (s *GetCredentialAttributesTestSuite) TestSchemaNotFound_ReturnsError() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	storeMock.
 		On("GetUserSchemaByName", context.Background(), "unknown").
@@ -831,7 +831,7 @@ func (s *UserSchemaServiceTestSuite) TestGetCredentialAttributes_TestSchemaNotFo
 	s.Require().Equal(ErrorUserSchemaNotFound, *svcErr)
 }
 
-func (s *UserSchemaServiceTestSuite) TestGetCredentialAttributes_TestEmptyUserType_ReturnsError() {
+func (s *GetCredentialAttributesTestSuite) TestEmptyUserType_ReturnsError() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 
 	service := &userSchemaService{
@@ -848,7 +848,7 @@ func (s *UserSchemaServiceTestSuite) TestGetCredentialAttributes_TestEmptyUserTy
 	s.Require().Equal(ErrorUserSchemaNotFound, *svcErr)
 }
 
-func (s *UserSchemaServiceTestSuite) TestGetCredentialAttributes_TestStoreError_ReturnsInternalError() {
+func (s *GetCredentialAttributesTestSuite) TestStoreError_ReturnsInternalError() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	storeMock.
 		On("GetUserSchemaByName", context.Background(), "customer").
@@ -869,7 +869,15 @@ func (s *UserSchemaServiceTestSuite) TestGetCredentialAttributes_TestStoreError_
 	s.Require().Equal(serviceerror.InternalServerError, *svcErr)
 }
 
-func (s *UserSchemaServiceTestSuite) TestGetUniqueAttributes_ReturnsUniqueFieldNames() {
+type GetUniqueAttributesTestSuite struct {
+	suite.Suite
+}
+
+func TestGetUniqueAttributesTestSuite(t *testing.T) {
+	suite.Run(t, new(GetUniqueAttributesTestSuite))
+}
+
+func (s *GetUniqueAttributesTestSuite) TestReturnsUniqueFieldNames() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	storeMock.
 		On("GetUserSchemaByName", context.Background(), "customer").
@@ -894,7 +902,7 @@ func (s *UserSchemaServiceTestSuite) TestGetUniqueAttributes_ReturnsUniqueFieldN
 	s.Require().Equal([]string{"email", "username"}, fields)
 }
 
-func (s *UserSchemaServiceTestSuite) TestGetUniqueAttributes_TestNoUniqueAttributes_ReturnsEmpty() {
+func (s *GetUniqueAttributesTestSuite) TestNoUniqueAttributes_ReturnsEmpty() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	storeMock.
 		On("GetUserSchemaByName", context.Background(), "customer").
@@ -914,7 +922,7 @@ func (s *UserSchemaServiceTestSuite) TestGetUniqueAttributes_TestNoUniqueAttribu
 	s.Require().Empty(fields)
 }
 
-func (s *UserSchemaServiceTestSuite) TestGetUniqueAttributes_TestSchemaNotFound_ReturnsError() {
+func (s *GetUniqueAttributesTestSuite) TestSchemaNotFound_ReturnsError() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	storeMock.
 		On("GetUserSchemaByName", context.Background(), "unknown").
@@ -933,7 +941,7 @@ func (s *UserSchemaServiceTestSuite) TestGetUniqueAttributes_TestSchemaNotFound_
 	s.Require().Equal(ErrorUserSchemaNotFound, *svcErr)
 }
 
-func (s *UserSchemaServiceTestSuite) TestGetUniqueAttributes_TestEmptyUserType_ReturnsError() {
+func (s *GetUniqueAttributesTestSuite) TestEmptyUserType_ReturnsError() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 
 	service := &userSchemaService{
@@ -1241,7 +1249,15 @@ func TestValidateDisplayAttribute_DottedPath_DeeplyNestedValid(t *testing.T) {
 
 // GetDisplayAttributesByNames tests
 
-func (s *UserSchemaServiceTestSuite) TestGetDisplayAttributesByNames_ReturnsDisplayAttributes() {
+type GetDisplayAttributesByNamesTestSuite struct {
+	suite.Suite
+}
+
+func TestGetDisplayAttributesByNamesTestSuite(t *testing.T) {
+	suite.Run(t, new(GetDisplayAttributesByNamesTestSuite))
+}
+
+func (s *GetDisplayAttributesByNamesTestSuite) TestReturnsDisplayAttributes() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	expected := map[string]string{"SchemaA": "email", "SchemaB": "given_name"}
 	storeMock.
@@ -1258,7 +1274,7 @@ func (s *UserSchemaServiceTestSuite) TestGetDisplayAttributesByNames_ReturnsDisp
 	s.Require().Equal(expected, result)
 }
 
-func (s *UserSchemaServiceTestSuite) TestGetDisplayAttributesByNames_TestEmptyInput_ReturnsEmptyMap() {
+func (s *GetDisplayAttributesByNamesTestSuite) TestEmptyInput_ReturnsEmptyMap() {
 	service := &userSchemaService{}
 
 	result, svcErr := service.GetDisplayAttributesByNames(context.Background(), []string{})
@@ -1267,7 +1283,7 @@ func (s *UserSchemaServiceTestSuite) TestGetDisplayAttributesByNames_TestEmptyIn
 	s.Require().Empty(result)
 }
 
-func (s *UserSchemaServiceTestSuite) TestGetDisplayAttributesByNames_TestStoreError_ReturnsServerError() {
+func (s *GetDisplayAttributesByNamesTestSuite) TestStoreError_ReturnsServerError() {
 	storeMock := newUserSchemaStoreInterfaceMock(s.T())
 	storeMock.
 		On("GetDisplayAttributesByNames", mock.Anything, []string{"SchemaA"}).
@@ -1280,151 +1296,4 @@ func (s *UserSchemaServiceTestSuite) TestGetDisplayAttributesByNames_TestStoreEr
 
 	s.Require().NotNil(svcErr)
 	s.Require().Equal(serviceerror.InternalServerError, *svcErr)
-}
-
-func (s *UserSchemaServiceTestSuite) TestGetNonCredentialAttributes_RequiredOnly_ReturnsAttributes() {
-	storeMock := newUserSchemaStoreInterfaceMock(s.T())
-	storeMock.
-		On("GetUserSchemaByName", context.Background(), "INTERNAL").
-		Return(UserSchema{
-			Schema: json.RawMessage(
-				`{"email":{"type":"string","required":true},` +
-					`"firstName":{"type":"string","required":true,"displayName":"First Name"},` +
-					`"password":{"type":"string","required":true,"credential":true},` +
-					`"age":{"type":"number"}}`,
-			),
-		}, nil).
-		Once()
-
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
-		transactioner:   &mockTransactioner{},
-	}
-
-	attrs, svcErr := service.GetNonCredentialAttributes(context.Background(), "INTERNAL", true)
-
-	s.Require().Nil(svcErr)
-	s.Require().Len(attrs, 2)
-
-	attrMap := make(map[string]AttributeInfo, len(attrs))
-	for _, a := range attrs {
-		attrMap[a.Attribute] = a
-	}
-
-	email, ok := attrMap["email"]
-	s.Require().True(ok, "email should be returned")
-	s.Equal("", email.DisplayName)
-
-	firstName, ok := attrMap["firstName"]
-	s.Require().True(ok, "firstName should be returned")
-	s.Equal("First Name", firstName.DisplayName)
-
-	_, hasPassword := attrMap["password"]
-	s.False(hasPassword, "password is credential and must be excluded")
-}
-
-func (s *UserSchemaServiceTestSuite) TestGetNonCredentialAttributes_TestUnknownUserType_ReturnsError() {
-	storeMock := newUserSchemaStoreInterfaceMock(s.T())
-	storeMock.
-		On("GetUserSchemaByName", context.Background(), "unknown").
-		Return(UserSchema{}, ErrUserSchemaNotFound).
-		Once()
-
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
-		transactioner:   &mockTransactioner{},
-	}
-
-	attrs, svcErr := service.GetNonCredentialAttributes(context.Background(), "unknown", true)
-
-	s.Require().NotNil(svcErr)
-	s.Require().Equal(ErrorUserSchemaNotFound, *svcErr)
-	s.Require().Nil(attrs)
-}
-
-func (s *UserSchemaServiceTestSuite) TestGetNonCredentialAttributes_TestEmptyUserType_ReturnsError() {
-	service := &userSchemaService{
-		userSchemaStore: newUserSchemaStoreInterfaceMock(s.T()),
-		transactioner:   &mockTransactioner{},
-	}
-
-	attrs, svcErr := service.GetNonCredentialAttributes(context.Background(), "", true)
-
-	s.Require().NotNil(svcErr)
-	s.Require().Equal(ErrorUserSchemaNotFound, *svcErr)
-	s.Require().Nil(attrs)
-}
-
-func (s *UserSchemaServiceTestSuite) TestGetNonCredentialAttributes_TestAllCredentials_ReturnsEmpty() {
-	storeMock := newUserSchemaStoreInterfaceMock(s.T())
-	storeMock.
-		On("GetUserSchemaByName", context.Background(), "INTERNAL").
-		Return(UserSchema{
-			Schema: json.RawMessage(
-				`{"password":{"type":"string","required":true,"credential":true}}`,
-			),
-		}, nil).
-		Once()
-
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
-		transactioner:   &mockTransactioner{},
-	}
-
-	attrs, svcErr := service.GetNonCredentialAttributes(context.Background(), "INTERNAL", true)
-
-	s.Require().Nil(svcErr)
-	s.Require().Empty(attrs)
-}
-
-func (s *UserSchemaServiceTestSuite) TestGetNonCredentialAttributes_AllAttrs_IncludesOptional() {
-	storeMock := newUserSchemaStoreInterfaceMock(s.T())
-	storeMock.
-		On("GetUserSchemaByName", context.Background(), "INTERNAL").
-		Return(UserSchema{
-			Schema: json.RawMessage(
-				`{"email":{"type":"string","required":true},` +
-					`"mobileNumber":{"type":"string"},` +
-					`"password":{"type":"string","required":true,"credential":true}}`,
-			),
-		}, nil).
-		Once()
-
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
-		transactioner:   &mockTransactioner{},
-	}
-
-	attrs, svcErr := service.GetNonCredentialAttributes(context.Background(), "INTERNAL", false)
-
-	s.Require().Nil(svcErr)
-	s.Require().Len(attrs, 2, "email and mobileNumber should be returned; password excluded as credential")
-
-	attrMap := make(map[string]AttributeInfo, len(attrs))
-	for _, a := range attrs {
-		attrMap[a.Attribute] = a
-	}
-	s.True(attrMap["email"].Required)
-	s.False(attrMap["mobileNumber"].Required, "optional attribute must be included with Required=false")
-	_, hasPassword := attrMap["password"]
-	s.False(hasPassword, "credential must always be excluded")
-}
-
-func (s *UserSchemaServiceTestSuite) TestGetNonCredentialAttributes_StoreError_ReturnsServerError() {
-	storeMock := newUserSchemaStoreInterfaceMock(s.T())
-	storeMock.
-		On("GetUserSchemaByName", context.Background(), "INTERNAL").
-		Return(UserSchema{}, errors.New("db failure")).
-		Once()
-
-	service := &userSchemaService{
-		userSchemaStore: storeMock,
-		transactioner:   &mockTransactioner{},
-	}
-
-	attrs, svcErr := service.GetNonCredentialAttributes(context.Background(), "INTERNAL", false)
-
-	s.Require().NotNil(svcErr)
-	s.Require().Equal(serviceerror.InternalServerError, *svcErr)
-	s.Require().Nil(attrs)
 }

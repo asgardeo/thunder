@@ -721,13 +721,13 @@ func (gs *groupService) resolveMembers(
 				logger.Warn("Skipping orphaned entity member", log.String("id", members[i].ID))
 				continue
 			}
-			// Set the public type from the entity category ("user", "app", or "agent").
+			// Set the public type from the entity category ("user" or "app").
 			members[i].Type = MemberType(e.Category)
 			if includeDisplay {
 				switch e.Category {
 				case entity.EntityCategoryUser:
 					members[i].Display = utils.ResolveDisplay(e.ID, e.Type, e.Attributes, displayAttrPaths)
-				case entity.EntityCategoryApp, entity.EntityCategoryAgent:
+				case entity.EntityCategoryApp:
 					members[i].Display = resolveAppDisplay(*e)
 				}
 			}

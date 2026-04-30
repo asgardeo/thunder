@@ -102,13 +102,13 @@ func TestImportExportFreshPackSuite(t *testing.T) {
 }
 
 func (suite *ImportExportFreshPackSuite) SetupSuite() {
-	if os.Getenv("SERVER_EXTRACTED_HOME") == "" {
-		suite.T().Skip("requires integration harness context (SERVER_EXTRACTED_HOME is not set)")
+	if os.Getenv("THUNDER_EXTRACTED_HOME") == "" {
+		suite.T().Skip("requires integration harness context (THUNDER_EXTRACTED_HOME is not set)")
 	}
 }
 
 func (suite *ImportExportFreshPackSuite) TearDownSuite() {
-	if os.Getenv("SERVER_EXTRACTED_HOME") == "" {
+	if os.Getenv("THUNDER_EXTRACTED_HOME") == "" {
 		return
 	}
 	if testutils.GetDBType() != "sqlite" {

@@ -21,8 +21,6 @@ package runtime
 
 import (
 	"context"
-	"crypto/ecdh"
-	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -63,268 +61,59 @@ func GetRuntimeCryptoService() crypto.RuntimeCryptoProvider {
 	return runtimeInstance
 }
 
-// Encrypt performs key establishment for the algorithm in params. Per-algorithm behavior:
-//   - AlgorithmAESGCM: encrypts content via the config encryption service; returns (ciphertext, nil, err).
-//   - AlgorithmRSAOAEP256: content is ignored; generates a random CEK, wraps it with the PKI RSA public key
-//     for keyRef, and returns (wrappedCEK, CryptoDetails{CEK}, nil).
-//     params.RSAOAEP256.ContentEncryptionAlgorithm must be set.
-//   - AlgorithmECDHES: content is ignored; performs ECDH key agreement and derives a CEK via Concat KDF,
-//     returning (nil, CryptoDetails{EPK, CEK}, nil). params.ECDHES.ContentEncryptionAlgorithm must be set.
-//   - AlgorithmECDHESA128KW / AlgorithmECDHESA256KW: content is ignored; derives a KEK via Concat KDF,
-//     generates a random CEK and wraps it, returning (wrappedCEK, CryptoDetails{EPK, CEK}, nil).
-//     params.ECDHES.ContentEncryptionAlgorithm must be set.
+// Encrypt encrypts content using the algorithm specified. AlgorithmAESGCM delegates to the config
+// encryption service; AlgorithmRSAOAEP256 uses the PKI public key identified by keyRef.
 func (s *runtimeCryptoService) Encrypt(
-	ctx context.Context, keyRef crypto.KeyRef, params crypto.AlgorithmParams, content []byte,
-) ([]byte, *crypto.CryptoDetails, error) {
-	switch params.Algorithm {
+	ctx context.Context, keyRef crypto.KeyRef, algorithm crypto.Algorithm, content []byte,
+) ([]byte, error) {
+	switch algorithm {
 	case crypto.AlgorithmAESGCM:
-		return s.encryptAESGCM(ctx, content)
+		return config.GetEncryptionService().Encrypt(ctx, content)
 	case crypto.AlgorithmRSAOAEP256:
-		return s.encryptRSAOAEP256(keyRef, params)
-	case crypto.AlgorithmECDHES:
-		return s.encryptECDHES(keyRef, params)
-	case crypto.AlgorithmECDHESA128KW, crypto.AlgorithmECDHESA256KW:
-		return s.encryptECDHESKW(keyRef, params)
+		if s.pkiService == nil {
+			return nil, errors.New("PKI service not initialized")
+		}
+		cert, svcErr := s.pkiService.GetX509Certificate(keyRef.KeyID)
+		if svcErr != nil {
+			return nil, fmt.Errorf("key not found for id %s: [%s] %s",
+				keyRef.KeyID, svcErr.Code, svcErr.Error.DefaultValue)
+		}
+		rsaPub, ok := cert.PublicKey.(*rsa.PublicKey)
+		if !ok {
+			return nil, errors.New("key is not an RSA public key")
+		}
+		return rsa.EncryptOAEP(sha256.New(), rand.Reader, rsaPub, content, nil)
 	default:
-		return nil, nil, fmt.Errorf("unsupported algorithm: %s", params.Algorithm)
+		return nil, fmt.Errorf("unsupported algorithm: %s", algorithm)
 	}
 }
 
-// Decrypt performs key recovery for the algorithm in params. Per-algorithm behavior:
-//   - AlgorithmAESGCM: decrypts content via the config encryption service; returns plaintext.
-//   - AlgorithmRSAOAEP256: decrypts content (the wrapped CEK) with the PKI RSA private key for keyRef;
-//     returns the unwrapped CEK.
-//   - AlgorithmECDHES: content is ignored; re-derives the CEK from params.ECDHES.EPK and the private key
-//     via Concat KDF, returning the derived CEK. params.ECDHES.EPK and
-//     params.ECDHES.ContentEncryptionAlgorithm must be set.
-//   - AlgorithmECDHESA128KW / AlgorithmECDHESA256KW: re-derives KEK from params.ECDHES.EPK, then unwraps
-//     content (the wrapped CEK) using AES Key Unwrap; returns the plain CEK. params.ECDHES.EPK must be set.
+// Decrypt decrypts content using the algorithm specified. AlgorithmAESGCM delegates to the config
+// encryption service; AlgorithmRSAOAEP256 uses the PKI private key identified by keyRef.
 func (s *runtimeCryptoService) Decrypt(
-	ctx context.Context, keyRef crypto.KeyRef, params crypto.AlgorithmParams, content []byte,
+	ctx context.Context, keyRef crypto.KeyRef, algorithm crypto.Algorithm, content []byte,
 ) ([]byte, error) {
-	switch params.Algorithm {
+	switch algorithm {
 	case crypto.AlgorithmAESGCM:
-		return s.decryptAESGCM(ctx, content)
+		return config.GetEncryptionService().Decrypt(ctx, content)
 	case crypto.AlgorithmRSAOAEP256:
-		return s.decryptRSAOAEP256(keyRef, content)
-	case crypto.AlgorithmECDHES:
-		return s.decryptECDHES(keyRef, params)
-	case crypto.AlgorithmECDHESA128KW, crypto.AlgorithmECDHESA256KW:
-		return s.decryptECDHESKW(keyRef, params, content)
+		if s.pkiService == nil {
+			return nil, errors.New("PKI service not initialized")
+		}
+		privKey, svcErr := s.pkiService.GetPrivateKey(keyRef.KeyID)
+		if svcErr != nil {
+			return nil, fmt.Errorf("key not found for id %s: [%s] %s",
+				keyRef.KeyID, svcErr.Code, svcErr.Error.DefaultValue)
+		}
+		rsaPriv, ok := privKey.(*rsa.PrivateKey)
+		if !ok {
+			return nil, errors.New("key is not an RSA private key")
+		}
+		// #nosec G776 -- rand.Reader is used as the random source; label parameter is nil per RFC 8017
+		return rsa.DecryptOAEP(sha256.New(), rand.Reader, rsaPriv, content, nil)
 	default:
-		return nil, fmt.Errorf("unsupported algorithm: %s", params.Algorithm)
+		return nil, fmt.Errorf("unsupported algorithm: %s", algorithm)
 	}
-}
-
-func (s *runtimeCryptoService) encryptAESGCM(
-	ctx context.Context, content []byte,
-) ([]byte, *crypto.CryptoDetails, error) {
-	ciphertext, err := config.GetEncryptionService().Encrypt(ctx, content)
-	return ciphertext, nil, err
-}
-
-func (s *runtimeCryptoService) encryptRSAOAEP256(
-	keyRef crypto.KeyRef, params crypto.AlgorithmParams,
-) ([]byte, *crypto.CryptoDetails, error) {
-	if s.pkiService == nil {
-		return nil, nil, errors.New("PKI service not initialized")
-	}
-	cert, svcErr := s.pkiService.GetX509Certificate(keyRef.KeyID)
-	if svcErr != nil {
-		return nil, nil, fmt.Errorf("key not found for id %s: [%s] %s",
-			keyRef.KeyID, svcErr.Code, svcErr.Error.DefaultValue)
-	}
-	rsaPub, ok := cert.PublicKey.(*rsa.PublicKey)
-	if !ok {
-		return nil, nil, errors.New("key is not an RSA public key")
-	}
-	if params.RSAOAEP256.ContentEncryptionAlgorithm == "" {
-		return nil, nil, errors.New("ContentEncryptionAlgorithm required for RSA-OAEP-256 CEK generation")
-	}
-	cekLen, err := ecdhContentEncKeyLen(params.RSAOAEP256.ContentEncryptionAlgorithm)
-	if err != nil {
-		return nil, nil, err
-	}
-	cek := make([]byte, cekLen)
-	if _, err := rand.Read(cek); err != nil {
-		return nil, nil, fmt.Errorf("CEK generation failed: %w", err)
-	}
-	encryptedCEK, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, rsaPub, cek, nil)
-	return encryptedCEK, &crypto.CryptoDetails{CEK: cek}, err
-}
-
-func (s *runtimeCryptoService) encryptECDHES(
-	keyRef crypto.KeyRef, params crypto.AlgorithmParams,
-) ([]byte, *crypto.CryptoDetails, error) {
-	ecdsaPub, err := s.getECPublicKey(keyRef)
-	if err != nil {
-		return nil, nil, err
-	}
-	ephemeralPriv, ephemeralPub, err := ecdhGenerateEphemeralKeyPair(ecdsaPub)
-	if err != nil {
-		return nil, nil, fmt.Errorf("ephemeral key generation failed: %w", err)
-	}
-	z, err := ecdhComputeSharedSecret(ephemeralPriv, ecdsaPub)
-	if err != nil {
-		return nil, nil, fmt.Errorf("ECDH key agreement failed: %w", err)
-	}
-	if params.ECDHES.ContentEncryptionAlgorithm == "" {
-		return nil, nil, errors.New("ContentEncryptionAlgorithm required for ECDH-ES key derivation")
-	}
-	keyLen, err := ecdhContentEncKeyLen(params.ECDHES.ContentEncryptionAlgorithm)
-	if err != nil {
-		return nil, nil, err
-	}
-	derivedCEK, err := ecdhConcatKDF(z, string(params.ECDHES.ContentEncryptionAlgorithm), keyLen)
-	if err != nil {
-		return nil, nil, fmt.Errorf("key derivation failed: %w", err)
-	}
-	return nil, &crypto.CryptoDetails{EPK: ephemeralPub, CEK: derivedCEK}, nil
-}
-
-func (s *runtimeCryptoService) encryptECDHESKW(
-	keyRef crypto.KeyRef, params crypto.AlgorithmParams,
-) ([]byte, *crypto.CryptoDetails, error) {
-	ecdsaPub, err := s.getECPublicKey(keyRef)
-	if err != nil {
-		return nil, nil, err
-	}
-	ephemeralPriv, ephemeralPub, err := ecdhGenerateEphemeralKeyPair(ecdsaPub)
-	if err != nil {
-		return nil, nil, fmt.Errorf("ephemeral key generation failed: %w", err)
-	}
-	z, err := ecdhComputeSharedSecret(ephemeralPriv, ecdsaPub)
-	if err != nil {
-		return nil, nil, fmt.Errorf("ECDH key agreement failed: %w", err)
-	}
-	kekLen := 16
-	if params.Algorithm == crypto.AlgorithmECDHESA256KW {
-		kekLen = 32
-	}
-	kek, err := ecdhConcatKDF(z, string(params.Algorithm), kekLen)
-	if err != nil {
-		return nil, nil, fmt.Errorf("key derivation failed: %w", err)
-	}
-	if params.ECDHES.ContentEncryptionAlgorithm == "" {
-		return nil, nil, errors.New("ContentEncryptionAlgorithm required for ECDH-ES+KW CEK generation")
-	}
-	cekLen, err := ecdhContentEncKeyLen(params.ECDHES.ContentEncryptionAlgorithm)
-	if err != nil {
-		return nil, nil, err
-	}
-	cek := make([]byte, cekLen)
-	if _, err := rand.Read(cek); err != nil {
-		return nil, nil, fmt.Errorf("CEK generation failed: %w", err)
-	}
-	wrappedKey, err := ecdhAESKeyWrap(kek, cek)
-	if err != nil {
-		return nil, nil, fmt.Errorf("AES key wrap failed: %w", err)
-	}
-	return wrappedKey, &crypto.CryptoDetails{EPK: ephemeralPub, CEK: cek}, nil
-}
-
-func (s *runtimeCryptoService) decryptAESGCM(ctx context.Context, content []byte) ([]byte, error) {
-	return config.GetEncryptionService().Decrypt(ctx, content)
-}
-
-func (s *runtimeCryptoService) decryptRSAOAEP256(keyRef crypto.KeyRef, content []byte) ([]byte, error) {
-	if s.pkiService == nil {
-		return nil, errors.New("PKI service not initialized")
-	}
-	privKey, svcErr := s.pkiService.GetPrivateKey(keyRef.KeyID)
-	if svcErr != nil {
-		return nil, fmt.Errorf("key not found for id %s: [%s] %s",
-			keyRef.KeyID, svcErr.Code, svcErr.Error.DefaultValue)
-	}
-	rsaPriv, ok := privKey.(*rsa.PrivateKey)
-	if !ok {
-		return nil, errors.New("key is not an RSA private key")
-	}
-	return rsa.DecryptOAEP(sha256.New(), rand.Reader, rsaPriv, content, nil)
-}
-
-func (s *runtimeCryptoService) decryptECDHES(
-	keyRef crypto.KeyRef, params crypto.AlgorithmParams,
-) ([]byte, error) {
-	ecdsaPriv, epk, err := s.getECDHDecryptKeys(keyRef, params, "ECDH-ES")
-	if err != nil {
-		return nil, err
-	}
-	z, err := ecdhComputeSharedSecretForRecipient(ecdsaPriv, epk)
-	if err != nil {
-		return nil, fmt.Errorf("ECDH key agreement failed: %w", err)
-	}
-	if params.ECDHES.ContentEncryptionAlgorithm == "" {
-		return nil, errors.New("ContentEncryptionAlgorithm required for ECDH-ES key derivation")
-	}
-	keyLen, err := ecdhContentEncKeyLen(params.ECDHES.ContentEncryptionAlgorithm)
-	if err != nil {
-		return nil, err
-	}
-	return ecdhConcatKDF(z, string(params.ECDHES.ContentEncryptionAlgorithm), keyLen)
-}
-
-func (s *runtimeCryptoService) decryptECDHESKW(
-	keyRef crypto.KeyRef, params crypto.AlgorithmParams, content []byte,
-) ([]byte, error) {
-	ecdsaPriv, epk, err := s.getECDHDecryptKeys(keyRef, params, "ECDH-ES+KW")
-	if err != nil {
-		return nil, err
-	}
-	z, err := ecdhComputeSharedSecretForRecipient(ecdsaPriv, epk)
-	if err != nil {
-		return nil, fmt.Errorf("ECDH key agreement failed: %w", err)
-	}
-	kekLen := 16
-	if params.Algorithm == crypto.AlgorithmECDHESA256KW {
-		kekLen = 32
-	}
-	kek, err := ecdhConcatKDF(z, string(params.Algorithm), kekLen)
-	if err != nil {
-		return nil, fmt.Errorf("key derivation failed: %w", err)
-	}
-	return ecdhAESKeyUnwrap(kek, content)
-}
-
-func (s *runtimeCryptoService) getECPublicKey(keyRef crypto.KeyRef) (*ecdsa.PublicKey, error) {
-	if s.pkiService == nil {
-		return nil, errors.New("PKI service not initialized")
-	}
-	cert, svcErr := s.pkiService.GetX509Certificate(keyRef.KeyID)
-	if svcErr != nil {
-		return nil, fmt.Errorf("key not found for id %s: [%s] %s",
-			keyRef.KeyID, svcErr.Code, svcErr.Error.DefaultValue)
-	}
-	ecdsaPub, ok := cert.PublicKey.(*ecdsa.PublicKey)
-	if !ok {
-		return nil, errors.New("key is not an EC public key")
-	}
-	return ecdsaPub, nil
-}
-
-func (s *runtimeCryptoService) getECDHDecryptKeys(
-	keyRef crypto.KeyRef, params crypto.AlgorithmParams, algorithm string,
-) (*ecdsa.PrivateKey, *ecdh.PublicKey, error) {
-	if s.pkiService == nil {
-		return nil, nil, errors.New("PKI service not initialized")
-	}
-	if params.ECDHES.EPK == nil {
-		return nil, nil, fmt.Errorf("EPK required for %s decryption", algorithm)
-	}
-	epk, ok := params.ECDHES.EPK.(*ecdh.PublicKey)
-	if !ok {
-		return nil, nil, errors.New("EPK must be an *ecdh.PublicKey")
-	}
-	privKey, svcErr := s.pkiService.GetPrivateKey(keyRef.KeyID)
-	if svcErr != nil {
-		return nil, nil, fmt.Errorf("key not found for id %s: [%s] %s",
-			keyRef.KeyID, svcErr.Code, svcErr.Error.DefaultValue)
-	}
-	ecdsaPriv, ok := privKey.(*ecdsa.PrivateKey)
-	if !ok {
-		return nil, nil, errors.New("key is not an EC private key")
-	}
-	return ecdsaPriv, epk, nil
 }
 
 // Sign is not yet implemented.

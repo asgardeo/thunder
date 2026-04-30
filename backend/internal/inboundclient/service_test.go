@@ -773,54 +773,39 @@ func (suite *InboundClientServiceTestSuite) TestValidateUserInfoConfig_Unsupport
 	assert.ErrorIs(suite.T(), validateUserInfoConfig(p), ErrOAuthUserInfoUnsupportedResponseType)
 }
 
-func (suite *InboundClientServiceTestSuite) TestValidateUserInfoConfig_SigningAlgRequiresResponseType() {
-	p := &inboundmodel.OAuthProfileData{
-		UserInfo: &inboundmodel.UserInfoConfig{SigningAlg: "RS256"},
-	}
-	assert.ErrorIs(suite.T(), validateUserInfoConfig(p), ErrOAuthUserInfoAlgRequiresResponseType)
-}
+// resolveUserInfo — derives ResponseType from algorithm fields.
 
-func (suite *InboundClientServiceTestSuite) TestValidateUserInfoConfig_EncryptionAlgRequiresResponseType() {
-	p := &inboundmodel.OAuthProfileData{
-		Certificate: &inboundmodel.Certificate{Type: cert.CertificateTypeJWKS, Value: "{}"},
-		UserInfo: &inboundmodel.UserInfoConfig{
-			EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM",
-		},
-	}
-	assert.ErrorIs(suite.T(), validateUserInfoConfig(p), ErrOAuthUserInfoAlgRequiresResponseType)
-}
-
-func (suite *InboundClientServiceTestSuite) TestValidateUserInfoConfig_AllAlgsRequireResponseType() {
-	p := &inboundmodel.OAuthProfileData{
-		Certificate: &inboundmodel.Certificate{Type: cert.CertificateTypeJWKS, Value: "{}"},
-		UserInfo: &inboundmodel.UserInfoConfig{
-			SigningAlg: "RS256", EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM",
-		},
-	}
-	assert.ErrorIs(suite.T(), validateUserInfoConfig(p), ErrOAuthUserInfoAlgRequiresResponseType)
-}
-
-func (suite *InboundClientServiceTestSuite) TestResolveUserInfo_DefaultsResponseTypeToJSON() {
+func (suite *InboundClientServiceTestSuite) TestResolveUserInfo_NilInputDefaultsJSON() {
 	out := resolveUserInfo(nil, nil)
 	assert.Equal(suite.T(), inboundmodel.UserInfoResponseTypeJSON, out.ResponseType)
-}
-
-func (suite *InboundClientServiceTestSuite) TestResolveUserInfo_DefaultsResponseTypeToJSONForPartialConfig() {
-	out := resolveUserInfo(&inboundmodel.UserInfoConfig{UserAttributes: []string{"email"}}, nil)
-	assert.Equal(suite.T(), inboundmodel.UserInfoResponseTypeJSON, out.ResponseType)
-}
-
-func (suite *InboundClientServiceTestSuite) TestResolveUserInfo_PreservesExplicitResponseType() {
-	in := &inboundmodel.UserInfoConfig{ResponseType: inboundmodel.UserInfoResponseTypeJWS, SigningAlg: "RS256"}
-	out := resolveUserInfo(in, nil)
-	assert.Equal(suite.T(), inboundmodel.UserInfoResponseTypeJWS, out.ResponseType)
 }
 
 func (suite *InboundClientServiceTestSuite) TestResolveUserInfo_FallsBackToIDTokenAttributes() {
 	idToken := &inboundmodel.IDTokenConfig{UserAttributes: []string{"email"}}
 	out := resolveUserInfo(&inboundmodel.UserInfoConfig{}, idToken)
 	assert.Equal(suite.T(), []string{"email"}, out.UserAttributes)
-	assert.Equal(suite.T(), inboundmodel.UserInfoResponseTypeJSON, out.ResponseType)
+}
+
+func (suite *InboundClientServiceTestSuite) TestResolveUserInfo_DerivesJWS() {
+	out := resolveUserInfo(&inboundmodel.UserInfoConfig{SigningAlg: "RS256"}, nil)
+	assert.Equal(suite.T(), inboundmodel.UserInfoResponseTypeJWS, out.ResponseType)
+	assert.Equal(suite.T(), "RS256", out.SigningAlg)
+}
+
+func (suite *InboundClientServiceTestSuite) TestResolveUserInfo_DerivesJWE() {
+	out := resolveUserInfo(&inboundmodel.UserInfoConfig{
+		EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM",
+	}, nil)
+	assert.Equal(suite.T(), inboundmodel.UserInfoResponseTypeJWE, out.ResponseType)
+	assert.Equal(suite.T(), "RSA-OAEP-256", out.EncryptionAlg)
+	assert.Equal(suite.T(), "A256GCM", out.EncryptionEnc)
+}
+
+func (suite *InboundClientServiceTestSuite) TestResolveUserInfo_DerivesNestedJWT() {
+	out := resolveUserInfo(&inboundmodel.UserInfoConfig{
+		SigningAlg: "RS256", EncryptionAlg: "RSA-OAEP-256", EncryptionEnc: "A256GCM",
+	}, nil)
+	assert.Equal(suite.T(), inboundmodel.UserInfoResponseTypeNESTEDJWT, out.ResponseType)
 }
 
 func (suite *InboundClientServiceTestSuite) TestResolveUserInfo_PreservesUserAttributesOverIDToken() {

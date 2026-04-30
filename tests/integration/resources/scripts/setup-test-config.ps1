@@ -50,8 +50,8 @@ if ($DbType -eq "postgres") {
     hostname: localhost
     port: 5432
     name: configdb
-    username: dbuser
-    password: dbpassword
+    username: asgthunder
+    password: asgthunder
     sslmode: disable
     path: ""
     options: ""
@@ -61,8 +61,8 @@ if ($DbType -eq "postgres") {
     hostname: localhost
     port: 5432
     name: runtimedb
-    username: dbuser
-    password: dbpassword
+    username: asgthunder
+    password: asgthunder
     sslmode: disable
     path: ""
     options: ""
@@ -72,8 +72,8 @@ if ($DbType -eq "postgres") {
     hostname: localhost
     port: 5432
     name: userdb
-    username: dbuser
-    password: dbpassword
+    username: asgthunder
+    password: asgthunder
     sslmode: disable
     path: ""
     options: ""

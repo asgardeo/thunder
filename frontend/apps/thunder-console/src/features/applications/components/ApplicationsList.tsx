@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -17,7 +17,6 @@
  */
 
 import {ResourceAvatar} from '@thunder/components';
-import {useConfig} from '@thunder/contexts';
 import {useDataGridLocaleText} from '@thunder/hooks';
 import {useLogger} from '@thunder/logger/react';
 import {Box, Chip, IconButton, Tooltip, Typography, ListingTable, DataGrid, useTheme} from '@wso2/oxygen-ui';
@@ -33,12 +32,10 @@ import getTemplateMetadata from '../utils/getTemplateMetadata';
 export default function ApplicationsList(): JSX.Element {
   const theme = useTheme();
   const navigate = useNavigate();
-  const {config} = useConfig();
   const {t} = useTranslation();
   const logger = useLogger('ApplicationsList');
   const dataGridLocaleText = useDataGridLocaleText();
   const {data, isLoading, error} = useGetApplications();
-  const systemConsoleClientId = (config?.client?.client_id ?? 'CONSOLE').toUpperCase();
 
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
@@ -156,25 +153,23 @@ export default function ApplicationsList(): JSX.Element {
                 <Pencil size={16} />
               </IconButton>
             </Tooltip>
-            {params.row.clientId?.toUpperCase() !== systemConsoleClientId && (
-              <Tooltip title={t('common:actions.delete')}>
-                <IconButton
-                  size="small"
-                  color="error"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteClick(params.row.id);
-                  }}
-                >
-                  <Trash2 size={16} />
-                </IconButton>
-              </Tooltip>
-            )}
+            <Tooltip title={t('common:actions.delete')}>
+              <IconButton
+                size="small"
+                color="error"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteClick(params.row.id);
+                }}
+              >
+                <Trash2 size={16} />
+              </IconButton>
+            </Tooltip>
           </ListingTable.RowActions>
         ),
       },
     ],
-    [handleDeleteClick, handleEditClick, systemConsoleClientId, t, theme],
+    [handleDeleteClick, handleEditClick, t, theme],
   );
 
   if (error) {

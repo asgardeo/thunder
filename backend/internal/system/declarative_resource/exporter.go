@@ -56,14 +56,6 @@ type ResourceExporter interface {
 	GetResourceRules() *ResourceRules
 }
 
-// PerResourceRuler is an optional interface that an exporter can implement to provide
-// resource-instance-specific parameterization rules. When implemented, the export service
-// will call GetResourceRulesForResource instead of GetResourceRules, allowing the exporter
-// to tailor rules based on the resource's own data (e.g. omit client_secret for public clients).
-type PerResourceRuler interface {
-	GetResourceRulesForResource(resource interface{}) *ResourceRules
-}
-
 // ExportError represents errors that occurred during export.
 type ExportError struct {
 	ResourceType string `json:"resourceType"`

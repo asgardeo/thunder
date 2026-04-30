@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,7 +16,6 @@
  * under the License.
  */
 
-import {useConfig} from '@thunder/contexts';
 import {Stack} from '@wso2/oxygen-ui';
 import {useState, useCallback} from 'react';
 import type {JSX} from 'react';
@@ -88,12 +87,10 @@ export default function EditGeneralSettings({
   onCopyToClipboard,
   onDeleteSuccess = undefined,
 }: EditGeneralSettingsProps): JSX.Element {
-  const {config} = useConfig();
   const [regenerateDialogOpen, setRegenerateDialogOpen] = useState(false);
   const [secretDialogOpen, setSecretDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [newClientSecret, setNewClientSecret] = useState<string>('');
-  const systemConsoleClientId = (config?.client?.client_id ?? 'CONSOLE').toUpperCase();
 
   const isConfidentialClient =
     oauth2Config?.tokenEndpointAuthMethod === TokenEndpointAuthMethods.CLIENT_SECRET_BASIC ||
@@ -128,13 +125,11 @@ export default function EditGeneralSettings({
           oauth2Config={oauth2Config}
           onFieldChange={onFieldChange}
         />
-        {oauth2Config?.clientId?.toUpperCase() !== systemConsoleClientId && (
-          <DangerZoneSection
-            showRegenerateSecret={isConfidentialClient}
-            onRegenerateClick={handleRegenerateClick}
-            onDeleteClick={() => setDeleteDialogOpen(true)}
-          />
-        )}
+        <DangerZoneSection
+          showRegenerateSecret={isConfidentialClient}
+          onRegenerateClick={handleRegenerateClick}
+          onDeleteClick={() => setDeleteDialogOpen(true)}
+        />
       </Stack>
 
       {/* Regenerate Client Secret Confirmation Dialog */}

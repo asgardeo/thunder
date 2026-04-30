@@ -28,8 +28,10 @@ import (
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
 	authnoidc "github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/entityprovider"
+	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	syshttp "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -52,8 +54,11 @@ type googleOIDCAuthnService struct {
 }
 
 // newGoogleOIDCAuthnService creates a new instance of Google OIDC authenticator service.
-func newGoogleOIDCAuthnService(internal authnoidc.OIDCAuthnServiceInterface,
+func newGoogleOIDCAuthnService(idpSvc idp.IDPServiceInterface, entityProvider entityprovider.EntityProviderInterface,
 	jwtSvc jwt.JWTServiceInterface) GoogleOIDCAuthnServiceInterface {
+	httpClient := syshttp.NewHTTPClient()
+	internal := authnoidc.NewOIDCAuthnService(httpClient, idpSvc, entityProvider, jwtSvc)
+
 	return &googleOIDCAuthnService{
 		internal:   internal,
 		jwtService: jwtSvc,

@@ -1,17 +1,17 @@
 ---
 title: Debugging
-description: Set up and debug the backend, frontend apps, and sample applications locally.
+description: Set up and debug Thunder's backend, frontend apps, and sample applications locally.
 sidebar_position: 6
 hide_table_of_contents: false
 ---
 
 # Debugging Guide
 
-This guide covers setting up a local debugging environment for <ProductName />'s backend, Gate app, Console app, and React SDK sample application.
+This guide covers setting up a local debugging environment for Thunder's backend, Gate app, Console app, and React SDK sample application.
 
 ## Introduction
 
-<ProductName /> consists of the following components:
+Thunder consists of the following components:
 
 | Component | Description | Port |
 |-----------|-------------|------|
@@ -44,7 +44,7 @@ This guide focuses on local development and debugging with SQLite for database s
   brew install yq
   ```
 
-## Start <ProductName /> for Debugging
+## Start Thunder for Debugging
 
 ### Step 1: Configure the Server
 
@@ -69,7 +69,7 @@ gate_client:
 
 ### Step 2: Seed Data
 
-Open a terminal and switch to the <ProductName /> root directory:
+Open a terminal and switch to the Thunder root directory:
 
 ```bash
 cd <repo-root>
@@ -78,7 +78,7 @@ cd <repo-root>
 Run the backend with API security disabled:
 
 ```bash
-SKIP_SECURITY=true make run_backend
+THUNDER_SKIP_SECURITY=true make run_backend
 ```
 
 In a **new terminal**, seed data (one-time only):
@@ -142,7 +142,7 @@ npm run dev
 
 ### Connect to Backend (VS Code)
 
-1. Open the <ProductName /> repository in VS Code
+1. Open the Thunder repository in VS Code
 2. Go to **Run and Debug** view (`Cmd+Shift+D`)
 3. Select **"Connect to server"** from the dropdown
 4. Click the green **Play** button or press `F5`

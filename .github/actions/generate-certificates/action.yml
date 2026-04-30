@@ -7,13 +7,10 @@ inputs:
     description: 'Whether to display certificate information'
     required: false
     default: 'false'
-  product-name:
-    description: 'Product name used in certificate metadata'
-    required: true
   artifact-name:
     description: 'Name for the uploaded artifact'
     required: false
-    default: 'ssl-certificates'
+    default: 'thunder-certificates'
 
 runs:
   using: composite
@@ -27,7 +24,7 @@ runs:
         openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
           -keyout target/out/.cert/server.key \
           -out target/out/.cert/server.cert \
-          -subj "/O=WSO2/OU=${{ inputs.product-name }}/CN=localhost"
+          -subj "/O=WSO2/OU=Thunder/CN=localhost"
 
         echo "✅ Shared certificates generated:"
         ls -la target/out/.cert/

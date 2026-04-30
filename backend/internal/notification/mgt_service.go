@@ -58,6 +58,15 @@ func newNotificationSenderMgtService(
 	}
 }
 
+// NewNotificationSenderMgtService creates a new instance of NotificationSenderMgtSvcInterface.
+// [Deprecated: use dependency injection to get the instance instead].
+// TODO: Remove this when the flow executors are migrated to the di pattern.
+func NewNotificationSenderMgtService() NotificationSenderMgtSvcInterface {
+	// Fallback to a default db behavior for deprecated call
+	store, _, _ := newNotificationStore()
+	return newNotificationSenderMgtService(store, nil)
+}
+
 // CreateSender creates a new notification sender.
 func (s *notificationSenderMgtService) CreateSender(
 	ctx context.Context, sender common.NotificationSenderDTO) (

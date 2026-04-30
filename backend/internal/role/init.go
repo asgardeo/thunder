@@ -116,10 +116,9 @@ func initializeStore() (roleStoreInterface, transaction.Transactioner, error) {
 // registerRoutes registers the routes for role management operations.
 func registerRoutes(mux *http.ServeMux, roleHandler *roleHandler) {
 	opts1 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "POST"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, POST",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /roles", roleHandler.HandleRolePostRequest, opts1))
 	mux.HandleFunc(middleware.WithCORS("GET /roles", roleHandler.HandleRoleListRequest, opts1))
@@ -128,10 +127,9 @@ func registerRoutes(mux *http.ServeMux, roleHandler *roleHandler) {
 	}, opts1))
 
 	opts2 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "PUT", "DELETE"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, PUT, DELETE",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	// Special handling for /roles/{id} and /roles/{id}/assignments
 	mux.HandleFunc(middleware.WithCORS("GET /roles/",
@@ -154,20 +152,18 @@ func registerRoutes(mux *http.ServeMux, roleHandler *roleHandler) {
 		w.WriteHeader(http.StatusNoContent)
 	}, opts2))
 	opts4 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /roles/{id}/assignments", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	}, opts4))
 
 	opts3 := middleware.CORSOptions{
-		AllowedMethods:   []string{"POST"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "POST",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /roles/{id}/assignments/add",
 		roleHandler.HandleRoleAddAssignmentsRequest, opts3))

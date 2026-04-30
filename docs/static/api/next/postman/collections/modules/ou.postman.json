@@ -1,7 +1,7 @@
 {
   "item": [
     {
-      "id": "ba92857c-dc05-4063-a432-3fa6e0017335",
+      "id": "f7745168-f1d6-4532-926e-0a2bf752ca35",
       "name": "organization-units",
       "description": {
         "content": "Operations related to organization unit management",
@@ -9,7 +9,7 @@
       },
       "item": [
         {
-          "id": "7b04ceac-c134-47ca-a351-ec67705513cc",
+          "id": "811150b4-28d6-469b-b663-055805f337d1",
           "name": "List root organization units",
           "request": {
             "name": "List root organization units",
@@ -67,7 +67,7 @@
           },
           "response": [
             {
-              "id": "4c9a5f63-71ec-4206-a63d-0cdf2d8b5680",
+              "id": "32a0aa2d-693c-414e-b506-ca9418b320e9",
               "name": "List of root organization units",
               "originalRequest": {
                 "url": {
@@ -138,7 +138,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "34a04cb8-a587-435f-aafa-632754df830b",
+              "id": "34d87a46-20fb-4c36-969c-e687708e150c",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -204,12 +204,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "6c898a44-7d28-4143-b91a-93ccc70852b3",
+              "id": "6eeb7bc1-80cd-4769-ab59-7a7e386eda10",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -282,7 +282,7 @@
           }
         },
         {
-          "id": "83eb02b7-5a94-4296-99e1-c12ba1063a0a",
+          "id": "08eb35ca-2c62-4480-b569-bbc0f67c081b",
           "name": "Create a new organization unit",
           "request": {
             "name": "Create a new organization unit",
@@ -340,7 +340,7 @@
           },
           "response": [
             {
-              "id": "94bdedf9-fd54-4979-8e86-97054dc2b49e",
+              "id": "c9ccc055-351b-437b-9b3e-933a9e5fa403",
               "name": "Organization unit created",
               "originalRequest": {
                 "url": {
@@ -410,7 +410,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "9e5b7df2-ce6a-468c-a6d9-e7143142a9d3",
+              "id": "7d1be4f1-288b-42fa-9418-c8e396f008df",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -475,12 +475,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "741aade8-a20b-40de-9460-172b131e30ec",
+              "id": "b0a01430-ed9f-4906-947f-054ea2c3532c",
               "name": "Organization unit name conflict",
               "originalRequest": {
                 "url": {
@@ -545,12 +545,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "af5b5146-d9b4-44f0-8126-71a4235105e8",
+              "id": "49dcd857-81bd-416f-980c-75165dadb060",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -622,7 +622,7 @@
           }
         },
         {
-          "id": "36ab0892-11d7-4291-b052-b62ec8e0b8f6",
+          "id": "5186ee3a-48fd-438e-a58f-c93d939cacc7",
           "name": "Get an organization unit by id",
           "request": {
             "name": "Get an organization unit by id",
@@ -675,7 +675,7 @@
           },
           "response": [
             {
-              "id": "602ae511-c7d6-41b0-bd47-fc7a732e9828",
+              "id": "9731c6f2-f6f4-46bd-be11-5a0373e49faa",
               "name": "Organization unit details",
               "originalRequest": {
                 "url": {
@@ -745,7 +745,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "47c78f36-cc0b-48f7-ba5d-92d97a39fef4",
+              "id": "687c1734-dd92-4c8e-a2c8-098a84fcf1ed",
               "name": "Organization unit not found",
               "originalRequest": {
                 "url": {
@@ -810,12 +810,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "e95e9c9d-035c-4fd9-88bb-3d85c0eacbfe",
+              "id": "203eef34-8fd4-434e-92ed-aab84247140d",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -887,7 +887,7 @@
           }
         },
         {
-          "id": "3420dd14-15a4-4d7d-a7ca-18cf94c99dba",
+          "id": "04e5266e-f413-459e-b115-8649482012e2",
           "name": "Update an organization unit by id",
           "request": {
             "name": "Update an organization unit by id",
@@ -953,7 +953,7 @@
           },
           "response": [
             {
-              "id": "a74faf32-a7e3-48ba-982b-49df56356245",
+              "id": "6d47752a-cb43-4054-babd-db8725c3ce10",
               "name": "Organization unit updated",
               "originalRequest": {
                 "url": {
@@ -1031,7 +1031,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "b324a6eb-d8c1-41f8-9b31-7ce766eb2acd",
+              "id": "ae7e455f-457c-4b58-a7dd-1aae9af7ace2",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -1104,12 +1104,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "1e15d1af-44a2-4d71-a230-eafc1427faa0",
+              "id": "341c4084-85f0-4cc4-bb77-86f678d27d1c",
               "name": "Organization unit not found",
               "originalRequest": {
                 "url": {
@@ -1182,12 +1182,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "266b442a-327d-4a50-bcbb-9326afa61390",
+              "id": "8f93fbb5-0bb9-499f-b5e4-3db23600cf4b",
               "name": "Organization unit name conflict",
               "originalRequest": {
                 "url": {
@@ -1260,12 +1260,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "cc8fa9c8-e6c7-493a-b155-99533786abdd",
+              "id": "f8428ebf-dae2-4a86-88ea-1edf494a3ca7",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -1345,7 +1345,7 @@
           }
         },
         {
-          "id": "c23e22cb-e9d7-4ef1-a6be-a939e38b31c7",
+          "id": "b7f0a5b1-7555-48ed-8f5f-639bdfe31465",
           "name": "Delete an organization unit by id",
           "request": {
             "name": "Delete an organization unit by id",
@@ -1398,7 +1398,7 @@
           },
           "response": [
             {
-              "id": "95eac423-fca1-4ff2-a1b0-7748f37c160c",
+              "id": "4fbb08cc-f093-4d6b-95e6-aea6608f46e4",
               "name": "Organization unit deleted",
               "originalRequest": {
                 "url": {
@@ -1464,7 +1464,7 @@
               "_postman_previewlanguage": "text"
             },
             {
-              "id": "d4cf1112-360f-42fe-97b4-19b958df09fc",
+              "id": "b7de4f5b-bc3b-4cd7-9254-a283a9e3121f",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -1529,12 +1529,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "17414be9-a462-4bae-8c27-8fcb10949630",
+              "id": "c80654e7-8874-4af4-a6c5-4d3b6623d84d",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -1606,7 +1606,7 @@
           }
         },
         {
-          "id": "ad3bc6c3-34f3-4a3e-905c-da33832439dd",
+          "id": "00022a5c-d8e5-442e-b6a4-b14fab1b53bf",
           "name": "List child organization units",
           "request": {
             "name": "List child organization units",
@@ -1673,7 +1673,7 @@
           },
           "response": [
             {
-              "id": "69e86bc2-9306-4397-b5c4-e55c01d0f3b1",
+              "id": "748b362d-aff2-4ebe-b99d-3ae39b4dfdee",
               "name": "List of child organization units",
               "originalRequest": {
                 "url": {
@@ -1753,7 +1753,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "cbd5d61c-82a6-4db9-bade-9065c014ffa2",
+              "id": "2203751e-eafd-4c68-a093-6a5f78c1f5a4",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -1828,12 +1828,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "b2a5107e-e300-4714-8e7b-288fbafceabc",
+              "id": "4db1bdb5-2ae0-498f-8cde-376a4ab6dcd4",
               "name": "Organization unit not found",
               "originalRequest": {
                 "url": {
@@ -1908,12 +1908,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "cdcc8349-4c55-40c4-b5f3-31a2a86042c2",
+              "id": "15dbab46-6d05-4d53-b5bb-6a00bd5f682c",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -1995,7 +1995,7 @@
           }
         },
         {
-          "id": "6637c662-15e2-4a9e-abf7-75d50dce2842",
+          "id": "315a7e9c-88d5-4bde-a30d-102bca08addf",
           "name": "List users in organization unit",
           "request": {
             "name": "List users in organization unit",
@@ -2068,7 +2068,7 @@
           },
           "response": [
             {
-              "id": "e0054d99-3771-4a75-b5ed-f7fb13e1dc6d",
+              "id": "747ca390-ef86-47e7-bcf4-8bc70f447117",
               "name": "List of users in the organization unit",
               "originalRequest": {
                 "url": {
@@ -2152,7 +2152,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "d62345b8-e637-42cd-9545-6885df946920",
+              "id": "53dc70f6-a082-4e11-a4e8-291229146c65",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -2231,12 +2231,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "70176df4-9ad1-4fe1-9f65-581b3a15abf1",
+              "id": "a8b5f782-a0a1-4a2a-b71e-9b7d25d4a72d",
               "name": "Organization unit not found",
               "originalRequest": {
                 "url": {
@@ -2315,12 +2315,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "932cdb0a-3935-41ec-a17a-08f8e31e58cb",
+              "id": "b97ca0be-4786-4f5a-ba18-fd4364facea8",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -2406,7 +2406,7 @@
           }
         },
         {
-          "id": "2df33031-6a69-4a8e-b356-c3e1d580355d",
+          "id": "e625c520-6941-4d8c-870c-92d62afb4eca",
           "name": "List groups in organization unit",
           "request": {
             "name": "List groups in organization unit",
@@ -2479,7 +2479,7 @@
           },
           "response": [
             {
-              "id": "d3080cc8-ff8a-4799-b0a8-9b890d97efd5",
+              "id": "6ea2afaf-5864-4883-964d-aa87d383bc13",
               "name": "List of groups in the organization unit",
               "originalRequest": {
                 "url": {
@@ -2563,7 +2563,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "e58c1c35-e8f7-4b6d-8360-4c5e0ba5f9e4",
+              "id": "8936dc35-2eb6-4e2d-9cb8-ff1f7f1513a0",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -2642,12 +2642,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "2bad430c-7acf-4870-b3bf-7307382b7580",
+              "id": "54257a63-9226-4ef0-9d04-77d1c5334aa4",
               "name": "Organization unit not found",
               "originalRequest": {
                 "url": {
@@ -2726,12 +2726,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "3aa5bc57-c179-4d34-9287-f1d242caaa0c",
+              "id": "cec063e5-b10e-4342-b036-2d21469e6c20",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -2820,7 +2820,7 @@
       "event": []
     },
     {
-      "id": "d0765985-5107-4d03-b075-f13b6210ea19",
+      "id": "c1ea24d6-5cdd-4049-a4f8-3d278e71218e",
       "name": "organization-units-by-path",
       "description": {
         "content": "Operations related to organization units using hierarchical handle paths",
@@ -2828,7 +2828,7 @@
       },
       "item": [
         {
-          "id": "7a7a3f85-f372-4689-94b3-e706f38f1765",
+          "id": "6ce66d0c-f0b3-4451-89cc-a54cc625fc83",
           "name": "Get an organization unit by hierarchical handle path",
           "request": {
             "name": "Get an organization unit by hierarchical handle path",
@@ -2882,7 +2882,7 @@
           },
           "response": [
             {
-              "id": "ceee7b79-0fb9-4580-bc6c-5fd28cb6c7cd",
+              "id": "1b4c6f16-9619-4f56-9e0c-47fca0f75d28",
               "name": "Organization unit details",
               "originalRequest": {
                 "url": {
@@ -2953,7 +2953,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "343ddfc7-c1aa-4e43-b628-7400e22abfc3",
+              "id": "b7d5803c-19c2-4aef-baa2-b9b9e493bfff",
               "name": "Organization unit not found",
               "originalRequest": {
                 "url": {
@@ -3019,12 +3019,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "57b6596e-6b6c-49f2-a78b-ae2ea71abd5d",
+              "id": "9c9db221-f451-4c5e-9139-4312095d4442",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -3097,7 +3097,7 @@
           }
         },
         {
-          "id": "9c640ffb-1638-4327-9042-23bacfd33d72",
+          "id": "8387dfba-fa5b-421a-9cdc-7d5d321fe457",
           "name": "Update an organization unit by hierarchical handle path",
           "request": {
             "name": "Update an organization unit by hierarchical handle path",
@@ -3164,7 +3164,7 @@
           },
           "response": [
             {
-              "id": "91fb1335-ce49-4237-8a24-5921db8ea178",
+              "id": "b104cbbb-fb14-4d7e-8b3d-1e51f1415615",
               "name": "Organization unit updated",
               "originalRequest": {
                 "url": {
@@ -3243,7 +3243,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "b58ea88b-c0b3-4176-b652-34a44c8831ee",
+              "id": "c780ffa5-b447-4a76-a28d-38a348c246d5",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -3317,12 +3317,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "cc1b55c3-49c3-4a03-a615-5071dea2a055",
+              "id": "d22c6bcc-c1d9-42f0-a6dc-687a8373fe97",
               "name": "Organization unit not found",
               "originalRequest": {
                 "url": {
@@ -3396,12 +3396,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "afe43037-b92b-4e58-8cfd-7bd55da58308",
+              "id": "4239a412-92ac-4f0d-8938-c1d6fc28d5b8",
               "name": "Organization unit name conflict",
               "originalRequest": {
                 "url": {
@@ -3475,12 +3475,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "caed5115-d618-47e7-8115-1ebade18ac7b",
+              "id": "3b140b4d-9a91-41bc-8a08-d68886a8ba1d",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -3561,7 +3561,7 @@
           }
         },
         {
-          "id": "ad1ba915-8cf4-44df-b0c6-26e1b90c8c04",
+          "id": "e09eaa33-2f96-4e20-a61b-a4437987433b",
           "name": "Delete an organization unit by hierarchical handle path",
           "request": {
             "name": "Delete an organization unit by hierarchical handle path",
@@ -3615,7 +3615,7 @@
           },
           "response": [
             {
-              "id": "215d1153-2961-4d49-8d25-001b96bd2186",
+              "id": "a5545f31-c24e-497b-b145-276a79cd162c",
               "name": "Organization unit deleted",
               "originalRequest": {
                 "url": {
@@ -3682,7 +3682,7 @@
               "_postman_previewlanguage": "text"
             },
             {
-              "id": "a9735b0c-b1a3-440c-82ea-2fdda40a1e92",
+              "id": "b74f7f66-446f-4aeb-9e07-3c24490c1554",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -3748,12 +3748,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "8b362d94-4489-4cc4-a198-a905c9ea1f57",
+              "id": "dac2a535-88f4-47ef-a74c-fb8c48b0e6a2",
               "name": "Organization unit not found",
               "originalRequest": {
                 "url": {
@@ -3819,12 +3819,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "e48892cf-f515-48bb-b451-e81c4cf7347b",
+              "id": "19118aa1-15d9-4208-982d-3a4350dc168e",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -3897,7 +3897,7 @@
           }
         },
         {
-          "id": "38562b90-e0a0-4e73-8656-7b60e8701bcc",
+          "id": "24895ae3-110e-462e-b7c0-e01c84b5be2d",
           "name": "Create a new organization unit under the specified handle path",
           "request": {
             "name": "Create a new organization unit under the specified handle path",
@@ -3965,7 +3965,7 @@
           },
           "response": [
             {
-              "id": "d5e0220a-4f6c-4ddf-a04b-f610943b1489",
+              "id": "4e24a80d-5edb-4442-89e9-c5e9d9b328e3",
               "name": "Organization unit created",
               "originalRequest": {
                 "url": {
@@ -4045,7 +4045,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "737f6bda-321c-45af-a8ea-e08bf68de78b",
+              "id": "22803cc7-6700-4f72-abdd-540001f4c19e",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -4120,12 +4120,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "32fa7e7d-7174-4cc9-96f3-e65f7877b168",
+              "id": "45f06b9f-b20c-4322-acd9-680b5f72a9dd",
               "name": "Parent organization unit not found",
               "originalRequest": {
                 "url": {
@@ -4200,12 +4200,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "89f287e3-10b3-4e92-a583-0dc2506233f0",
+              "id": "0ad9bf4e-4741-43d3-8c24-1aaf5c94b939",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -4287,7 +4287,7 @@
           }
         },
         {
-          "id": "b22e2ff6-f5a2-48d3-bc73-ccd5c0c3d6b7",
+          "id": "7ad988c9-c4a5-4376-aa47-75bc60b44fd5",
           "name": "List child organization units by handle path",
           "request": {
             "name": "List child organization units by handle path",
@@ -4355,7 +4355,7 @@
           },
           "response": [
             {
-              "id": "3501eb4a-2134-49da-8385-0d031577ca30",
+              "id": "85fb6ed7-cfc8-48cb-9524-2c491ffd943b",
               "name": "List of child organization units",
               "originalRequest": {
                 "url": {
@@ -4436,7 +4436,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "dd583e97-6fa6-4b82-aaa3-a53d9166a5f9",
+              "id": "0e313bad-b5a7-43d6-ba00-dcaf1bb2aafe",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -4512,12 +4512,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "c4929c6e-984b-4a3f-9f2d-6872d0127fec",
+              "id": "0d6d617b-776c-4291-a4f3-95afa21676e6",
               "name": "Organization unit not found",
               "originalRequest": {
                 "url": {
@@ -4593,12 +4593,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "3667fa74-5bc0-4b59-847a-3f1f870136b4",
+              "id": "ca97345c-8a90-4d55-bbf9-e10ec593a9a2",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -4681,7 +4681,7 @@
           }
         },
         {
-          "id": "5d837143-9b31-46a9-b8a4-9ee917442857",
+          "id": "87705636-1bb8-448b-bfab-88928ab014a3",
           "name": "List users in organization unit by handle path",
           "request": {
             "name": "List users in organization unit by handle path",
@@ -4755,7 +4755,7 @@
           },
           "response": [
             {
-              "id": "9a3e26a0-4976-468b-b3ae-708698cb5722",
+              "id": "8b4f4fb4-1993-4346-9158-8db76a0de746",
               "name": "List of users in the organization unit",
               "originalRequest": {
                 "url": {
@@ -4840,7 +4840,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "dd59b4cd-a64d-4db5-84c7-894be217a92e",
+              "id": "8b5db76e-5d4f-435f-a590-6ee317190d75",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -4920,12 +4920,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "11806131-7f0c-4c2a-a291-2061d54a6002",
+              "id": "a58ef945-4e1b-4da6-bb47-92f400a8d64b",
               "name": "Organization unit not found",
               "originalRequest": {
                 "url": {
@@ -5005,12 +5005,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "6739bb69-b032-427e-98df-d6c71af306b9",
+              "id": "00194d10-286a-4403-9c36-f9cf11d97761",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -5097,7 +5097,7 @@
           }
         },
         {
-          "id": "47a1783b-7b3e-4313-9dac-0f283a80d822",
+          "id": "42fd2138-ac0d-4946-8ae6-48ea690da895",
           "name": "List groups in organization unit by handle path",
           "request": {
             "name": "List groups in organization unit by handle path",
@@ -5171,7 +5171,7 @@
           },
           "response": [
             {
-              "id": "cdabe46e-988f-4882-98cc-df7bb5fbc6c5",
+              "id": "8fe7ef63-0492-4689-95db-abc26cd9a5d0",
               "name": "List of groups in the organization unit",
               "originalRequest": {
                 "url": {
@@ -5256,7 +5256,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "9bab097d-01df-4463-b7ff-12c7aab1f67c",
+              "id": "f2af2bee-bde6-4314-8a09-fe28d0c6dc7e",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -5336,12 +5336,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "a0b6ff20-4e33-4e95-a1b8-ffe0eedbe39e",
+              "id": "633d680f-ec88-4343-aee6-a3b86ec53ff6",
               "name": "Organization unit not found",
               "originalRequest": {
                 "url": {
@@ -5421,12 +5421,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"code\": \"<string>\",\n  \"message\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  },\n  \"description\": {\n    \"key\": \"<string>\",\n    \"defaultValue\": \"<string>\"\n  }\n}",
+              "body": "{\n  \"code\": \"<string>\",\n  \"message\": \"<string>\",\n  \"description\": \"<string>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "f8c269f9-3852-4f4c-b6dc-8f4a332d5a00",
+              "id": "5666b583-d635-4366-a03f-d8f0c9d2d42e",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -5564,7 +5564,7 @@
     ]
   },
   "info": {
-    "_postman_id": "7370923b-98e5-4ae8-be52-0382e36c8527",
+    "_postman_id": "5a11050e-09ab-4663-979a-9b8714964eb9",
     "name": "OrganizationUnit Management API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": {

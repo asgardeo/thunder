@@ -169,7 +169,7 @@ thunder-component:
   project:
     create: true   # false → reuse an existing OpenChoreo Project
     name: identity-platform
-    description: "Identity platform powered by Thunder"
+    description: "Identity platform powered by WSO2 Thunder"
     displayName: "Identity Platform"
 
   pipeline:

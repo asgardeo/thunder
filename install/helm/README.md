@@ -1,6 +1,6 @@
 # Thunder Helm Chart
 
-This repository contains the Helm chart for Thunder, a lightweight user and identity management system designed for modern application development.
+This repository contains the Helm chart for WSO2 Thunder, a lightweight user and identity management system designed for modern application development.
 
 ## Configuration Value Types
 
@@ -402,8 +402,8 @@ Password fields are available in `configuration.database.config.postgres`, `conf
 | `configuration.database.config.postgres.name`            | Postgres database name (for postgres only)                                                                                                              | `configdb`                  |
 | `configuration.database.config.postgres.hostname`        | Postgres hostname (for postgres only)                                                                                                                   | `localhost` |
 | `configuration.database.config.postgres.port`            | Postgres port (for postgres only)                                                                                                                       | `5432`                       |
-| `configuration.database.config.postgres.username`        | Postgres username (for postgres only)                                                                                                                   | `dbuser`                   |
-| `configuration.database.config.postgres.password`        | Config Postgres password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.           | `dbpassword`    |
+| `configuration.database.config.postgres.username`        | Postgres username (for postgres only)                                                                                                                   | `asgthunder`                   |
+| `configuration.database.config.postgres.password`        | Config Postgres password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.           | `asgthunder`    |
 | `configuration.database.config.postgres.passwordRef.name` | Kubernetes Secret name for config Postgres password                                                                                                     | `""`    |
 | `configuration.database.config.postgres.passwordRef.key`  | Kubernetes Secret key for config Postgres password                                                                                                      | `""`    |
 | `configuration.database.config.postgres.sslmode`         | Postgres SSL mode (for postgres only)                                                                                                                   | `require`                    |
@@ -419,8 +419,8 @@ Password fields are available in `configuration.database.config.postgres`, `conf
 | `configuration.database.runtime.postgres.name`             | Postgres database name (for postgres only)                                                                                                              | `runtimedb`                  |
 | `configuration.database.runtime.postgres.hostname`         | Postgres hostname (for postgres only)                                                                                                                   | `localhost` |
 | `configuration.database.runtime.postgres.port`             | Postgres port (for postgres only)                                                                                                                       | `5432`                      |
-| `configuration.database.runtime.postgres.username`         | Postgres username (for postgres only)                                                                                                                   | `dbuser`                   |
-| `configuration.database.runtime.postgres.password`         | Runtime Postgres password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.          | `dbpassword`     |
+| `configuration.database.runtime.postgres.username`         | Postgres username (for postgres only)                                                                                                                   | `asgthunder`                   |
+| `configuration.database.runtime.postgres.password`         | Runtime Postgres password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.          | `asgthunder`     |
 | `configuration.database.runtime.postgres.passwordRef.name`  | Kubernetes Secret name for runtime Postgres password                                                                                                    | `""`    |
 | `configuration.database.runtime.postgres.passwordRef.key`   | Kubernetes Secret key for runtime Postgres password                                                                                                     | `""`    |
 | `configuration.database.runtime.postgres.sslmode`          | Postgres SSL mode (for postgres only)                                                                                                                   | `require`                    |
@@ -443,8 +443,8 @@ Password fields are available in `configuration.database.config.postgres`, `conf
 | `configuration.database.user.postgres.name`                | Postgres database name (for postgres only)                                                                                                              | `userdb`                     |
 | `configuration.database.user.postgres.hostname`            | Postgres hostname (for postgres only)                                                                                                                   | `localhost` |
 | `configuration.database.user.postgres.port`                | Postgres port (for postgres only)                                                                                                                       | `5432`                       |
-| `configuration.database.user.postgres.username`            | Postgres username (for postgres only)                                                                                                                   | `dbuser`                   |
-| `configuration.database.user.postgres.password`            | User Postgres password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.              | `dbpassword`        |
+| `configuration.database.user.postgres.username`            | Postgres username (for postgres only)                                                                                                                   | `asgthunder`                   |
+| `configuration.database.user.postgres.password`            | User Postgres password - supports plaintext. When `passwordRef.key` is set, this field is ignored and the external Secret is used instead.              | `asgthunder`        |
 | `configuration.database.user.postgres.passwordRef.name`     | Kubernetes Secret name for user Postgres password                                                                                                       | `""`    |
 | `configuration.database.user.postgres.passwordRef.key`      | Kubernetes Secret key for user Postgres password                                                                                                        | `""`    |
 | `configuration.database.user.postgres.sslmode`             | Postgres SSL mode (for postgres only)                                                                                                                   | `require`                    |

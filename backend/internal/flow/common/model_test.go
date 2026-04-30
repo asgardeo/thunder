@@ -75,30 +75,6 @@ func (s *ModelTestSuite) TestInput_IsSensitive() {
 	}
 }
 
-func (s *ModelTestSuite) TestInput_DisplayName_ExcludedFromJSON() {
-	input := Input{
-		Ref:         "ref_email",
-		Identifier:  "email",
-		Type:        InputTypeText,
-		Required:    true,
-		DisplayName: "Email Address",
-	}
-
-	data, err := json.Marshal(input)
-	s.Require().NoError(err)
-
-	jsonStr := string(data)
-	s.NotContains(jsonStr, "DisplayName", "DisplayName field name must not appear in JSON")
-	s.NotContains(jsonStr, "displayName", "displayName key must not appear in JSON")
-	s.NotContains(jsonStr, "Email Address", "DisplayName value must not appear in JSON")
-	s.Contains(jsonStr, "email", "Identifier must still be serialized")
-
-	var decoded Input
-	s.Require().NoError(json.Unmarshal(data, &decoded))
-	s.Equal("", decoded.DisplayName, "DisplayName must remain empty after unmarshalling")
-	s.Equal("email", decoded.Identifier)
-}
-
 func (s *ModelTestSuite) TestExecutionAttempt_GetDuration() {
 	tests := []struct {
 		name      string

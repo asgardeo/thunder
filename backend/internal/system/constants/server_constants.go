@@ -50,6 +50,9 @@ const ContentTypeJSON = "application/json"
 // ContentTypeJWT is the content type for JWT data.
 const ContentTypeJWT = "application/jwt"
 
+// ContentTypeJOSE is the content type for JWE (encrypted) data.
+const ContentTypeJOSE = "application/jose"
+
 // ContentTypeFormURLEncoded is the content type for form-urlencoded data.
 const ContentTypeFormURLEncoded = "application/x-www-form-urlencoded"
 

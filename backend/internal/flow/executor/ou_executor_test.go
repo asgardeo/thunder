@@ -485,7 +485,7 @@ func (suite *OUExecutorTestSuite) TestExecute_ErrorScenarios() {
 				assert.Equal(suite.T(), tc.expectedFailure, err.Error())
 			} else {
 				assert.NoError(suite.T(), err)
-				assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
+				assert.Equal(suite.T(), common.ExecFailure, result.Status)
 				assert.Equal(suite.T(), tc.expectedFailure, result.FailureReason)
 			}
 
@@ -733,57 +733,4 @@ func (suite *OUExecutorTestSuite) TestExecutorHelperMethods() {
 
 func (suite *OUExecutorTestSuite) TestOUExecutorInterface() {
 	var _ core.ExecutorInterface = (*ouExecutor)(nil)
-}
-
-func (suite *OUExecutorTestSuite) TestExecute_RetryableOUCreationErrors() {
-	tests := []struct {
-		name           string
-		serviceError   serviceerror.ServiceError
-		expectedReason string
-		message        string
-	}{
-		{
-			name:           "OU name conflict",
-			serviceError:   ou.ErrorOrganizationUnitNameConflict,
-			expectedReason: "An organization unit with the same name already exists.",
-			message:        "Should return inputs for retry when OU name already exists",
-		},
-		{
-			name:           "OU handle conflict",
-			serviceError:   ou.ErrorOrganizationUnitHandleConflict,
-			expectedReason: "An organization unit with the same handle already exists.",
-			message:        "Should return inputs for retry when OU handle already exists",
-		},
-	}
-
-	for _, tt := range tests {
-		suite.T().Run(tt.name, func(t *testing.T) {
-			suite.SetupTest()
-
-			ctx := &core.NodeContext{
-				ExecutionID: "flow-123",
-				FlowType:    common.FlowTypeRegistration,
-				UserInputs: map[string]string{
-					userInputOuName:   "Engineering",
-					userInputOuHandle: "engineering",
-				},
-				RuntimeData: map[string]string{},
-			}
-
-			suite.mockOUService.On("CreateOrganizationUnit", mock.Anything, ou.OrganizationUnitRequestWithID{
-				Name:   "Engineering",
-				Handle: "engineering",
-			}).Return(ou.OrganizationUnit{}, &tt.serviceError)
-
-			resp, err := suite.executor.Execute(ctx)
-
-			assert.NoError(t, err)
-			assert.NotNil(t, resp)
-			assert.Equal(t, common.ExecUserInputRequired, resp.Status)
-			assert.Equal(t, tt.expectedReason, resp.FailureReason, tt.message)
-			assert.NotEmpty(t, resp.Inputs, "Inputs should be re-populated for retry")
-			assert.Len(t, resp.Inputs, 2, "Should include both ouName and ouHandle inputs")
-			suite.mockOUService.AssertExpectations(t)
-		})
-	}
 }

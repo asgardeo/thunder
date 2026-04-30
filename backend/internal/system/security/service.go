@@ -16,7 +16,7 @@
  * under the License.
  */
 
-// Package security provides authentication and authorization for server APIs.
+// Package security provides authentication and authorization for Thunder APIs.
 package security
 
 import (

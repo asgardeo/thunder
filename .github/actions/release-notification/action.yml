@@ -4,9 +4,6 @@ inputs:
   webhook:
     description: 'Google Chat webhook URL'
     required: true
-  product-name:
-    description: 'Product name to display in the notification'
-    required: true
   release-name:
     description: 'Name of the release'
     required: true
@@ -38,7 +35,7 @@ runs:
         {
           "cards": [{
             "header": {
-              "title": "${{ inputs.product-name }} $RELEASE_TAG Released ⚡",
+              "title": "Thunder $RELEASE_TAG Released ⚡",
               "imageUrl": "https://cdn-icons-png.freepik.com/256/11063/11063287.png",
               "imageStyle": "AVATAR"
             },

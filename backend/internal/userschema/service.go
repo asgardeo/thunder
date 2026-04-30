@@ -40,10 +40,6 @@ import (
 
 const userSchemaLoggerComponentName = "UserSchemaService"
 
-// AttributeInfo is an alias for model.AttributeInfo, exported at the userschema package
-// level so callers do not need to import the internal model package directly.
-type AttributeInfo = model.AttributeInfo
-
 // UserSchemaServiceInterface defines the interface for the user schema service.
 type UserSchemaServiceInterface interface {
 	GetUserSchemaList(ctx context.Context, limit, offset int,
@@ -78,9 +74,6 @@ type UserSchemaServiceInterface interface {
 	GetDisplayAttributesByNames(
 		ctx context.Context, names []string,
 	) (map[string]string, *serviceerror.ServiceError)
-	GetNonCredentialAttributes(
-		ctx context.Context, userType string, requiredOnly bool,
-	) ([]AttributeInfo, *serviceerror.ServiceError)
 }
 
 // userSchemaService is the default implementation of the UserSchemaServiceInterface.
@@ -632,25 +625,6 @@ func (us *userSchemaService) GetDisplayAttributesByNames(
 	}
 
 	return result, nil
-}
-
-// GetNonCredentialAttributes returns non-credential attributes defined in the schema for the given
-// user type. When requiredOnly is true, only required attributes are returned.
-func (us *userSchemaService) GetNonCredentialAttributes(
-	ctx context.Context, userType string, requiredOnly bool,
-) ([]AttributeInfo, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, userSchemaLoggerComponentName))
-
-	compiledSchema, err := us.getCompiledSchemaForUserType(ctx, userType, logger)
-	if err != nil {
-		if errors.Is(err, ErrUserSchemaNotFound) {
-			return nil, &ErrorUserSchemaNotFound
-		}
-		return nil, logAndReturnServerError(logger,
-			"Failed to load user schema for non-credential attributes", err)
-	}
-
-	return compiledSchema.GetNonCredentialAttributes(requiredOnly), nil
 }
 
 func (us *userSchemaService) getCompiledSchemaForUserType(

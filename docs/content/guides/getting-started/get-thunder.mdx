@@ -1,22 +1,22 @@
 ---
-title: Get started
+title: Get Thunder
 sidebar_position: 2
-description: Download and run using the release artifact or Docker Compose
+description: Download and run Thunder using the release artifact or Docker Compose
 ---
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Get <ProductName />
+# Get Thunder
 
-<ProductName /> is available in multiple formats to suit your deployment needs. Choose the option that works best for you.
+Thunder is available in multiple formats to suit your deployment needs. Choose the option that works best for you.
 
 <Tabs>
 <TabItem value="release" label="📦 Release Artifact" default>
 
 ## Download From Release
 
-Get the latest release of <ProductName /> and run it locally on your machine.
+Get the latest release of Thunder and run it locally on your machine.
 
 ### Prerequisites
 
@@ -25,7 +25,7 @@ Get the latest release of <ProductName /> and run it locally on your machine.
 
 ### Step 1: Download the Distribution
 
-Download `thunder-<version>-<os>-<arch>.zip` from the <RepoLink path="/releases/latest">latest release</RepoLink> for your operating system and architecture.
+Download `thunder-<version>-<os>-<arch>.zip` from the [latest release](https://github.com/asgardeo/thunder/releases/latest) for your operating system and architecture.
 
 :::info Example
 If you're using a MacOS machine with Apple Silicon (ARM64) processor, download `thunder-<version>-macos-arm64.zip`
@@ -45,9 +45,9 @@ Navigate to the extracted directory:
 cd thunder-<version>-<os>-<arch>/
 ```
 
-### Step 3: Setup <ProductName />
+### Step 3: Setup Thunder
 
-Initialize <ProductName /> with the default configurations and data before starting the server for the first time.
+Initialize Thunder with the default configurations and data before starting the server for the first time.
 
 <Tabs groupId="os">
 <TabItem value="unix" label="Linux / macOS">
@@ -70,9 +70,9 @@ Initialize <ProductName /> with the default configurations and data before start
 Note the sample app ID from the log line: `[INFO] Sample App ID: <id>`. You'll need this for configuring the sample application.
 :::
 
-### Step 4: Start <ProductName />
+### Step 4: Start Thunder
 
-Launch the <ProductName /> server:
+Launch the Thunder server:
 
 <Tabs groupId="os">
 <TabItem value="unix" label="Linux / macOS">
@@ -92,7 +92,7 @@ Launch the <ProductName /> server:
 </Tabs>
 
 :::tip Success
-<ProductName /> will start on **https://localhost:8090**
+Thunder will start on **https://localhost:8090**
 :::
 
 </TabItem>
@@ -101,7 +101,7 @@ Launch the <ProductName /> server:
 
 ## Run with Docker Compose
 
-The quickest way to get <ProductName /> up and running with all dependencies configured.
+The quickest way to get Thunder up and running with all dependencies configured.
 
 ### Prerequisites
 
@@ -110,14 +110,14 @@ The quickest way to get <ProductName /> up and running with all dependencies con
 
 ### Step 1: Download Docker Compose File
 
-Download the `docker-compose.yml` file from the <ProductName /> repository:
+Download the `docker-compose.yml` file from the Thunder repository:
 
 {/* TODO: Fix the version in the URL below */}
 ```bash
 curl -o docker-compose.yml https://raw.githubusercontent.com/asgardeo/thunder/v0.16.0/install/quick-start/docker-compose.yml
 ```
 
-### Step 2: Start <ProductName />
+### Step 2: Start Thunder
 
 Run the following command in the directory where you downloaded the `docker-compose.yml` file:
 
@@ -129,7 +129,7 @@ docker compose up
 This command will automatically:
 - Initialize the database
 - Run the setup process
-- Start the <ProductName /> server
+- Start the Thunder server
 :::
 
 :::warning Important
@@ -137,7 +137,7 @@ Note the sample app ID from the setup logs: `[INFO] Sample App ID: <id>`. You'll
 :::
 
 :::tip Success
-<ProductName /> will start on **https://localhost:8090**
+Thunder will start on **https://localhost:8090**
 :::
 
 </TabItem>
@@ -145,12 +145,12 @@ Note the sample app ID from the setup logs: `[INFO] Sample App ID: <id>`. You'll
 
 ## Next Steps
 
-Now that <ProductName /> is running, you can:
+Now that Thunder is running, you can:
 
-- **[Access the <ProductName /> Console](https://localhost:8090/console)** - Log in with the default admin credentials (`admin` / `admin`)
-- **Try the Sample Apps** - Test <ProductName />'s authentication flows with our pre-built React samples
-- **[Explore the APIs](/docs/next/apis)** - Learn about <ProductName />'s RESTful APIs for user management, authentication, and more
+- **[Access the Thunder Console](https://localhost:8090/console)** - Log in with the default admin credentials (`admin` / `admin`)
+- **Try the Sample Apps** - Test Thunder's authentication flows with our pre-built React samples
+- **[Explore the APIs](/docs/next/apis)** - Learn about Thunder's RESTful APIs for user management, authentication, and more
 
 :::info Need Help?
-Check out our <RepoLink path="/discussions">troubleshooting guide</RepoLink> or [join our community](/docs/next/community/overview).
+Check out our [troubleshooting guide](https://github.com/asgardeo/thunder/discussions) or [join our community](/docs/next/community/overview).
 :::

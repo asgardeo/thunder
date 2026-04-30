@@ -20,7 +20,7 @@ kind: Component
 metadata:
   name: {{ .Values.componentName }}
   annotations:
-    openchoreo.dev/description: "Thunder Identity Management Service"
+    openchoreo.dev/description: "WSO2 Thunder Identity Management Service"
     openchoreo.dev/display-name: "Thunder"
 spec:
   owner:

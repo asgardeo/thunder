@@ -648,10 +648,6 @@ func validateUserInfoConfig(p *inboundmodel.OAuthProfileData) error {
 		}
 	}
 
-	if cfg.ResponseType == "" && (cfg.SigningAlg != "" || cfg.EncryptionAlg != "" || cfg.EncryptionEnc != "") {
-		return ErrOAuthUserInfoAlgRequiresResponseType
-	}
-
 	if cfg.ResponseType != "" {
 		switch cfg.ResponseType {
 		case inboundmodel.UserInfoResponseTypeJWS:
@@ -1029,23 +1025,31 @@ func resolveOAuthTokens(in *inboundmodel.OAuthTokenConfig,
 }
 
 // resolveUserInfo resolves user info config, defaulting user attributes to the ID token config.
+// ResponseType is always derived from the algorithm fields so the runtime never has to re-derive it.
 func resolveUserInfo(in *inboundmodel.UserInfoConfig,
 	idToken *inboundmodel.IDTokenConfig) *inboundmodel.UserInfoConfig {
 	out := &inboundmodel.UserInfoConfig{}
 	if in != nil {
 		out.UserAttributes = in.UserAttributes
-		out.ResponseType = in.ResponseType
 		out.SigningAlg = in.SigningAlg
 		out.EncryptionAlg = in.EncryptionAlg
 		out.EncryptionEnc = in.EncryptionEnc
 	}
-	// Safe to default: validateUserInfoConfig rejects any config where algo fields are set without
-	// an explicit responseType, so an empty responseType here means no crypto intent to preserve.
-	if out.ResponseType == "" {
-		out.ResponseType = inboundmodel.UserInfoResponseTypeJSON
-	}
 	if out.UserAttributes == nil && idToken != nil {
 		out.UserAttributes = idToken.UserAttributes
+	}
+
+	hasSign := out.SigningAlg != ""
+	hasEnc := out.EncryptionAlg != ""
+	switch {
+	case hasSign && hasEnc:
+		out.ResponseType = inboundmodel.UserInfoResponseTypeNESTEDJWT
+	case hasEnc:
+		out.ResponseType = inboundmodel.UserInfoResponseTypeJWE
+	case hasSign:
+		out.ResponseType = inboundmodel.UserInfoResponseTypeJWS
+	default:
+		out.ResponseType = inboundmodel.UserInfoResponseTypeJSON
 	}
 	return out
 }

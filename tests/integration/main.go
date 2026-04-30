@@ -183,10 +183,10 @@ func runTests() error {
 	// Export test-context state so that test subprocesses can self-initialize
 	// via ensureInitialized() without requiring an explicit InitializeTestContext call.
 	cmd.Env = append(os.Environ(),
-		"SERVER_EXTRACTED_HOME="+testutils.GetExtractedProductHome(),
-		"SERVER_PORT="+serverPort,
-		"ZIP_PATTERN="+zipFilePattern,
-		"SERVER_PID="+strconv.Itoa(testutils.GetServerPID()),
+		"THUNDER_EXTRACTED_HOME="+testutils.GetExtractedProductHome(),
+		"THUNDER_SERVER_PORT="+serverPort,
+		"THUNDER_ZIP_PATTERN="+zipFilePattern,
+		"THUNDER_SERVER_PID="+strconv.Itoa(testutils.GetServerPID()),
 	)
 
 	return cmd.Run()

@@ -895,28 +895,6 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteNoFail
 		"UserInputs should not be cleared without failure reason")
 }
 
-func (s *TaskExecutionNodeTestSuite) TestExecuteUserInputRequiredWithNoInputsReturnsServerError() {
-	mockExec := NewExecutorInterfaceMock(s.T())
-	node := newTaskExecutionNode("task-1", map[string]interface{}{}, false, false)
-	execNode, _ := node.(ExecutorBackedNodeInterface)
-
-	mockExec.On("GetName").Return("test-executor").Once()
-	mockExec.On("Execute", mock.Anything).Return(
-		&common.ExecutorResponse{
-			Status: common.ExecUserInputRequired,
-			// No Inputs — broken executor implementation
-		}, nil,
-	).Once()
-
-	execNode.SetExecutor(mockExec)
-
-	ctx := &NodeContext{ExecutionID: "test-flow"}
-	resp, err := node.Execute(ctx)
-
-	s.NotNil(err, "Should return a server error when executor returns VIEW with no inputs")
-	s.Nil(resp)
-}
-
 func (s *TaskExecutionNodeTestSuite) TestGetExecutionPolicy_NoExecutorReturnsNil() {
 	node := newTaskExecutionNode("task-1", make(map[string]interface{}), false, false)
 

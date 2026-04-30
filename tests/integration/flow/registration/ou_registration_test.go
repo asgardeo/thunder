@@ -705,7 +705,7 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOUCreationDu
 
 			flowStep, err := common.InitiateRegistrationFlow(ts.basicFlowTestAppID, false, inputs, "")
 			ts.Require().NoError(err)
-			ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus)
+			ts.Require().Equal("ERROR", flowStep.FlowStatus)
 			ts.Require().Empty(flowStep.Assertion)
 			ts.Require().Contains(flowStep.FailureReason, tc.expectedErrorSubstr)
 		})
@@ -913,7 +913,7 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreationDupl
 
 			flowStep, err = common.CompleteFlow(flowStep.ExecutionID, inputs, "", flowStep.ChallengeToken)
 			ts.Require().NoError(err)
-			ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus)
+			ts.Require().Equal("ERROR", flowStep.FlowStatus)
 			ts.Require().Empty(flowStep.Assertion)
 			ts.Require().Contains(flowStep.FailureReason, tc.expectedErrorSubstr)
 		})

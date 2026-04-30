@@ -70,10 +70,9 @@ func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface,
 // registerRoutes registers the HTTP routes for notification services.
 func registerRoutes(mux *http.ServeMux, handler *messageNotificationSenderHandler) {
 	opts1 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "POST"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, POST",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /notification-senders/message",
 		handler.HandleSenderListRequest, opts1))
@@ -85,10 +84,9 @@ func registerRoutes(mux *http.ServeMux, handler *messageNotificationSenderHandle
 		}, opts1))
 
 	opts2 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "PUT", "DELETE"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, PUT, DELETE",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /notification-senders/message/{id}",
 		handler.HandleSenderGetRequest, opts2))
@@ -102,10 +100,9 @@ func registerRoutes(mux *http.ServeMux, handler *messageNotificationSenderHandle
 		}, opts2))
 
 	opts3 := middleware.CORSOptions{
-		AllowedMethods:   []string{"POST"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "POST",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /notification-senders/otp/send",
 		handler.HandleOTPSendRequest, opts3))

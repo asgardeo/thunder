@@ -56,10 +56,6 @@ import CreateGroupPage from './features/groups/pages/CreateGroupPage';
 import GroupEditPage from './features/groups/pages/GroupEditPage';
 import GroupsListPage from './features/groups/pages/GroupsListPage';
 import HomePage from './features/home/pages/HomePage';
-import ExportPage from './features/import-export/pages/ExportPage';
-import ImportConfigurationSummaryPage from './features/import-export/pages/ImportConfigurationSummaryPage';
-import ImportConfigurationUploadPage from './features/import-export/pages/ImportConfigurationUploadPage';
-import ImportConfigurationValidatePage from './features/import-export/pages/ImportConfigurationValidatePage';
 import IntegrationsPage from './features/integrations/pages/IntegrationsPage';
 import LoginFlowBuilderPage from './features/login-flow/pages/LoginFlowPage';
 import RoleCreateProvider from './features/roles/contexts/RoleCreate/RoleCreateProvider';
@@ -70,8 +66,6 @@ import UserTypeCreateProvider from './features/user-types/contexts/UserTypeCreat
 import CreateUserTypePage from './features/user-types/pages/CreateUserTypePage';
 import UserTypesListPage from './features/user-types/pages/UserTypesListPage';
 import ViewUserTypePage from './features/user-types/pages/ViewUserTypePage';
-import CreateProjectPage from './features/welcome/pages/CreateProjectPage';
-import WelcomePage from './features/welcome/pages/WelcomePage';
 import DashboardLayout from './layouts/DashboardLayout';
 import FullScreenLayout from './layouts/FullScreenLayout';
 
@@ -219,30 +213,6 @@ export default function App(): JSX.Element {
             }
           >
             <Route index element={<LoginFlowBuilderPage />} />
-          </Route>
-          <Route
-            path="/export"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<ExportPage />} />
-          </Route>
-          <Route
-            path="/welcome"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<WelcomePage />} />
-            <Route path="create-project" element={<CreateProjectPage />} />
-            <Route path="open-project" element={<ImportConfigurationUploadPage />} />
-            <Route path="open-project/validate" element={<ImportConfigurationValidatePage />} />
-            <Route path="open-project/summary" element={<ImportConfigurationSummaryPage />} />
           </Route>
           <Route
             path="/design"

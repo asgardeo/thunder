@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -17,7 +17,7 @@
  */
 
 import {User} from '@asgardeo/react';
-import {Box, PageContent, Stack, Typography, useTheme} from '@wso2/oxygen-ui';
+import {Box, PageContent, Stack, Typography} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
 import {useTranslation} from 'react-i18next';
 import NextStepsSection from '../components/NextStepsSection';
@@ -25,7 +25,6 @@ import StartBuildingSection from '../components/StartBuildingSection';
 
 export default function HomePage(): JSX.Element {
   const {t} = useTranslation('home');
-  const theme = useTheme();
 
   return (
     <PageContent>
@@ -41,11 +40,12 @@ export default function HomePage(): JSX.Element {
                   fontWeight: 500,
                 }}
               >
+                {'👋 '}
                 {t('greeting.hello', 'Hello,')}{' '}
                 <Box
                   component="span"
                   sx={{
-                    background: theme.gradient?.primary,
+                    background: 'linear-gradient(90deg, #FF6B00 0%, #FF8C00 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',

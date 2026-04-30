@@ -45,7 +45,6 @@ type property interface {
 	isCredential() bool
 	isDisplayable() bool
 	isUnique() bool
-	getDisplayName() string
 	validateValue(value interface{}, path string, logger *log.Logger) (bool, error)
 	validateUniqueness(value interface{}, path string,
 		exists func(map[string]interface{}) (bool, error), logger *log.Logger) (bool, error)
@@ -111,35 +110,6 @@ func (cs *Schema) ValidateAsDisplayAttribute(name string) DisplayAttributeStatus
 		return DisplayAttributeIsCredential
 	}
 	return DisplayAttributeValid
-}
-
-// AttributeInfo holds an attribute name, its required status, and its human-readable display label.
-// DisplayName may be empty when the schema definition omits the `displayName` field;
-// callers should fall back to Attribute when rendering a label.
-type AttributeInfo struct {
-	Attribute   string
-	DisplayName string
-	Required    bool
-}
-
-// GetNonCredentialAttributes returns top-level properties not marked as credentials.
-// When requiredOnly is true, only required properties are included.
-func (cs *Schema) GetNonCredentialAttributes(requiredOnly bool) []AttributeInfo {
-	result := make([]AttributeInfo, 0, len(cs.properties))
-	for attr, prop := range cs.properties {
-		if prop.isCredential() {
-			continue
-		}
-		if requiredOnly && !prop.isRequired() {
-			continue
-		}
-		result = append(result, AttributeInfo{
-			Attribute:   attr,
-			DisplayName: prop.getDisplayName(),
-			Required:    prop.isRequired(),
-		})
-	}
-	return result
 }
 
 // GetCredentialAttributes returns the names of top-level properties marked as credentials.

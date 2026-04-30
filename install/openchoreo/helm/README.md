@@ -1,6 +1,6 @@
 # Thunder Helm Chart
 
-This Helm chart deploys Thunder Identity Management Service on the OpenChoreo platform. Thunder provides OAuth2, OpenID Connect, and other identity protocols.
+This Helm chart deploys WSO2 Thunder Identity Management Service on the OpenChoreo platform. Thunder provides OAuth2, OpenID Connect, and other identity protocols.
 
 ## Overview
 
@@ -137,7 +137,7 @@ helm upgrade --install thunder install/openchoreo/helm/ \
    ```bash
    export DB_HOST="postgres.example.com"
    export DB_NAME="thunderdb"
-   export DB_USER="dbuser"
+   export DB_USER="thunder"
    export DB_PASS="<your-password>"
    export SERVER_PUBLIC_URL="http://development-thunder-identity-platform.openchoreoapis.localhost:19080"
    export GATE_HOSTNAME="development-thunder-identity-platform.openchoreoapis.localhost"
@@ -369,8 +369,8 @@ Use this to derive the following values when configuring the Component via the U
 Create the database and grant privileges before setting these values:
 
 ```sql
-CREATE DATABASE thunderdb OWNER dbuser;
-GRANT ALL PRIVILEGES ON DATABASE thunderdb TO dbuser;
+CREATE DATABASE thunderdb OWNER asgthunder;
+GRANT ALL PRIVILEGES ON DATABASE thunderdb TO asgthunder;
 ```
 
 | Environment Variable | How to get |
@@ -378,7 +378,7 @@ GRANT ALL PRIVILEGES ON DATABASE thunderdb TO dbuser;
 | `DB_PORT` | PostgreSQL port — must be an integer (not quoted) |
 | `DB_CONFIG_HOSTNAME` | PostgreSQL hostname e.g. `postgres-postgresql.identity-platform.svc.cluster.local` |
 | `DB_CONFIG_NAME` | Database name created in the SQL above |
-| `DB_CONFIG_USERNAME` | PostgreSQL application user e.g. `dbuser` |
+| `DB_CONFIG_USERNAME` | PostgreSQL application user e.g. `asgthunder` |
 | `DB_CONFIG_PASSWORD` | Password for the application user |
 | `DB_CONFIG_SSLMODE` | `disable`, `require`, or `verify-full` (recommended for production) |
 | `DB_RUNTIME_HOSTNAME` | Same as `DB_CONFIG_HOSTNAME` unless using separate DB hosts |

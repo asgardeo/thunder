@@ -36,7 +36,6 @@ import (
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
-	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
 )
@@ -63,7 +62,6 @@ type applicationService struct {
 	inboundClientService inboundclient.InboundClientServiceInterface
 	entityProvider       entityprovider.EntityProviderInterface
 	ouService            oupkg.OrganizationUnitServiceInterface
-	i18nService          i18nmgt.I18nServiceInterface
 }
 
 // newApplicationService creates a new instance of ApplicationService.
@@ -71,14 +69,12 @@ func newApplicationService(
 	inboundClient inboundclient.InboundClientServiceInterface,
 	entityProvider entityprovider.EntityProviderInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
-	i18nService i18nmgt.I18nServiceInterface,
 ) ApplicationServiceInterface {
 	return &applicationService{
 		logger:               log.GetLogger().With(log.String(log.LoggerKeyComponentName, "ApplicationService")),
 		inboundClientService: inboundClient,
 		entityProvider:       entityProvider,
 		ouService:            ouService,
-		i18nService:          i18nService,
 	}
 }
 
@@ -329,7 +325,7 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 	if as.inboundClientService.IsDeclarative(ctx, appID) {
 		return nil, &ErrorCannotModifyDeclarativeResource
 	}
-	existingApp, inboundAuthConfig, svcErr := as.validateApplicationForUpdate(ctx, appID, app)
+	_, inboundAuthConfig, svcErr := as.validateApplicationForUpdate(ctx, appID, app)
 
 	if svcErr != nil {
 		return nil, svcErr
@@ -363,10 +359,6 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 	}
 
 	if svcErr := as.updateEntityDataForApplicationUpdate(appID, app, inboundAuthConfig); svcErr != nil {
-		return nil, svcErr
-	}
-
-	if svcErr := as.cleanupStaleI18nKeys(ctx, appID, existingApp, app); svcErr != nil {
 		return nil, svcErr
 	}
 
@@ -471,7 +463,7 @@ func (as *applicationService) DeleteApplication(ctx context.Context, appID strin
 		return &serviceerror.InternalServerError
 	}
 
-	return as.deleteLocalizedVariants(ctx, appID)
+	return nil
 }
 
 // isIdentifierTaken checks if an entity with the given identifier already exists.
@@ -1526,62 +1518,4 @@ func (as *applicationService) mapStoreError(err error) *serviceerror.ServiceErro
 	}
 	as.logger.Error("Failed to retrieve application", log.Error(err))
 	return &serviceerror.InternalServerError
-}
-
-// deleteLocalizedVariants removes all i18n translations for an application's fields.
-// All fields are attempted; returns an internal server error if any deletion fails.
-func (as *applicationService) deleteLocalizedVariants(ctx context.Context, appID string) *serviceerror.ServiceError {
-	if as.i18nService == nil {
-		return nil
-	}
-	var hasErr bool
-	for _, field := range []string{"name", "logo_uri", "tos_uri", "policy_uri"} {
-		if svcErr := as.i18nService.DeleteTranslationsByKey(
-			ctx, AppI18nNamespace(), AppI18nKey(appID, field)); svcErr != nil {
-			as.logger.Error("Failed to delete localized variant on app deletion",
-				log.String("appID", appID),
-				log.String("field", field),
-				log.String("namespace", AppI18nNamespace()))
-			hasErr = true
-		}
-	}
-	if hasErr {
-		return &serviceerror.InternalServerError
-	}
-	return nil
-}
-
-// cleanupStaleI18nKeys removes i18n keys for fields that changed from an i18n ref back to plain text.
-// Returns an internal server error if any deletion fails.
-func (as *applicationService) cleanupStaleI18nKeys(
-	ctx context.Context, appID string,
-	existing *model.ApplicationProcessedDTO, updated *model.ApplicationDTO,
-) *serviceerror.ServiceError {
-	if as.i18nService == nil {
-		return nil
-	}
-	type pair struct{ old, updated, field string }
-	fields := []pair{
-		{existing.Name, updated.Name, "name"},
-		{existing.LogoURL, updated.LogoURL, "logo_uri"},
-		{existing.TosURI, updated.TosURI, "tos_uri"},
-		{existing.PolicyURI, updated.PolicyURI, "policy_uri"},
-	}
-	var hasErr bool
-	for _, f := range fields {
-		if isI18nRef(f.old) && !isI18nRef(f.updated) {
-			if svcErr := as.i18nService.DeleteTranslationsByKey(
-				ctx, AppI18nNamespace(), AppI18nKey(appID, f.field)); svcErr != nil {
-				as.logger.Error("Failed to delete stale i18n key",
-					log.String("appID", appID),
-					log.String("field", f.field),
-					log.String("namespace", AppI18nNamespace()))
-				hasErr = true
-			}
-		}
-	}
-	if hasErr {
-		return &serviceerror.InternalServerError
-	}
-	return nil
 }

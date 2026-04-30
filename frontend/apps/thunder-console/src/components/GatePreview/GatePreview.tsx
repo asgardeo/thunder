@@ -106,8 +106,7 @@ export default function GatePreview({
 }: GatePreviewProps): JSX.Element {
   const {t} = useTranslation('design');
   const {mode, systemMode} = useColorScheme();
-  const resolvedSystemMode: 'light' | 'dark' = (mode === 'system' ? systemMode : mode) === 'dark' ? 'dark' : 'light';
-  const [previewEffectiveScheme, setPreviewEffectiveScheme] = useState<'light' | 'dark'>(resolvedSystemMode);
+  const [previewColorScheme, setPreviewColorScheme] = useState<'light' | 'dark' | 'system'>('light');
   const [viewportState, setViewport] = useState<Viewport>('desktop');
   const [zoom, setZoom] = useState(75);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -136,14 +135,17 @@ export default function GatePreview({
     setIframeDoc(doc);
   }, []);
 
+  const resolvedSystemMode: 'light' | 'dark' = (mode === 'system' ? systemMode : mode) === 'dark' ? 'dark' : 'light';
   const activeScheme = colorScheme !== 'system' ? colorScheme : undefined;
   let effectiveScheme: 'light' | 'dark';
   if (activeScheme) {
     effectiveScheme = activeScheme;
   } else if (syncColorSchemeWithSystem) {
     effectiveScheme = resolvedSystemMode;
+  } else if (previewColorScheme !== 'system') {
+    effectiveScheme = previewColorScheme;
   } else {
-    effectiveScheme = previewEffectiveScheme;
+    effectiveScheme = resolvedSystemMode;
   }
 
   const zoomIdx = ZOOM_STEPS.indexOf(zoom);
@@ -204,7 +206,8 @@ export default function GatePreview({
             <PreviewToolbar
               viewport={viewportState}
               setViewport={setViewport}
-              onEffectiveSchemeChange={setPreviewEffectiveScheme}
+              previewColorScheme={previewColorScheme}
+              setPreviewColorScheme={setPreviewColorScheme}
               zoom={zoom}
               setZoom={setZoom}
               zoomIdx={zoomIdx}

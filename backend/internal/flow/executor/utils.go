@@ -25,7 +25,6 @@ import (
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/entityprovider"
-	"github.com/asgardeo/thunder/internal/flow/common"
 )
 
 // getAuthnServiceName returns the authn service name for an executor.
@@ -60,21 +59,4 @@ func GetUserAttribute(user *entityprovider.Entity, attributeKey string) (string,
 	}
 
 	return "", fmt.Errorf("attribute '%s' not found or is empty", attributeKey)
-}
-
-// upsertInputs merges incoming inputs into existing: replaces entries with a matching
-// Identifier in-place, appends entries that are not yet present.
-func upsertInputs(existing []common.Input, incoming []common.Input) []common.Input {
-	idxMap := make(map[string]int, len(existing))
-	for i, inp := range existing {
-		idxMap[inp.Identifier] = i
-	}
-	for _, inp := range incoming {
-		if idx, exists := idxMap[inp.Identifier]; exists {
-			existing[idx] = inp
-		} else {
-			existing = append(existing, inp)
-		}
-	}
-	return existing
 }

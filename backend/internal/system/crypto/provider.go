@@ -31,8 +31,8 @@ type ConfigCryptoProvider interface {
 // RuntimeCryptoProvider provides asymmetric cryptographic operations including
 // encryption, decryption, signing, and key discovery.
 type RuntimeCryptoProvider interface {
-	Encrypt(ctx context.Context, keyRef KeyRef, params AlgorithmParams, content []byte) ([]byte, *CryptoDetails, error)
-	Decrypt(ctx context.Context, keyRef KeyRef, params AlgorithmParams, content []byte) ([]byte, error)
+	Encrypt(ctx context.Context, keyRef KeyRef, algorithm Algorithm, content []byte) ([]byte, error)
+	Decrypt(ctx context.Context, keyRef KeyRef, algorithm Algorithm, content []byte) ([]byte, error)
 	Sign(ctx context.Context, keyRef KeyRef, algorithm Algorithm, content []byte) ([]byte, error)
 	GetPublicKeys(ctx context.Context, filter PublicKeyFilter) ([]PublicKeyInfo, error)
 	GetTLSMaterial(ctx context.Context, keyRef KeyRef) (*TLSMaterial, error)

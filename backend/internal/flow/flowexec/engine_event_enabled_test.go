@@ -36,7 +36,7 @@ import (
 func setupMockObservability(t *testing.T) *observabilitymock.ObservabilityServiceInterfaceMock {
 	t.Helper()
 
-	// Initialize runtime with observability enabled
+	// Initialize Thunder runtime with observability enabled
 	config.ResetThunderRuntime()
 	testConfig := &config.Config{
 		Observability: config.ObservabilityConfig{

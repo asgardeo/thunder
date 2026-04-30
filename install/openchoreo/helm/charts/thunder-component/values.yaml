@@ -163,7 +163,7 @@ project:
   # Set false if this component shares a project that already exists.
   create: true
   name: identity-platform 
-  description: "Identity platform powered by Thunder"
+  description: "Identity platform powered by WSO2 Thunder"
   displayName: "Identity Platform"
 
 pipeline:

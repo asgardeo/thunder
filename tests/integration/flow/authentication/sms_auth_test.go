@@ -632,7 +632,7 @@ func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowInvalidOTP() {
 		"mobileNumber": userAttrs["mobileNumber"].(string),
 	}
 
-	flowStep, err := common.InitiateAuthenticationFlow(smsAuthTestAppID, false, nil, "")
+	flowStep, err := common.InitiateAuthenticationFlow(smsAuthTestAppID, false, inputs, "")
 	if err != nil {
 		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
 	}
@@ -663,93 +663,10 @@ func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowInvalidOTP() {
 		ts.T().Fatalf("Failed to complete authentication flow with invalid OTP: %v", err)
 	}
 
-	// Verify authentication failure returns INCOMPLETE (retryable)
-	ts.Require().Equal("INCOMPLETE", completeFlowStep.FlowStatus,
-		"Expected flow status to be INCOMPLETE for invalid OTP")
-	ts.Require().Equal("VIEW", completeFlowStep.Type, "Expected type to be VIEW for prompt re-display")
+	// Verify authentication failure
+	ts.Require().Equal("ERROR", completeFlowStep.FlowStatus, "Expected flow status to be ERROR")
 	ts.Require().Empty(completeFlowStep.Assertion, "No JWT assertion should be returned for failed authentication")
 	ts.Require().NotEmpty(completeFlowStep.FailureReason, "Failure reason should be provided for invalid OTP")
-
-	// Verify OTP input is re-prompted
-	ts.Require().NotEmpty(completeFlowStep.Data, "Flow data should not be empty after re-prompt")
-	ts.Require().True(common.HasInput(completeFlowStep.Data.Inputs, "otp"),
-		"OTP input should be re-prompted after invalid OTP")
-}
-
-func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowRetryAfterInvalidOTP() {
-	// Step 1: Initialize the flow and provide mobile number
-	var userAttrs map[string]interface{}
-	err := json.Unmarshal(testUserWithMobile.Attributes, &userAttrs)
-	ts.Require().NoError(err, "Failed to unmarshal user attributes")
-
-	inputs := map[string]string{
-		"mobileNumber": userAttrs["mobileNumber"].(string),
-	}
-
-	flowStep, err := common.InitiateAuthenticationFlow(smsAuthTestAppID, false, nil, "")
-	if err != nil {
-		ts.T().Fatalf("Failed to initiate authentication flow: %v", err)
-	}
-	ts.Require().NotEmpty(flowStep.ExecutionID, "Execution ID should not be empty")
-
-	// Clear any previous messages
-	ts.mockServer.ClearMessages()
-
-	// Step 2: Continue flow to trigger OTP sending
-	otpFlowStep, err := common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001",
-		flowStep.ChallengeToken)
-	if err != nil {
-		ts.T().Fatalf("Failed to complete authentication flow with mobile number: %v", err)
-	}
-
-	ts.Require().Equal("INCOMPLETE", otpFlowStep.FlowStatus, "Expected flow status to be INCOMPLETE after OTP send")
-	ts.Require().NotEmpty(otpFlowStep.ExecutionID, "Execution ID should not be empty")
-
-	// Wait for SMS to be sent
-	time.Sleep(500 * time.Millisecond)
-
-	// Capture the valid OTP before submitting an invalid one
-	lastMessage := ts.mockServer.GetLastMessage()
-	ts.Require().NotNil(lastMessage, "SMS should have been sent")
-	ts.Require().NotEmpty(lastMessage.OTP, "OTP should be available from mock server")
-	validOTP := lastMessage.OTP
-
-	// Step 3: Submit invalid OTP
-	invalidOTPInputs := map[string]string{
-		"otp": "000000", // Invalid OTP
-	}
-
-	retryFlowStep, err := common.CompleteFlow(otpFlowStep.ExecutionID, invalidOTPInputs, "action_002",
-		otpFlowStep.ChallengeToken)
-	if err != nil {
-		ts.T().Fatalf("Failed to complete authentication flow with invalid OTP: %v", err)
-	}
-
-	// Verify we get INCOMPLETE (retryable) not ERROR
-	ts.Require().Equal("INCOMPLETE", retryFlowStep.FlowStatus, "Expected INCOMPLETE after invalid OTP")
-	ts.Require().NotEmpty(retryFlowStep.FailureReason, "Failure reason should be present for invalid OTP")
-
-	// Verify OTP input is re-prompted
-	ts.Require().NotEmpty(retryFlowStep.Data, "Flow data should not be empty after re-prompt")
-	ts.Require().True(common.HasInput(retryFlowStep.Data.Inputs, "otp"),
-		"OTP input should be re-prompted for retry")
-
-	// Step 4: Retry with the valid OTP
-	validOTPInputs := map[string]string{
-		"otp": validOTP,
-	}
-
-	successFlowStep, err := common.CompleteFlow(otpFlowStep.ExecutionID, validOTPInputs, "action_002",
-		retryFlowStep.ChallengeToken)
-	if err != nil {
-		ts.T().Fatalf("Failed to complete authentication flow after retry with valid OTP: %v", err)
-	}
-
-	// Verify successful authentication
-	ts.Require().Equal("COMPLETE", successFlowStep.FlowStatus,
-		"Expected COMPLETE after retry with valid OTP")
-	ts.Require().NotEmpty(successFlowStep.Assertion, "JWT assertion should be returned on successful retry")
-	ts.Require().Empty(successFlowStep.FailureReason, "No failure reason on success")
 }
 
 func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowSingleRequestWithMobileNumber() {

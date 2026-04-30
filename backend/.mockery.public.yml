@@ -433,14 +433,6 @@ packages:
       pkgname: pkimock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/asgardeo/thunder/internal/system/crypto:
-    config:
-      all: true
-      dir: tests/mocks/crypto/cryptomock
-      structname: '{{.InterfaceName}}Mock'
-      pkgname: cryptomock
-      filename: "{{.InterfaceName}}_mock.go"
-
   github.com/asgardeo/thunder/internal/resource:
     config:
       all: true

@@ -2,12 +2,12 @@
 title: Manage Applications
 sidebar_position: 1
 persona: iam
-description: Register, update, and delete applications to enable OAuth 2.0 authentication for your services.
+description: Register, update, and delete applications in Thunder to enable OAuth 2.0 authentication for your services.
 ---
 
 # Manage Applications
 
-An application in <ProductName /> represents the client that your users sign in to. You register your web app, mobile app, or backend service as an application to get a **Client ID**, configure the authentication experience, and control which users can access it.
+An application in Thunder represents the client that your users sign in to. You register your web app, mobile app, or backend service as an application to get a **Client ID**, configure the authentication experience, and control which users can access it.
 
 Each application holds:
 
@@ -18,7 +18,7 @@ Each application holds:
 
 ## Application Types
 
-<ProductName /> provides four application types. Choose the one that matches your architecture.
+Thunder provides four application types. Choose the one that matches your architecture.
 
 | Type | Description | Client Secret |
 |------|-------------|---------------|
@@ -29,13 +29,13 @@ Each application holds:
 
 ## Create an Application
 
-Follow these steps in the <ProductName /> Console to register a new application.
+Follow these steps in the Thunder Console to register a new application.
 
 <Stepper stepNode="h3" as="h3">
 
 ### Step 1: Enter Basic Details
 
-1. Sign in to the <ProductName /> Console.
+1. Sign in to the Thunder Console.
 2. Navigate to **Applications** → **Add Application**.
 3. Enter an **Application Name**. This name identifies the application in the Console and may be visible to users on the consent screen.
 
@@ -54,17 +54,17 @@ Select the sign in methods users will use to authenticate with this application 
 
 **Sign-In Approach** determines how users reach the sign-in experience:
 
-- **Redirect to <ProductName /> sign-in/sign-up handling pages** (recommended) - users are redirected to <ProductName />-hosted sign-in pages. You can customize these pages with the Flow Designer and integrate with SDKs.
-- **Embedded sign-in/sign-up components in your app** - the sign-in experience renders inside your application using <ProductName />'s UI components or APIs. No redirect occurs.
+- **Redirect to Thunder sign-in/sign-up handling pages** (recommended) - users are redirected to Thunder-hosted sign-in pages. You can customize these pages with the Flow Designer and integrate with SDKs.
+- **Embedded sign-in/sign-up components in your app** - the sign-in experience renders inside your application using Thunder's UI components or APIs. No redirect occurs.
 
 **User Access** controls which user types can authenticate with this application. Select one or more of the allowed user types (for example, **Customer** or **Person**). Only users of the selected types can sign in.
 Learn more about user types in [User Types](../users/user-types).
 
 ### Step 4: Select Technology or Application Type
 
-Pick your **Technology** if your framework is listed (for example, React). <ProductName /> uses this to pre-configure the right defaults and SDK integration. If your framework isn't listed, select an **Application Type** directly instead.
+Pick your **Technology** if your framework is listed (for example, React). Thunder uses this to pre-configure the right defaults and SDK integration. If your framework isn't listed, select an **Application Type** directly instead.
 
-For Browser Apps, Full-stack Apps, and Mobile Apps, enter one or more **Authorized Redirect URIs**, the URLs <ProductName /> sends users back to after authentication.
+For Browser Apps, Full-stack Apps, and Mobile Apps, enter one or more **Authorized Redirect URIs**, the URLs Thunder sends users back to after authentication.
 
 | Application Type | Redirect URI Format |
 |-----------------|---------------------|
@@ -75,12 +75,12 @@ For Browser Apps, Full-stack Apps, and Mobile Apps, enter one or more **Authoriz
 
 ### Step 5: Create application
 
-After creating your application, <ProductName /> generates a **Client ID** which you can find from the **General** tab of the created application.
+After creating your application, Thunder generates a **Client ID** which you can find from the **General** tab of the created application.
 
-For confidential clients, <ProductName /> also generates a **Client Secret** and shows it to you once during creation.
+For confidential clients, Thunder also generates a **Client Secret** and shows it to you once during creation.
 
 :::warning
-Copy and store your **Client Secret** before clicking **Continue**. <ProductName /> never shows it again. Treat it with the same level of security as a password. Never expose it in browser console, version control, or logs.
+Copy and store your **Client Secret** before clicking **Continue**. Thunder never shows it again. Treat it with the same level of security as a password. Never expose it in browser console, version control, or logs.
 :::
 
 </Stepper>

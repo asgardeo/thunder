@@ -194,10 +194,8 @@ func (s *smsOTPAuthExecutor) InitiateOTP(ctx *core.NodeContext,
 		}
 
 		if userID != nil && *userID != "" {
-			// At this point, a unique user is found in the system.
-			// Prompt the user to provide a different mobile number.
-			execResp.Status = common.ExecUserInputRequired
-			execResp.Inputs = []common.Input{s.resolvePhoneInput(ctx, mobileNumberInput)}
+			// At this point, a unique user is found in the system. Hence fail the execution.
+			execResp.Status = common.ExecFailure
 			execResp.FailureReason = "User already exists with the provided mobile number."
 			return nil
 		}
@@ -239,7 +237,7 @@ func (s *smsOTPAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 		logger.Error("Failed to get authenticated user details", log.Error(err))
 		return fmt.Errorf("failed to get authenticated user details: %w", err)
 	}
-	if execResp.Status == common.ExecFailure || execResp.Status == common.ExecUserInputRequired {
+	if execResp.Status == common.ExecFailure {
 		return nil
 	}
 
@@ -594,8 +592,7 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	providedOTP := ctx.UserInputs[userInputOTP]
 	if providedOTP == "" {
 		logger.Debug("Provided OTP is empty", log.MaskedString(log.LoggerKeyUserID, userID))
-		execResp.Status = common.ExecUserInputRequired
-		execResp.Inputs = s.GetRequiredInputs(ctx)
+		execResp.Status = common.ExecFailure
 		execResp.FailureReason = failureReasonInvalidOTP
 		return nil, nil
 	}
@@ -614,8 +611,7 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 		if svcErr != nil {
 			if svcErr.Code == otp.ErrorIncorrectOTP.Code {
 				logger.Debug("OTP verification failed", log.MaskedString(log.LoggerKeyUserID, userID))
-				execResp.Status = common.ExecUserInputRequired
-				execResp.Inputs = s.GetRequiredInputs(ctx)
+				execResp.Status = common.ExecFailure
 				execResp.FailureReason = failureReasonInvalidOTP
 				return nil, nil
 			}
@@ -645,8 +641,7 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	if svcErr != nil {
 		if svcErr.Code == authnprovidermgr.ErrorAuthenticationFailed.Code {
 			logger.Debug("OTP verification failed", log.MaskedString(log.LoggerKeyUserID, userID))
-			execResp.Status = common.ExecUserInputRequired
-			execResp.Inputs = s.GetRequiredInputs(ctx)
+			execResp.Status = common.ExecFailure
 			execResp.FailureReason = failureReasonInvalidOTP
 			return nil, nil
 		}

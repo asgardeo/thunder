@@ -19,28 +19,9 @@
 package dcr
 
 import (
-	"strconv"
-
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
 )
-
-// errInvalidBCP47Tag is returned when a language tag in a DCR request field is not valid BCP 47.
-type errInvalidBCP47Tag struct{ key string }
-
-// Error implements the error interface.
-func (e *errInvalidBCP47Tag) Error() string {
-	return "invalid BCP 47 language tag in field \"" + e.key + "\""
-}
-
-// errTooManyLocalizedVariants is returned when a localizable field exceeds maxLocalizedVariantsPerField.
-type errTooManyLocalizedVariants struct{ field string }
-
-// Error implements the error interface.
-func (e *errTooManyLocalizedVariants) Error() string {
-	return "field \"" + e.field + "\" exceeds the maximum of " +
-		strconv.Itoa(maxLocalizedVariantsPerField) + " localized variants"
-}
 
 // DCR standard service error constants
 var (

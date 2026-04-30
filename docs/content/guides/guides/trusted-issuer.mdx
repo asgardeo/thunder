@@ -4,19 +4,19 @@ title: Trusted Issuer
 
 # Trusted Issuer
 
-<ProductName /> can accept access tokens issued by an external authorization server and validate them locally using that server's JWKS endpoint. This enables federated authentication scenarios. An authorized user base can live on a separate central authorization server and still access a <ProductName /> instance that acts purely as a resource server. The resource-server <ProductName /> instance does not issue its own tokens for those users.
+Thunder can accept access tokens issued by an external authorization server and validate them locally using that server's JWKS endpoint. This enables federated authentication scenarios. An authorized user base can live on a separate central authorization server and still access a Thunder instance that acts purely as a resource server. The resource-server Thunder instance does not issue its own tokens for those users.
 
 You can enable this by adding a `server.security.trusted_issuer` block to `repository/conf/deployment.yaml`.
 
 ## When to Enable
 
-Enable `trusted_issuer` on a <ProductName /> instance when:
+Enable `trusted_issuer` on a Thunder instance when:
 
-- You run a multi-tenant deployment with one central <ProductName /> acting as the identity provider and other <ProductName /> instances acting as resource servers.
-- You want tenant instances to delegate login to the central <ProductName /> rather than duplicate user directories.
-- Bearer tokens arriving at the tenant instance are signed by the central <ProductName /> and carry an `iss` claim that identifies it.
+- You run a multi-tenant deployment with one central Thunder acting as the identity provider and other Thunder instances acting as resource servers.
+- You want tenant instances to delegate login to the central Thunder rather than duplicate user directories.
+- Bearer tokens arriving at the tenant instance are signed by the central Thunder and carry an `iss` claim that identifies it.
 
-If a <ProductName /> instance only serves its own users and issues its own tokens, omit the `server.security.trusted_issuer` block. Trusted issuer validation activates as soon as `server.security.trusted_issuer.issuer` is set; `jwks_url` and `audience` are then required and <ProductName /> fails to start if either is missing.
+If a Thunder instance only serves its own users and issues its own tokens, omit the `server.security.trusted_issuer` block. Trusted issuer validation activates as soon as `server.security.trusted_issuer.issuer` is set; `jwks_url` and `audience` are then required and Thunder fails to start if either is missing.
 
 ## Configuration
 
@@ -37,15 +37,15 @@ server:
 | Field | Description |
 |-------|-------------|
 | `issuer` | The exact value of the `iss` claim that incoming tokens must carry. This should match the central authorization server's issuer URL. |
-| `jwks_url` | The JWKS endpoint on the central server. <ProductName /> uses it to fetch the signing keys needed to verify token signatures. |
-| `audience` | The expected `aud` claim on incoming tokens. Set this to the resource-server <ProductName /> instance's own public URL. The client at the central authorization server must send a matching `resource` parameter in the authorization request so the issued token's `aud` points at this instance. |
+| `jwks_url` | The JWKS endpoint on the central server. Thunder uses it to fetch the signing keys needed to verify token signatures. |
+| `audience` | The expected `aud` claim on incoming tokens. Set this to the resource-server Thunder instance's own public URL. The client at the central authorization server must send a matching `resource` parameter in the authorization request so the issued token's `aud` points at this instance. |
 | `required_claims` | Optional list of claims that every accepted token must contain, each with an expected value. Tokens missing a required claim, or carrying a different value, are rejected. Use this to enforce any additional constraints on accepted tokens. |
 
 The JWKS cache TTL is configured at `server.security.jwks_cache_ttl`, not inside this block. The same cache backs every JWKS consumer in the server, including trusted issuer validation and federated OIDC authenticators. See [Security Configuration](/docs/next/guides/getting-started/configuration#security-configuration) for details.
 
 ## Console Portal Configuration
 
-The `server.security.trusted_issuer` block on the server only controls how <ProductName /> validates incoming tokens. <ProductName />'s console portal still authenticates against this <ProductName /> instance unless you also delegate its login to the external authorization server. To delegate console login, add a `trusted_issuer` entry to the console's runtime configuration at `apps/console/config.js`:
+The `server.security.trusted_issuer` block on the server only controls how Thunder validates incoming tokens. Thunder's console portal still authenticates against this Thunder instance unless you also delegate its login to the external authorization server. To delegate console login, add a `trusted_issuer` entry to the console's runtime configuration at `apps/console/config.js`:
 
 ```js
 window.__THUNDER_RUNTIME_CONFIG__ = {
@@ -68,50 +68,50 @@ window.__THUNDER_RUNTIME_CONFIG__ = {
 | `port` | Port on the external authorization server. |
 | `http_only` | Set to `true` only for local or development authorization servers served over HTTP. |
 | `public_url` | Fully-qualified URL of the external authorization server. Used by the console to build authorization requests. |
-| `client_id` | OAuth client ID registered on the external authorization server for this <ProductName /> instance's console. |
-| `scopes` | Scopes the console requests from the external authorization server. Must include every scope <ProductName />'s APIs require. |
-| `type` | Set to `"generic"` when the trusted issuer is a generic OIDC provider. When set, the console skips <ProductName />-specific bootstrap calls (flow metadata, branding preferences) that would fail against a generic provider and uses the IdP's `end_session_endpoint` for sign-out. Defaults to `"thunder"`. |
+| `client_id` | OAuth client ID registered on the external authorization server for this Thunder instance's console. |
+| `scopes` | Scopes the console requests from the external authorization server. Must include every scope Thunder's APIs require. |
+| `type` | Set to `"generic"` when the trusted issuer is a generic OIDC provider. When set, the console skips Thunder-specific bootstrap calls (flow metadata, branding preferences) that would fail against a generic provider and uses the IdP's `end_session_endpoint` for sign-out. Defaults to `"thunder"`. |
 
-When this block is present, the console delegates login to the external authorization server. When omitted, the console authenticates against this <ProductName /> instance normally.
+When this block is present, the console delegates login to the external authorization server. When omitted, the console authenticates against this Thunder instance normally.
 
 :::note
-The external authorization server must permit this <ProductName /> instance's origin in its CORS allowed-origins configuration. Otherwise, browser calls from the console to the authorization server's `/oauth2/token`, `/oauth2/jwks`, and related endpoints are blocked.
+The external authorization server must permit this Thunder instance's origin in its CORS allowed-origins configuration. Otherwise, browser calls from the console to the authorization server's `/oauth2/token`, `/oauth2/jwks`, and related endpoints are blocked.
 :::
 
 ## How Validation Works
 
 :::info JWT Validation Update
-<ProductName />'s trusted issuer token validation now accepts tokens that omit the `nbf` (not before) claim, aligning with [RFC 7519 Section 4.1.5](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.5). The `aud` (audience) claim is now accepted as either a single string or a JSON array of strings per [RFC 7519 Section 4.1.3](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3). These changes improve compatibility with commercial OIDC providers that do not emit `nbf` or that issue array-form `aud`. No client-side migration is required; tokens that were accepted before remain valid.
+Thunder's trusted issuer token validation now accepts tokens that omit the `nbf` (not before) claim, aligning with [RFC 7519 Section 4.1.5](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.5). The `aud` (audience) claim is now accepted as either a single string or a JSON array of strings per [RFC 7519 Section 4.1.3](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3). These changes improve compatibility with commercial OIDC providers that do not emit `nbf` or that issue array-form `aud`. No client-side migration is required; tokens that were accepted before remain valid.
 :::
 
-When trusted issuer is configured and a request carries a bearer token, <ProductName />:
+When trusted issuer is configured and a request carries a bearer token, Thunder:
 
 1. Parses the JWT and confirms its `iss` claim matches `trusted_issuer.issuer`.
 2. Fetches signing keys from `trusted_issuer.jwks_url` and verifies the signature.
 3. Checks the `exp` claim and rejects expired tokens.
 4. If the `nbf` (not before) claim is present, checks that the current time is not before the `nbf` value. If `nbf` is absent, the token is still accepted.
-5. Confirms the `aud` claim matches `trusted_issuer.audience`. The `aud` claim can be either a single string or a JSON array of strings; <ProductName /> accepts the token if the configured audience appears in either form.
+5. Confirms the `aud` claim matches `trusted_issuer.audience`. The `aud` claim can be either a single string or a JSON array of strings; Thunder accepts the token if the configured audience appears in either form.
 6. Checks that every entry in `required_claims` is present with the expected value.
 
 If any step fails, the token is rejected.
 
 ### Claim Handling Details
 
-**`nbf` (Not Before):** This claim is optional per [RFC 7519 Section 4.1.5](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.5). Many commercial OIDC providers do not include `nbf` in their tokens. <ProductName /> accepts tokens that omit `nbf` entirely. When `nbf` is present, <ProductName /> enforces it with the configured clock-skew leeway.
+**`nbf` (Not Before):** This claim is optional per [RFC 7519 Section 4.1.5](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.5). Many commercial OIDC providers do not include `nbf` in their tokens. Thunder accepts tokens that omit `nbf` entirely. When `nbf` is present, Thunder enforces it with the configured clock-skew leeway.
 
-**`aud` (Audience):** This claim can be a single string or an array of strings per [RFC 7519 Section 4.1.3](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3). Some identity providers issue array-form `aud` when multiple audiences are bound to the application (for example, the resource API together with the provider's own `/userinfo` endpoint). <ProductName /> matches the configured `trusted_issuer.audience` value against both forms: exact string equality for single-string `aud`, and membership for array `aud`.
+**`aud` (Audience):** This claim can be a single string or an array of strings per [RFC 7519 Section 4.1.3](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3). Some identity providers issue array-form `aud` when multiple audiences are bound to the application (for example, the resource API together with the provider's own `/userinfo` endpoint). Thunder matches the configured `trusted_issuer.audience` value against both forms: exact string equality for single-string `aud`, and membership for array `aud`.
 
 **`exp` (Expiry):** This claim is required. Tokens that omit `exp` or provide a non-numeric value are rejected.
 
-<ProductName /> picks the verification method based on the token's `iss` claim. If `iss` matches `trusted_issuer.issuer`, the token is verified against the configured JWKS endpoint. Otherwise, if `iss` matches one of this server's own issuers, <ProductName /> verifies it with its local signing key. Any other `iss` is rejected.
+Thunder picks the verification method based on the token's `iss` claim. If `iss` matches `trusted_issuer.issuer`, the token is verified against the configured JWKS endpoint. Otherwise, if `iss` matches one of this server's own issuers, Thunder verifies it with its local signing key. Any other `iss` is rejected.
 
 Each `required_claims` entry is matched by exact string equality: the claim must be present on the token and its value must match the configured `value` exactly.
 
-<ProductName /> accepts tokens signed with `RS256`, `PS256`, `RS512`, `ES256`, `ES384`, `ES512`, or `EdDSA`. Tokens using any other algorithm are rejected. JWKS responses are cached in-process for `server.security.jwks_cache_ttl` seconds (default: 300), so plan external-server key rotations with at least that much overlap.
+Thunder accepts tokens signed with `RS256`, `PS256`, `RS512`, `ES256`, `ES384`, `ES512`, or `EdDSA`. Tokens using any other algorithm are rejected. JWKS responses are cached in-process for `server.security.jwks_cache_ttl` seconds (default: 300), so plan external-server key rotations with at least that much overlap.
 
 ## Helm Configuration
 
-When installing <ProductName /> with the Helm chart at `install/helm`, the same settings are available under the `configuration` key using camelCase field names.
+When installing Thunder with the Helm chart at `install/helm`, the same settings are available under the `configuration` key using camelCase field names.
 
 ```yaml
 configuration:
@@ -145,12 +145,12 @@ configuration:
 
 | Symptom | Likely Cause | Fix |
 |---------|--------------|-----|
-| Login redirect hangs or the token exchange fails with a CORS error in the browser console | <ProductName />'s origin is not permitted by the external authorization server's CORS configuration | Add <ProductName />'s origin to the authorization server's CORS allowed-origins configuration. |
+| Login redirect hangs or the token exchange fails with a CORS error in the browser console | Thunder's origin is not permitted by the external authorization server's CORS configuration | Add Thunder's origin to the authorization server's CORS allowed-origins configuration. |
 | Tokens rejected with "issuer mismatch" | `trusted_issuer.issuer` does not exactly match the `iss` claim on incoming tokens | Set `trusted_issuer.issuer` to match exactly (scheme, host, port, trailing slash). |
-| Tokens rejected with "audience mismatch" | The authorization server is not sending a `resource` parameter, so `aud` defaults to the client ID instead of <ProductName />'s URL | Either set `trusted_issuer.audience` to the client ID, or configure the client to send `resource=<thunder-url>` in the authorization request. |
+| Tokens rejected with "audience mismatch" | The authorization server is not sending a `resource` parameter, so `aud` defaults to the client ID instead of Thunder's URL | Either set `trusted_issuer.audience` to the client ID, or configure the client to send `resource=<thunder-url>` in the authorization request. |
 | Tokens rejected with "required claim missing" | A claim listed under `required_claims` is not present on the token, or its value differs | Remove the claim from `required_claims`, or configure the authorization server to include it with the expected value. |
-| JWKS fetch fails | `trusted_issuer.jwks_url` cannot be reached from <ProductName />, or the authorization server uses a certificate <ProductName /> does not trust | Check that the network allows the request, and install the authorization server's CA certificate on <ProductName /> if needed. |
-| Console never redirects to the external authorization server | `consoleClient.trustedIssuer` not set, or `publicUrl`/`hostname` still point at <ProductName /> | Verify the `consoleClient.trustedIssuer` block and re-render the chart. |
+| JWKS fetch fails | `trusted_issuer.jwks_url` cannot be reached from Thunder, or the authorization server uses a certificate Thunder does not trust | Check that the network allows the request, and install the authorization server's CA certificate on Thunder if needed. |
+| Console never redirects to the external authorization server | `consoleClient.trustedIssuer` not set, or `publicUrl`/`hostname` still point at Thunder | Verify the `consoleClient.trustedIssuer` block and re-render the chart. |
 
 ## Reference
 

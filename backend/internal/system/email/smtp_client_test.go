@@ -47,9 +47,9 @@ func TestSMTPClientTestSuite(t *testing.T) {
 
 func (suite *SMTPClientTestSuite) SetupSuite() {
 	testConfig := &config.Config{}
-	err := config.InitializeThunderRuntime("", testConfig)
-	if err != nil {
-		suite.T().Fatalf("Failed to initialize ThunderRuntime: %v", err)
+	error := config.InitializeThunderRuntime("", testConfig)
+	if error != nil {
+		suite.T().Fatalf("Failed to initialize ThunderRuntime: %v", error)
 	}
 }
 
@@ -75,87 +75,87 @@ func (suite *SMTPClientTestSuite) waitForDone(done <-chan bool) {
 }
 
 func (suite *SMTPClientTestSuite) TestNewSMTPClient_Success() {
-	conf := suite.getValidSMTPConfig("localhost", 25)
+	config := suite.getValidSMTPConfig("localhost", 25)
 
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	suite.NotNil(client)
 }
 
 func (suite *SMTPClientTestSuite) TestNewSMTPClient_EmptyFrom_Error() {
-	conf := suite.getValidSMTPConfig("localhost", 25)
-	conf.from = ""
+	config := suite.getValidSMTPConfig("localhost", 25)
+	config.from = ""
 
-	client, err := newSMTPClient(conf)
-	suite.Error(err)
+	client, error := newSMTPClient(config)
+	suite.Error(error)
 	suite.Nil(client)
-	suite.True(errors.Is(err, ErrorInvalidSender))
+	suite.True(errors.Is(error, ErrorInvalidSender))
 }
 
 func (suite *SMTPClientTestSuite) TestNewSMTPClient_InvalidFrom_Error() {
-	conf := suite.getValidSMTPConfig("localhost", 25)
-	conf.from = "invalid-email"
+	config := suite.getValidSMTPConfig("localhost", 25)
+	config.from = "invalid-email"
 
-	client, err := newSMTPClient(conf)
-	suite.Error(err)
+	client, error := newSMTPClient(config)
+	suite.Error(error)
 	suite.Nil(client)
-	suite.True(errors.Is(err, ErrorInvalidSender))
+	suite.True(errors.Is(error, ErrorInvalidSender))
 }
 
 func (suite *SMTPClientTestSuite) TestNewSMTPClient_EmptyHost_Error() {
-	conf := suite.getValidSMTPConfig("localhost", 25)
-	conf.host = "   "
+	config := suite.getValidSMTPConfig("localhost", 25)
+	config.host = "   "
 
-	client, err := newSMTPClient(conf)
-	suite.Error(err)
+	client, error := newSMTPClient(config)
+	suite.Error(error)
 	suite.Nil(client)
-	suite.True(errors.Is(err, ErrorInvalidHost))
+	suite.True(errors.Is(error, ErrorInvalidHost))
 }
 
 func (suite *SMTPClientTestSuite) TestNewSMTPClient_InvalidPort_Error() {
-	conf := suite.getValidSMTPConfig("localhost", 25)
-	conf.port = 0
+	config := suite.getValidSMTPConfig("localhost", 25)
+	config.port = 0
 
-	client, err := newSMTPClient(conf)
-	suite.Error(err)
+	client, error := newSMTPClient(config)
+	suite.Error(error)
 	suite.Nil(client)
-	suite.True(errors.Is(err, ErrorInvalidPort))
+	suite.True(errors.Is(error, ErrorInvalidPort))
 
-	conf.port = -1
-	client, err = newSMTPClient(conf)
-	suite.Error(err)
+	config.port = -1
+	client, error = newSMTPClient(config)
+	suite.Error(error)
 	suite.Nil(client)
-	suite.True(errors.Is(err, ErrorInvalidPort))
+	suite.True(errors.Is(error, ErrorInvalidPort))
 }
 
 func (suite *SMTPClientTestSuite) TestNewSMTPClient_EmptyCredentials_Error() {
-	conf := suite.getValidSMTPConfig("localhost", 25)
-	conf.enableAuthentication = true
-	conf.username = ""
+	config := suite.getValidSMTPConfig("localhost", 25)
+	config.enableAuthentication = true
+	config.username = ""
 
-	client, err := newSMTPClient(conf)
-	suite.Error(err)
+	client, error := newSMTPClient(config)
+	suite.Error(error)
 	suite.Nil(client)
-	suite.True(errors.Is(err, ErrorInvalidCredentials))
+	suite.True(errors.Is(error, ErrorInvalidCredentials))
 
-	conf.username = "user"
-	conf.password = "  "
-	client, err = newSMTPClient(conf)
-	suite.Error(err)
+	config.username = "user"
+	config.password = "  "
+	client, error = newSMTPClient(config)
+	suite.Error(error)
 	suite.Nil(client)
-	suite.True(errors.Is(err, ErrorInvalidCredentials))
+	suite.True(errors.Is(error, ErrorInvalidCredentials))
 }
 
 func (suite *SMTPClientTestSuite) TestSendEmail_PlainText_Success() {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	suite.Require().NoError(err)
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	suite.Require().NoError(error)
 	defer func() { _ = listener.Close() }()
 
 	serverAddress := listener.Addr().(*net.TCPAddr)
-	conf := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	done := make(chan bool, 1)
 	go suite.runMockSMTPServer(listener, done)
@@ -167,21 +167,21 @@ func (suite *SMTPClientTestSuite) TestSendEmail_PlainText_Success() {
 		IsHTML:  false,
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Require().NoError(err)
+	suite.Require().NoError(error)
 	suite.waitForDone(done)
 }
 
 func (suite *SMTPClientTestSuite) TestSendEmail_HTML_Success() {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	suite.Require().NoError(err)
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	suite.Require().NoError(error)
 	defer func() { _ = listener.Close() }()
 
 	serverAddress := listener.Addr().(*net.TCPAddr)
-	conf := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	done := make(chan bool, 1)
 	go suite.runMockSMTPServer(listener, done)
@@ -193,21 +193,21 @@ func (suite *SMTPClientTestSuite) TestSendEmail_HTML_Success() {
 		IsHTML:  true,
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Require().NoError(err)
+	suite.Require().NoError(error)
 	suite.waitForDone(done)
 }
 
 func (suite *SMTPClientTestSuite) TestSendEmail_MultipleRecipients_Success() {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	suite.Require().NoError(err)
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	suite.Require().NoError(error)
 	defer func() { _ = listener.Close() }()
 
 	serverAddress := listener.Addr().(*net.TCPAddr)
-	conf := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	done := make(chan bool, 1)
 	go suite.runMockSMTPServer(listener, done)
@@ -221,21 +221,21 @@ func (suite *SMTPClientTestSuite) TestSendEmail_MultipleRecipients_Success() {
 		IsHTML:  false,
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Require().NoError(err)
+	suite.Require().NoError(error)
 	suite.waitForDone(done)
 }
 
 func (suite *SMTPClientTestSuite) TestSendEmail_EmptyToWithCC_Success() {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	suite.Require().NoError(err)
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	suite.Require().NoError(error)
 	defer func() { _ = listener.Close() }()
 
 	serverAddress := listener.Addr().(*net.TCPAddr)
-	conf := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	done := make(chan bool, 1)
 	go suite.runMockSMTPServer(listener, done)
@@ -249,16 +249,16 @@ func (suite *SMTPClientTestSuite) TestSendEmail_EmptyToWithCC_Success() {
 		IsHTML:  false,
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Require().NoError(err)
+	suite.Require().NoError(error)
 	suite.waitForDone(done)
 }
 
 func (suite *SMTPClientTestSuite) TestSendEmail_EmptyRecipients_Error() {
-	conf := suite.getValidSMTPConfig("localhost", 25)
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("localhost", 25)
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	emailData := EmailData{
 		To:      []string{},
@@ -266,16 +266,16 @@ func (suite *SMTPClientTestSuite) TestSendEmail_EmptyRecipients_Error() {
 		Body:    "Test body",
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Error(err)
-	suite.True(errors.Is(err, ErrorInvalidRecipient))
+	suite.Error(error)
+	suite.True(errors.Is(error, ErrorInvalidRecipient))
 }
 
 func (suite *SMTPClientTestSuite) TestSendEmail_EmptyRecipientString_Error() {
-	conf := suite.getValidSMTPConfig("localhost", 25)
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("localhost", 25)
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	emailData := EmailData{
 		To:      []string{"   "}, // empty after trim
@@ -283,25 +283,25 @@ func (suite *SMTPClientTestSuite) TestSendEmail_EmptyRecipientString_Error() {
 		Body:    "Test body",
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Error(err)
-	suite.True(errors.Is(err, ErrorInvalidRecipient))
-	suite.Contains(err.Error(), "recipient address cannot be empty")
+	suite.Error(error)
+	suite.True(errors.Is(error, ErrorInvalidRecipient))
+	suite.Contains(error.Error(), "recipient address cannot be empty")
 }
 
 func (suite *SMTPClientTestSuite) TestSendEmail_ConnectionError() {
 	// Allocate an ephemeral port and close it immediately to ensure nothing is listening on it.
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	suite.Require().NoError(err)
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	suite.Require().NoError(error)
 	serverAddress := listener.Addr().(*net.TCPAddr)
 	port := serverAddress.Port
-	err = listener.Close()
-	suite.Require().NoError(err)
+	error = listener.Close()
+	suite.Require().NoError(error)
 
-	conf := suite.getValidSMTPConfig("127.0.0.1", port)
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("127.0.0.1", port)
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	emailData := EmailData{
 		To:      []string{"recipient@example.com"},
@@ -309,16 +309,16 @@ func (suite *SMTPClientTestSuite) TestSendEmail_ConnectionError() {
 		Body:    "Test body",
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Error(err)
-	suite.True(errors.Is(err, ErrorSMTPConnection))
+	suite.Error(error)
+	suite.True(errors.Is(error, ErrorSMTPConnection))
 }
 
 func (suite *SMTPClientTestSuite) TestSendEmail_CRLFInjection_Error() {
-	conf := suite.getValidSMTPConfig("localhost", 25)
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("localhost", 25)
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	// Test CR/LF in recipient address.
 	emailData := EmailData{
@@ -326,9 +326,9 @@ func (suite *SMTPClientTestSuite) TestSendEmail_CRLFInjection_Error() {
 		Subject: "Test",
 		Body:    "Test body",
 	}
-	err = client.Send(emailData)
-	suite.Error(err)
-	suite.True(errors.Is(err, ErrorInvalidRecipient))
+	error = client.Send(emailData)
+	suite.Error(error)
+	suite.True(errors.Is(error, ErrorInvalidRecipient))
 
 	// Test CR/LF in subject.
 	emailData = EmailData{
@@ -336,16 +336,16 @@ func (suite *SMTPClientTestSuite) TestSendEmail_CRLFInjection_Error() {
 		Subject: "Test\r\nBcc: evil@example.com",
 		Body:    "Test body",
 	}
-	err = client.Send(emailData)
-	suite.Error(err)
-	suite.Contains(err.Error(), "invalid characters")
-	suite.True(errors.Is(err, ErrorInvalidSubject))
+	error = client.Send(emailData)
+	suite.Error(error)
+	suite.Contains(error.Error(), "invalid characters")
+	suite.True(errors.Is(error, ErrorInvalidSubject))
 }
 
 func (suite *SMTPClientTestSuite) TestBuildMessage_PlainText() {
-	conf := suite.getValidSMTPConfig("localhost", 25)
-	ci, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("localhost", 25)
+	ci, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 	client := ci.(*smtpClient)
 
 	emailData := EmailData{
@@ -365,9 +365,9 @@ func (suite *SMTPClientTestSuite) TestBuildMessage_PlainText() {
 }
 
 func (suite *SMTPClientTestSuite) TestBuildMessage_HTMLWithCC() {
-	conf := suite.getValidSMTPConfig("localhost", 25)
-	ci, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("localhost", 25)
+	ci, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 	client := ci.(*smtpClient)
 
 	emailData := EmailData{
@@ -386,9 +386,9 @@ func (suite *SMTPClientTestSuite) TestBuildMessage_HTMLWithCC() {
 }
 
 func (suite *SMTPClientTestSuite) TestValidateAndProcessRecipients() {
-	conf := suite.getValidSMTPConfig("localhost", 25)
-	ci, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("localhost", 25)
+	ci, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 	client := ci.(*smtpClient)
 
 	emailData := EmailData{
@@ -398,8 +398,8 @@ func (suite *SMTPClientTestSuite) TestValidateAndProcessRecipients() {
 		Subject: "Test Subject",
 	}
 
-	recipients, err := client.validateAndProcessRecipients(&emailData)
-	suite.Require().NoError(err)
+	recipients, error := client.validateAndProcessRecipients(&emailData)
+	suite.Require().NoError(error)
 
 	suite.Equal(3, len(recipients))
 	suite.Contains(recipients, "to@example.com")
@@ -412,9 +412,9 @@ func (suite *SMTPClientTestSuite) TestValidateAndProcessRecipients() {
 }
 
 func (suite *SMTPClientTestSuite) TestValidateAndProcessRecipients_InvalidSubject_Error() {
-	conf := suite.getValidSMTPConfig("localhost", 25)
-	ci, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("localhost", 25)
+	ci, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 	client := ci.(*smtpClient)
 
 	emailData := EmailData{
@@ -422,15 +422,15 @@ func (suite *SMTPClientTestSuite) TestValidateAndProcessRecipients_InvalidSubjec
 		Subject: "Invalid\nSubject",
 	}
 
-	_, err = client.validateAndProcessRecipients(&emailData)
-	suite.Error(err)
-	suite.True(errors.Is(err, ErrorInvalidSubject))
+	_, error = client.validateAndProcessRecipients(&emailData)
+	suite.Error(error)
+	suite.True(errors.Is(error, ErrorInvalidSubject))
 }
 
 func (suite *SMTPClientTestSuite) TestValidateAndProcessRecipients_InvalidCC_Error() {
-	conf := suite.getValidSMTPConfig("localhost", 25)
-	ci, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("localhost", 25)
+	ci, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 	client := ci.(*smtpClient)
 
 	emailData := EmailData{
@@ -438,15 +438,15 @@ func (suite *SMTPClientTestSuite) TestValidateAndProcessRecipients_InvalidCC_Err
 		CC: []string{"invalid-cc"},
 	}
 
-	_, err = client.validateAndProcessRecipients(&emailData)
-	suite.Error(err)
-	suite.True(errors.Is(err, ErrorInvalidRecipient))
+	_, error = client.validateAndProcessRecipients(&emailData)
+	suite.Error(error)
+	suite.True(errors.Is(error, ErrorInvalidRecipient))
 }
 
 func (suite *SMTPClientTestSuite) TestValidateAndProcessRecipients_InvalidBCC_Error() {
-	conf := suite.getValidSMTPConfig("localhost", 25)
-	ci, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("localhost", 25)
+	ci, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 	client := ci.(*smtpClient)
 
 	emailData := EmailData{
@@ -454,23 +454,23 @@ func (suite *SMTPClientTestSuite) TestValidateAndProcessRecipients_InvalidBCC_Er
 		BCC: []string{"invalid-bcc"},
 	}
 
-	_, err = client.validateAndProcessRecipients(&emailData)
-	suite.Error(err)
-	suite.True(errors.Is(err, ErrorInvalidRecipient))
+	_, error = client.validateAndProcessRecipients(&emailData)
+	suite.Error(error)
+	suite.True(errors.Is(error, ErrorInvalidRecipient))
 }
 
 // --- sendViaSMTP error path tests ---
 
 func (suite *SMTPClientTestSuite) TestSendViaSMTP_InvalidGreeting_Error() {
 	// A listener that sends an invalid SMTP greeting so smtp.NewClient fails.
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	suite.Require().NoError(err)
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	suite.Require().NoError(error)
 	defer func() { _ = listener.Close() }()
 
 	serverAddress := listener.Addr().(*net.TCPAddr)
-	conf := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	done := make(chan bool, 1)
 	go func() {
@@ -490,23 +490,23 @@ func (suite *SMTPClientTestSuite) TestSendViaSMTP_InvalidGreeting_Error() {
 		Body:    "Test body",
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Error(err)
-	suite.True(errors.Is(err, ErrorSMTPConnection))
+	suite.Error(error)
+	suite.True(errors.Is(error, ErrorSMTPConnection))
 	suite.waitForDone(done)
 }
 
 func (suite *SMTPClientTestSuite) TestSendViaSMTP_TLSNotSupported_Error() {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	suite.Require().NoError(err)
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	suite.Require().NoError(error)
 	defer func() { _ = listener.Close() }()
 
 	serverAddress := listener.Addr().(*net.TCPAddr)
-	conf := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
-	conf.useTLS = true // Enable STARTTLS
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
+	config.useTLS = true // Enable STARTTLS
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	done := make(chan bool, 1)
 	// Standard mock server does not advertise STARTTLS
@@ -518,24 +518,24 @@ func (suite *SMTPClientTestSuite) TestSendViaSMTP_TLSNotSupported_Error() {
 		Body:    "Test body",
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Error(err)
-	suite.True(errors.Is(err, ErrorSMTPConnection))
-	suite.Contains(err.Error(), "STARTTLS not supported by server")
+	suite.Error(error)
+	suite.True(errors.Is(error, ErrorSMTPConnection))
+	suite.Contains(error.Error(), "STARTTLS not supported by server")
 	suite.waitForDone(done)
 }
 
 func (suite *SMTPClientTestSuite) TestSendViaSMTP_TLSError() {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	suite.Require().NoError(err)
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	suite.Require().NoError(error)
 	defer func() { _ = listener.Close() }()
 
 	serverAddress := listener.Addr().(*net.TCPAddr)
-	conf := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
-	conf.useTLS = true // Enable STARTTLS
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
+	config.useTLS = true // Enable STARTTLS
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	done := make(chan bool, 1)
 	go suite.runMockSMTPServerRejectTLS(listener, done)
@@ -546,23 +546,23 @@ func (suite *SMTPClientTestSuite) TestSendViaSMTP_TLSError() {
 		Body:    "Test body",
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Error(err)
-	suite.True(errors.Is(err, ErrorSMTPConnection))
+	suite.Error(error)
+	suite.True(errors.Is(error, ErrorSMTPConnection))
 	suite.waitForDone(done)
 }
 
 func (suite *SMTPClientTestSuite) TestSendViaSMTP_AuthError() {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	suite.Require().NoError(err)
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	suite.Require().NoError(error)
 	defer func() { _ = listener.Close() }()
 
 	serverAddress := listener.Addr().(*net.TCPAddr)
-	conf := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
-	conf.enableAuthentication = true
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
+	config.enableAuthentication = true
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	done := make(chan bool, 1)
 	go suite.runMockSMTPServerRejectAuth(listener, done)
@@ -573,23 +573,23 @@ func (suite *SMTPClientTestSuite) TestSendViaSMTP_AuthError() {
 		Body:    "Test body",
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Error(err)
-	suite.True(errors.Is(err, ErrorSMTPAuth))
+	suite.Error(error)
+	suite.True(errors.Is(error, ErrorSMTPAuth))
 	suite.waitForDone(done)
 }
 
 func (suite *SMTPClientTestSuite) TestSendViaSMTP_MailFromError() {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	suite.Require().NoError(err)
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	suite.Require().NoError(error)
 	defer func() { _ = listener.Close() }()
 
 	serverAddress := listener.Addr().(*net.TCPAddr)
-	conf := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
-	conf.enableAuthentication = false
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
+	config.enableAuthentication = false
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	done := make(chan bool, 1)
 	go suite.runMockSMTPServerRejectMailFrom(listener, done)
@@ -600,23 +600,23 @@ func (suite *SMTPClientTestSuite) TestSendViaSMTP_MailFromError() {
 		Body:    "Test body",
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Error(err)
-	suite.True(errors.Is(err, ErrorEmailSendFailed))
+	suite.Error(error)
+	suite.True(errors.Is(error, ErrorEmailSendFailed))
 	suite.waitForDone(done)
 }
 
 func (suite *SMTPClientTestSuite) TestSendViaSMTP_RcptToError() {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	suite.Require().NoError(err)
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	suite.Require().NoError(error)
 	defer func() { _ = listener.Close() }()
 
 	serverAddress := listener.Addr().(*net.TCPAddr)
-	conf := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
-	conf.enableAuthentication = false
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
+	config.enableAuthentication = false
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	done := make(chan bool, 1)
 	go suite.runMockSMTPServerRejectRcptTo(listener, done)
@@ -627,23 +627,23 @@ func (suite *SMTPClientTestSuite) TestSendViaSMTP_RcptToError() {
 		Body:    "Test body",
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Error(err)
-	suite.True(errors.Is(err, ErrorEmailSendFailed))
+	suite.Error(error)
+	suite.True(errors.Is(error, ErrorEmailSendFailed))
 	suite.waitForDone(done)
 }
 
 func (suite *SMTPClientTestSuite) TestSendViaSMTP_DataError() {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	suite.Require().NoError(err)
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	suite.Require().NoError(error)
 	defer func() { _ = listener.Close() }()
 
 	serverAddress := listener.Addr().(*net.TCPAddr)
-	conf := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
-	conf.enableAuthentication = false
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
+	config.enableAuthentication = false
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	done := make(chan bool, 1)
 	go suite.runMockSMTPServerRejectData(listener, done)
@@ -654,23 +654,23 @@ func (suite *SMTPClientTestSuite) TestSendViaSMTP_DataError() {
 		Body:    "Test body",
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Error(err)
-	suite.True(errors.Is(err, ErrorEmailSendFailed))
+	suite.Error(error)
+	suite.True(errors.Is(error, ErrorEmailSendFailed))
 	suite.waitForDone(done)
 }
 
 func (suite *SMTPClientTestSuite) TestSendViaSMTP_WriteError() {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	suite.Require().NoError(err)
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	suite.Require().NoError(error)
 	defer func() { _ = listener.Close() }()
 
 	serverAddress := listener.Addr().(*net.TCPAddr)
-	conf := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
-	conf.enableAuthentication = false
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
+	config.enableAuthentication = false
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	done := make(chan bool, 1)
 	go suite.runMockSMTPServerCloseOnData(listener, done)
@@ -686,26 +686,26 @@ func (suite *SMTPClientTestSuite) TestSendViaSMTP_WriteError() {
 		Body:    largeBody,
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Error(err)
+	suite.Error(error)
 	// On Windows, this is often reported as a connection failure (SYS-EMAIL-5001)
-	errStr := err.Error()
-	suite.True(errors.Is(err, ErrorEmailSendFailed) || errors.Is(err, ErrorSMTPConnection),
+	errStr := error.Error()
+	suite.True(errors.Is(error, ErrorEmailSendFailed) || errors.Is(error, ErrorSMTPConnection),
 		"Expected error to wrap ErrorEmailSendFailed or ErrorSMTPConnection, but got: %s", errStr)
 	suite.waitForDone(done)
 }
 
 func (suite *SMTPClientTestSuite) TestSendViaSMTP_DataTerminationError() {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	suite.Require().NoError(err)
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	suite.Require().NoError(error)
 	defer func() { _ = listener.Close() }()
 
 	serverAddress := listener.Addr().(*net.TCPAddr)
-	conf := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
-	conf.enableAuthentication = false
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
+	config.enableAuthentication = false
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	done := make(chan bool, 1)
 	go suite.runMockSMTPServerRejectDataTermination(listener, done)
@@ -716,10 +716,10 @@ func (suite *SMTPClientTestSuite) TestSendViaSMTP_DataTerminationError() {
 		Body:    "Test body",
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Error(err)
-	suite.True(errors.Is(err, ErrorEmailSendFailed))
+	suite.Error(error)
+	suite.True(errors.Is(error, ErrorEmailSendFailed))
 	suite.waitForDone(done)
 }
 
@@ -743,11 +743,11 @@ func (suite *SMTPClientTestSuite) TestNewSMTPClientFromConfig_Defaults() {
 			},
 		},
 	}
-	err := config.InitializeThunderRuntime("", testConfig)
-	suite.Require().NoError(err)
+	error := config.InitializeThunderRuntime("", testConfig)
+	suite.Require().NoError(error)
 
-	client, err := NewSMTPClientFromConfig()
-	suite.Require().NoError(err)
+	client, error := NewSMTPClientFromConfig()
+	suite.Require().NoError(error)
 
 	suite.NotNil(client)
 
@@ -781,11 +781,11 @@ func (suite *SMTPClientTestSuite) TestNewSMTPClientFromConfig_ExplicitFalse() {
 			},
 		},
 	}
-	err := config.InitializeThunderRuntime("", testConfig)
-	suite.Require().NoError(err)
+	error := config.InitializeThunderRuntime("", testConfig)
+	suite.Require().NoError(error)
 
-	client, err := NewSMTPClientFromConfig()
-	suite.Require().NoError(err)
+	client, error := NewSMTPClientFromConfig()
+	suite.Require().NoError(error)
 
 	suite.NotNil(client)
 	smtpCl, ok := client.(*smtpClient)
@@ -812,11 +812,11 @@ func (suite *SMTPClientTestSuite) TestNewSMTPClientFromConfig_ExplicitTrue() {
 			},
 		},
 	}
-	err := config.InitializeThunderRuntime("", testConfig)
-	suite.Require().NoError(err)
+	error := config.InitializeThunderRuntime("", testConfig)
+	suite.Require().NoError(error)
 
-	client, err := NewSMTPClientFromConfig()
-	suite.Require().NoError(err)
+	client, error := NewSMTPClientFromConfig()
+	suite.Require().NoError(error)
 
 	suite.NotNil(client)
 	smtpCl, ok := client.(*smtpClient)
@@ -828,15 +828,15 @@ func (suite *SMTPClientTestSuite) TestNewSMTPClientFromConfig_ExplicitTrue() {
 // --- Test sending without authentication ---
 
 func (suite *SMTPClientTestSuite) TestSendEmail_NoAuth_Success() {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	suite.Require().NoError(err)
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	suite.Require().NoError(error)
 	defer func() { _ = listener.Close() }()
 
 	serverAddress := listener.Addr().(*net.TCPAddr)
-	conf := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
-	conf.enableAuthentication = false
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
+	config.enableAuthentication = false
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	done := make(chan bool, 1)
 	go suite.runMockSMTPServerNoAuth(listener, done)
@@ -848,24 +848,24 @@ func (suite *SMTPClientTestSuite) TestSendEmail_NoAuth_Success() {
 		IsHTML:  false,
 	}
 
-	err = client.Send(emailData)
+	error = client.Send(emailData)
 
-	suite.Require().NoError(err)
+	suite.Require().NoError(error)
 	suite.waitForDone(done)
 }
 
 // --- Test QUIT error is ignored ---
 
 func (suite *SMTPClientTestSuite) TestSendViaSMTP_QuitError_Ignored() {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	suite.Require().NoError(err)
+	listener, error := net.Listen("tcp", "127.0.0.1:0")
+	suite.Require().NoError(error)
 	defer func() { _ = listener.Close() }()
 
 	serverAddress := listener.Addr().(*net.TCPAddr)
-	conf := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
-	conf.enableAuthentication = false
-	client, err := newSMTPClient(conf)
-	suite.Require().NoError(err)
+	config := suite.getValidSMTPConfig("127.0.0.1", serverAddress.Port)
+	config.enableAuthentication = false
+	client, error := newSMTPClient(config)
+	suite.Require().NoError(error)
 
 	done := make(chan bool, 1)
 	go suite.runMockSMTPServerRejectQuit(listener, done)
@@ -878,8 +878,8 @@ func (suite *SMTPClientTestSuite) TestSendViaSMTP_QuitError_Ignored() {
 	}
 
 	// QUIT errors should be ignored since the message was already accepted.
-	err = client.Send(emailData)
-	suite.NoError(err)
+	error = client.Send(emailData)
+	suite.NoError(error)
 	suite.waitForDone(done)
 }
 
@@ -891,8 +891,8 @@ func (suite *SMTPClientTestSuite) TestSendViaSMTP_QuitError_Ignored() {
 func (suite *SMTPClientTestSuite) runMockSMTPServer(listener net.Listener, done chan bool) {
 	defer func() { done <- true }()
 
-	conn, err := listener.Accept()
-	if err != nil {
+	conn, error := listener.Accept()
+	if error != nil {
 		return
 	}
 	defer func() { _ = conn.Close() }()
@@ -902,8 +902,8 @@ func (suite *SMTPClientTestSuite) runMockSMTPServer(listener net.Listener, done 
 	_, _ = fmt.Fprintf(conn, "220 localhost SMTP Mock Server\r\n")
 
 	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
+		line, error := reader.ReadString('\n')
+		if error != nil {
 			return
 		}
 		line = strings.TrimSpace(line)
@@ -944,8 +944,8 @@ func (suite *SMTPClientTestSuite) runMockSMTPServer(listener net.Listener, done 
 func (suite *SMTPClientTestSuite) runMockSMTPServerRejectTLS(listener net.Listener, done chan bool) {
 	defer func() { done <- true }()
 
-	conn, err := listener.Accept()
-	if err != nil {
+	conn, error := listener.Accept()
+	if error != nil {
 		return
 	}
 	defer func() { _ = conn.Close() }()
@@ -954,8 +954,8 @@ func (suite *SMTPClientTestSuite) runMockSMTPServerRejectTLS(listener net.Listen
 	_, _ = fmt.Fprintf(conn, "220 localhost SMTP\r\n")
 
 	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
+		line, error := reader.ReadString('\n')
+		if error != nil {
 			return
 		}
 		line = strings.TrimSpace(line)
@@ -982,8 +982,8 @@ func (suite *SMTPClientTestSuite) runMockSMTPServerWithReject(
 ) {
 	defer func() { done <- true }()
 
-	conn, err := listener.Accept()
-	if err != nil {
+	conn, error := listener.Accept()
+	if error != nil {
 		return
 	}
 	defer func() { _ = conn.Close() }()
@@ -992,8 +992,8 @@ func (suite *SMTPClientTestSuite) runMockSMTPServerWithReject(
 	_, _ = fmt.Fprintf(conn, "220 localhost SMTP\r\n")
 
 	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
+		line, error := reader.ReadString('\n')
+		if error != nil {
 			return
 		}
 		line = strings.TrimSpace(line)
@@ -1028,8 +1028,8 @@ func (suite *SMTPClientTestSuite) runMockSMTPServerRejectMailFrom(listener net.L
 func (suite *SMTPClientTestSuite) runMockSMTPServerRejectRcptTo(listener net.Listener, done chan bool) {
 	defer func() { done <- true }()
 
-	conn, err := listener.Accept()
-	if err != nil {
+	conn, error := listener.Accept()
+	if error != nil {
 		return
 	}
 	defer func() { _ = conn.Close() }()
@@ -1038,8 +1038,8 @@ func (suite *SMTPClientTestSuite) runMockSMTPServerRejectRcptTo(listener net.Lis
 	_, _ = fmt.Fprintf(conn, "220 localhost SMTP\r\n")
 
 	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
+		line, error := reader.ReadString('\n')
+		if error != nil {
 			return
 		}
 		line = strings.TrimSpace(line)
@@ -1066,8 +1066,8 @@ func (suite *SMTPClientTestSuite) runMockSMTPServerRejectRcptTo(listener net.Lis
 func (suite *SMTPClientTestSuite) runMockSMTPServerRejectData(listener net.Listener, done chan bool) {
 	defer func() { done <- true }()
 
-	conn, err := listener.Accept()
-	if err != nil {
+	conn, error := listener.Accept()
+	if error != nil {
 		return
 	}
 	defer func() { _ = conn.Close() }()
@@ -1076,8 +1076,8 @@ func (suite *SMTPClientTestSuite) runMockSMTPServerRejectData(listener net.Liste
 	_, _ = fmt.Fprintf(conn, "220 localhost SMTP\r\n")
 
 	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
+		line, error := reader.ReadString('\n')
+		if error != nil {
 			return
 		}
 		line = strings.TrimSpace(line)
@@ -1107,8 +1107,8 @@ func (suite *SMTPClientTestSuite) runMockSMTPServerRejectData(listener net.Liste
 func (suite *SMTPClientTestSuite) runMockSMTPServerCloseOnData(listener net.Listener, done chan bool) {
 	defer func() { done <- true }()
 
-	conn, err := listener.Accept()
-	if err != nil {
+	conn, error := listener.Accept()
+	if error != nil {
 		return
 	}
 	defer func() { _ = conn.Close() }()
@@ -1117,8 +1117,8 @@ func (suite *SMTPClientTestSuite) runMockSMTPServerCloseOnData(listener net.List
 	_, _ = fmt.Fprintf(conn, "220 localhost SMTP\r\n")
 
 	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
+		line, error := reader.ReadString('\n')
+		if error != nil {
 			return
 		}
 		line = strings.TrimSpace(line)
@@ -1149,8 +1149,8 @@ func (suite *SMTPClientTestSuite) runMockSMTPServerCloseOnData(listener net.List
 func (suite *SMTPClientTestSuite) runMockSMTPServerRejectDataTermination(listener net.Listener, done chan bool) {
 	defer func() { done <- true }()
 
-	conn, err := listener.Accept()
-	if err != nil {
+	conn, error := listener.Accept()
+	if error != nil {
 		return
 	}
 	defer func() { _ = conn.Close() }()
@@ -1159,8 +1159,8 @@ func (suite *SMTPClientTestSuite) runMockSMTPServerRejectDataTermination(listene
 	_, _ = fmt.Fprintf(conn, "220 localhost SMTP\r\n")
 
 	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
+		line, error := reader.ReadString('\n')
+		if error != nil {
 			return
 		}
 		line = strings.TrimSpace(line)
@@ -1201,8 +1201,8 @@ func (suite *SMTPClientTestSuite) runMockSMTPServerCustomQuit(
 ) {
 	defer func() { done <- true }()
 
-	conn, err := listener.Accept()
-	if err != nil {
+	conn, error := listener.Accept()
+	if error != nil {
 		return
 	}
 	defer func() { _ = conn.Close() }()
@@ -1211,8 +1211,8 @@ func (suite *SMTPClientTestSuite) runMockSMTPServerCustomQuit(
 	_, _ = fmt.Fprintf(conn, "220 localhost SMTP\r\n")
 
 	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
+		line, error := reader.ReadString('\n')
+		if error != nil {
 			return
 		}
 		line = strings.TrimSpace(line)
@@ -1288,19 +1288,19 @@ func (suite *SMTPClientTestSuite) TestSendLiveEmail() {
 
 	config.ResetThunderRuntime()
 
-	emailConfig, err := config.LoadConfig(
+	emailConfig, error := config.LoadConfig(
 		"../../../cmd/server/repository/conf/deployment.yaml",
 		"",
 		"../../../cmd/server",
 	)
-	suite.Require().NoError(err, "Failed to load config")
+	suite.Require().NoError(error, "Failed to load config")
 
-	err = config.InitializeThunderRuntime("", emailConfig)
-	suite.Require().NoError(err, "Failed to initialize thunder runtime")
+	error = config.InitializeThunderRuntime("", emailConfig)
+	suite.Require().NoError(error, "Failed to initialize thunder runtime")
 	defer config.ResetThunderRuntime()
 
-	client, err := NewSMTPClientFromConfig()
-	suite.Require().NoError(err)
+	client, error := NewSMTPClientFromConfig()
+	suite.Require().NoError(error)
 
 	emailData := EmailData{
 		To:      []string{"test@example.com"},
@@ -1310,7 +1310,7 @@ func (suite *SMTPClientTestSuite) TestSendLiveEmail() {
 		IsHTML: true,
 	}
 	fmt.Printf("Sending test email to %s...\n", emailData.To[0])
-	err = client.Send(emailData)
-	suite.NoError(err, "Failed to send email")
+	error = client.Send(emailData)
+	suite.NoError(error, "Failed to send email")
 	fmt.Println("Email sent successfully!")
 }

@@ -18,13 +18,13 @@
  * under the License.
  */
 
-/* eslint-disable @thunder/copyright-header, import/no-extraneous-dependencies */
+/* eslint-disable @thunder/copyright-header, import/no-extraneous-dependencies, no-underscore-dangle, @typescript-eslint/naming-convention */
 
 import {readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync} from 'fs';
 import {join, dirname} from 'path';
-import {fileURLToPath} from 'url';
-import {createLogger} from '@thunder/logger';
 import {parse, stringify} from 'yaml';
+import {createLogger} from '@thunder/logger';
+import {fileURLToPath} from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,15 +33,6 @@ const logger = createLogger('merge-openapi-specs');
 
 const API_DIR = join(__dirname, '..', '..', 'api');
 const STATIC_DIR = join(__dirname, '..', 'static', 'api');
-const THUNDER_CONFIG_PATH = join(__dirname, '..', 'docusaurus.thunder.config.ts');
-
-function readThunderConfig(configPath) {
-  const content = readFileSync(configPath, 'utf8');
-  const nameMatch = content.match(/project\s*:\s*\{[^}]*?name\s*:\s*['"]([^'"]+)['"]/s);
-  return nameMatch ? nameMatch[1] : 'Unknown Project';
-}
-
-const projectName = readThunderConfig(THUNDER_CONFIG_PATH);
 
 // Resolve version path from --version-path <path> CLI arg, defaulting to 'next'
 const versionPathArgIndex = process.argv.indexOf('--version-path');
@@ -69,9 +60,9 @@ function mergeOpenAPISpecs() {
   const combined = {
     openapi: firstSpec.openapi || '3.0.3',
     info: {
-      title: `${projectName} API Reference`,
+      title: 'Thunder API Reference',
       version: '1.0',
-      description: `Complete API reference for ${projectName} identity and access management.`,
+      description: 'Complete API reference for Thunder identity and access management.',
       license: firstSpec.info?.license || {
         name: 'Apache 2.0',
         url: 'https://www.apache.org/licenses/LICENSE-2.0.html',

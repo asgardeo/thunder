@@ -25,7 +25,7 @@
  *
  * Required environment variables:
  * - BASE_URL: Console base URL
- * - SERVER_URL: Server API base URL (defaults to https://localhost:8090)
+ * - THUNDER_URL: Thunder API base URL (defaults to https://localhost:8090)
  * - ADMIN_USERNAME: Admin username (defaults to admin)
  * - ADMIN_PASSWORD: Admin password (defaults to admin)
  * - SAMPLE_APP_ID: Application ID used to obtain admin token
@@ -36,7 +36,7 @@ import { test, expect } from "../../fixtures/console";
 import { TestDataFactory } from "../../utils/test-data";
 import { getAdminToken } from "../../utils/authentication";
 
-const serverUrl = process.env.SERVER_URL || "https://localhost:8090";
+const thunderUrl = process.env.THUNDER_URL || "https://localhost:8090";
 const defaultOuId = process.env.DEFAULT_OU_ID || "";
 
 test.describe("Application Edit", () => {
@@ -55,7 +55,7 @@ test.describe("Application Edit", () => {
 
     let resolvedOuId = defaultOuId;
     if (!resolvedOuId) {
-      const ouResponse = await request.get(`${serverUrl}/organization-units?limit=1`, {
+      const ouResponse = await request.get(`${thunderUrl}/organization-units?limit=1`, {
         headers: { Authorization: `Bearer ${adminToken}` },
         ignoreHTTPSErrors: true,
       });
@@ -67,7 +67,7 @@ test.describe("Application Edit", () => {
     if (!resolvedOuId) throw new Error("Could not determine an OU ID for Application Edit tests");
     suiteOuId = resolvedOuId;
 
-    const createResponse = await request.post(`${serverUrl}/applications`, {
+    const createResponse = await request.post(`${thunderUrl}/applications`, {
       data: {
         name: appData.name,
         description: appData.description,
@@ -101,7 +101,7 @@ test.describe("Application Edit", () => {
 
     const adminToken = await getAdminToken(request);
 
-    const deleteResponse = await request.delete(`${serverUrl}/applications/${testAppId}`, {
+    const deleteResponse = await request.delete(`${thunderUrl}/applications/${testAppId}`, {
       headers: {
         Authorization: `Bearer ${adminToken}`,
       },
@@ -302,7 +302,7 @@ test.describe("Application Edit", () => {
         deleteTestAppName = appData.name;
         const adminToken = await getAdminToken(request);
 
-        const createResponse = await request.post(`${serverUrl}/applications`, {
+        const createResponse = await request.post(`${thunderUrl}/applications`, {
           data: {
             name: appData.name,
             description: appData.description,
@@ -354,7 +354,7 @@ test.describe("Application Edit", () => {
         const adminToken = await getAdminToken(request).catch(() => null);
         if (adminToken) {
           await request
-            .delete(`${serverUrl}/applications/${deleteTestAppId}`, {
+            .delete(`${thunderUrl}/applications/${deleteTestAppId}`, {
               headers: { Authorization: `Bearer ${adminToken}` },
               ignoreHTTPSErrors: true,
             })

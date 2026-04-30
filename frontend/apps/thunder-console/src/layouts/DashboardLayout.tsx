@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -21,22 +21,17 @@ import {useConfig} from '@thunder/contexts';
 import {useLogger} from '@thunder/logger/react';
 import {
   AppShell,
-  Box,
-  Button,
   ColorSchemeImage,
   ColorSchemeToggle,
   Divider,
   Footer,
   Header,
   Sidebar,
-  useSidebar,
   UserMenu,
 } from '@wso2/oxygen-ui';
 import {
   Building,
-  FileDown,
   Group,
-  Home,
   Languages,
   Layers,
   LayoutGrid,
@@ -46,84 +41,15 @@ import {
   UsersRound,
   Workflow,
 } from '@wso2/oxygen-ui-icons-react';
-import {useEffect, useMemo, useState, type ReactNode} from 'react';
+import {useMemo, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Link as NavigateLink, Outlet, useNavigate} from 'react-router';
-import useGetApplications from '../features/applications/api/useGetApplications';
-import {WELCOME_DISMISSED_STORAGE_KEY} from '../features/welcome/constants/storage-keys';
-
-const WELCOME_SESSION_CHECKED_STORAGE_KEY = 'thunder:welcome:session-checked';
-
-function ExportConfigButton(): ReactNode {
-  const {t} = useTranslation();
-  const navigate = useNavigate();
-  const {collapsed} = useSidebar();
-
-  return (
-    <Box sx={{p: 1.5, display: 'flex', justifyContent: 'center'}}>
-      <Button
-        variant="outlined"
-        startIcon={<FileDown size={18} />}
-        onClick={() => void navigate('/export')}
-        sx={{
-          minWidth: collapsed ? 40 : 'auto',
-          width: collapsed ? 40 : 'auto',
-          height: 40,
-          borderRadius: collapsed ? '50%' : 40,
-          px: collapsed ? 0 : 2,
-          '& .MuiButton-startIcon': {
-            margin: collapsed ? 0 : undefined,
-          },
-        }}
-      >
-        {!collapsed && t('navigation:pages.export', 'Export Config')}
-      </Button>
-    </Box>
-  );
-}
+import {Link as NavigateLink, Outlet} from 'react-router';
 
 export default function DashboardLayout(): ReactNode {
   const {signIn, clearSession, discovery} = useAsgardeo();
-  const {config, isTrustedIssuerGenericOidc, getTrustedIssuerClientId, getClientUrl} = useConfig();
+  const {isTrustedIssuerGenericOidc, getTrustedIssuerClientId, getClientUrl} = useConfig();
   const {t} = useTranslation();
   const logger = useLogger();
-  const navigate = useNavigate();
-  const [welcomeCheckComplete, setWelcomeCheckComplete] = useState(false);
-
-  // First-time user detection
-  const {data: applicationsData, isLoading: isLoadingApplications} = useGetApplications({limit: 2, offset: 0});
-
-  useEffect(() => {
-    // Skip check while loading
-    if (isLoadingApplications) return;
-
-    const hasCheckedThisSession = sessionStorage.getItem(WELCOME_SESSION_CHECKED_STORAGE_KEY) === 'true';
-    if (hasCheckedThisSession) {
-      setWelcomeCheckComplete(true);
-      return;
-    }
-
-    const dismissed = sessionStorage.getItem(WELCOME_DISMISSED_STORAGE_KEY) === 'true';
-    const applications = applicationsData?.applications ?? [];
-    const consoleClientId = (config?.client?.client_id ?? 'CONSOLE').toUpperCase();
-
-    const isOnlyConsoleApp =
-      applications.length === 1 &&
-      (applications[0]?.clientId?.toUpperCase() === consoleClientId ||
-        applications[0]?.name?.toUpperCase() === consoleClientId ||
-        applications[0]?.template?.toUpperCase() === consoleClientId);
-
-    sessionStorage.setItem(WELCOME_SESSION_CHECKED_STORAGE_KEY, 'true');
-
-    // Show welcome only once per session when the org has only the system CONSOLE app.
-    if (isOnlyConsoleApp && !dismissed) {
-      sessionStorage.setItem(WELCOME_DISMISSED_STORAGE_KEY, 'true');
-      void navigate('/welcome', {replace: true});
-    } else {
-      // Mark check as complete so we can render the page
-      setWelcomeCheckComplete(true);
-    }
-  }, [isLoadingApplications, applicationsData, config?.client?.client_id, navigate]);
 
   const handleSignOut = (signOut: () => Promise<void>): void => {
     if (isTrustedIssuerGenericOidc()) {
@@ -164,7 +90,7 @@ export default function DashboardLayout(): ReactNode {
           {
             id: 'home',
             text: t('navigation:pages.home'),
-            icon: <Home />,
+            icon: <Building />,
             path: '/home',
           },
         ],
@@ -284,13 +210,6 @@ export default function DashboardLayout(): ReactNode {
                   <UserMenu.Trigger name={String(user?.name ?? '')} showName />
                   <UserMenu.Header name={String(user?.name ?? '')} email={String(user?.email ?? '')} />
                   <UserMenu.Divider />
-                  <UserMenu.Item
-                    label={t('common:userMenu.welcome')}
-                    onClick={() => {
-                      void navigate('/welcome');
-                    }}
-                  />
-                  <UserMenu.Divider />
                   <SignOutButton>
                     {({signOut}) => (
                       <UserMenu.Logout label={t('common:userMenu.signOut')} onClick={() => handleSignOut(signOut)} />
@@ -318,13 +237,12 @@ export default function DashboardLayout(): ReactNode {
               </Sidebar.Category>
             ))}
           </Sidebar.Nav>
-          <Sidebar.Footer>
-            <ExportConfigButton />
-          </Sidebar.Footer>
         </Sidebar>
       </AppShell.Sidebar>
 
-      <AppShell.Main>{welcomeCheckComplete ? <Outlet /> : null}</AppShell.Main>
+      <AppShell.Main>
+        <Outlet />
+      </AppShell.Main>
 
       <AppShell.Footer>
         <Footer>

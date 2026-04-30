@@ -112,10 +112,9 @@ func initializeStore() (organizationUnitStoreInterface, transaction.Transactione
 // registerRoutes registers the routes for organization unit management operations.
 func registerRoutes(mux *http.ServeMux, ouHandler *organizationUnitHandler) {
 	corsOptions1 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "POST"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, POST",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("POST /organization-units",
 		ouHandler.HandleOUPostRequest, corsOptions1))
@@ -127,10 +126,9 @@ func registerRoutes(mux *http.ServeMux, ouHandler *organizationUnitHandler) {
 		}, corsOptions1))
 
 	corsOptions2 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET", "PUT", "DELETE"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET, PUT, DELETE",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 	mux.HandleFunc(middleware.WithCORS("GET /organization-units/",
 		func(w http.ResponseWriter, r *http.Request) {

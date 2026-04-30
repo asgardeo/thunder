@@ -2,18 +2,18 @@
 title: Application Settings
 sidebar_position: 2
 persona: iam
-description: Configure authentication flows, registration, tokens, customization, and OAuth 2.0 settings applications.
+description: Configure authentication flows, registration, tokens, customization, and OAuth 2.0 settings for Thunder applications.
 ---
 
 # Application Settings
 
-This guide explains how to configure an application from the <ProductName /> Console application details page.
+This guide explains how to configure an application from the Thunder Console application details page.
 
 ## Find Your Client ID
 
 The **Application ID** and **Client ID** are shown on the application's General tab under **Quick Copy**. Use the copy button to grab them quickly.
 
-- **Application ID** - the internal <ProductName /> identifier for this application.
+- **Application ID** - the internal Thunder identifier for this application.
 - **Client ID** - the OAuth 2.0 identifier your SDK or client configuration needs.
 
 ## Control Who Can Sign In
@@ -24,14 +24,14 @@ Under **Access** on the General tab, you can restrict which users can authentica
 |---------|-------------|
 | **Allowed User Types** | Only users of the selected types can sign in. If none are selected, all user types are allowed. |
 | **Application URL** | The homepage URL of your application. |
-| **Authorized Redirect URIs** | The URLs <ProductName /> sends users back to after authentication. Register every URI your application uses.
+| **Authorized Redirect URIs** | The URLs Thunder sends users back to after authentication. Register every URI your application uses.
 
 ## Use Wildcard Redirect URIs
 
-<ProductName /> supports wildcard patterns in the path component of registered redirect URIs. This lets you register a single pattern that covers a range of valid callback paths, rather than listing every exact URI.
+Thunder supports wildcard patterns in the path component of registered redirect URIs. This lets you register a single pattern that covers a range of valid callback paths, rather than listing every exact URI.
 
 :::note
-Wildcard redirect URI support is disabled by default. A <ProductName /> administrator must set `oauth.allow_wildcard_redirect_uri: true` in `deployment.yaml` before you can register wildcard patterns. See [Configuration](/docs/next/guides/getting-started/configuration) for details.
+Wildcard redirect URI support is disabled by default. A Thunder administrator must set `oauth.allow_wildcard_redirect_uri: true` in `deployment.yaml` before you can register wildcard patterns. See [Configuration](/docs/next/guides/getting-started/configuration) for details.
 :::
 
 ### Wildcard Syntax
@@ -57,7 +57,7 @@ Only `*` and `**` are supported. Full regular expression syntax (e.g., `[a-z]+`)
 
 ### Matching Rules at Authorization Time
 
-When <ProductName /> receives an authorization request, it evaluates the incoming `redirect_uri` against each registered URI in registration order. The first match wins.
+When Thunder receives an authorization request, it evaluates the incoming `redirect_uri` against each registered URI in registration order. The first match wins.
 
 - **Scheme and host** must match exactly (case-insensitive per RFC 3986).
 - **Query string** must match exactly. A mismatch in query parameters causes the request to be rejected.
@@ -134,7 +134,7 @@ You can also attach a **Certificate** for client authentication or token encrypt
 |-----------------|-------------|
 | `None` | No certificate configured. |
 | `JWKS` | Provide the JSON Web Key Set (JWKS) inline. |
-| `JWKS_URI` | Provide the URL of the application's JWKS endpoint. <ProductName /> fetches the public keys to verify signed requests. |
+| `JWKS_URI` | Provide the URL of the application's JWKS endpoint. Thunder fetches the public keys to verify signed requests. |
 
 ## Related Guides
 

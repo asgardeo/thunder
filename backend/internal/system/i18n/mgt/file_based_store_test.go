@@ -19,7 +19,6 @@
 package mgt
 
 import (
-	"context"
 	"testing"
 
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
@@ -251,18 +250,6 @@ func (s *FileBasedStoreTestSuite) TestDeleteTranslationsByLanguage_NotSupported(
 
 func (s *FileBasedStoreTestSuite) TestDeleteTranslation_NotSupported() {
 	err := s.store.DeleteTranslation("en-US", "key", "ns")
-	assert.Error(s.T(), err)
-	assert.Contains(s.T(), err.Error(), "not supported")
-}
-
-func (s *FileBasedStoreTestSuite) TestDeleteTranslationsByNamespace_NotSupported() {
-	err := s.store.DeleteTranslationsByNamespace(context.Background(), "app.test-id")
-	assert.Error(s.T(), err)
-	assert.Contains(s.T(), err.Error(), "not supported")
-}
-
-func (s *FileBasedStoreTestSuite) TestDeleteTranslationsByKey_NotSupported() {
-	err := s.store.DeleteTranslationsByKey(context.Background(), "custom", "app.test-id.name")
 	assert.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "not supported")
 }

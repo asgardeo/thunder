@@ -1,7 +1,7 @@
 {
   "item": [
     {
-      "id": "947417f0-cae3-4fed-8164-5fc556e9b6ac",
+      "id": "dce3b64a-d6f0-4543-90fa-d23717063141",
       "name": "Credentials",
       "description": {
         "content": "",
@@ -9,7 +9,7 @@
       },
       "item": [
         {
-          "id": "67a9b1b7-812a-44c7-96ed-7658a9814ad2",
+          "id": "00dcda5e-032f-4d40-b03e-96dded149d27",
           "name": "Authenticate with credentials",
           "request": {
             "name": "Authenticate with credentials",
@@ -62,7 +62,7 @@
             "auth": null,
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"identifiers\": {\n    \"nostrudfb\": true\n  },\n  \"credentials\": {\n    \"pariatur__7\": 94851375.62677842,\n    \"dolor_29\": \"amet est\"\n  },\n  \"skipAssertion\": false,\n  \"assertion\": \"<string>\"\n}",
+              "raw": "{\n  \"identifiers\": {\n    \"Excepteur_dd\": -62721817\n  },\n  \"credentials\": {\n    \"laborisb_\": 36989293.15861675,\n    \"laboris44\": \"ut in cillum anim\"\n  },\n  \"skipAssertion\": false,\n  \"assertion\": \"<string>\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -72,7 +72,7 @@
           },
           "response": [
             {
-              "id": "b504a56c-68b4-4ac4-9066-d01fe1a7bf13",
+              "id": "bf435a25-7645-4b82-aa52-b7a9ded571b6",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -115,7 +115,7 @@
                 "method": "POST",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"identifiers\": {\n    \"nostrudfb\": true\n  },\n  \"credentials\": {\n    \"pariatur__7\": 94851375.62677842,\n    \"dolor_29\": \"amet est\"\n  },\n  \"skipAssertion\": false,\n  \"assertion\": \"<string>\"\n}",
+                  "raw": "{\n  \"identifiers\": {\n    \"Excepteur_dd\": -62721817\n  },\n  \"credentials\": {\n    \"laborisb_\": 36989293.15861675,\n    \"laboris44\": \"ut in cillum anim\"\n  },\n  \"skipAssertion\": false,\n  \"assertion\": \"<string>\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -136,7 +136,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "f2f73a20-a53f-4e28-b065-83de59d6c564",
+              "id": "8407c8f7-34d8-4401-8935-7c83b010d957",
               "name": "Bad Request: The request body is malformed or contains invalid data",
               "originalRequest": {
                 "url": {
@@ -179,7 +179,7 @@
                 "method": "POST",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"identifiers\": {\n    \"nostrudfb\": true\n  },\n  \"credentials\": {\n    \"pariatur__7\": 94851375.62677842,\n    \"dolor_29\": \"amet est\"\n  },\n  \"skipAssertion\": false,\n  \"assertion\": \"<string>\"\n}",
+                  "raw": "{\n  \"identifiers\": {\n    \"Excepteur_dd\": -62721817\n  },\n  \"credentials\": {\n    \"laborisb_\": 36989293.15861675,\n    \"laboris44\": \"ut in cillum anim\"\n  },\n  \"skipAssertion\": false,\n  \"assertion\": \"<string>\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -200,7 +200,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "df623938-c314-4a86-89aa-77360b5ab674",
+              "id": "afd4dabd-c388-43ba-b934-79c0eb470f64",
               "name": "Unauthorized: Authentication failed",
               "originalRequest": {
                 "url": {
@@ -243,7 +243,7 @@
                 "method": "POST",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"identifiers\": {\n    \"nostrudfb\": true\n  },\n  \"credentials\": {\n    \"pariatur__7\": 94851375.62677842,\n    \"dolor_29\": \"amet est\"\n  },\n  \"skipAssertion\": false,\n  \"assertion\": \"<string>\"\n}",
+                  "raw": "{\n  \"identifiers\": {\n    \"Excepteur_dd\": -62721817\n  },\n  \"credentials\": {\n    \"laborisb_\": 36989293.15861675,\n    \"laboris44\": \"ut in cillum anim\"\n  },\n  \"skipAssertion\": false,\n  \"assertion\": \"<string>\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -264,7 +264,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "415ebd04-3de4-4334-88d0-cd782a97f97d",
+              "id": "3b99c517-0ad7-452b-bd42-19679c778b12",
               "name": "Not Found: The user could not be found",
               "originalRequest": {
                 "url": {
@@ -307,7 +307,7 @@
                 "method": "POST",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"identifiers\": {\n    \"nostrudfb\": true\n  },\n  \"credentials\": {\n    \"pariatur__7\": 94851375.62677842,\n    \"dolor_29\": \"amet est\"\n  },\n  \"skipAssertion\": false,\n  \"assertion\": \"<string>\"\n}",
+                  "raw": "{\n  \"identifiers\": {\n    \"Excepteur_dd\": -62721817\n  },\n  \"credentials\": {\n    \"laborisb_\": 36989293.15861675,\n    \"laboris44\": \"ut in cillum anim\"\n  },\n  \"skipAssertion\": false,\n  \"assertion\": \"<string>\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -328,7 +328,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "dddd56aa-109c-47aa-885d-e3c8293beac6",
+              "id": "4d59871f-fd81-4d13-b38b-6adf4a9a1908",
               "name": "Internal Server Error: An unexpected error occurred while processing the request",
               "originalRequest": {
                 "url": {
@@ -371,7 +371,7 @@
                 "method": "POST",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"identifiers\": {\n    \"nostrudfb\": true\n  },\n  \"credentials\": {\n    \"pariatur__7\": 94851375.62677842,\n    \"dolor_29\": \"amet est\"\n  },\n  \"skipAssertion\": false,\n  \"assertion\": \"<string>\"\n}",
+                  "raw": "{\n  \"identifiers\": {\n    \"Excepteur_dd\": -62721817\n  },\n  \"credentials\": {\n    \"laborisb_\": 36989293.15861675,\n    \"laboris44\": \"ut in cillum anim\"\n  },\n  \"skipAssertion\": false,\n  \"assertion\": \"<string>\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -401,7 +401,7 @@
       "event": []
     },
     {
-      "id": "0050e4df-fb8b-424f-ae40-d68080c532e6",
+      "id": "36f79f01-7ff2-43da-88ba-8cd06e94fb2e",
       "name": "SMS OTP",
       "description": {
         "content": "",
@@ -409,7 +409,7 @@
       },
       "item": [
         {
-          "id": "ba7d310c-0f01-46cd-b800-d4f4002430d4",
+          "id": "c09304ec-5b49-4682-a2fa-ef949a6b8262",
           "name": "Send a SMS OTP",
           "request": {
             "name": "Send a SMS OTP",
@@ -473,7 +473,7 @@
           },
           "response": [
             {
-              "id": "a3984d2b-e623-48b5-aa99-8d7061215803",
+              "id": "c11f3ec8-1d49-469c-931e-3a630f17af7b",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -538,7 +538,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "a6b37085-63e9-4be8-8cb0-ec1fbbc1ae85",
+              "id": "028a0358-c3b5-4ddc-a8d6-8d17b93fd42c",
               "name": "Bad Request: The request body is malformed or contains invalid data",
               "originalRequest": {
                 "url": {
@@ -603,7 +603,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "6a0b937f-4601-4596-9ab3-87b90e310817",
+              "id": "71231b54-9bd0-4a0d-a737-c4d41d3b69ee",
               "name": "Internal Server Error: An unexpected error occurred while processing the request",
               "originalRequest": {
                 "url": {
@@ -674,7 +674,7 @@
           }
         },
         {
-          "id": "5c06e9f7-b4c1-45b7-b89e-5d8bfabe49c1",
+          "id": "bbd4e565-7096-4b48-8283-6306a5938c2d",
           "name": "Verify a SMS OTP",
           "request": {
             "name": "Verify a SMS OTP",
@@ -738,7 +738,7 @@
           },
           "response": [
             {
-              "id": "42abdf58-4b11-423b-b991-ad9b5fb3ce2a",
+              "id": "6372513c-99b2-4d07-96d4-ea0ff0a3c660",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -803,7 +803,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "fd25d1f2-1246-4396-985f-b88e7562b246",
+              "id": "6a51ce2a-72df-4afb-96c2-5060a66676df",
               "name": "Bad Request: The request body is malformed or contains invalid data",
               "originalRequest": {
                 "url": {
@@ -868,7 +868,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "43f5097a-ea0c-46f3-a83c-85a28f5e2ac3",
+              "id": "b88f4bc0-1e90-4e20-b276-fb69361826ef",
               "name": "Unauthorized: OTP verification failed",
               "originalRequest": {
                 "url": {
@@ -933,7 +933,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "dece2cc0-81db-41be-91cf-fd7b8ca3513d",
+              "id": "1dbe90a2-31e8-48bb-9294-ac2ffeb097ad",
               "name": "Not Found: The user could not be found",
               "originalRequest": {
                 "url": {
@@ -998,7 +998,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "1ccb0aff-3780-4a3b-b7cc-258171fda4cb",
+              "id": "02e8b484-e46b-4d92-ac47-b59336c2d570",
               "name": "Internal Server Error: An unexpected error occurred while processing the request",
               "originalRequest": {
                 "url": {
@@ -1072,7 +1072,7 @@
       "event": []
     },
     {
-      "id": "e07eed40-89e0-4405-a37f-7b44d6e28198",
+      "id": "d390c422-6f0f-4536-8299-30d8a13d94e3",
       "name": "Google",
       "description": {
         "content": "",
@@ -1080,7 +1080,7 @@
       },
       "item": [
         {
-          "id": "44a699c1-b89e-4317-950f-c4c4f35c1709",
+          "id": "3fdc62f2-8116-4a00-9358-64da3f6ddcc0",
           "name": "Start Google authentication",
           "request": {
             "name": "Start Google authentication",
@@ -1144,7 +1144,7 @@
           },
           "response": [
             {
-              "id": "2cba8af2-f6af-4476-a595-a4fdc0891697",
+              "id": "69fc704c-e579-4d65-8421-dc65155893ca",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -1209,7 +1209,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "d1acbeb7-b27a-4eda-940d-65d727c87bca",
+              "id": "ec54a65b-19a1-45af-8f01-638a295f221a",
               "name": "Bad Request: The request body is malformed or contains invalid data.",
               "originalRequest": {
                 "url": {
@@ -1274,7 +1274,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "eb13c4a9-ff18-4990-89b6-144bb6545d32",
+              "id": "e2458837-9ca8-4e40-a80c-f72dc7822a29",
               "name": "Internal Server Error: An unexpected error occurred while processing the request.",
               "originalRequest": {
                 "url": {
@@ -1345,7 +1345,7 @@
           }
         },
         {
-          "id": "1aae4055-1939-482f-8d2d-b94d865b8588",
+          "id": "8dfa40c3-7817-478e-84b0-24e95b7b26b3",
           "name": "Finish Google authentication",
           "request": {
             "name": "Finish Google authentication",
@@ -1409,7 +1409,7 @@
           },
           "response": [
             {
-              "id": "ce46594b-482d-4a18-aaf0-db5f7c3d8648",
+              "id": "d0efb6cb-3ad9-4258-9d94-d4f8b12f11b9",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -1474,7 +1474,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "be9b723e-0931-4778-983f-03fc74a9e55d",
+              "id": "fea45fb5-f0f2-4045-814a-5fa84207e443",
               "name": "Bad Request: The request body is malformed or contains invalid data.",
               "originalRequest": {
                 "url": {
@@ -1539,7 +1539,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "de45ba27-4436-42fc-abd8-15cb944fa05d",
+              "id": "baebb4af-c7c8-4fec-ac45-dd441054dbf2",
               "name": "Internal Server Error: An unexpected error occurred while processing the request.",
               "originalRequest": {
                 "url": {
@@ -1613,7 +1613,7 @@
       "event": []
     },
     {
-      "id": "8dbd7854-e5f2-4c35-93a6-8b4d4099ed03",
+      "id": "a3fa0ba4-fdb7-442a-b655-9a16d5f337a4",
       "name": "Github",
       "description": {
         "content": "",
@@ -1621,7 +1621,7 @@
       },
       "item": [
         {
-          "id": "a6aac84c-bcb3-4f9b-b4a1-ae0ae7e6f7eb",
+          "id": "e6e0a87e-1837-42dd-82b5-78bf5ffabb0c",
           "name": "Start Github authentication",
           "request": {
             "name": "Start Github authentication",
@@ -1685,7 +1685,7 @@
           },
           "response": [
             {
-              "id": "364ae242-e4c2-4e14-81d3-bb82dac6bf8d",
+              "id": "44e52947-c7bb-4583-92c4-01dbef107798",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -1750,7 +1750,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "67dd23fa-bdb9-4902-bf4b-de69937d5119",
+              "id": "df350211-3c9e-441a-9884-974e41eaa24d",
               "name": "Bad Request: The request body is malformed or contains invalid data.",
               "originalRequest": {
                 "url": {
@@ -1815,7 +1815,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "aa65a20a-0f55-41de-98df-abecb7a2818e",
+              "id": "1cc3d409-c46b-4e2e-97d7-fc2ae02ca1f8",
               "name": "Internal Server Error: An unexpected error occurred while processing the request.",
               "originalRequest": {
                 "url": {
@@ -1886,7 +1886,7 @@
           }
         },
         {
-          "id": "d383a944-3bc6-42c2-8d61-c1dccb18b313",
+          "id": "40e0e3a2-21f0-4edc-800b-1531d99722d3",
           "name": "Finish Github authentication",
           "request": {
             "name": "Finish Github authentication",
@@ -1950,7 +1950,7 @@
           },
           "response": [
             {
-              "id": "af00876c-0aeb-41f0-b6f6-61b1d14f4773",
+              "id": "bbf645f1-a907-4ed9-9d26-9b6c8b10e773",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -2015,7 +2015,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "2c742b5c-8fea-416f-be00-c6f36d39db7c",
+              "id": "d7ba8a71-0392-49b1-b5d0-f18b40dd6907",
               "name": "Bad Request: The request body is malformed or contains invalid data.",
               "originalRequest": {
                 "url": {
@@ -2080,7 +2080,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "db15f388-bb5c-4702-8be4-183093d21b00",
+              "id": "d17d610b-d91f-488a-89c7-25fe3a45a7a0",
               "name": "Internal Server Error: An unexpected error occurred while processing the request.",
               "originalRequest": {
                 "url": {
@@ -2154,7 +2154,7 @@
       "event": []
     },
     {
-      "id": "b21f130b-1da7-4ad7-980e-256f46dfa5c5",
+      "id": "7283af90-0694-4f7d-9968-7a89c5cbc17f",
       "name": "Standard",
       "description": {
         "content": "",
@@ -2162,7 +2162,7 @@
       },
       "item": [
         {
-          "id": "6f266f95-b3a6-4f2f-931b-aaf441079724",
+          "id": "02de5924-df9a-406f-a172-6164ae3f98e8",
           "name": "Start standard OAuth authentication",
           "request": {
             "name": "Start standard OAuth authentication",
@@ -2226,7 +2226,7 @@
           },
           "response": [
             {
-              "id": "7aec00f4-6db4-4ecc-bb01-962f1da1cfb7",
+              "id": "5bd4819e-3c05-49c2-a355-4a56c3ef7932",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -2291,7 +2291,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "df6c2932-3c01-40e1-bad3-c97678582c23",
+              "id": "ebe3d641-c815-44b8-a3a0-05205899f843",
               "name": "Bad Request: The request body is malformed or contains invalid data.",
               "originalRequest": {
                 "url": {
@@ -2356,7 +2356,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "62d73099-8c10-4618-8c55-bc51d9a8bff7",
+              "id": "7a422360-277e-4fe7-8360-2a2280186062",
               "name": "Internal Server Error: An unexpected error occurred while processing the request.",
               "originalRequest": {
                 "url": {
@@ -2427,7 +2427,7 @@
           }
         },
         {
-          "id": "7d93f11d-dfa7-478e-9a06-b1f936f03c81",
+          "id": "51df9e81-c4b5-4930-8e81-ae75757478ef",
           "name": "Finish standard OAuth authentication",
           "request": {
             "name": "Finish standard OAuth authentication",
@@ -2491,7 +2491,7 @@
           },
           "response": [
             {
-              "id": "8d357fd9-9a42-490e-a8a3-caaa42c95438",
+              "id": "e68fdbc8-4275-4502-936d-a86cb3e1db73",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -2556,7 +2556,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "632169bc-ae29-4317-9cdd-61f800af3f74",
+              "id": "b66c0369-b958-4082-990c-3306eeb47da2",
               "name": "Bad Request: The request body is malformed or contains invalid data.",
               "originalRequest": {
                 "url": {
@@ -2621,7 +2621,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "4b066d18-3424-4fcc-9734-07add087dac3",
+              "id": "bbab40df-8974-49f6-9628-44c2f453db65",
               "name": "Internal Server Error: An unexpected error occurred while processing the request.",
               "originalRequest": {
                 "url": {
@@ -2695,7 +2695,7 @@
       "event": []
     },
     {
-      "id": "e08b8cfa-2d97-46e7-9496-662e875697c2",
+      "id": "49167a7e-7ae1-40b1-98c8-2834feabfc2c",
       "name": "WebAuthn / Passkey",
       "description": {
         "content": "",
@@ -2703,7 +2703,7 @@
       },
       "item": [
         {
-          "id": "86e721a5-1937-419b-9809-f6cc0109a0bd",
+          "id": "3416fb1b-1dd8-4108-b8ba-9eabd4baa4b8",
           "name": "Start WebAuthn authentication",
           "request": {
             "name": "Start WebAuthn authentication",
@@ -2766,7 +2766,7 @@
           },
           "response": [
             {
-              "id": "210a980a-d65d-43a1-8cad-1b496a0473ce",
+              "id": "071f87a0-e94d-4bad-a73b-9810d7574615",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -2830,7 +2830,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "49b8914e-8649-4a76-9619-fb47ea9a0e10",
+              "id": "274f40db-d21b-4929-9165-f8d1b35b3ed7",
               "name": "Bad Request: The request body is malformed or contains invalid data",
               "originalRequest": {
                 "url": {
@@ -2894,7 +2894,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "2528859c-37ea-460a-813c-696983c7f70b",
+              "id": "69db1b77-ef4b-4f5c-9140-f06fb1897a6b",
               "name": "Not Found: The user could not be found",
               "originalRequest": {
                 "url": {
@@ -2958,7 +2958,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "2e450b1e-d8d8-4ab2-ac3b-95b0bcfe79be",
+              "id": "fe5ea4ba-7792-45c2-bed0-966858879feb",
               "name": "Internal Server Error: An unexpected error occurred while processing the request",
               "originalRequest": {
                 "url": {
@@ -3028,7 +3028,7 @@
           }
         },
         {
-          "id": "9bad4168-6331-4127-b1ad-f3a2f8710117",
+          "id": "422634ac-b70b-4991-87c4-c18908106371",
           "name": "Finish WebAuthn authentication",
           "request": {
             "name": "Finish WebAuthn authentication",
@@ -3091,7 +3091,7 @@
           },
           "response": [
             {
-              "id": "1dce6f93-fa5e-42ec-97f7-6f3b4a1dced1",
+              "id": "6f14fc46-13b1-4b9a-bf12-751f2260904a",
               "name": "OK",
               "originalRequest": {
                 "url": {
@@ -3155,7 +3155,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "e1bf08f7-87f3-4fff-abcc-8ac2293a2e5a",
+              "id": "5645b876-d5ba-493d-a4d8-156a7d2275c0",
               "name": "Bad Request: The request body is malformed or contains invalid data",
               "originalRequest": {
                 "url": {
@@ -3219,7 +3219,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "5547ac32-8ec0-429b-bb85-fac625591f54",
+              "id": "6a63ecb3-b5ff-4a87-9d58-596d0cf104d8",
               "name": "Unauthorized: WebAuthn authentication failed",
               "originalRequest": {
                 "url": {
@@ -3283,7 +3283,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "b7fddbeb-9675-48dc-ab56-5fb6d7b40bac",
+              "id": "6afc7bfb-20c7-4caf-85c7-01ee024d79f5",
               "name": "Not Found: The user or credential could not be found",
               "originalRequest": {
                 "url": {
@@ -3347,7 +3347,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "f3751bec-eadb-4175-ac6c-d9677fd2fd9a",
+              "id": "2d5b0dd2-2749-4996-b36f-e1078e209364",
               "name": "Internal Server Error: An unexpected error occurred while processing the request",
               "originalRequest": {
                 "url": {
@@ -3447,7 +3447,7 @@
     }
   ],
   "info": {
-    "_postman_id": "b6add7bc-7248-4c8e-bedb-402d10abcc20",
+    "_postman_id": "05eefe6a-5624-4a93-81e0-3ada6d1d87b5",
     "name": "Authentication API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": {

@@ -152,8 +152,6 @@ paths:
                         validityPeriod: 3600
                         userAttributes: ["email", "name", "given_name", "family_name"]
                     userInfo:
-                      responseType: "JWS"
-                      signingAlg: "RS256"
                       userAttributes: ["email", "name", "given_name", "family_name", "picture"]
                     scopeClaims:
                       profile: ["name", "family_name", "given_name", "picture"]
@@ -221,8 +219,6 @@ paths:
                           validityPeriod: 1800
                           userAttributes: ["email", "email_verified", "name", "given_name", "family_name"]
                       userInfo:
-                        responseType: "JWS"
-                        signingAlg: "RS256"
                         userAttributes: ["email", "name", "given_name", "family_name", "picture"]
                       scopeClaims:
                         profile: ["name", "family_name", "given_name", "picture"]
@@ -356,8 +352,6 @@ paths:
                           validityPeriod: 1800
                           userAttributes: ["email", "email_verified", "name", "given_name", "family_name"]
                       userInfo:
-                        responseType: "JWS"
-                        signingAlg: "RS256"
                         userAttributes: ["email", "name", "given_name", "family_name", "picture"]
                       scopeClaims:
                         profile: ["name", "family_name", "given_name", "picture"]
@@ -479,8 +473,6 @@ paths:
                         validityPeriod: 1800
                         userAttributes: ["email", "email_verified", "name", "given_name", "family_name"]
                     userInfo:
-                      responseType: "JWS"
-                      signingAlg: "RS256"
                       userAttributes: ["email", "name", "given_name", "family_name", "picture"]
                     scopeClaims:
                       profile: ["name", "family_name", "given_name", "picture"]
@@ -550,8 +542,6 @@ paths:
                           validityPeriod: 1800
                           userAttributes: ["email", "email_verified", "name", "given_name", "family_name"]
                       userInfo:
-                        responseType: "JWS"
-                        signingAlg: "RS256"
                         userAttributes: ["email", "name", "given_name", "family_name", "picture"]
                       scopeClaims:
                         profile: ["name", "family_name", "given_name", "picture"]
@@ -1122,16 +1112,6 @@ components:
       type: object
       description: UserInfo endpoint configuration for the OAuth application
       properties:
-        responseType:
-          type: string
-          description: |
-            The format of the UserInfo response.
-            JSON returns a plain JSON object.
-            JWS returns a signed JWT — requires signingAlg.
-            JWE returns an encrypted JWT — requires encryptionAlg, encryptionEnc, and a client certificate.
-            NESTED_JWT returns a sign-then-encrypt JWT — requires signingAlg, encryptionAlg, encryptionEnc, and a client certificate.
-          enum: ["JSON", "JWS", "JWE", "NESTED_JWT"]
-          example: "JWS"
         userAttributes:
           type: array
           items:

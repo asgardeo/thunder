@@ -45,7 +45,7 @@ import (
 // always advertises the same `kid` ("mock-key-id"), so it must also always advertise
 // the same underlying key material across every process that spins up the mock.
 // Embedding a single PEM via go:embed keeps the JWKS response byte-identical across
-// every mock instance in every test package, so server's process-wide JWKS cache
+// every mock instance in every test package, so Thunder's process-wide JWKS cache
 // stays coherent when mocks are torn down and restarted on the same URL (e.g.
 // port 8093, which is reused by the conditional-exec, google-auth and
 // google-registration suites). Not a secret; must only be used by the test mock.

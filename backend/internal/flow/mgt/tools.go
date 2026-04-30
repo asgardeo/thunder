@@ -29,7 +29,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/mcp/tool"
 )
 
-// flowTools provides MCP tools for managing authentication flows.
+// flowTools provides MCP tools for managing Thunder authentication flows.
 type flowTools struct {
 	flowService FlowMgtServiceInterface
 }

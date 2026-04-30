@@ -7,7 +7,7 @@ Internationalization (i18n) package for Thunder applications using react-i18next
 - **Type-safe translations** - Full TypeScript support with autocomplete
 - **React hooks** - Easy-to-use hooks for translations
 - **Namespace organization** - Organized by app and feature for better maintainability
-- **Multiple apps support** - Shared translations for console, gate, and other apps
+- **Multiple apps support** - Shared translations for console, gate, and other Thunder apps
 
 ## Installation
 
@@ -162,7 +162,7 @@ const translations = {
 
 ### Namespace Details
 
-**`common`** - Shared translations across all applications:
+**`common`** - Shared translations across all Thunder applications:
 
 - `actions` - Action buttons (save, cancel, delete, etc.)
 - `status` - Status messages (loading, success, error, etc.)
@@ -188,15 +188,15 @@ const translations = {
 
 **`dashboard`** - Dashboard-specific content
 
-**`auth`** - Authentication flows (for Gate):
+**`auth`** - Authentication flows (for Thunder Gate):
 
 - Sign in, sign up, password flows
 
-**`mfa`** - Multi-factor authentication (for Gate)
+**`mfa`** - Multi-factor authentication (for Thunder Gate)
 
-**`social`** - Social login providers (for Gate)
+**`social`** - Social login providers (for Thunder Gate)
 
-**`consent`** - Consent management (for Gate)
+**`consent`** - Consent management (for Thunder Gate)
 
 **`errors`** - Error messages and error states
 
@@ -209,7 +209,7 @@ const translations = {
 
 ## Usage Examples
 
-### Example: Console - Users Page
+### Example: Thunder Console - Users Page
 
 ```tsx
 import {useTranslation} from 'react-i18next';
@@ -241,7 +241,7 @@ export function UsersPage() {
 }
 ```
 
-### Example: Gate - Sign In Page
+### Example: Thunder Gate - Sign In Page
 
 ```tsx
 import {useTranslation} from 'react-i18next';
@@ -423,7 +423,7 @@ pnpm lint
 
 ## Integration Guide
 
-### Console App
+### Thunder Console App
 
 Complete integration example for `apps/thunder-console/src/main.tsx`:
 
@@ -459,7 +459,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 );
 ```
 
-### Gate App
+### Thunder Gate App
 
 Similar integration for `apps/thunder-gate/src/main.tsx`:
 
@@ -644,7 +644,7 @@ When adding support for additional languages:
 2. Translate all namespaces
 3. Update `package.json` exports
 4. Update this README with the new language
-5. Test in all applications
+5. Test in all Thunder applications
 
 ## Resources
 

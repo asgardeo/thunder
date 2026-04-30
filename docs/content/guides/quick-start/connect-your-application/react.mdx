@@ -2,7 +2,7 @@
 title: React Quickstart
 sidebar_position: 1
 persona: app
-description: Quick start guide to integrate with a React application
+description: Quick start guide to integrate Thunder with a React application
 ---
 
 import {
@@ -18,7 +18,7 @@ import {
 
 # React Quickstart
 
-Welcome to the React Quickstart guide! In this document, you will learn to build a React app, add user sign-in and display user profile information using <ProductName />.
+Welcome to the React Quickstart guide! In this document, you will learn to build a React app, add user sign-in and display user profile information using Thunder.
 
 <TutorialHero>
 
@@ -32,7 +32,7 @@ Welcome to the React Quickstart guide! In this document, you will learn to build
 ## Prerequisites
 
 <TutorialHeroItem icon={<Clock />}>About 15 minutes</TutorialHeroItem>
-<TutorialHeroItem icon={<Server />}><ProductName /> running locally or on a server</TutorialHeroItem>
+<TutorialHeroItem icon={<Server />}>Thunder running locally or on a server</TutorialHeroItem>
 <TutorialHeroItem icon={<Hexagon />}>Node.js installed on your system</TutorialHeroItem>
 <TutorialHeroItem icon={<Package />}>A JavaScript package manager like npm, yarn, or pnpm</TutorialHeroItem>
 <TutorialHeroItem icon={<FileCode />}>A favorite text editor or IDE</TutorialHeroItem>
@@ -40,18 +40,18 @@ Welcome to the React Quickstart guide! In this document, you will learn to build
 </TutorialHero>
 
 :::tip Example Source Code
-Check out the complete <RepoLink path="/tree/main/samples/apps/react-sdk-sample">React Sample App</RepoLink> in the <ProductName /> repository
+Check out the complete [React Sample App](https://github.com/asgardeo/thunder/tree/main/samples/apps/react-sdk-sample) in the Thunder repository
 :::
 
 <Stepper stepNode="h2" as="h2">
 
-## Create an Application in <ProductName />
+## Create an Application in Thunder
 
-Before integrating <ProductName /> with your React app, you need to create an application in <ProductName />.
+Before integrating Thunder with your React app, you need to create an application in Thunder.
 
-### Using the <ProductName /> Console
+### Using the Thunder Console
 
-1. Sign into the <ProductName /> Console at [https://localhost:8090/console](https://localhost:8090/console)
+1. Sign into the Thunder Console at [https://localhost:8090/console](https://localhost:8090/console)
 2. Navigate to **Applications** → **New Application**
 3. Provide the following details:
    - **Name**: `my-react-app`
@@ -59,12 +59,12 @@ Before integrating <ProductName /> with your React app, you need to create an ap
    - **Authorized Redirect URL**: `http://localhost:5173`
 
 :::info
-The authorized redirect URL determines where <ProductName /> should send users after they successfully log in. For this guide, we'll use `http://localhost:5173`, as the Vite development server runs at this URL by default.
+The authorized redirect URL determines where Thunder should send users after they successfully log in. For this guide, we'll use `http://localhost:5173`, as the Vite development server runs at this URL by default.
 :::
 
-### Using the <ProductName /> API
+### Using the Thunder API
 
-Alternatively, you can create an application using the <ProductName /> API. First, [obtain a system API token](/docs/next/guides/getting-started/get-thunder#obtain-system-api-token), then:
+Alternatively, you can create an application using the Thunder API. First, [obtain a system API token](/docs/next/guides/getting-started/get-thunder#obtain-system-api-token), then:
 
 ```bash
 curl -kL -X POST https://localhost:8090/applications \
@@ -116,7 +116,7 @@ Create your new React app using Vite:
 
 ## Install @asgardeo/react
 
-<ProductName /> uses the Asgardeo React SDK for authentication. Install it in your project:
+Thunder uses the Asgardeo React SDK for authentication. Install it in your project:
 
 <CodeGroup>
   <CodeBlock lang="bash" label="npm">
@@ -163,16 +163,16 @@ createRoot(document.getElementById('root')).render(
 ```
 
 :::warning Configuration
-Replace `<your-client-id>` with the Client ID you obtained when creating the application in <ProductName />.
+Replace `<your-client-id>` with the Client ID you obtained when creating the application in Thunder.
 :::
 
 ### Configuration Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| `clientId` | The Client ID from your <ProductName /> application |
-| `baseUrl` | Your <ProductName /> instance URL (e.g., `https://localhost:8090`) |
-| `platform` | Must be set to `"AsgardeoV2"` for <ProductName /> |
+| `clientId` | The Client ID from your Thunder application |
+| `baseUrl` | Your Thunder instance URL (e.g., `https://localhost:8090`) |
+| `platform` | Must be set to `"AsgardeoV2"` for Thunder |
 
 ## Add Sign-In and Sign-Out
 
@@ -296,7 +296,7 @@ Start the development server:
 Visit your app at [http://localhost:5173](http://localhost:5173)
 
 :::tip Success
-You should now see the sign-in button. Click it to authenticate with <ProductName />!
+You should now see the sign-in button. Click it to authenticate with Thunder!
 :::
 
 </Stepper>

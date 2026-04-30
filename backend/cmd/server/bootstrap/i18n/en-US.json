@@ -147,7 +147,6 @@
       "forms.user_info.fields.email_address.label": "Email Address",
       "forms.user_info.fields.email_address.placeholder": "Enter your email address",
       "forms.user_info.actions.submit.label": "Sign Up",
-      "forms.user_info.actions.continue.label": "Continue",
       "forms.registration.title": "Sign Up",
       "forms.registration.fields.username.label": "Username",
       "forms.registration.fields.username.placeholder": "Enter your username",

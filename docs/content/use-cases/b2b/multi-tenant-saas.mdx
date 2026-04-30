@@ -1,6 +1,6 @@
 ---
 title: Multi-Tenant SaaS Identity (B2B)
-description: Identify when to use for B2B SaaS identity and review the supported use case scope.
+description: Identify when to use Thunder for B2B SaaS identity and review the supported use case scope.
 sidebar_position: 1
 ---
 
@@ -12,11 +12,11 @@ Choose this pattern if your application is a B2B SaaS product and you need a rel
 
 A B2B SaaS product is software that one business provides services to other businesses through the cloud. Each customer business expects separate users, administrators, policies, and branding. If your product serves multiple customer companies and each company needs its own workspace, your product follows a B2B SaaS model.
 
-<ProductName /> helps you solve IAM challenges in that model. You can onboard organizations, control access, connect enterprise identity providers, and apply security and governance controls without building each capability from scratch.
+Thunder helps you solve IAM challenges in that model. You can onboard organizations, control access, connect enterprise identity providers, and apply security and governance controls without building each capability from scratch.
 
 ## Use Case Scope
 
-From a B2B application owner view, you need to solve the full customer lifecycle, from sign-up to secure sign-in, security, governance, and growth reporting. <ProductName /> provides capabilities for each stage.
+From a B2B application owner view, you need to solve the full customer lifecycle, from sign-up to secure sign-in, security, governance, and growth reporting. Thunder provides capabilities for each stage.
 
 ### Organization Onboarding (Sign-up)
 
@@ -26,18 +26,18 @@ Beyond just creating accounts, you may need to integrate sign-up with your busin
 
 *For example, a user signs up with Google or GitHub on behalf of a company and provides a name for the organization workspace. During the sign-up flow, you collect payment details for a free trial so you can charge usage when the trial ends. Billing credential validation should happen before the flow completes. After successful sign-up, you publish a sign-up event to Salesforce and Pardot to synchronize customer data for growth tracking and marketing.*
 
-**How <ProductName /> helps:**
+**How Thunder helps:**
 
-<ProductName /> supports multiple sign-up options, including
+Thunder supports multiple sign-up options, including
 - Email and password
 - Email and one-time passcode (OTP)
 - Social sign-up with providers such as Google and GitHub
 
-<ProductName /> can provision the organization workspace during registration and assign the first user as the workspace owner in the same journey.
+Thunder can provision the organization workspace during registration and assign the first user as the workspace owner in the same journey.
 
-<ProductName /> also exposes organization lifecycle events so you can synchronize onboarding data with customer relationship management (CRM), marketing automation, billing, and other operational systems.
+Thunder also exposes organization lifecycle events so you can synchronize onboarding data with customer relationship management (CRM), marketing automation, billing, and other operational systems.
 
-If your flow requires external checks before finalizing onboarding, you can integrate external API calls during the sign-up journey. <ProductName /> supports this through low-code, no-code GUI-based journey building.
+If your flow requires external checks before finalizing onboarding, you can integrate external API calls during the sign-up journey. Thunder supports this through low-code, no-code GUI-based journey building.
 
 ### Collaboration
 
@@ -45,10 +45,10 @@ As the next step, you want each customer organization to collaborate safely insi
 
 *For example, an admin invites a teammate by email, the teammate accepts the invitation, completes user registration, and joins the correct workspace.*
 
-**How <ProductName /> helps:**
+**How Thunder helps:**
 
-<ProductName /> supports organization-scoped member invitations by email and manages invitation lifecycle operations such as resend and expiry. You can build the invited user's onboarding journey through <ProductName /> low-code and no-code GUI capabilities.
-<ProductName /> preserves organization workspace boundaries during collaboration flows, so invitations and access grants remain scoped to the correct customer organization.
+Thunder supports organization-scoped member invitations by email and manages invitation lifecycle operations such as resend and expiry. You can build the invited user's onboarding journey through Thunder low-code and no-code GUI capabilities.
+Thunder preserves organization workspace boundaries during collaboration flows, so invitations and access grants remain scoped to the correct customer organization.
 
 ### Organizational Identity Management
 
@@ -56,9 +56,9 @@ As customer organizations grow, you need identity operations that can evolve fro
 
 *For example, a customer starts with direct user onboarding and later enables Microsoft Entra ID federation with just-in-time (JIT) provisioning or linking accounts.*
 
-**How <ProductName /> helps:**
+**How Thunder helps:**
 
-<ProductName /> supports direct organization user onboarding, bring-your-own-identity-provider (BYOIdP) integration through OIDC or SAML connections, and enterprise federation patterns. <ProductName /> also supports JIT provisioning to create users during sign-in and account linking to maintain consistent user identities across authentication methods.
+Thunder supports direct organization user onboarding, bring-your-own-identity-provider (BYOIdP) integration through OIDC or SAML connections, and enterprise federation patterns. Thunder also supports JIT provisioning to create users during sign-in and account linking to maintain consistent user identities across authentication methods.
 
 These options let customer organizations adopt stronger identity controls over time without requiring your platform team to rebuild identity workflows.
 
@@ -68,9 +68,9 @@ When users lose access, you need a recovery journey that restores access quickly
 
 *For example, a user who cannot remember credentials completes account recovery by using email OTP.*
 
-**How <ProductName /> helps:**
+**How Thunder helps:**
 
-<ProductName /> supports multiple recovery options, including: 
+Thunder supports multiple recovery options, including: 
 - Email magic links
 - Email OTP
 - SMS OTP
@@ -84,13 +84,13 @@ As your business introduces paid plans, you need authorization and entitlement c
 
 *For example, when a workspace upgrades from a free plan to a premium plan, users gain access to additional features and administrative capabilities.*
 
-**How <ProductName /> helps:**
+**How Thunder helps:**
 
-<ProductName /> supports grouping APIs and granting API access to organization workspaces with policy-based controls, which helps you build subscription-aware authorization patterns.
+Thunder supports grouping APIs and granting API access to organization workspaces with policy-based controls, which helps you build subscription-aware authorization patterns.
 
-<ProductName /> also supports role-based access control (RBAC) for workspace users. You can map organization subscription changes to policy-driven API availability and map user capability changes through role management. This model helps you apply upgrades and downgrades in a controlled way.
+Thunder also supports role-based access control (RBAC) for workspace users. You can map organization subscription changes to policy-driven API availability and map user capability changes through role management. This model helps you apply upgrades and downgrades in a controlled way.
 
-<ProductName /> supports policy-based resource and configuration sharing models, which helps you enforce business rules while preserving workspace boundaries.
+Thunder supports policy-based resource and configuration sharing models, which helps you enforce business rules while preserving workspace boundaries.
 
 ### Delegated Administration
 
@@ -98,10 +98,10 @@ As your customer base scales, you want customer organizations to manage day-to-d
 
 *For example, a customer assigns a workspace admin to manage user access while platform-level controls remain with your central team.*
 
-**How <ProductName /> helps:**
+**How Thunder helps:**
 
-<ProductName /> supports fine-grained delegated administration with organization-scoped roles and permission controls. Organization admins can assign administrative roles, manage user access, and handle routine identity operations within workspace boundaries.
-<ProductName /> also provides audit visibility for administrative actions, which helps with compliance reviews and operational traceability.
+Thunder supports fine-grained delegated administration with organization-scoped roles and permission controls. Organization admins can assign administrative roles, manage user access, and handle routine identity operations within workspace boundaries.
+Thunder also provides audit visibility for administrative actions, which helps with compliance reviews and operational traceability.
 
 ### Branding Customization
 
@@ -109,11 +109,11 @@ As a B2B product owner, you want identity journeys to match your platform brand 
 
 *For example, one customer sets a custom logo and color theme for workspace sign-in screens.*
 
-**How <ProductName /> helps:**
+**How Thunder helps:**
 
-<ProductName /> supports branding customization for user-facing pages such as registration, sign-in, and recovery journeys at organization workspace scope. You can enable configurable elements such as logos, colors, and themes while maintaining global standards for shared user experience elements.
+Thunder supports branding customization for user-facing pages such as registration, sign-in, and recovery journeys at organization workspace scope. You can enable configurable elements such as logos, colors, and themes while maintaining global standards for shared user experience elements.
 
-<ProductName /> also supports organization-specific subdomains, which helps enterprise customers provide branded access points for their users.
+Thunder also supports organization-specific subdomains, which helps enterprise customers provide branded access points for their users.
 
 ### Organizational Sign-in
 
@@ -121,9 +121,9 @@ As your customer portfolio diversifies, you need flexibility to support both glo
 
 *For example, one organization allows only enterprise single sign-on (SSO), while another allows email and social sign-in.*
 
-**How <ProductName /> helps:**
+**How Thunder helps:**
 
-<ProductName /> supports global sign-in flows and organization-aware sign-in controls. You can adapt available sign-in options based on each organization’s configured identity capabilities and policy.
+Thunder supports global sign-in flows and organization-aware sign-in controls. You can adapt available sign-in options based on each organization’s configured identity capabilities and policy.
 This flexibility helps you support varied enterprise requirements while preserving a coherent sign-in architecture.
 
 ### Organization Discovery Mechanisms
@@ -133,9 +133,9 @@ You may also need custom discovery logic for specific industry, regional, or pro
 
 *For example, a user enters a work email address and your platform routes the user to the correct organization workspace.*
 
-**How <ProductName /> helps:**
+**How Thunder helps:**
 
-<ProductName /> supports organization discovery by organization identifier and by email domain mapping.
+Thunder supports organization discovery by organization identifier and by email domain mapping.
 
 These discovery options help reduce sign-in confusion and improve first-attempt sign-in success.
 
@@ -145,9 +145,9 @@ As a B2B application owner, you need identity journeys that align with privacy r
 
 *For example, a customer requires explicit user consent before optional profile data processing.*
 
-**How <ProductName /> helps:**
+**How Thunder helps:**
 
-<ProductName /> supports privacy and consent capabilities that help you implement regulation-aware identity flows in multi-tenant environments. You can design consent steps that align with policy expectations and maintain consistent enforcement across workspaces.
+Thunder supports privacy and consent capabilities that help you implement regulation-aware identity flows in multi-tenant environments. You can design consent steps that align with policy expectations and maintain consistent enforcement across workspaces.
 
 These capabilities help your platform reduce compliance risk while preserving a predictable user experience.
 
@@ -157,9 +157,9 @@ To operate a B2B SaaS platform, you need continuous visibility into usage, risk,
 
 *For example, platform admins review failed sign-in trends and deactivate a workspace after repeated suspicious activity.*
 
-**How <ProductName /> helps:**
+**How Thunder helps:**
 
-<ProductName /> supports monitoring dashboards with key indicators such as 
+Thunder supports monitoring dashboards with key indicators such as 
 - Monthly active users
 - Inactive users
 - Locked users
@@ -169,7 +169,7 @@ To operate a B2B SaaS platform, you need continuous visibility into usage, risk,
 
 These insights support operational planning, risk detection, and growth analysis.
 
-<ProductName /> also supports governance workflows such as viewing workspace metadata, monitoring workspace activity indicators, and deactivating workspaces when intervention is required. Service provider organization can view these insights with workspace-level breakdowns, and workspace admins can also view insights for their own organization workspace.
+Thunder also supports governance workflows such as viewing workspace metadata, monitoring workspace activity indicators, and deactivating workspaces when intervention is required. Service provider organization can view these insights with workspace-level breakdowns, and workspace admins can also view insights for their own organization workspace.
 
 ### Troubleshooting
 
@@ -177,9 +177,9 @@ When a customer reports an access issue, you need fast diagnostics at workspace 
 
 *For example, support engineers inspect workspace logs to diagnose repeated sign-in failures after an identity provider change.*
 
-**How <ProductName /> helps:**
+**How Thunder helps:**
 
-<ProductName /> supports organization-level logging and diagnostics so support teams can investigate authentication and access issues with organization-specific context. These logs help confirm misconfigurations, identify failure points, and validate corrective actions.
+Thunder supports organization-level logging and diagnostics so support teams can investigate authentication and access issues with organization-specific context. These logs help confirm misconfigurations, identify failure points, and validate corrective actions.
 
 This troubleshooting support helps reduce mean time to resolution and improve customer support outcomes.
 
@@ -187,6 +187,6 @@ This troubleshooting support helps reduce mean time to resolution and improve cu
 
 As AI adoption grows, you may want to speed up customer experience with AI agents that serve B2B SaaS use cases. Managing AI agent identity and lifecycle securely becomes an important requirement.
 
-**How <ProductName /> helps:**
+**How Thunder helps:**
 
-<ProductName /> will soon support capabilities to help you secure B2B AI agents.
+Thunder will soon support capabilities to help you secure B2B AI agents.

@@ -216,7 +216,7 @@ func (ts *WildcardRedirectURITestSuite) postApplication(name string, redirectURI
 	return ts.client.Do(req)
 }
 
-// isErrorPageRedirect returns true when the Location header indicates server's own error page.
+// isErrorPageRedirect returns true when the Location header indicates Thunder's own error page.
 func isErrorPageRedirect(location string) bool {
 	return strings.Contains(location, "errorCode=")
 }
@@ -392,7 +392,7 @@ func (ts *WildcardRedirectURITestSuite) TestAC08_ExactMatch_Accepted() {
 }
 
 // TestAC09_NoMatch_RedirectsToErrorPage verifies that an unmatched redirect URI causes
-// the server to redirect to its own error page.
+// Thunder to redirect to its own error page.
 func (ts *WildcardRedirectURITestSuite) TestAC09_NoMatch_RedirectsToErrorPage() {
 	resp, err := testutils.InitiateAuthorizationFlow(
 		singleStarClientID,

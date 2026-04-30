@@ -22,7 +22,6 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/system/healthcheck/handler"
-	"github.com/asgardeo/thunder/internal/system/healthcheck/service"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 )
 
@@ -32,9 +31,9 @@ type HealthCheckService struct {
 }
 
 // NewHealthCheckService creates a new instance of HealthCheckService.
-func NewHealthCheckService(mux *http.ServeMux, svc service.HealthCheckServiceInterface) ServiceInterface {
+func NewHealthCheckService(mux *http.ServeMux) ServiceInterface {
 	instance := &HealthCheckService{
-		healthCheckHandler: handler.NewHealthCheckHandler(svc),
+		healthCheckHandler: handler.NewHealthCheckHandler(),
 	}
 	instance.RegisterRoutes(mux)
 
@@ -46,10 +45,9 @@ func NewHealthCheckService(mux *http.ServeMux, svc service.HealthCheckServiceInt
 //nolint:dupl // Ignoring false positive duplicate code
 func (h *HealthCheckService) RegisterRoutes(mux *http.ServeMux) {
 	opts1 := middleware.CORSOptions{
-		AllowedMethods:   []string{"GET"},
-		AllowedHeaders:   middleware.DefaultAllowedHeaders,
+		AllowedMethods:   "GET",
+		AllowedHeaders:   "Content-Type, Authorization",
 		AllowCredentials: true,
-		MaxAge:           600,
 	}
 
 	mux.HandleFunc(middleware.WithCORS("OPTIONS /health/liveness",

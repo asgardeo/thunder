@@ -22,7 +22,6 @@ package main
 import (
 	"net/http"
 
-	"github.com/asgardeo/thunder/internal/agent"
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/authn"
@@ -59,11 +58,9 @@ import (
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
-	dbprovider "github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/email"
 	"github.com/asgardeo/thunder/internal/system/export"
-	healthcheckservice "github.com/asgardeo/thunder/internal/system/healthcheck/service"
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/internal/system/importer"
 	"github.com/asgardeo/thunder/internal/system/jose"
@@ -159,7 +156,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	exporters = append(exporters, userExporter)
 
 	groupService, ouGroupResolver, err := group.Initialize(
-		mux, dbprovider.GetDBProvider(), ouService, entityService, userSchemaService, ouAuthzService,
+		mux, ouService, entityService, userSchemaService, ouAuthzService,
 	)
 	if err != nil {
 		logger.Fatal("Failed to initialize GroupService", log.Error(err))
@@ -212,9 +209,9 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 
 	// Initialize federated authentication services.
 	oauthAuthnService := authnOAuth.Initialize(idpService, entityProvider)
-	oidcAuthnService := authnOIDC.Initialize(oauthAuthnService, jwtService)
-	googleAuthnService := google.Initialize(oidcAuthnService, jwtService)
-	githubAuthnService := github.Initialize(oauthAuthnService)
+	oidcAuthnService := authnOIDC.Initialize(idpService, entityProvider, jwtService)
+	googleAuthnService := google.Initialize(idpService, entityProvider, jwtService)
+	githubAuthnService := github.Initialize(idpService, entityProvider)
 
 	federatedAuths := map[idp.IDPType]authncm.FederatedAuthenticator{
 		idp.IDPTypeOAuth:  oauthAuthnService,
@@ -255,7 +252,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		logger.Fatal("Failed to initialize FlowMgtService", log.Error(err))
 	}
 	exporters = append(exporters, flowMgtExporter)
-	certservice, err := cert.Initialize(dbprovider.GetDBProvider())
+	certservice, err := cert.Initialize()
 	if err != nil {
 		logger.Fatal("Failed to initialize CertificateService", log.Error(err))
 	}
@@ -282,15 +279,11 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 
 	// TODO: Remove entityService dependency after finalizing declarative resource loading pattern
 	applicationService, applicationExporter, err := application.Initialize(
-		mux, mcpServer, entityProvider, entityService, inboundClientService, ouService, i18nService)
+		mux, mcpServer, entityProvider, entityService, inboundClientService, ouService)
 	if err != nil {
 		logger.Fatal("Failed to initialize ApplicationService", log.Error(err))
 	}
 	exporters = append(exporters, applicationExporter)
-
-	if _, err := agent.Initialize(mux, entityService, inboundClientService, ouService); err != nil {
-		logger.Fatal("Failed to initialize AgentService", log.Error(err))
-	}
 
 	// Initialize design resolve service for theme and layout resolution
 	designResolveService := resolve.Initialize(mux, themeMgtService, layoutMgtService, applicationService)
@@ -326,14 +319,16 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Initialize OAuth services.
 	err = oauth.Initialize(mux, applicationService, inboundClientService, authnProvider, jwtService, jweService,
 		flowExecService, observabilitySvc, pkiService, ouService, attributeCacheService, authZService, entityProvider,
-		resourceService, i18nService)
+		resourceService)
 	if err != nil {
 		logger.Fatal("Failed to initialize OAuth services", log.Error(err))
 	}
 
+	// TODO: Legacy way of initializing services. These need to be refactored in the future aligning to the
+	// dependency injection pattern used above.
+
 	// Register the health service.
-	healthSvc := healthcheckservice.Initialize(dbprovider.GetDBProvider(), dbprovider.GetRedisProvider())
-	services.NewHealthCheckService(mux, healthSvc)
+	services.NewHealthCheckService(mux)
 
 	return jwtService
 }

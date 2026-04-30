@@ -26,6 +26,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/healthcheck/model"
+	"github.com/asgardeo/thunder/tests/mocks/healthcheck/providermock"
 	"github.com/asgardeo/thunder/tests/mocks/healthcheck/servicemock"
 
 	"github.com/stretchr/testify/assert"
@@ -34,17 +35,24 @@ import (
 
 type HealthCheckHandlerTestSuite struct {
 	suite.Suite
-	handler     *HealthCheckHandler
-	mockService *servicemock.HealthCheckServiceInterfaceMock
+	handler      *HealthCheckHandler
+	mockService  *servicemock.HealthCheckServiceInterfaceMock
+	mockProvider *providermock.HealthCheckProviderInterfaceMock
 }
 
 func TestHealthCheckHandlerSuite(t *testing.T) {
 	suite.Run(t, new(HealthCheckHandlerTestSuite))
 }
 
+func (suite *HealthCheckHandlerTestSuite) SetupTest() {
+	suite.handler = NewHealthCheckHandler()
+}
+
 func (suite *HealthCheckHandlerTestSuite) BeforeTest(suiteName, testName string) {
 	suite.mockService = &servicemock.HealthCheckServiceInterfaceMock{}
-	suite.handler = NewHealthCheckHandler(suite.mockService)
+	suite.mockProvider = &providermock.HealthCheckProviderInterfaceMock{}
+	suite.mockProvider.On("GetHealthCheckService").Return(suite.mockService)
+	suite.handler.Provider = suite.mockProvider
 }
 
 func (suite *HealthCheckHandlerTestSuite) TestHandleLivenessRequest() {
