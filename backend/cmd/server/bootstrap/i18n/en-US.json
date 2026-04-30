@@ -1,6 +1,10 @@
 {
   "translations": {
     "onboarding": {
+      "forms.mode.title": "Add User",
+      "forms.mode.subtitle": "Choose how you'd like to onboard this user.",
+      "forms.mode.actions.create.label": "Create User",
+      "forms.mode.actions.invite.label": "Invite User",
       "forms.email.title": "User Email",
       "forms.email.fields.email.label": "Email",
       "forms.email.fields.email.placeholder": "Enter email",
@@ -47,7 +51,9 @@
       "forms.invite_sms_sent.message": "An invitation SMS has been sent to the user. They can complete their registration using the link in the message.",
       "forms.invite_link_status.title": "Invite Link Ready",
       "forms.invite_link_status.message": "Share the invite link below with the user to complete their registration.",
-      "forms.invite_link_status.link_label": "Invite Link"
+      "forms.invite_link_status.link_label": "Invite Link",
+      "forms.create_complete.title": "User Created",
+      "forms.create_complete.message": "The user account has been created successfully."
     },
     "invite": {
       "validating": "Validating your invite link...",

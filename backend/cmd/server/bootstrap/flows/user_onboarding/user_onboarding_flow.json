@@ -12,7 +12,9 @@
             "id": "permission_validator",
             "type": "TASK_EXECUTION",
             "properties": {
-                "requiredScopes": ["system"]
+                "requiredScopes": [
+                    "system"
+                ]
             },
             "executor": {
                 "name": "PermissionValidator"
@@ -95,7 +97,7 @@
             "executor": {
                 "name": "OUResolverExecutor"
             },
-            "onSuccess": "prompt_email",
+            "onSuccess": "prompt_mode",
             "onIncomplete": "prompt_ou_selection"
         },
         {
@@ -155,23 +157,85 @@
             ]
         },
         {
-            "id": "prompt_email",
+            "id": "prompt_mode",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "type": "TEXT",
+                        "id": "text_header_mode",
+                        "label": "{{ t(onboarding:forms.mode.title) }}",
+                        "variant": "HEADING_1",
+                        "align": "center"
+                    },
+                    {
+                        "type": "TEXT",
+                        "id": "text_subtitle_mode",
+                        "label": "{{ t(onboarding:forms.mode.subtitle) }}"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_mode_actions",
+                        "components": [
+                            {
+                                "type": "STACK",
+                                "id": "stack_mode_actions",
+                                "direction": "row",
+                                "justify": "center",
+                                "components": [
+                                    {
+                                        "type": "ACTION",
+                                        "id": "action_create_user",
+                                        "label": "{{ t(onboarding:forms.mode.actions.create.label) }}",
+                                        "variant": "PRIMARY",
+                                        "eventType": "SUBMIT"
+                                    },
+                                    {
+                                        "type": "ACTION",
+                                        "id": "action_invite_user",
+                                        "label": "{{ t(onboarding:forms.mode.actions.invite.label) }}",
+                                        "variant": "OUTLINED",
+                                        "eventType": "SUBMIT"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "prompts": [
+                {
+                    "action": {
+                        "ref": "action_create_user",
+                        "nextNode": "prompt_email_create"
+                    }
+                },
+                {
+                    "action": {
+                        "ref": "action_invite_user",
+                        "nextNode": "prompt_email_invite"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "prompt_email_create",
             "type": "PROMPT",
             "meta": {
                 "components": [
                     {
                         "align": "center",
                         "type": "TEXT",
-                        "id": "text_header_email",
+                        "id": "text_header_email_create",
                         "label": "{{ t(onboarding:forms.email.title) }}",
                         "variant": "HEADING_1"
                     },
                     {
                         "type": "BLOCK",
-                        "id": "block_email",
+                        "id": "block_email_create",
                         "components": [
                             {
-                                "id": "input_prompt_email",
+                                "id": "input_prompt_email_create",
                                 "ref": "email",
                                 "type": "EMAIL_INPUT",
                                 "label": "{{ t(onboarding:forms.email.fields.email.label) }}",
@@ -180,7 +244,7 @@
                             },
                             {
                                 "type": "ACTION",
-                                "id": "action_submit_email",
+                                "id": "action_submit_email_create",
                                 "label": "{{ t(onboarding:forms.email.actions.next.label) }}",
                                 "variant": "PRIMARY",
                                 "eventType": "SUBMIT"
@@ -193,27 +257,88 @@
                 {
                     "inputs": [
                         {
-                            "ref": "input_prompt_email",
+                            "ref": "input_prompt_email_create",
                             "identifier": "email",
                             "type": "EMAIL_INPUT",
                             "required": true
                         }
                     ],
                     "action": {
-                        "ref": "action_submit_email",
-                        "nextNode": "check_email_uniqueness"
+                        "ref": "action_submit_email_create",
+                        "nextNode": "check_email_uniqueness_create"
                     }
                 }
             ]
         },
         {
-            "id": "check_email_uniqueness",
+            "id": "check_email_uniqueness_create",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AttributeUniquenessValidator"
+            },
+            "onSuccess": "prompt_user_details",
+            "onIncomplete": "prompt_email_create"
+        },
+        {
+            "id": "prompt_email_invite",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "text_header_email_invite",
+                        "label": "{{ t(onboarding:forms.email.title) }}",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_email_invite",
+                        "components": [
+                            {
+                                "id": "input_prompt_email_invite",
+                                "ref": "email",
+                                "type": "EMAIL_INPUT",
+                                "label": "{{ t(onboarding:forms.email.fields.email.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(onboarding:forms.email.fields.email.placeholder) }}"
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_submit_email_invite",
+                                "label": "{{ t(onboarding:forms.email.actions.next.label) }}",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "prompts": [
+                {
+                    "inputs": [
+                        {
+                            "ref": "input_prompt_email_invite",
+                            "identifier": "email",
+                            "type": "EMAIL_INPUT",
+                            "required": true
+                        }
+                    ],
+                    "action": {
+                        "ref": "action_submit_email_invite",
+                        "nextNode": "check_email_uniqueness_invite"
+                    }
+                }
+            ]
+        },
+        {
+            "id": "check_email_uniqueness_invite",
             "type": "TASK_EXECUTION",
             "executor": {
                 "name": "AttributeUniquenessValidator"
             },
             "onSuccess": "prompt_invite_method",
-            "onIncomplete": "prompt_email"
+            "onIncomplete": "prompt_email_invite"
         },
         {
             "id": "prompt_invite_method",
@@ -317,7 +442,7 @@
                         "align": "center",
                         "type": "TEXT",
                         "id": "email_status_icon",
-                        "label": "✅",
+                        "label": "\u2705",
                         "variant": "HEADING_1"
                     },
                     {
@@ -347,7 +472,7 @@
                         "align": "center",
                         "type": "TEXT",
                         "id": "email_unavailable_icon",
-                        "label": "⚠️",
+                        "label": "\u26a0\ufe0f",
                         "variant": "HEADING_1"
                     },
                     {
@@ -383,7 +508,7 @@
                         "align": "center",
                         "type": "TEXT",
                         "id": "link_status_icon",
-                        "label": "✅",
+                        "label": "\u2705",
                         "variant": "HEADING_1"
                     },
                     {
@@ -618,25 +743,25 @@
                         "align": "center",
                         "type": "TEXT",
                         "id": "registration_complete_icon",
-                        "label": "✅",
+                        "label": "\u2705",
                         "variant": "HEADING_1"
                     },
                     {
                         "align": "center",
                         "type": "TEXT",
                         "id": "registration_complete_heading",
-                        "label": "{{ t(invite:complete.title) }}",
+                        "label": "{{ t(onboarding:forms.create_complete.title) }}",
                         "variant": "HEADING_1"
                     },
                     {
                         "align": "center",
                         "type": "TEXT",
                         "id": "registration_complete_message",
-                        "label": "{{ t(invite:complete.description) }}"
+                        "label": "{{ t(onboarding:forms.create_complete.message) }}"
                     }
                 ]
             },
-            "message": "Registration complete",
+            "message": "{{ t(onboarding:forms.create_complete.title) }}",
             "next": "end"
         },
         {

@@ -143,26 +143,12 @@ describe('InviteMembersCard', () => {
       expect(screen.getByRole('button', {name: 'Add User'})).toBeInTheDocument();
     });
 
-    it('renders the secondary "Invite User" button', () => {
-      render(<InviteMembersCard />);
-
-      expect(screen.getByRole('button', {name: 'Invite User'})).toBeInTheDocument();
-    });
-
     it('navigates to /users/create when Add User is clicked', () => {
       render(<InviteMembersCard />);
 
       fireEvent.click(screen.getByRole('button', {name: 'Add User'}));
 
       expect(mockNavigate).toHaveBeenCalledWith('/users/create');
-    });
-
-    it('navigates to /users?invite=true when Invite User is clicked', () => {
-      render(<InviteMembersCard />);
-
-      fireEvent.click(screen.getByRole('button', {name: 'Invite User'}));
-
-      expect(mockNavigate).toHaveBeenCalledWith('/users?invite=true');
     });
   });
 });

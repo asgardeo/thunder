@@ -679,7 +679,7 @@ function InviteUserStepContent({
               onResetLocalState();
             }}
           >
-            {t('users:inviteAnother', 'Invite Another User')}
+            {t('users:addAnotherUser', 'Add Another User')}
           </Button>
         </Stack>
       )}
@@ -802,9 +802,9 @@ export default function UserInvitePage(): JSX.Element {
   }, []);
 
   // Compute progress from breadcrumb trail
-  // Without OU step: 3 steps (user type, email, user details + credential)
-  // With OU step: 4 steps (user type, OU, email, user details + credential)
-  const totalSteps = hasOuStep ? 4 : 3;
+  // Without OU step: 4 steps (mode, user type, email, user details + credential)
+  // With OU step: 5 steps (mode, user type, OU, email, user details + credential)
+  const totalSteps = hasOuStep ? 5 : 4;
   const progress = Math.min((breadcrumbs.length / totalSteps) * 100, 100);
 
   return (
@@ -838,7 +838,7 @@ export default function UserInvitePage(): JSX.Element {
               })}
               {breadcrumbs.length === 0 && (
                 <Typography variant="h5" color="text.primary">
-                  {t('users:inviteUser', 'Invite User')}
+                  {t('users:addUser', 'Add User')}
                 </Typography>
               )}
             </Breadcrumbs>

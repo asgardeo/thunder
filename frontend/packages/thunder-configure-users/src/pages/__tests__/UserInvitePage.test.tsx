@@ -293,13 +293,13 @@ describe('UserInvitePage', () => {
   /* ----- Default header ----- */
 
   describe('header', () => {
-    it('should display default "Invite User" breadcrumb when no steps have been visited', () => {
+    it('should display default "Add User" breadcrumb when no steps have been visited', () => {
       mockInviteUserRenderProps.isLoading = true;
       mockInviteUserRenderProps.components = [];
 
       render(<UserInvitePage />);
 
-      expect(screen.getByText('Invite User')).toBeInTheDocument();
+      expect(screen.getByText('Add User')).toBeInTheDocument();
     });
 
     it('should render a close button that navigates to /users', async () => {
@@ -450,22 +450,22 @@ describe('UserInvitePage', () => {
       expect(screen.getByText('Check your email.')).toBeInTheDocument();
     });
 
-    it('should show "Close" and "Invite Another User" buttons when no BLOCK components present', () => {
+    it('should show "Close" and "Add Another User" buttons when no BLOCK components present', () => {
       mockInviteUserRenderProps.components = [heading('Done')];
 
       render(<UserInvitePage />);
 
       const closeButtons = screen.getAllByRole('button', {name: /close/i});
       expect(closeButtons.length).toBeGreaterThanOrEqual(2); // header X + footer Close
-      expect(screen.getByRole('button', {name: /invite another user/i})).toBeInTheDocument();
+      expect(screen.getByRole('button', {name: /add another user/i})).toBeInTheDocument();
     });
 
-    it('should call resetFlow when "Invite Another User" is clicked in display-only state', async () => {
+    it('should call resetFlow when "Add Another User" is clicked in display-only state', async () => {
       mockInviteUserRenderProps.components = [heading('Done')];
 
       render(<UserInvitePage />);
 
-      await userEvent.click(screen.getByRole('button', {name: /invite another user/i}));
+      await userEvent.click(screen.getByRole('button', {name: /add another user/i}));
 
       expect(mockResetFlow).toHaveBeenCalled();
     });
@@ -503,7 +503,7 @@ describe('UserInvitePage', () => {
       expect(screen.getByText('Invite Link')).toBeInTheDocument();
     });
 
-    it('should not show "Invite Another User" button when BLOCK components are present', () => {
+    it('should not show "Add Another User" button when BLOCK components are present', () => {
       mockInviteUserRenderProps.components = [
         heading('Step 1'),
         block([textInput('name', 'Name'), submitAction('Next')]),
@@ -511,7 +511,7 @@ describe('UserInvitePage', () => {
 
       render(<UserInvitePage />);
 
-      expect(screen.queryByRole('button', {name: /invite another user/i})).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', {name: /add another user/i})).not.toBeInTheDocument();
     });
   });
 
