@@ -246,14 +246,14 @@
                                         "type": "ACTION",
                                         "id": "action_share_manually",
                                         "label": "{{ t(onboarding:forms.invite_mode.actions.link.label) }}",
-                                        "variant": "OUTLINED",
+                                        "variant": "PRIMARY",
                                         "eventType": "SUBMIT"
                                     },
                                     {
                                         "type": "ACTION",
                                         "id": "action_send_email_invite",
                                         "label": "{{ t(onboarding:forms.invite_mode.actions.email.label) }}",
-                                        "variant": "PRIMARY",
+                                        "variant": "OUTLINED",
                                         "eventType": "SUBMIT"
                                     }
                                 ]
