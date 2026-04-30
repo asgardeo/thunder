@@ -54,6 +54,7 @@ import {useForm, Controller} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import {z} from 'zod';
+import isUserOnboardingFlowUnavailable from '../utils/isUserOnboardingFlowUnavailable';
 
 /** Typed shape for flow sub-components */
 type FlowSubComponent = EmbeddedFlowComponent & {
@@ -748,7 +749,11 @@ function InviteUserFlowBridge({
   );
 }
 
-export default function UserInvitePage(): JSX.Element {
+export default function UserInvitePage({
+  onFlowUnavailable = undefined,
+}: {
+  onFlowUnavailable?: (error: unknown) => void;
+} = {}): JSX.Element {
   const {t} = useTranslation();
   const navigate = useNavigate();
   const logger = useLogger('UserInvitePage');
@@ -800,6 +805,15 @@ export default function UserInvitePage(): JSX.Element {
     setHasOuStep(false);
     setFlowError(null);
   }, []);
+
+  const handleFlowUnavailable = useCallback(
+    (value: unknown) => {
+      if (onFlowUnavailable && isUserOnboardingFlowUnavailable(value)) {
+        onFlowUnavailable(value);
+      }
+    },
+    [onFlowUnavailable],
+  );
 
   // Compute progress from breadcrumb trail
   // Without OU step: 4 steps (mode, user type, email, user details + credential)
@@ -870,9 +884,11 @@ export default function UserInvitePage(): JSX.Element {
               <InviteUser
                 onError={(err: Error) => {
                   logger.error('User onboarding error', {error: err});
+                  handleFlowUnavailable(err);
                 }}
                 onFlowChange={(response: any) => {
                   setFlowError((response?.failureReason as string | null) ?? null);
+                  handleFlowUnavailable(response);
                 }}
               >
                 {(renderProps: InviteUserRenderProps) => (

@@ -30,6 +30,7 @@ import {
   TranslationsListPage,
 } from '@thunder/configure-translations';
 import {
+  UserAddPage,
   UserEditPage,
   UserInvitePage,
   UsersListPage,
@@ -150,7 +151,7 @@ export default function App(): JSX.Element {
               </ProtectedRoute>
             }
           >
-            <Route index element={<UserInvitePage />} />
+            <Route index element={<UserAddPage />} />
           </Route>
           <Route
             path="/users/invite"

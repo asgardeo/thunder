@@ -53,6 +53,8 @@ const mockResetFlow = vi.fn();
 
 let simulateInviteUserError = false;
 const mockInviteUserError = new Error('Invite user failed');
+const mockFlowMissingError = Object.assign(new Error('Flow not found'), {code: 'FLM-1003'});
+const mockOnFlowUnavailable = vi.fn();
 
 let capturedOnFlowChange: ((response: unknown) => void) | null = null;
 
@@ -262,6 +264,7 @@ describe('UserInvitePage', () => {
     simulateInviteUserError = false;
     capturedOnFlowChange = null;
     mockInviteUserRenderProps = {...defaultRenderProps};
+    mockOnFlowUnavailable.mockReset();
   });
 
   /* ----- Loading state ----- */
@@ -943,6 +946,38 @@ describe('UserInvitePage', () => {
 
       await waitFor(() => {
         expect(screen.queryByText('Some error')).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('manual create fallback', () => {
+    it('should notify when onFlowChange receives a missing flow client error', async () => {
+      render(<UserInvitePage onFlowUnavailable={mockOnFlowUnavailable} />);
+
+      if (capturedOnFlowChange) {
+        capturedOnFlowChange({
+          code: 'FLM-1003',
+          description: 'The flow with the specified id does not exist',
+        });
+      }
+
+      await waitFor(() => {
+        expect(mockOnFlowUnavailable).toHaveBeenCalledWith(
+          expect.objectContaining({
+            code: 'FLM-1003',
+          }),
+        );
+      });
+    });
+
+    it('should notify when InviteUser throws a missing flow error', async () => {
+      simulateInviteUserError = true;
+      Object.assign(mockInviteUserError, mockFlowMissingError);
+
+      render(<UserInvitePage onFlowUnavailable={mockOnFlowUnavailable} />);
+
+      await waitFor(() => {
+        expect(mockOnFlowUnavailable).toHaveBeenCalledWith(expect.objectContaining({code: 'FLM-1003'}));
       });
     });
   });
