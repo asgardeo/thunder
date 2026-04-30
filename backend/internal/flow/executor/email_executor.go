@@ -31,21 +31,12 @@ import (
 )
 
 // emailExecutor sends emails based on the configured email template and runtime context data.
-// When email is not configured (emailClient is nil), it returns a failure status.
 type emailExecutor struct {
 	core.ExecutorInterface
 	logger          *log.Logger
 	emailClient     email.EmailClientInterface
 	templateService template.TemplateServiceInterface
 	entityProvider  entityprovider.EntityProviderInterface
-}
-
-// defaultEmailInput is the default input definition for email collection.
-var defaultEmailInput = common.Input{
-	Ref:        "email_input",
-	Identifier: userAttributeEmail,
-	Type:       common.InputTypeEmail,
-	Required:   true,
 }
 
 // newEmailExecutor creates a new instance of the email executor.
@@ -56,10 +47,10 @@ func newEmailExecutor(flowFactory core.FlowFactoryInterface, emailClient email.E
 	base := flowFactory.CreateExecutor(
 		ExecutorNameEmailExecutor,
 		common.ExecutorTypeUtility,
-		[]common.Input{},
 		[]common.Input{
-			defaultEmailInput,
+			{Identifier: userAttributeEmail, Type: common.InputTypeEmail, Required: true},
 		},
+		[]common.Input{},
 	)
 	return &emailExecutor{
 		ExecutorInterface: base,
@@ -81,7 +72,6 @@ func (e *emailExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse
 }
 
 // executeSend resolves the email template, constructs the email, and sends it.
-// If the email client is not configured, it returns a failure status.
 func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := e.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing email executor in send mode")
@@ -91,7 +81,8 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		RuntimeData:    make(map[string]string),
 	}
 
-	if ctx.RuntimeData[common.RuntimeKeySkipDelivery] == dataValueTrue {
+	// 1. Check for SkipDelivery FIRST
+	if skip, ok := ctx.RuntimeData[common.RuntimeKeySkipDelivery]; ok && skip == dataValueTrue {
 		logger.Debug("Delivery marked as skipped, completing without sending email")
 		execResp.Status = common.ExecComplete
 		return execResp, nil
@@ -109,18 +100,19 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		return nil, errors.New("template service is not configured")
 	}
 
-	// Resolve recipient email from user inputs or runtime data.
+	// 2. Resolve recipient email properly
 	recipient, err := e.resolveRecipientEmail(ctx, logger)
 	if err != nil {
 		return nil, err
 	}
 	if recipient == "" {
-		logger.Debug("Email recipient not found in user inputs or runtime data")
+		logger.Debug("Email recipient not found")
 		execResp.Status = common.ExecFailure
 		execResp.FailureReason = "Email recipient is required"
 		return execResp, nil
 	}
 
+	// 3. Fail-Fast Template Resolution (No guessing!)
 	var scenario template.ScenarioType
 	if tmplProp, ok := ctx.NodeProperties[propertyKeyEmailTemplate]; ok {
 		tmplStr, ok := tmplProp.(string)
@@ -129,15 +121,16 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 				propertyKeyEmailTemplate, tmplProp, tmplProp)
 		}
 		if tmplStr == "" {
-			scenario = template.ScenarioUserInvite
-		} else {
-			scenario = template.ScenarioType(tmplStr)
+			return nil, fmt.Errorf("email template property is empty in node configuration")
 		}
+		scenario = template.ScenarioType(tmplStr)
 	} else {
-		scenario = template.ScenarioUserInvite
+		return nil, fmt.Errorf("missing required property: %s", propertyKeyEmailTemplate)
 	}
 
+	// 4. Generic Template Data (Supports Invites AND Magic Links)
 	templateData := e.resolveTemplateData(ctx)
+
 	rendered, svcErr := e.templateService.Render(ctx.Context, scenario, template.TemplateTypeEmail, templateData)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to render email template: %s", svcErr.Code)
@@ -150,18 +143,14 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		IsHTML:  rendered.IsHTML,
 	}
 
+	// Graceful failure for all client and system email transport errors
 	if err := e.emailClient.Send(emailData); err != nil {
-		if isEmailError(err) {
-			logger.Error("Error sending mail : ", log.Error(err))
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "Failed to send email"
-			return execResp, nil
-		}
-		return nil, fmt.Errorf("email send failed: %w", err)
+		execResp.Status = common.ExecFailure
+		execResp.FailureReason = "Failed to send email"
+		return execResp, nil
 	}
 
-	logger.Debug("Email sent successfully",
-		log.MaskedString("recipient", recipient))
+	logger.Debug("Email sent successfully", log.MaskedString("recipient", recipient))
 
 	execResp.AdditionalData[common.DataEmailSent] = dataValueTrue
 	execResp.Status = common.ExecComplete
@@ -170,7 +159,12 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 
 // resolveRecipientEmail retrieves the recipient email from user inputs, runtime data, or forwarded data.
 func (e *emailExecutor) resolveRecipientEmail(ctx *core.NodeContext, logger *log.Logger) (string, error) {
-	emailAttr := e.resolveEmailInput(ctx).Identifier
+	// Strict mode: Fail immediately if the flow canvas didn't configure the email input.
+	input, ok := findInputByType(ctx.NodeInputs, common.InputTypeEmail)
+	if !ok {
+		return "", errors.New("email input configuration is missing from node inputs")
+	}
+	emailAttr := input.Identifier
 
 	if recipientEmail, ok := ctx.ForwardedData[emailAttr]; ok {
 		if emailStr, isString := recipientEmail.(string); isString && emailStr != "" {
@@ -205,44 +199,40 @@ func (e *emailExecutor) resolveRecipientEmail(ctx *core.NodeContext, logger *log
 	return "", nil
 }
 
-// resolveTemplateData extracts template data from forwarded data or initializes an empty map if not present.
+// resolveTemplateData extracts template data from RuntimeData, Context, and ForwardedData.
 func (e *emailExecutor) resolveTemplateData(ctx *core.NodeContext) template.TemplateData {
+	templateData := template.TemplateData{}
+
+	// 1. PRIMARY: Dump the persistent flow state into the template.
+	if ctx.RuntimeData != nil {
+		for k, v := range ctx.RuntimeData {
+			templateData[k] = fmt.Sprintf("%v", v)
+		}
+	}
+
+	// 2. SYSTEM: Always provide the app name
+	if ctx.Application.Name != "" {
+		templateData["appName"] = ctx.Application.Name
+	}
+
+	// 3. FALLBACK: Check ForwardedData (with safe type switching)
 	if ctx.ForwardedData != nil {
 		if forwardedTemplateData, ok := ctx.ForwardedData[common.ForwardedDataKeyTemplateData]; ok {
-			if interfaceData, isInterfaceMap := forwardedTemplateData.(map[string]interface{}); isInterfaceMap {
-				templateData := template.TemplateData{}
-				for k, v := range interfaceData {
+			switch data := forwardedTemplateData.(type) {
+			case map[string]interface{}:
+				for k, v := range data {
 					templateData[k] = fmt.Sprintf("%v", v)
 				}
-				return templateData
+			case map[string]string:
+				for k, v := range data {
+					templateData[k] = v
+				}
+			default:
+				e.logger.Debug("Forwarded template data is of unknown type",
+					log.String("type", fmt.Sprintf("%T", forwardedTemplateData)))
 			}
 		}
 	}
 
-	return template.TemplateData{}
-}
-
-// isEmailError returns true if the error originated from the email subsystem,
-// covering both client-side validation errors and server-side SMTP transport errors.
-func isEmailError(err error) bool {
-	return errors.Is(err, email.ErrorInvalidRecipient) ||
-		errors.Is(err, email.ErrorInvalidSender) ||
-		errors.Is(err, email.ErrorInvalidSubject) ||
-		errors.Is(err, email.ErrorInvalidHost) ||
-		errors.Is(err, email.ErrorInvalidPort) ||
-		errors.Is(err, email.ErrorInvalidCredentials) ||
-		errors.Is(err, email.ErrorSMTPConnection) ||
-		errors.Is(err, email.ErrorSMTPAuth) ||
-		errors.Is(err, email.ErrorEmailSendFailed)
-}
-
-// resolveEmailInput returns the EMAIL_INPUT definition from the node context inputs,
-// falling back to the default if none is found.
-func (e *emailExecutor) resolveEmailInput(ctx *core.NodeContext) common.Input {
-	for _, input := range ctx.NodeInputs {
-		if input.Type == common.InputTypeEmail {
-			return input
-		}
-	}
-	return defaultEmailInput
+	return templateData
 }

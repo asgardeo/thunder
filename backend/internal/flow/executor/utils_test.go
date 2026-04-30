@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -140,7 +140,7 @@ func (s *UtilsTestSuite) TestGetUserAttribute() {
 				Attributes: []byte(`{"email":123}`),
 			},
 			attributeKey: "email",
-			expectError:  true,
+			expectError:  true, // Strictly expecting an error for non-strings now!
 		},
 	}
 
@@ -154,6 +154,100 @@ func (s *UtilsTestSuite) TestGetUserAttribute() {
 				s.NoError(err)
 				s.Equal(tt.expectedVal, val)
 			}
+		})
+	}
+}
+
+func (s *UtilsTestSuite) TestFindInputByType() {
+	tests := []struct {
+		name        string
+		inputs      []common.Input
+		inputType   string
+		expected    common.Input
+		expectFound bool
+	}{
+		{
+			name:        "Empty inputs",
+			inputs:      []common.Input{},
+			inputType:   common.InputTypeEmail,
+			expected:    common.Input{},
+			expectFound: false,
+		},
+		{
+			name: "Type found",
+			inputs: []common.Input{
+				{Identifier: "mobile", Type: "phone"},
+				{Identifier: "workEmail", Type: common.InputTypeEmail},
+			},
+			inputType:   common.InputTypeEmail,
+			expected:    common.Input{Identifier: "workEmail", Type: common.InputTypeEmail},
+			expectFound: true,
+		},
+		{
+			name: "Type not found",
+			inputs: []common.Input{
+				{Identifier: "mobile", Type: "phone"},
+			},
+			inputType:   common.InputTypeEmail,
+			expected:    common.Input{},
+			expectFound: false,
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			res, found := findInputByType(tt.inputs, tt.inputType)
+			s.Equal(tt.expectFound, found)
+			s.Equal(tt.expected, res)
+		})
+	}
+}
+
+func (s *UtilsTestSuite) TestResolveInputIdentifierByType() {
+	tests := []struct {
+		name      string
+		ctx       *core.NodeContext
+		inputType string
+		fallback  string
+		expected  string
+	}{
+		{
+			name: "Type found in NodeInputs",
+			ctx: &core.NodeContext{
+				NodeInputs: []common.Input{
+					{Identifier: "customEmailIdentifier", Type: common.InputTypeEmail},
+				},
+			},
+			inputType: common.InputTypeEmail,
+			fallback:  "defaultEmail",
+			expected:  "customEmailIdentifier",
+		},
+		{
+			name: "Type not found, returns fallback",
+			ctx: &core.NodeContext{
+				NodeInputs: []common.Input{
+					{Identifier: "phone", Type: "mobile"},
+				},
+			},
+			inputType: common.InputTypeEmail,
+			fallback:  "defaultEmail",
+			expected:  "defaultEmail",
+		},
+		{
+			name: "Empty NodeInputs, returns fallback",
+			ctx: &core.NodeContext{
+				NodeInputs: []common.Input{},
+			},
+			inputType: common.InputTypeEmail,
+			fallback:  "defaultEmail",
+			expected:  "defaultEmail",
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			res := resolveInputIdentifierByType(tt.ctx, tt.inputType, tt.fallback)
+			s.Equal(tt.expected, res)
 		})
 	}
 }
