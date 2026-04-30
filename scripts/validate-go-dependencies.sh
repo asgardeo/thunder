@@ -5,6 +5,7 @@ set -e
 BASE_SHA=$1
 HEAD_SHA=$2
 APPROVED_LIST=$3
+REQUIRED_SCOPE="${REQUIRED_SCOPE:-thunder-id}"
 
 echo "======================================"
 echo "Go Dependency Validation"
@@ -12,6 +13,7 @@ echo "======================================"
 echo "Base SHA: $BASE_SHA"
 echo "Head SHA: $HEAD_SHA"
 echo "Approved list: $APPROVED_LIST"
+echo "Required scope: $REQUIRED_SCOPE"
 echo ""
 
 echo "Installing yq..."
@@ -111,15 +113,30 @@ for GO_MOD in $CHANGED_GO_MODS; do
     git show $BASE_SHA:$GO_MOD > /tmp/go.mod.old 2>/dev/null || touch /tmp/go.mod.old
     git show $HEAD_SHA:$GO_MOD > /tmp/go.mod.new 2>/dev/null || continue
 
-    grep -E '^\s+[a-zA-Z0-9]' /tmp/go.mod.old | grep -v '// indirect' | awk '{print $1, $2}' | sort > /tmp/deps.old
-    grep -E '^\s+[a-zA-Z0-9]' /tmp/go.mod.new | grep -v '// indirect' | awk '{print $1, $2}' | sort > /tmp/deps.new
+    awk '
+      $1=="require" && $2=="(" { in_require=1; next }
+      in_require && $1==")"   { in_require=0; next }
+      $1=="require" && $2!="(" { print $2, $3; next }
+      in_require && $0 !~ /\/\/ indirect/ { print $1, $2 }
+    ' /tmp/go.mod.old | sort > /tmp/deps.old
 
-    NEW_DEPS=$(comm -13 /tmp/deps.old /tmp/deps.new | awk '{print $1}')
+    awk '
+      $1=="require" && $2=="(" { in_require=1; next }
+      in_require && $1==")"   { in_require=0; next }
+      $1=="require" && $2!="(" { print $2, $3; next }
+      in_require && $0 !~ /\/\/ indirect/ { print $1, $2 }
+    ' /tmp/go.mod.new | sort > /tmp/deps.new
 
-    UPDATED_DEPS=$(comm -12 <(awk '{print $1}' /tmp/deps.old | sort) <(awk '{print $1}' /tmp/deps.new | sort))
+    NEW_DEPS=$(comm -13 \
+      <(awk '{print $1}' /tmp/deps.old | sort -u) \
+      <(awk '{print $1}' /tmp/deps.new | sort -u))
+
+    UPDATED_DEPS=$(comm -12 \
+      <(awk '{print $1}' /tmp/deps.old | sort -u) \
+      <(awk '{print $1}' /tmp/deps.new | sort -u))
 
     for MODULE in $NEW_DEPS; do
-        VERSION=$(grep "^$MODULE " /tmp/deps.new | awk '{print $2}')
+        VERSION=$(awk -v module="$MODULE" '$1==module {print $2; exit}' /tmp/deps.new)
         echo "NEW: $MODULE $VERSION" | tee -a /tmp/new_deps.txt
 
         APPROVED_VERSIONS=$(yq eval ".dependencies[] | select(.module == \"$MODULE\") | .versions[].version" "$APPROVED_LIST" 2>/dev/null || echo "")
@@ -141,7 +158,7 @@ for GO_MOD in $CHANGED_GO_MODS; do
                 if check_version_constraint "$MODULE" "$VERSION" "$CONSTRAINT"; then
                     ALLOWED_SCOPES=$(yq eval ".dependencies[] | select(.module == \"$MODULE\") | .versions[$i].allowed_scopes[]" "$APPROVED_LIST" 2>/dev/null || echo "")
 
-                    if echo "$ALLOWED_SCOPES" | grep -qE '^\*$|^iam$'; then
+                    if echo "$ALLOWED_SCOPES" | grep -qE "^\*$|^${REQUIRED_SCOPE}$"; then
                         MATCH_FOUND=true
                         SCOPE_VALID=true
                         MATCHED_CONSTRAINT="$CONSTRAINT"
@@ -153,9 +170,9 @@ for GO_MOD in $CHANGED_GO_MODS; do
                         MATCH_FOUND=true
                         SCOPE_VALID=false
                         SCOPES_LIST=$(echo "$ALLOWED_SCOPES" | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')
-                        echo "  ❌ SCOPE MISMATCH: Version matches but scope restriction does not allow iam usage"
+                        echo "  ❌ SCOPE MISMATCH: Version matches but scope restriction does not allow $REQUIRED_SCOPE usage"
                         echo "$MODULE $VERSION - Scope mismatch (allowed scopes: $ALLOWED_SCOPES)" >> /tmp/unapproved_deps.txt
-                        echo "UNAPPROVED|$MODULE|$VERSION|Scope mismatch - allowed scopes: [$SCOPES_LIST], but 'iam' scope is required" >> /tmp/all_deps_status.txt
+                        echo "UNAPPROVED|$MODULE|$VERSION|Scope mismatch - allowed scopes: [$SCOPES_LIST], but '$REQUIRED_SCOPE' scope is required" >> /tmp/all_deps_status.txt
                         break
                     fi
                 fi
@@ -171,8 +188,8 @@ for GO_MOD in $CHANGED_GO_MODS; do
     done
 
     for MODULE in $UPDATED_DEPS; do
-        OLD_VERSION=$(grep "^$MODULE " /tmp/deps.old | awk '{print $2}')
-        NEW_VERSION=$(grep "^$MODULE " /tmp/deps.new | awk '{print $2}')
+        OLD_VERSION=$(awk -v module="$MODULE" '$1==module {print $2; exit}' /tmp/deps.old)
+        NEW_VERSION=$(awk -v module="$MODULE" '$1==module {print $2; exit}' /tmp/deps.new)
 
         if [ "$OLD_VERSION" != "$NEW_VERSION" ]; then
             echo "UPDATED: $MODULE $OLD_VERSION -> $NEW_VERSION" | tee -a /tmp/updated_deps.txt
@@ -196,7 +213,7 @@ for GO_MOD in $CHANGED_GO_MODS; do
                     if check_version_constraint "$MODULE" "$NEW_VERSION" "$CONSTRAINT"; then
                         ALLOWED_SCOPES=$(yq eval ".dependencies[] | select(.module == \"$MODULE\") | .versions[$i].allowed_scopes[]" "$APPROVED_LIST" 2>/dev/null || echo "")
 
-                        if echo "$ALLOWED_SCOPES" | grep -qE '^\*$|^iam$'; then
+                        if echo "$ALLOWED_SCOPES" | grep -qE "^\*$|^${REQUIRED_SCOPE}$"; then
                             MATCH_FOUND=true
                             SCOPE_VALID=true
                             MATCHED_CONSTRAINT="$CONSTRAINT"
@@ -208,9 +225,9 @@ for GO_MOD in $CHANGED_GO_MODS; do
                             MATCH_FOUND=true
                             SCOPE_VALID=false
                             SCOPES_LIST=$(echo "$ALLOWED_SCOPES" | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')
-                            echo "  ❌ SCOPE MISMATCH: Version matches but scope restriction does not allow iam usage"
+                            echo "  ❌ SCOPE MISMATCH: Version matches but scope restriction does not allow $REQUIRED_SCOPE usage"
                             echo "$MODULE $NEW_VERSION - Scope mismatch (allowed scopes: $ALLOWED_SCOPES)" >> /tmp/unapproved_deps.txt
-                            echo "UNAPPROVED|$MODULE|$NEW_VERSION (was $OLD_VERSION)|Scope mismatch - allowed scopes: [$SCOPES_LIST], but 'iam' scope is required" >> /tmp/all_deps_status.txt
+                            echo "UNAPPROVED|$MODULE|$NEW_VERSION (was $OLD_VERSION)|Scope mismatch - allowed scopes: [$SCOPES_LIST], but '$REQUIRED_SCOPE' scope is required" >> /tmp/all_deps_status.txt
                             break
                         fi
                     fi
