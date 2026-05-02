@@ -7,6 +7,22 @@ HEAD_SHA=$2
 APPROVED_LIST=$3
 REQUIRED_SCOPE="${REQUIRED_SCOPE:-thunder-id}"
 
+echo "Installing yq..."
+YQ_VERSION="${YQ_VERSION:-v4.44.1}"
+wget -qO /tmp/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+wget -qO /tmp/yq_checksums "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/checksums"
+grep ' yq_linux_amd64$' /tmp/yq_checksums | sha256sum -c -
+install -m 0755 /tmp/yq /usr/local/bin/yq
+
+if [ ! -s "$APPROVED_LIST" ]; then
+  echo "Approved dependency registry not found or empty: $APPROVED_LIST" >&2
+  exit 2
+fi
+if ! yq eval '.dependencies | length' "$APPROVED_LIST" >/dev/null 2>&1; then
+  echo "Approved dependency registry is not valid YAML/schema: $APPROVED_LIST" >&2
+  exit 2
+fi
+
 echo "======================================"
 echo "Go Dependency Validation"
 echo "======================================"
@@ -16,17 +32,14 @@ echo "Approved list: $APPROVED_LIST"
 echo "Required scope: $REQUIRED_SCOPE"
 echo ""
 
-echo "Installing yq..."
-wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-chmod +x /usr/local/bin/yq
-
 check_version_constraint() {
     local module=$1
     local version=$2
     local constraint=$3
 
     if [[ "$constraint" == "pseudo" ]]; then
-        if [[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-[0-9]{14}-[a-f0-9]{12}$ ]]; then
+        if [[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-[0-9]{14}-[a-f0-9]{12}$ || \
+              "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-(0|[0-9A-Za-z-]+\.0)\.[0-9]{14}-[a-f0-9]{12}$ ]]; then
             return 0
         else
             return 1
@@ -116,14 +129,14 @@ for GO_MOD in $CHANGED_GO_MODS; do
     awk '
       $1=="require" && $2=="(" { in_require=1; next }
       in_require && $1==")"   { in_require=0; next }
-      $1=="require" && $2!="(" { print $2, $3; next }
+      $1=="require" && $2!="(" && $0 !~ /\/\/ indirect/ { print $2, $3; next }
       in_require && $0 !~ /\/\/ indirect/ { print $1, $2 }
     ' /tmp/go.mod.old | sort > /tmp/deps.old
 
     awk '
       $1=="require" && $2=="(" { in_require=1; next }
       in_require && $1==")"   { in_require=0; next }
-      $1=="require" && $2!="(" { print $2, $3; next }
+      $1=="require" && $2!="(" && $0 !~ /\/\/ indirect/ { print $2, $3; next }
       in_require && $0 !~ /\/\/ indirect/ { print $1, $2 }
     ' /tmp/go.mod.new | sort > /tmp/deps.new
 
@@ -158,7 +171,8 @@ for GO_MOD in $CHANGED_GO_MODS; do
                 if check_version_constraint "$MODULE" "$VERSION" "$CONSTRAINT"; then
                     ALLOWED_SCOPES=$(yq eval ".dependencies[] | select(.module == \"$MODULE\") | .versions[$i].allowed_scopes[]" "$APPROVED_LIST" 2>/dev/null || echo "")
 
-                    if echo "$ALLOWED_SCOPES" | grep -qE "^\*$|^${REQUIRED_SCOPE}$"; then
+                    if printf '%s\n' "$ALLOWED_SCOPES" | grep -Fxq '*' || \
+                       printf '%s\n' "$ALLOWED_SCOPES" | grep -Fxq "$REQUIRED_SCOPE"; then
                         MATCH_FOUND=true
                         SCOPE_VALID=true
                         MATCHED_CONSTRAINT="$CONSTRAINT"
@@ -213,7 +227,8 @@ for GO_MOD in $CHANGED_GO_MODS; do
                     if check_version_constraint "$MODULE" "$NEW_VERSION" "$CONSTRAINT"; then
                         ALLOWED_SCOPES=$(yq eval ".dependencies[] | select(.module == \"$MODULE\") | .versions[$i].allowed_scopes[]" "$APPROVED_LIST" 2>/dev/null || echo "")
 
-                        if echo "$ALLOWED_SCOPES" | grep -qE "^\*$|^${REQUIRED_SCOPE}$"; then
+                        if printf '%s\n' "$ALLOWED_SCOPES" | grep -Fxq '*' || \
+                           printf '%s\n' "$ALLOWED_SCOPES" | grep -Fxq "$REQUIRED_SCOPE"; then
                             MATCH_FOUND=true
                             SCOPE_VALID=true
                             MATCHED_CONSTRAINT="$CONSTRAINT"
