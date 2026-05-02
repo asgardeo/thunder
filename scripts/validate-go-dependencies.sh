@@ -7,6 +7,15 @@ HEAD_SHA=$2
 APPROVED_LIST=$3
 REQUIRED_SCOPE="${REQUIRED_SCOPE:-thunder-id}"
 
+if [ ! -s "$APPROVED_LIST" ]; then
+  echo "Approved dependency registry not found or empty: $APPROVED_LIST" >&2
+  exit 2
+fi
+if ! yq eval '.dependencies | length' "$APPROVED_LIST" >/dev/null 2>&1; then
+  echo "Approved dependency registry is not valid YAML/schema: $APPROVED_LIST" >&2
+  exit 2
+fi
+
 echo "======================================"
 echo "Go Dependency Validation"
 echo "======================================"
@@ -159,7 +168,8 @@ for GO_MOD in $CHANGED_GO_MODS; do
                 if check_version_constraint "$MODULE" "$VERSION" "$CONSTRAINT"; then
                     ALLOWED_SCOPES=$(yq eval ".dependencies[] | select(.module == \"$MODULE\") | .versions[$i].allowed_scopes[]" "$APPROVED_LIST" 2>/dev/null || echo "")
 
-                    if echo "$ALLOWED_SCOPES" | grep -qE "^\*$|^${REQUIRED_SCOPE}$"; then
+                    if printf '%s\n' "$ALLOWED_SCOPES" | grep -Fxq '*' || \
+                       printf '%s\n' "$ALLOWED_SCOPES" | grep -Fxq "$REQUIRED_SCOPE"; then
                         MATCH_FOUND=true
                         SCOPE_VALID=true
                         MATCHED_CONSTRAINT="$CONSTRAINT"
@@ -214,7 +224,8 @@ for GO_MOD in $CHANGED_GO_MODS; do
                     if check_version_constraint "$MODULE" "$NEW_VERSION" "$CONSTRAINT"; then
                         ALLOWED_SCOPES=$(yq eval ".dependencies[] | select(.module == \"$MODULE\") | .versions[$i].allowed_scopes[]" "$APPROVED_LIST" 2>/dev/null || echo "")
 
-                        if echo "$ALLOWED_SCOPES" | grep -qE "^\*$|^${REQUIRED_SCOPE}$"; then
+                        if printf '%s\n' "$ALLOWED_SCOPES" | grep -Fxq '*' || \
+                           printf '%s\n' "$ALLOWED_SCOPES" | grep -Fxq "$REQUIRED_SCOPE"; then
                             MATCH_FOUND=true
                             SCOPE_VALID=true
                             MATCHED_CONSTRAINT="$CONSTRAINT"
