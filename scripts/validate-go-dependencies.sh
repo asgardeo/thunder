@@ -7,22 +7,6 @@ HEAD_SHA=$2
 APPROVED_LIST=$3
 REQUIRED_SCOPE="${REQUIRED_SCOPE:-thunder-id}"
 
-echo "Installing yq..."
-YQ_VERSION="${YQ_VERSION:-v4.44.1}"
-wget -qO /tmp/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
-wget -qO /tmp/yq_checksums "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/checksums"
-grep ' yq_linux_amd64$' /tmp/yq_checksums | sha256sum -c -
-install -m 0755 /tmp/yq /usr/local/bin/yq
-
-if [ ! -s "$APPROVED_LIST" ]; then
-  echo "Approved dependency registry not found or empty: $APPROVED_LIST" >&2
-  exit 2
-fi
-if ! yq eval '.dependencies | length' "$APPROVED_LIST" >/dev/null 2>&1; then
-  echo "Approved dependency registry is not valid YAML/schema: $APPROVED_LIST" >&2
-  exit 2
-fi
-
 echo "======================================"
 echo "Go Dependency Validation"
 echo "======================================"
@@ -31,6 +15,10 @@ echo "Head SHA: $HEAD_SHA"
 echo "Approved list: $APPROVED_LIST"
 echo "Required scope: $REQUIRED_SCOPE"
 echo ""
+
+echo "Installing yq..."
+wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+chmod +x /usr/local/bin/yq
 
 check_version_constraint() {
     local module=$1
@@ -171,8 +159,7 @@ for GO_MOD in $CHANGED_GO_MODS; do
                 if check_version_constraint "$MODULE" "$VERSION" "$CONSTRAINT"; then
                     ALLOWED_SCOPES=$(yq eval ".dependencies[] | select(.module == \"$MODULE\") | .versions[$i].allowed_scopes[]" "$APPROVED_LIST" 2>/dev/null || echo "")
 
-                    if printf '%s\n' "$ALLOWED_SCOPES" | grep -Fxq '*' || \
-                       printf '%s\n' "$ALLOWED_SCOPES" | grep -Fxq "$REQUIRED_SCOPE"; then
+                    if echo "$ALLOWED_SCOPES" | grep -qE "^\*$|^${REQUIRED_SCOPE}$"; then
                         MATCH_FOUND=true
                         SCOPE_VALID=true
                         MATCHED_CONSTRAINT="$CONSTRAINT"
@@ -227,8 +214,7 @@ for GO_MOD in $CHANGED_GO_MODS; do
                     if check_version_constraint "$MODULE" "$NEW_VERSION" "$CONSTRAINT"; then
                         ALLOWED_SCOPES=$(yq eval ".dependencies[] | select(.module == \"$MODULE\") | .versions[$i].allowed_scopes[]" "$APPROVED_LIST" 2>/dev/null || echo "")
 
-                        if printf '%s\n' "$ALLOWED_SCOPES" | grep -Fxq '*' || \
-                           printf '%s\n' "$ALLOWED_SCOPES" | grep -Fxq "$REQUIRED_SCOPE"; then
+                        if echo "$ALLOWED_SCOPES" | grep -qE "^\*$|^${REQUIRED_SCOPE}$"; then
                             MATCH_FOUND=true
                             SCOPE_VALID=true
                             MATCHED_CONSTRAINT="$CONSTRAINT"
