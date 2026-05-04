@@ -562,6 +562,72 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_EmptyOTP_Returns
 	assert.Equal(suite.T(), userInputOTP, execResp.Inputs[0].Identifier)
 }
 
+// TestGetAuthenticatedUser_Registration_OTPValid_NoLocalUser verifies that a valid OTP with no
+// existing local user returns an unauthenticated AuthenticatedUser carrying the mobile number.
+func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_Registration_OTPValid_NoLocalUser() {
+	suite.mockAuthnProvider.On("AuthenticateUser",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(authnprovidermgr.AuthUser{}, &authnprovidermgr.AuthnBasicResult{
+			IsExistingUser: false,
+		}, nil)
+
+	ctx := &core.NodeContext{
+		ExecutionID: "flow-reg-123",
+		FlowType:    common.FlowTypeRegistration,
+		UserInputs: map[string]string{
+			userInputOTP: "123456",
+		},
+		RuntimeData: map[string]string{
+			runtimeKeySMSOTPMobileNumber: "+1234567890",
+			"otpSessionToken":            "test-session-token",
+		},
+	}
+	execResp := &common.ExecutorResponse{
+		RuntimeData: make(map[string]string),
+	}
+
+	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.False(suite.T(), result.IsAuthenticated)
+	assert.Equal(suite.T(), "+1234567890", result.Attributes[common.AttributeMobileNumber])
+	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
+}
+
+// TestGetAuthenticatedUser_Registration_OTPValid_UserAlreadyExists verifies that a valid OTP
+// where a local user already exists fails with an appropriate failure reason.
+func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_Registration_OTPValid_UserAlreadyExists() {
+	suite.mockAuthnProvider.On("AuthenticateUser",
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(authnprovidermgr.AuthUser{}, &authnprovidermgr.AuthnBasicResult{
+			IsExistingUser: true,
+			UserID:         "existing-user-123",
+		}, nil)
+
+	ctx := &core.NodeContext{
+		ExecutionID: "flow-reg-456",
+		FlowType:    common.FlowTypeRegistration,
+		UserInputs: map[string]string{
+			userInputOTP: "123456",
+		},
+		RuntimeData: map[string]string{
+			runtimeKeySMSOTPMobileNumber: "+1234567890",
+			"otpSessionToken":            "test-session-token",
+		},
+	}
+	execResp := &common.ExecutorResponse{
+		RuntimeData: make(map[string]string),
+	}
+
+	result, err := suite.executor.getAuthenticatedUser(ctx, execResp)
+
+	assert.NoError(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
+	assert.Equal(suite.T(), "User already exists with the provided mobile number.", execResp.FailureReason)
+}
+
 // TestGetAuthenticatedUser_FetchFromStore_NilAttrsAfterUnmarshal verifies that when
 // user attributes unmarshal to nil, the result is returned without error.
 func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_NilAttrsAfterUnmarshal() {

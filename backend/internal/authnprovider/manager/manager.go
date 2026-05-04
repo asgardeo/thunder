@@ -74,6 +74,10 @@ func (m *authnProviderManager) AuthenticateUser(ctx context.Context, identifiers
 		}
 	}
 	if !result.IsExistingUser {
+		authUser.setProviderData(defaultProvider, providerData{
+			attributes:                result.AttributesResponse,
+			isAttributeValuesIncluded: result.IsAttributeValuesIncluded,
+		})
 		return authUser, &AuthnBasicResult{
 			ExternalSub:     result.ExternalSub,
 			ExternalClaims:  result.ExternalClaims,

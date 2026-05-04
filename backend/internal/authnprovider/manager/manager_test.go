@@ -87,12 +87,20 @@ func (s *ManagerTestSuite) TestAuthenticateUser_FederatedNewUser() {
 	credentials := map[string]interface{}{"federated": "token"}
 	meta := &authnprovidercm.AuthnMetadata{}
 
+	attrResp := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
+			"email": {Value: "new@example.com"},
+		},
+		Verifications: make(map[string]*authnprovidercm.VerificationResponse),
+	}
 	s.mockProvider.On("Authenticate", context.Background(), identifiers, credentials, meta).
 		Return(&authnprovidercm.AuthnResult{
-			IsExistingUser:  false,
-			IsAmbiguousUser: false,
-			ExternalSub:     "ext-sub-123",
-			ExternalClaims:  map[string]interface{}{"email": "new@example.com"},
+			IsExistingUser:            false,
+			IsAmbiguousUser:           false,
+			ExternalSub:               "ext-sub-123",
+			ExternalClaims:            map[string]interface{}{"email": "new@example.com"},
+			IsAttributeValuesIncluded: true,
+			AttributesResponse:        attrResp,
 		}, (*serviceerror.ServiceError)(nil))
 
 	returnedAuthUser, result, svcErr := s.mgr.AuthenticateUser(context.Background(), identifiers, credentials,
@@ -106,8 +114,10 @@ func (s *ManagerTestSuite) TestAuthenticateUser_FederatedNewUser() {
 	s.Equal(map[string]interface{}{"email": "new@example.com"}, result.ExternalClaims)
 
 	s.False(returnedAuthUser.IsAuthenticated())
-	_, ok := returnedAuthUser.getProviderData(defaultProvider)
-	s.False(ok)
+	data, ok := returnedAuthUser.getProviderData(defaultProvider)
+	s.True(ok)
+	s.True(data.isAttributeValuesIncluded)
+	s.Equal(attrResp, data.attributes)
 }
 
 func (s *ManagerTestSuite) TestAuthenticateUser_ClientError() {

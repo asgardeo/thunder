@@ -606,13 +606,19 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 		return nil, fmt.Errorf("no session token found for OTP validation")
 	}
 
+	creds := map[string]interface{}{
+		"otp": map[string]interface{}{
+			"sessionToken": sessionToken,
+			"otp":          providedOTP,
+		},
+	}
+
 	// Handle registration flows.
 	if ctx.FlowType == common.FlowTypeRegistration {
-		// For registration flows, we don't have a user in the system yet.
-		// So we just validate the OTP and return an authenticated user with the mobile number as an attribute.
-		svcErr := s.otpService.VerifyOTP(ctx.Context, sessionToken, providedOTP)
+		newAuthUser, authnResult, svcErr := s.authnProvider.AuthenticateUser(
+			ctx.Context, nil, creds, nil, nil, ctx.AuthUser)
 		if svcErr != nil {
-			if svcErr.Code == otp.ErrorIncorrectOTP.Code {
+			if svcErr.Code == authnprovidermgr.ErrorAuthenticationFailed.Code {
 				logger.Debug("OTP verification failed", log.MaskedString(log.LoggerKeyUserID, userID))
 				execResp.Status = common.ExecUserInputRequired
 				execResp.Inputs = s.GetRequiredInputs(ctx)
@@ -623,7 +629,12 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 				log.MaskedString(log.LoggerKeyUserID, userID), log.Any("serviceError", svcErr))
 			return nil, fmt.Errorf("failed to verify OTP: %s", svcErr.ErrorDescription.DefaultValue)
 		}
-
+		execResp.AuthUser = newAuthUser
+		if authnResult.IsExistingUser {
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = "User already exists with the provided mobile number."
+			return nil, nil
+		}
 		execResp.Status = common.ExecComplete
 		execResp.FailureReason = ""
 		return &authncm.AuthenticatedUser{
@@ -634,12 +645,6 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 		}, nil
 	}
 
-	creds := map[string]interface{}{
-		"otp": map[string]interface{}{
-			"sessionToken": sessionToken,
-			"otp":          providedOTP,
-		},
-	}
 	newAuthUser, authnResult, svcErr := s.authnProvider.AuthenticateUser(
 		ctx.Context, nil, creds, nil, nil, ctx.AuthUser)
 	if svcErr != nil {
