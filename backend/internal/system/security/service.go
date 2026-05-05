@@ -166,10 +166,7 @@ func (s *securityService) getRequiredPermissionForAPI(method, path string) strin
 			return entry.permission
 		}
 	}
-	if sysPerms != nil {
-		return sysPerms.Root
-	}
-	return UninitializedPermissionSentinel
+	return GetSystemRootPermission()
 }
 
 // isPublicPath checks if the given request path matches any of the configured public path patterns.
