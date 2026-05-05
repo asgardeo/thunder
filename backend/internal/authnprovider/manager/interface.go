@@ -23,6 +23,7 @@ import (
 	"context"
 
 	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
+	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 )
 
@@ -31,7 +32,11 @@ type AuthnProviderManagerInterface interface {
 	AuthenticateUser(ctx context.Context, identifiers, credentials map[string]interface{},
 		requestedAttributes *authnprovidercm.RequestedAttributes,
 		metadata *authnprovidercm.AuthnMetadata,
-		authUser AuthUser) (AuthUser, *AuthnBasicResult, *serviceerror.ServiceError)
+		authUser AuthUser) (AuthUser, *serviceerror.ServiceError)
+	AuthenticateResolvedUser(ctx context.Context, resolvedUser *entityprovider.Entity, authUser AuthUser) (
+		AuthUser, *serviceerror.ServiceError)
+	AuthenticateForRegistration(ctx context.Context, credentialType string, authUser AuthUser) (
+		AuthUser, *serviceerror.ServiceError)
 	GetUserAvailableAttributes(ctx context.Context,
 		authUser AuthUser) (*authnprovidercm.AttributesResponse, *serviceerror.ServiceError)
 	GetUserAttributes(ctx context.Context,

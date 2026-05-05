@@ -103,7 +103,7 @@ func (a *authAssertExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 		RuntimeData:    make(map[string]string),
 	}
 
-	if ctx.AuthenticatedUser.IsAuthenticated {
+	if ctx.AuthUser.IsAuthenticated() {
 		token, err := a.generateAuthAssertion(ctx, logger)
 		if err != nil {
 			return nil, err
@@ -127,8 +127,8 @@ func (a *authAssertExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 // generateAuthAssertion generates the authentication assertion token.
 func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger *log.Logger) (string, error) {
 	tokenSub := ""
-	if ctx.AuthenticatedUser.UserID != "" {
-		tokenSub = ctx.AuthenticatedUser.UserID
+	if ctx.AuthUser.GetUserID() != "" {
+		tokenSub = ctx.AuthUser.GetUserID()
 	}
 
 	jwtClaims := make(map[string]interface{})
@@ -342,12 +342,6 @@ func (a *authAssertExecutor) resolveUserAttributes(ctx *core.NodeContext, reques
 			continue
 		}
 
-		// Check for the attribute in authenticated user attributes
-		if val, ok := ctx.AuthenticatedUser.Attributes[attr]; ok {
-			attributes[attr] = val
-			continue
-		}
-
 		// Check runtime data as fallback
 		if val, exists := ctx.RuntimeData[attr]; exists && val != "" {
 			attributes[attr] = val
@@ -355,14 +349,14 @@ func (a *authAssertExecutor) resolveUserAttributes(ctx *core.NodeContext, reques
 		}
 
 		// Fetch from user/authentication provider
-		if ctx.AuthenticatedUser.UserID != "" && fetchedAttributes == nil {
+		if ctx.AuthUser.GetUserID() != "" && fetchedAttributes == nil {
 			var err error
 			if ctx.AuthUser.IsAuthenticated() {
 				metadata := a.buildGetAttributesMetadata(ctx)
 				fetchedAttributes, err = a.getUserAttributesFromAuthnProvider(ctx.Context,
 					requestedAttributes, metadata, ctx.AuthUser)
 			} else {
-				fetchedAttributes, err = a.getUserAttributesFromUserProvider(ctx.AuthenticatedUser.UserID)
+				fetchedAttributes, err = a.getUserAttributesFromUserProvider(ctx.AuthUser.GetUserID())
 			}
 			if err != nil {
 				return nil, err
@@ -393,8 +387,8 @@ func (a *authAssertExecutor) appendComputedAttributes(
 	rolesRequested := slices.Contains(requestedAttributes, oauth2const.UserAttributeRoles)
 
 	// Fetch all user groups once if either groups or roles are requested.
-	if (groupsRequested || rolesRequested) && ctx.AuthenticatedUser.UserID != "" {
-		allGroups, err := a.fetchAllUserGroups(ctx.AuthenticatedUser.UserID)
+	if (groupsRequested || rolesRequested) && ctx.AuthUser.GetUserID() != "" {
+		allGroups, err := a.fetchAllUserGroups(ctx.AuthUser.GetUserID())
 		if err != nil {
 			return err
 		}
@@ -411,17 +405,17 @@ func (a *authAssertExecutor) appendComputedAttributes(
 	}
 
 	// Add user type to the claims
-	if slices.Contains(requestedAttributes, oauth2const.ClaimUserType) && ctx.AuthenticatedUser.UserType != "" {
-		attributes[oauth2const.ClaimUserType] = ctx.AuthenticatedUser.UserType
+	if slices.Contains(requestedAttributes, oauth2const.ClaimUserType) && ctx.AuthUser.GetUserType() != "" {
+		attributes[oauth2const.ClaimUserType] = ctx.AuthUser.GetUserType()
 	}
 
 	// Add OU details to the claims
 	ouAttributesConfigured := slices.Contains(requestedAttributes, oauth2const.ClaimOUID) ||
 		slices.Contains(requestedAttributes, oauth2const.ClaimOUName) ||
 		slices.Contains(requestedAttributes, oauth2const.ClaimOUHandle)
-	if ouAttributesConfigured && ctx.AuthenticatedUser.OUID != "" {
+	if ouAttributesConfigured && ctx.AuthUser.GetOUID() != "" {
 		if err := a.appendOUDetailsToClaims(
-			ctx.Context, ctx.AuthenticatedUser.OUID, attributes, requestedAttributes); err != nil {
+			ctx.Context, ctx.AuthUser.GetOUID(), attributes, requestedAttributes); err != nil {
 			return err
 		}
 	}
@@ -556,17 +550,17 @@ func (a *authAssertExecutor) appendGroupsToClaims(
 // appendRolesToClaims appends user roles to the JWT claims using pre-fetched groups for role resolution.
 func (a *authAssertExecutor) appendRolesToClaims(
 	ctx *core.NodeContext, groups []entityprovider.EntityGroup, jwtClaims map[string]interface{}) error {
-	logger := a.logger.With(log.MaskedString(log.LoggerKeyUserID, ctx.AuthenticatedUser.UserID))
+	logger := a.logger.With(log.MaskedString(log.LoggerKeyUserID, ctx.AuthUser.GetUserID()))
 
 	groupIDs := make([]string, 0, len(groups))
 	for _, g := range groups {
 		groupIDs = append(groupIDs, g.ID)
 	}
 
-	roles, svcErr := a.roleService.GetUserRoles(ctx.Context, ctx.AuthenticatedUser.UserID, groupIDs)
+	roles, svcErr := a.roleService.GetUserRoles(ctx.Context, ctx.AuthUser.GetUserID(), groupIDs)
 	if svcErr != nil {
 		logger.Error("Failed to fetch user roles",
-			log.MaskedString(log.LoggerKeyUserID, ctx.AuthenticatedUser.UserID),
+			log.MaskedString(log.LoggerKeyUserID, ctx.AuthUser.GetUserID()),
 			log.Any("error", svcErr))
 		return errors.New("something went wrong while fetching user roles: " + svcErr.ErrorDescription.DefaultValue)
 	}

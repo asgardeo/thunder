@@ -46,6 +46,8 @@ type AuthnResult struct {
 	ExternalClaims  map[string]interface{} `json:"externalClaims,omitempty"`
 	IsExistingUser  bool                   `json:"isExistingUser"`
 	IsAmbiguousUser bool                   `json:"isAmbiguousUser"`
+
+	AuthType string `json:"authType,omitempty"`
 }
 
 // GetAttributesMetadata contains metadata for fetching attributes.

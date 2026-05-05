@@ -113,19 +113,20 @@ type credentialOutcome struct {
 	externalSub    string
 	externalClaims map[string]interface{}
 	earlyReturn    *authnprovidercm.AuthnResult
+	credentialType string
 }
 
 func (p *defaultAuthnProvider) resolveCredentials(
 	ctx context.Context,
 	identifiers, credentials map[string]interface{},
 ) (*credentialOutcome, *serviceerror.ServiceError) {
-	if passkeyCredential, ok := credentials["passkey"]; ok {
+	if passkeyCredential, ok := credentials[authnprovidercm.AuthTypePasskey]; ok {
 		return p.authenticateWithPasskey(ctx, passkeyCredential)
 	}
-	if otpCredential, ok := credentials["otp"]; ok {
+	if otpCredential, ok := credentials[authnprovidercm.AuthTypeOTP]; ok {
 		return p.authenticateWithOTP(ctx, otpCredential)
 	}
-	if fedCred, ok := credentials["federated"]; ok {
+	if fedCred, ok := credentials[authnprovidercm.AuthTypeFederated]; ok {
 		return p.authenticateWithFederated(ctx, fedCred)
 	}
 	if userID, ok := identifiers["userID"]; ok && userID != "" {
@@ -147,7 +148,7 @@ func (p *defaultAuthnProvider) authenticateWithPasskey(
 		return nil, newClientError(authnprovidercm.ErrorCodeAuthenticationFailed,
 			authErr.Error.DefaultValue, authErr.ErrorDescription.DefaultValue)
 	}
-	return &credentialOutcome{entityID: authResponse.ID}, nil
+	return &credentialOutcome{entityID: authResponse.ID, credentialType: authnprovidercm.AuthTypePasskey}, nil
 }
 
 func (p *defaultAuthnProvider) authenticateWithOTP(
@@ -184,6 +185,7 @@ func (p *defaultAuthnProvider) authenticateWithOTP(
 	}
 	if authResult.InternalEntity == nil {
 		return &credentialOutcome{
+			credentialType: authnprovidercm.AuthTypeOTP,
 			earlyReturn: &authnprovidercm.AuthnResult{
 				IsExistingUser:            false,
 				IsAttributeValuesIncluded: true,
@@ -191,7 +193,7 @@ func (p *defaultAuthnProvider) authenticateWithOTP(
 			},
 		}, nil
 	}
-	return &credentialOutcome{entityID: authResult.InternalEntity.ID}, nil
+	return &credentialOutcome{entityID: authResult.InternalEntity.ID, credentialType: authnprovidercm.AuthTypeOTP}, nil
 }
 
 func (p *defaultAuthnProvider) authenticateWithFederated(
@@ -227,6 +229,7 @@ func (p *defaultAuthnProvider) authenticateWithFederated(
 	}
 	if authResult.InternalEntity == nil {
 		return &credentialOutcome{
+			credentialType: authnprovidercm.AuthTypeFederated,
 			earlyReturn: &authnprovidercm.AuthnResult{
 				ExternalSub:               authResult.Sub,
 				ExternalClaims:            authResult.Claims,
@@ -238,6 +241,7 @@ func (p *defaultAuthnProvider) authenticateWithFederated(
 		}, nil
 	}
 	return &credentialOutcome{
+		credentialType: authnprovidercm.AuthTypeFederated,
 		entityID:       authResult.InternalEntity.ID,
 		externalSub:    authResult.Sub,
 		externalClaims: authResult.Claims,
@@ -256,7 +260,7 @@ func (p *defaultAuthnProvider) authenticateByUserID(
 	if authErr != nil {
 		return nil, p.handleEntityAuthError(authErr, "Basic authentication by ID failed with server error")
 	}
-	return &credentialOutcome{entityID: authResult.EntityID}, nil
+	return &credentialOutcome{entityID: authResult.EntityID, credentialType: authnprovidercm.AuthTypeCredentials}, nil
 }
 
 func (p *defaultAuthnProvider) authenticateByIdentifiers(
@@ -266,7 +270,7 @@ func (p *defaultAuthnProvider) authenticateByIdentifiers(
 	if authErr != nil {
 		return nil, p.handleEntityAuthError(authErr, "Basic authentication failed with server error")
 	}
-	return &credentialOutcome{entityID: authResult.EntityID}, nil
+	return &credentialOutcome{entityID: authResult.EntityID, credentialType: authnprovidercm.AuthTypeCredentials}, nil
 }
 
 func (p *defaultAuthnProvider) handleEntityAuthError(err error, serverMsg string) *serviceerror.ServiceError {

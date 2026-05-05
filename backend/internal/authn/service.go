@@ -134,26 +134,26 @@ func (as *authenticationService) AuthenticateWithCredentials(ctx context.Context
 		return nil, &ErrorEmptyAttributesOrCredentials
 	}
 
-	newAuthUser, basicResult, svcErr := as.authnProvider.AuthenticateUser(ctx, identifiers, credentials, nil, nil,
+	authUser, svcErr := as.authnProvider.AuthenticateUser(ctx, identifiers, credentials, nil, nil,
 		authnprovidermgr.AuthUser{})
 	if svcErr != nil {
 		return nil, as.mapCredentialsAuthnError(svcErr, logger)
 	}
 
-	if basicResult == nil {
+	if !authUser.IsSet() {
 		logger.Error("Credentials authenticate response is nil")
 		return nil, &serviceerror.InternalServerError
 	}
 
-	_, attrsResponse, svcErr := as.authnProvider.GetUserAttributes(ctx, nil, nil, newAuthUser)
+	authUser, attrsResponse, svcErr := as.authnProvider.GetUserAttributes(ctx, nil, nil, authUser)
 	if svcErr != nil {
 		return nil, as.mapCredentialsGetAttributesError(svcErr, logger)
 	}
 
 	authResponse := &common.AuthenticationResponse{
-		ID:   basicResult.UserID,
-		Type: basicResult.UserType,
-		OUID: basicResult.OUID,
+		ID:   authUser.GetUserID(),
+		Type: authUser.GetUserType(),
+		OUID: authUser.GetOUID(),
 	}
 
 	// Generate assertion if not skipped
@@ -171,9 +171,9 @@ func (as *authenticationService) AuthenticateWithCredentials(ctx context.Context
 		}
 
 		authenticatedUser := &entityprovider.Entity{
-			ID:         basicResult.UserID,
-			Type:       basicResult.UserType,
-			OUID:       basicResult.OUID,
+			ID:         authUser.GetUserID(),
+			Type:       authUser.GetUserType(),
+			OUID:       authUser.GetOUID(),
 			Attributes: authUserAttributesJSON,
 		}
 		svcErr = as.validateAndAppendAuthAssertion(authResponse, authenticatedUser, common.AuthenticatorCredentials,
@@ -204,7 +204,7 @@ func (as *authenticationService) VerifyOTP(ctx context.Context, sessionToken str
 			"otp":          otpCode,
 		},
 	}
-	_, basicResult, svcErr := as.authnProvider.AuthenticateUser(
+	authUser, svcErr := as.authnProvider.AuthenticateUser(
 		ctx, nil, credentials, nil, nil, authnprovidermgr.AuthUser{})
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ServerErrorType {
@@ -217,17 +217,17 @@ func (as *authenticationService) VerifyOTP(ctx context.Context, sessionToken str
 	}
 
 	authResponse := &common.AuthenticationResponse{
-		ID:   basicResult.UserID,
-		Type: basicResult.UserType,
-		OUID: basicResult.OUID,
+		ID:   authUser.GetUserID(),
+		Type: authUser.GetUserType(),
+		OUID: authUser.GetOUID(),
 	}
 
 	// Generate assertion if not skipped
 	if !skipAssertion {
 		userForAssertion := &entityprovider.Entity{
-			ID:         basicResult.UserID,
-			Type:       basicResult.UserType,
-			OUID:       basicResult.OUID,
+			ID:         authUser.GetUserID(),
+			Type:       authUser.GetUserType(),
+			OUID:       authUser.GetOUID(),
 			Attributes: nil, // Attributes not needed for assertion generation in OTP flow
 		}
 		svcErr = as.validateAndAppendAuthAssertion(authResponse, userForAssertion, common.AuthenticatorSMSOTP,
@@ -326,26 +326,23 @@ func (as *authenticationService) FinishIDPAuthentication(ctx context.Context, re
 			Code:    code,
 		},
 	}
-	_, basicResult, svcErr := as.authnProvider.AuthenticateUser(
+	authUser, svcErr := as.authnProvider.AuthenticateUser(
 		ctx, nil, credentials, nil, nil, authnprovidermgr.AuthUser{})
 	if svcErr != nil {
 		return nil, as.mapFederatedAuthnError(svcErr, logger)
 	}
-	if basicResult == nil {
+	if !authUser.IsSet() {
 		logger.Error("Federated authenticate response is nil")
 		return nil, &serviceerror.InternalServerError
 	}
-	if basicResult.IsAmbiguousUser {
-		return nil, &common.ErrorUserNotFound
-	}
-	if !basicResult.IsExistingUser {
+	if !authUser.IsLocalUserExists() {
 		return nil, &common.ErrorUserNotFound
 	}
 
 	user := &entityprovider.Entity{
-		ID:   basicResult.UserID,
-		Type: basicResult.UserType,
-		OUID: basicResult.OUID,
+		ID:   authUser.GetUserID(),
+		Type: authUser.GetUserType(),
+		OUID: authUser.GetOUID(),
 	}
 
 	authResponse := &common.AuthenticationResponse{
@@ -737,7 +734,7 @@ func (as *authenticationService) FinishPasskeyAuthentication(ctx context.Context
 		SessionToken:      sessionToken,
 	}
 	credentials := map[string]interface{}{"passkey": passkeyCredential}
-	_, basicResult, svcErr := as.authnProvider.AuthenticateUser(
+	authUser, svcErr := as.authnProvider.AuthenticateUser(
 		ctx, nil, credentials, nil, nil, authnprovidermgr.AuthUser{})
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ServerErrorType {
@@ -750,18 +747,18 @@ func (as *authenticationService) FinishPasskeyAuthentication(ctx context.Context
 	}
 
 	authResponse := &common.AuthenticationResponse{
-		ID:   basicResult.UserID,
-		Type: basicResult.UserType,
-		OUID: basicResult.OUID,
+		ID:   authUser.GetUserID(),
+		Type: authUser.GetUserType(),
+		OUID: authUser.GetOUID(),
 	}
 
 	// Generate assertion if not skipped
 	if !skipAssertion {
 		// Create entity object from authResponse for assertion generation
 		userForAssertion := &entityprovider.Entity{
-			ID:   basicResult.UserID,
-			Type: basicResult.UserType,
-			OUID: basicResult.OUID,
+			ID:   authUser.GetUserID(),
+			Type: authUser.GetUserType(),
+			OUID: authUser.GetOUID(),
 		}
 
 		svcErr = as.validateAndAppendAuthAssertion(authResponse, userForAssertion, common.AuthenticatorPasskey,

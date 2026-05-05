@@ -154,7 +154,7 @@ func authenticate(
 		}
 	case constants.TokenEndpointAuthMethodClientSecretBasic,
 		constants.TokenEndpointAuthMethodClientSecretPost:
-		_, _, authnErr := authnProvider.AuthenticateUser(ctx,
+		_, authnErr := authnProvider.AuthenticateUser(ctx,
 			map[string]interface{}{"clientId": clientID},
 			map[string]interface{}{"clientSecret": clientSecret},
 			nil, nil, authnprovidermgr.AuthUser{})
