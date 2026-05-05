@@ -18,10 +18,21 @@
 
 package common
 
-// Authentication type constants used by authn providers.
+// Authenticator name constants.
 const (
-	AuthTypePasskey     = "passkey"
-	AuthTypeOTP         = "otp"
-	AuthTypeFederated   = "federated"
-	AuthTypeCredentials = "credentials"
+	AuthenticatorCredentials = "CredentialsAuthenticator"
+	AuthenticatorSMSOTP      = "SMSOTPAuthenticator"
+	AuthenticatorGoogle      = "GoogleOIDCAuthenticator"
+	AuthenticatorGithub      = "GithubOAuthAuthenticator"
+	AuthenticatorOAuth       = "OAuthAuthenticator"
+	AuthenticatorOIDC        = "OIDCAuthenticator"
+	AuthenticatorPasskey     = "Passkey"
+)
+
+// Authn Data type constants.
+const (
+	AuthnDataTypeCredentials = "Credentials"
+	AuthnDataTypeOTP         = "OTP"
+	AuthnDataTypeFederated   = "Federated"
+	AuthnDataTypePasskey     = "Passkey"
 )

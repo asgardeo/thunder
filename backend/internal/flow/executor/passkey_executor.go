@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/authn/passkey"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -286,7 +287,7 @@ func (p *passkeyAuthExecutor) validatePasskey(ctx *core.NodeContext, execResp *c
 		return fmt.Errorf("no session token found for passkey authentication")
 	}
 
-	passkeyCredential := &passkey.PasskeyAuthenticationFinishRequest{
+	authnData := &authnprovidercm.PasskeyAuthnData{
 		CredentialID:      credentialID,
 		CredentialType:    "public-key",
 		ClientDataJSON:    clientDataJSON,
@@ -295,9 +296,8 @@ func (p *passkeyAuthExecutor) validatePasskey(ctx *core.NodeContext, execResp *c
 		UserHandle:        userHandle,
 		SessionToken:      sessionToken,
 	}
-	credentials := map[string]interface{}{"passkey": passkeyCredential}
 	authUser, svcErr := p.authnProvider.AuthenticateUser(
-		ctx.Context, nil, credentials, nil, nil, ctx.AuthUser)
+		ctx.Context, authnprovidercm.AuthnDataTypePasskey, authnData, nil, nil, ctx.AuthUser)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Passkey verification failed", log.MaskedString(log.LoggerKeyUserID, userID),

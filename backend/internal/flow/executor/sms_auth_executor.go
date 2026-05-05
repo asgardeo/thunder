@@ -25,6 +25,7 @@ import (
 	"strconv"
 
 	"github.com/asgardeo/thunder/internal/authn/otp"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/common"
@@ -606,14 +607,12 @@ func (s *smsOTPAuthExecutor) authenticateUser(ctx *core.NodeContext,
 		return fmt.Errorf("no session token found for OTP validation")
 	}
 
-	creds := map[string]interface{}{
-		"otp": map[string]interface{}{
-			"sessionToken": sessionToken,
-			"otp":          providedOTP,
-		},
+	authnData := &authnprovidercm.OTPAuthnData{
+		SessionToken: sessionToken,
+		OTP:          providedOTP,
 	}
 	authUser, svcErr := s.authnProvider.AuthenticateUser(
-		ctx.Context, nil, creds, nil, nil, ctx.AuthUser)
+		ctx.Context, authnprovidercm.AuthnDataTypeOTP, authnData, nil, nil, ctx.AuthUser)
 	if svcErr != nil {
 		if svcErr.Code == authnprovidermgr.ErrorAuthenticationFailed.Code {
 			logger.Debug("OTP verification failed", log.MaskedString(log.LoggerKeyUserID, userID))

@@ -42,9 +42,10 @@ type AuthUser struct {
 }
 
 type authResult struct {
-	authType          string
+	authenticator     string
 	isVerified        bool
 	runtimeAttributes map[string]interface{}
+	timestamp         int64
 }
 
 type providerUserResult struct {
@@ -54,6 +55,7 @@ type providerUserResult struct {
 	attributes       map[string]interface{}
 	isValuesIncluded bool
 	token            string
+	timestamp        int64
 }
 
 // IsSet reports whether this AuthUser has been populated (i.e. is not the zero value).
@@ -187,7 +189,7 @@ func (a *AuthUser) MarshalJSON() ([]byte, error) {
 
 	for i, r := range a.authHistory {
 		proxy.AuthHistory[i] = authResultJSON{
-			AuthType:          r.authType,
+			AuthType:          r.authenticator,
 			IsVerified:        r.isVerified,
 			RuntimeAttributes: r.runtimeAttributes,
 		}
@@ -220,7 +222,7 @@ func (a *AuthUser) UnmarshalJSON(b []byte) error {
 
 	for i, r := range proxy.AuthHistory {
 		a.authHistory[i] = &authResult{
-			authType:          r.AuthType,
+			authenticator:     r.AuthType,
 			isVerified:        r.IsVerified,
 			runtimeAttributes: r.RuntimeAttributes,
 		}

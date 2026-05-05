@@ -38,8 +38,8 @@ func (s *ModelTestSuite) TestAuthUserMarshalUnmarshal() {
 		userState: ProviderUserStateExists,
 		authHistory: []*authResult{
 			{
-				authType:   "password",
-				isVerified: true,
+				authenticator: "password",
+				isVerified:    true,
 				runtimeAttributes: map[string]interface{}{
 					"email": "test@example.com",
 				},
@@ -74,7 +74,7 @@ func (s *ModelTestSuite) TestAuthUserMarshalUnmarshal() {
 	// Auth history round-trips correctly
 	s.Require().Len(restored.authHistory, 1)
 	ar := restored.authHistory[0]
-	s.Equal("password", ar.authType)
+	s.Equal("password", ar.authenticator)
 	s.True(ar.isVerified)
 	s.NotNil(ar.runtimeAttributes)
 	s.Equal("test@example.com", ar.runtimeAttributes["email"])
@@ -112,7 +112,7 @@ func (s *ModelTestSuite) TestAuthUserIsSet_WithUserHistory() {
 func (s *ModelTestSuite) TestAuthUserIsSet_WithOnlyAuthHistory() {
 	a := AuthUser{}
 	a.authHistory = []*authResult{
-		{authType: "password"},
+		{authenticator: "password"},
 	}
 	s.True(a.IsSet())
 }

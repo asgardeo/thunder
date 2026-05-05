@@ -21,9 +21,9 @@ package executor
 import (
 	"errors"
 
-	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authnoauth "github.com/asgardeo/thunder/internal/authn/oauth"
 	authnoidc "github.com/asgardeo/thunder/internal/authn/oidc"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/entitytype"
@@ -135,15 +135,15 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 		return err
 	}
 
-	credentials := map[string]interface{}{
-		"federated": &authncm.FederatedAuthCredential{
-			IDPID:   idpID,
-			IDPType: o.idpType,
-			Code:    code,
+	authnData := &authnprovidercm.FederatedAuthnData{
+		IDPID:   idpID,
+		IDPType: o.idpType,
+		OAuthCredential: authnprovidercm.OAuthCredential{
+			Code: code,
 		},
 	}
 	authUser, svcErr := o.authnProvider.AuthenticateUser(
-		ctx.Context, nil, credentials, nil, nil, ctx.AuthUser)
+		ctx.Context, authnprovidercm.AuthnDataTypeFederated, authnData, nil, nil, ctx.AuthUser)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure

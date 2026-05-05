@@ -74,7 +74,10 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_Success() {
 	suite.mockService.On("GetEntity", mock.Anything, "user123").
 		Return(entityObj, nil).Once()
 
-	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
+	result, err := suite.provider.Authenticate(context.Background(), authnprovidercm.AuthnDataTypeCredentials,
+		&authnprovidercm.CredentialsAuthnData{
+			Identifiers: identifiers, Credentials: credentials,
+		}, nil)
 
 	suite.Nil(err)
 	suite.Equal("user123", result.EntityID)
@@ -98,7 +101,10 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_EntityNotFound() {
 	suite.mockService.On("AuthenticateEntity", mock.Anything, identifiers, credentials).
 		Return(nil, entity.ErrEntityNotFound).Once()
 
-	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
+	result, err := suite.provider.Authenticate(context.Background(), authnprovidercm.AuthnDataTypeCredentials,
+		&authnprovidercm.CredentialsAuthnData{
+			Identifiers: identifiers, Credentials: credentials,
+		}, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -112,7 +118,10 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_AuthenticationFaile
 	suite.mockService.On("AuthenticateEntity", mock.Anything, identifiers, credentials).
 		Return(nil, entity.ErrAuthenticationFailed).Once()
 
-	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
+	result, err := suite.provider.Authenticate(context.Background(), authnprovidercm.AuthnDataTypeCredentials,
+		&authnprovidercm.CredentialsAuthnData{
+			Identifiers: identifiers, Credentials: credentials,
+		}, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -135,7 +144,10 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_GetEntityNotFound()
 	suite.mockService.On("GetEntity", mock.Anything, "user123").
 		Return(nil, entity.ErrEntityNotFound).Once()
 
-	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
+	result, err := suite.provider.Authenticate(context.Background(), authnprovidercm.AuthnDataTypeCredentials,
+		&authnprovidercm.CredentialsAuthnData{
+			Identifiers: identifiers, Credentials: credentials,
+		}, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -167,7 +179,10 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_ByPreResolvedUserID
 	suite.mockService.On("GetEntity", mock.Anything, "resolved-user-123").
 		Return(entityObj, nil).Once()
 
-	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
+	result, err := suite.provider.Authenticate(context.Background(), authnprovidercm.AuthnDataTypeCredentials,
+		&authnprovidercm.CredentialsAuthnData{
+			Identifiers: identifiers, Credentials: credentials,
+		}, nil)
 
 	suite.Nil(err)
 	suite.Equal("resolved-user-123", result.EntityID)
@@ -182,7 +197,10 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_ByPreResolvedUserID
 	suite.mockService.On("AuthenticateEntityByID", mock.Anything, "missing-user", credentials).
 		Return(nil, entity.ErrEntityNotFound).Once()
 
-	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
+	result, err := suite.provider.Authenticate(context.Background(), authnprovidercm.AuthnDataTypeCredentials,
+		&authnprovidercm.CredentialsAuthnData{
+			Identifiers: identifiers, Credentials: credentials,
+		}, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -196,7 +214,10 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_ByPreResolvedUserID
 	suite.mockService.On("AuthenticateEntityByID", mock.Anything, "user-wrong-pw", credentials).
 		Return(nil, entity.ErrAuthenticationFailed).Once()
 
-	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
+	result, err := suite.provider.Authenticate(context.Background(), authnprovidercm.AuthnDataTypeCredentials,
+		&authnprovidercm.CredentialsAuthnData{
+			Identifiers: identifiers, Credentials: credentials,
+		}, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -228,7 +249,10 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_EmptyUserID_FallsBa
 	suite.mockService.On("GetEntity", mock.Anything, "user123").
 		Return(entityObj, nil).Once()
 
-	result, err := suite.provider.Authenticate(context.Background(), identifiers, credentials, nil)
+	result, err := suite.provider.Authenticate(context.Background(), authnprovidercm.AuthnDataTypeCredentials,
+		&authnprovidercm.CredentialsAuthnData{
+			Identifiers: identifiers, Credentials: credentials,
+		}, nil)
 
 	suite.Nil(err)
 	suite.Equal("user123", result.EntityID)
@@ -301,12 +325,6 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_OTP_UserFound() {
 	mockOTP := otpmock.NewOTPAuthnServiceInterfaceMock(suite.T())
 	provider := newDefaultAuthnProvider(suite.mockService, nil, mockOTP, nil)
 
-	credentials := map[string]interface{}{
-		"otp": map[string]interface{}{
-			"sessionToken": "tok",
-			"otp":          "123456",
-		},
-	}
 	entityObj := &entity.Entity{
 		ID:         "u1",
 		Category:   entity.EntityCategoryUser,
@@ -319,7 +337,10 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_OTP_UserFound() {
 		Return(&otp.OTPAuthnResult{InternalEntity: &entityprovider.Entity{ID: "u1"}}, nil).Once()
 	suite.mockService.On("GetEntity", mock.Anything, "u1").Return(entityObj, nil).Once()
 
-	result, err := provider.Authenticate(context.Background(), nil, credentials, nil)
+	result, err := provider.Authenticate(context.Background(), authnprovidercm.AuthnDataTypeOTP,
+		&authnprovidercm.OTPAuthnData{
+			SessionToken: "tok", OTP: "123456",
+		}, nil)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -331,20 +352,16 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_OTP_UserNotFound() 
 	mockOTP := otpmock.NewOTPAuthnServiceInterfaceMock(suite.T())
 	provider := newDefaultAuthnProvider(suite.mockService, nil, mockOTP, nil)
 
-	credentials := map[string]interface{}{
-		"otp": map[string]interface{}{
-			"sessionToken": "tok",
-			"otp":          "123456",
-		},
-	}
-
 	mockOTP.On("Authenticate", mock.Anything, "tok", "123456").
 		Return(&otp.OTPAuthnResult{
 			InternalEntity:      nil,
 			VerifiedIdentifiers: map[string]interface{}{"mobileNumber": "+1234567890"},
 		}, nil).Once()
 
-	result, err := provider.Authenticate(context.Background(), nil, credentials, nil)
+	result, err := provider.Authenticate(context.Background(), authnprovidercm.AuthnDataTypeOTP,
+		&authnprovidercm.OTPAuthnData{
+			SessionToken: "tok", OTP: "123456",
+		}, nil)
 
 	suite.Nil(err)
 	suite.NotNil(result)
@@ -358,17 +375,13 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_OTP_IncorrectOTP() 
 	mockOTP := otpmock.NewOTPAuthnServiceInterfaceMock(suite.T())
 	provider := newDefaultAuthnProvider(suite.mockService, nil, mockOTP, nil)
 
-	credentials := map[string]interface{}{
-		"otp": map[string]interface{}{
-			"sessionToken": "tok",
-			"otp":          "wrong",
-		},
-	}
-
 	mockOTP.On("Authenticate", mock.Anything, "tok", "wrong").
 		Return(nil, &otp.ErrorIncorrectOTP).Once()
 
-	result, err := provider.Authenticate(context.Background(), nil, credentials, nil)
+	result, err := provider.Authenticate(context.Background(), authnprovidercm.AuthnDataTypeOTP,
+		&authnprovidercm.OTPAuthnData{
+			SessionToken: "tok", OTP: "wrong",
+		}, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)
@@ -379,11 +392,8 @@ func (suite *DefaultAuthnProviderTestSuite) TestAuthenticate_OTP_InvalidPayload(
 	mockOTP := otpmock.NewOTPAuthnServiceInterfaceMock(suite.T())
 	provider := newDefaultAuthnProvider(suite.mockService, nil, mockOTP, nil)
 
-	credentials := map[string]interface{}{
-		"otp": "not-a-map",
-	}
-
-	result, err := provider.Authenticate(context.Background(), nil, credentials, nil)
+	result, err := provider.Authenticate(context.Background(), authnprovidercm.AuthnDataTypeOTP,
+		&authnprovidercm.CredentialsAuthnData{}, nil)
 
 	suite.Nil(result)
 	suite.NotNil(err)

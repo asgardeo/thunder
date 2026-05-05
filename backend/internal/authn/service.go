@@ -35,6 +35,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
+	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/idp"
@@ -134,8 +135,12 @@ func (as *authenticationService) AuthenticateWithCredentials(ctx context.Context
 		return nil, &ErrorEmptyAttributesOrCredentials
 	}
 
-	authUser, svcErr := as.authnProvider.AuthenticateUser(ctx, identifiers, credentials, nil, nil,
-		authnprovidermgr.AuthUser{})
+	authnData := &authnprovidercm.CredentialsAuthnData{
+		Identifiers: identifiers,
+		Credentials: credentials,
+	}
+	authUser, svcErr := as.authnProvider.AuthenticateUser(ctx, authnprovidercm.AuthnDataTypeCredentials, authnData,
+		nil, nil, authnprovidermgr.AuthUser{})
 	if svcErr != nil {
 		return nil, as.mapCredentialsAuthnError(svcErr, logger)
 	}
@@ -198,14 +203,12 @@ func (as *authenticationService) VerifyOTP(ctx context.Context, sessionToken str
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Verifying OTP for authentication")
 
-	credentials := map[string]interface{}{
-		"otp": map[string]interface{}{
-			"sessionToken": sessionToken,
-			"otp":          otpCode,
-		},
+	authnData := &authnprovidercm.OTPAuthnData{
+		SessionToken: sessionToken,
+		OTP:          otpCode,
 	}
 	authUser, svcErr := as.authnProvider.AuthenticateUser(
-		ctx, nil, credentials, nil, nil, authnprovidermgr.AuthUser{})
+		ctx, authnprovidercm.AuthnDataTypeOTP, authnData, nil, nil, authnprovidermgr.AuthUser{})
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ServerErrorType {
 			return nil, &serviceerror.InternalServerError
@@ -319,15 +322,15 @@ func (as *authenticationService) FinishIDPAuthentication(ctx context.Context, re
 		return nil, svcErr
 	}
 
-	credentials := map[string]interface{}{
-		"federated": &common.FederatedAuthCredential{
-			IDPID:   sessionData.IDPID,
-			IDPType: sessionData.IDPType,
-			Code:    code,
+	authnData := &authnprovidercm.FederatedAuthnData{
+		IDPID:   sessionData.IDPID,
+		IDPType: sessionData.IDPType,
+		OAuthCredential: authnprovidercm.OAuthCredential{
+			Code: code,
 		},
 	}
 	authUser, svcErr := as.authnProvider.AuthenticateUser(
-		ctx, nil, credentials, nil, nil, authnprovidermgr.AuthUser{})
+		ctx, authnprovidercm.AuthnDataTypeFederated, authnData, nil, nil, authnprovidermgr.AuthUser{})
 	if svcErr != nil {
 		return nil, as.mapFederatedAuthnError(svcErr, logger)
 	}
@@ -724,7 +727,7 @@ func (as *authenticationService) FinishPasskeyAuthentication(ctx context.Context
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, svcLoggerComponentName))
 	logger.Debug("Finishing Passkey authentication")
 
-	passkeyCredential := &passkey.PasskeyAuthenticationFinishRequest{
+	authnData := &authnprovidercm.PasskeyAuthnData{
 		CredentialID:      credentialID,
 		CredentialType:    credentialType,
 		ClientDataJSON:    response.ClientDataJSON,
@@ -733,9 +736,8 @@ func (as *authenticationService) FinishPasskeyAuthentication(ctx context.Context
 		UserHandle:        response.UserHandle,
 		SessionToken:      sessionToken,
 	}
-	credentials := map[string]interface{}{"passkey": passkeyCredential}
 	authUser, svcErr := as.authnProvider.AuthenticateUser(
-		ctx, nil, credentials, nil, nil, authnprovidermgr.AuthUser{})
+		ctx, authnprovidercm.AuthnDataTypePasskey, authnData, nil, nil, authnprovidermgr.AuthUser{})
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ServerErrorType {
 			return nil, &serviceerror.InternalServerError

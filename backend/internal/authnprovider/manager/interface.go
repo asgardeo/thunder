@@ -29,7 +29,7 @@ import (
 
 // AuthnProviderManagerInterface defines the interface for the authentication provider manager.
 type AuthnProviderManagerInterface interface {
-	AuthenticateUser(ctx context.Context, identifiers, credentials map[string]interface{},
+	AuthenticateUser(ctx context.Context, authnType string, authnData any,
 		requestedAttributes *authnprovidercm.RequestedAttributes,
 		metadata *authnprovidercm.AuthnMetadata,
 		authUser AuthUser) (AuthUser, *serviceerror.ServiceError)

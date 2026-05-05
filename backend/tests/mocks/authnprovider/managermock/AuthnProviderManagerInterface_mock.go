@@ -190,8 +190,8 @@ func (_c *AuthnProviderManagerInterfaceMock_AuthenticateResolvedUser_Call) RunAn
 }
 
 // AuthenticateUser provides a mock function for the type AuthnProviderManagerInterfaceMock
-func (_mock *AuthnProviderManagerInterfaceMock) AuthenticateUser(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}, requestedAttributes *common.RequestedAttributes, metadata *common.AuthnMetadata, authUser manager.AuthUser) (manager.AuthUser, *serviceerror.ServiceError) {
-	ret := _mock.Called(ctx, identifiers, credentials, requestedAttributes, metadata, authUser)
+func (_mock *AuthnProviderManagerInterfaceMock) AuthenticateUser(ctx context.Context, authnType string, authnData any, requestedAttributes *common.RequestedAttributes, metadata *common.AuthnMetadata, authUser manager.AuthUser) (manager.AuthUser, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, authnType, authnData, requestedAttributes, metadata, authUser)
 
 	if len(ret) == 0 {
 		panic("no return value specified for AuthenticateUser")
@@ -199,16 +199,16 @@ func (_mock *AuthnProviderManagerInterfaceMock) AuthenticateUser(ctx context.Con
 
 	var r0 manager.AuthUser
 	var r1 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, map[string]interface{}, *common.RequestedAttributes, *common.AuthnMetadata, manager.AuthUser) (manager.AuthUser, *serviceerror.ServiceError)); ok {
-		return returnFunc(ctx, identifiers, credentials, requestedAttributes, metadata, authUser)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, any, *common.RequestedAttributes, *common.AuthnMetadata, manager.AuthUser) (manager.AuthUser, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, authnType, authnData, requestedAttributes, metadata, authUser)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, map[string]interface{}, map[string]interface{}, *common.RequestedAttributes, *common.AuthnMetadata, manager.AuthUser) manager.AuthUser); ok {
-		r0 = returnFunc(ctx, identifiers, credentials, requestedAttributes, metadata, authUser)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, any, *common.RequestedAttributes, *common.AuthnMetadata, manager.AuthUser) manager.AuthUser); ok {
+		r0 = returnFunc(ctx, authnType, authnData, requestedAttributes, metadata, authUser)
 	} else {
 		r0 = ret.Get(0).(manager.AuthUser)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, map[string]interface{}, map[string]interface{}, *common.RequestedAttributes, *common.AuthnMetadata, manager.AuthUser) *serviceerror.ServiceError); ok {
-		r1 = returnFunc(ctx, identifiers, credentials, requestedAttributes, metadata, authUser)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, any, *common.RequestedAttributes, *common.AuthnMetadata, manager.AuthUser) *serviceerror.ServiceError); ok {
+		r1 = returnFunc(ctx, authnType, authnData, requestedAttributes, metadata, authUser)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(*serviceerror.ServiceError)
@@ -224,28 +224,28 @@ type AuthnProviderManagerInterfaceMock_AuthenticateUser_Call struct {
 
 // AuthenticateUser is a helper method to define mock.On call
 //   - ctx context.Context
-//   - identifiers map[string]interface{}
-//   - credentials map[string]interface{}
+//   - authnType string
+//   - authnData any
 //   - requestedAttributes *common.RequestedAttributes
 //   - metadata *common.AuthnMetadata
 //   - authUser manager.AuthUser
-func (_e *AuthnProviderManagerInterfaceMock_Expecter) AuthenticateUser(ctx interface{}, identifiers interface{}, credentials interface{}, requestedAttributes interface{}, metadata interface{}, authUser interface{}) *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call {
-	return &AuthnProviderManagerInterfaceMock_AuthenticateUser_Call{Call: _e.mock.On("AuthenticateUser", ctx, identifiers, credentials, requestedAttributes, metadata, authUser)}
+func (_e *AuthnProviderManagerInterfaceMock_Expecter) AuthenticateUser(ctx interface{}, authnType interface{}, authnData interface{}, requestedAttributes interface{}, metadata interface{}, authUser interface{}) *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call {
+	return &AuthnProviderManagerInterfaceMock_AuthenticateUser_Call{Call: _e.mock.On("AuthenticateUser", ctx, authnType, authnData, requestedAttributes, metadata, authUser)}
 }
 
-func (_c *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call) Run(run func(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}, requestedAttributes *common.RequestedAttributes, metadata *common.AuthnMetadata, authUser manager.AuthUser)) *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call {
+func (_c *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call) Run(run func(ctx context.Context, authnType string, authnData any, requestedAttributes *common.RequestedAttributes, metadata *common.AuthnMetadata, authUser manager.AuthUser)) *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 map[string]interface{}
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(map[string]interface{})
+			arg1 = args[1].(string)
 		}
-		var arg2 map[string]interface{}
+		var arg2 any
 		if args[2] != nil {
-			arg2 = args[2].(map[string]interface{})
+			arg2 = args[2].(any)
 		}
 		var arg3 *common.RequestedAttributes
 		if args[3] != nil {
@@ -276,7 +276,7 @@ func (_c *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call) Return(authUs
 	return _c
 }
 
-func (_c *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call) RunAndReturn(run func(ctx context.Context, identifiers map[string]interface{}, credentials map[string]interface{}, requestedAttributes *common.RequestedAttributes, metadata *common.AuthnMetadata, authUser manager.AuthUser) (manager.AuthUser, *serviceerror.ServiceError)) *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call {
+func (_c *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call) RunAndReturn(run func(ctx context.Context, authnType string, authnData any, requestedAttributes *common.RequestedAttributes, metadata *common.AuthnMetadata, authUser manager.AuthUser) (manager.AuthUser, *serviceerror.ServiceError)) *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call {
 	_c.Call.Return(run)
 	return _c
 }

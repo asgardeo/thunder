@@ -209,9 +209,13 @@ func (b *basicAuthExecutor) authenticateUser(ctx *core.NodeContext, execResp *co
 	}
 
 	// For authentication flows, call Authenticate directly.
+	authnData := &authnprovidercm.CredentialsAuthnData{
+		Identifiers: userIdentifiers,
+		Credentials: userCredentials,
+	}
 	metadata := b.buildAuthnMetadata(ctx)
-	authUser, svcErr := b.authnProvider.AuthenticateUser(ctx.Context, userIdentifiers,
-		userCredentials, nil, metadata, ctx.AuthUser)
+	authUser, svcErr := b.authnProvider.AuthenticateUser(ctx.Context, authnprovidercm.AuthnDataTypeCredentials,
+		authnData, nil, metadata, ctx.AuthUser)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecUserInputRequired

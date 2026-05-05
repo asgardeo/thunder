@@ -47,11 +47,14 @@ func (s *ManagerTestSuite) SetupTest() {
 }
 
 func (s *ManagerTestSuite) TestAuthenticateUser_Success() {
-	identifiers := map[string]interface{}{"username": "alice"}
-	credentials := map[string]interface{}{"password": "secret"}
+	authnType := authnprovidercm.AuthnDataTypeCredentials
+	authnData := &authnprovidercm.CredentialsAuthnData{
+		Identifiers: map[string]interface{}{"username": "alice"},
+		Credentials: map[string]interface{}{"password": "secret"},
+	}
 	meta := &authnprovidercm.AuthnMetadata{}
 
-	s.mockProvider.On("Authenticate", context.Background(), identifiers, credentials, meta).
+	s.mockProvider.On("Authenticate", context.Background(), authnType, authnData, meta).
 		Return(&authnprovidercm.AuthnResult{
 			UserID:                    "user-1",
 			UserType:                  "customer",
@@ -62,7 +65,7 @@ func (s *ManagerTestSuite) TestAuthenticateUser_Success() {
 			IsExistingUser:            true,
 		}, (*serviceerror.ServiceError)(nil))
 
-	returnedAuthUser, svcErr := s.mgr.AuthenticateUser(context.Background(), identifiers, credentials,
+	returnedAuthUser, svcErr := s.mgr.AuthenticateUser(context.Background(), authnType, authnData,
 		nil, meta, AuthUser{})
 
 	s.Nil(svcErr)
@@ -79,8 +82,10 @@ func (s *ManagerTestSuite) TestAuthenticateUser_Success() {
 }
 
 func (s *ManagerTestSuite) TestAuthenticateUser_FederatedNewUser() {
-	identifiers := map[string]interface{}{}
-	credentials := map[string]interface{}{"federated": "token"}
+	authnType := authnprovidercm.AuthnDataTypeFederated
+	authnData := &authnprovidercm.FederatedAuthnData{
+		OAuthCredential: authnprovidercm.OAuthCredential{Code: "token"},
+	}
 	meta := &authnprovidercm.AuthnMetadata{}
 
 	attrResp := &authnprovidercm.AttributesResponse{
@@ -89,9 +94,9 @@ func (s *ManagerTestSuite) TestAuthenticateUser_FederatedNewUser() {
 		},
 		Verifications: make(map[string]*authnprovidercm.VerificationResponse),
 	}
-	s.mockProvider.On("Authenticate", context.Background(), identifiers, credentials, meta).
+	s.mockProvider.On("Authenticate", context.Background(), authnType, authnData, meta).
 		Return(&authnprovidercm.AuthnResult{
-			AuthType:                  authnprovidercm.AuthTypeFederated,
+			AuthType:                  authnprovidercm.AuthenticatorOAuth,
 			IsExistingUser:            false,
 			IsAmbiguousUser:           false,
 			ExternalSub:               "ext-sub-123",
@@ -100,7 +105,7 @@ func (s *ManagerTestSuite) TestAuthenticateUser_FederatedNewUser() {
 			AttributesResponse:        attrResp,
 		}, (*serviceerror.ServiceError)(nil))
 
-	returnedAuthUser, svcErr := s.mgr.AuthenticateUser(context.Background(), identifiers, credentials,
+	returnedAuthUser, svcErr := s.mgr.AuthenticateUser(context.Background(), authnType, authnData,
 		nil, meta, AuthUser{})
 
 	s.Nil(svcErr)
@@ -115,8 +120,11 @@ func (s *ManagerTestSuite) TestAuthenticateUser_FederatedNewUser() {
 }
 
 func (s *ManagerTestSuite) TestAuthenticateUser_ClientError() {
-	identifiers := map[string]interface{}{"username": "alice"}
-	credentials := map[string]interface{}{"password": "wrong"}
+	authnType := authnprovidercm.AuthnDataTypeCredentials
+	authnData := &authnprovidercm.CredentialsAuthnData{
+		Identifiers: map[string]interface{}{"username": "alice"},
+		Credentials: map[string]interface{}{"password": "wrong"},
+	}
 	meta := &authnprovidercm.AuthnMetadata{}
 	provErr := &serviceerror.ServiceError{
 		Code:  "PROV-ERR",
@@ -124,10 +132,10 @@ func (s *ManagerTestSuite) TestAuthenticateUser_ClientError() {
 		Error: core.I18nMessage{Key: "error.test.invalid_credentials", DefaultValue: "invalid credentials"},
 	}
 
-	s.mockProvider.On("Authenticate", context.Background(), identifiers, credentials, meta).
+	s.mockProvider.On("Authenticate", context.Background(), authnType, authnData, meta).
 		Return((*authnprovidercm.AuthnResult)(nil), provErr)
 
-	returnedAuthUser, svcErr := s.mgr.AuthenticateUser(context.Background(), identifiers, credentials,
+	returnedAuthUser, svcErr := s.mgr.AuthenticateUser(context.Background(), authnType, authnData,
 		nil, meta, AuthUser{})
 
 	s.NotNil(svcErr)
@@ -157,8 +165,11 @@ func (s *ManagerTestSuite) TestAuthenticateUser_InvalidRequest() {
 func (s *ManagerTestSuite) assertAuthenticateUserClientErrorMapping(
 	providerErrorCode, providerError, providerErrorDescription, expectedServiceErrorCode string,
 ) {
-	identifiers := map[string]interface{}{"username": "alice"}
-	credentials := map[string]interface{}{"password": "secret"}
+	authnType := authnprovidercm.AuthnDataTypeCredentials
+	authnData := &authnprovidercm.CredentialsAuthnData{
+		Identifiers: map[string]interface{}{"username": "alice"},
+		Credentials: map[string]interface{}{"password": "secret"},
+	}
 	meta := &authnprovidercm.AuthnMetadata{}
 	provErr := &serviceerror.ServiceError{
 		Code: providerErrorCode, Type: serviceerror.ClientErrorType,
@@ -166,10 +177,10 @@ func (s *ManagerTestSuite) assertAuthenticateUserClientErrorMapping(
 		ErrorDescription: core.I18nMessage{DefaultValue: providerErrorDescription},
 	}
 
-	s.mockProvider.On("Authenticate", context.Background(), identifiers, credentials, meta).
+	s.mockProvider.On("Authenticate", context.Background(), authnType, authnData, meta).
 		Return((*authnprovidercm.AuthnResult)(nil), provErr)
 
-	returnedAuthUser, svcErr := s.mgr.AuthenticateUser(context.Background(), identifiers, credentials,
+	returnedAuthUser, svcErr := s.mgr.AuthenticateUser(context.Background(), authnType, authnData,
 		nil, meta, AuthUser{})
 
 	s.NotNil(svcErr)
@@ -179,8 +190,11 @@ func (s *ManagerTestSuite) assertAuthenticateUserClientErrorMapping(
 }
 
 func (s *ManagerTestSuite) TestAuthenticateUser_ServerError() {
-	identifiers := map[string]interface{}{"username": "alice"}
-	credentials := map[string]interface{}{"password": "secret"}
+	authnType := authnprovidercm.AuthnDataTypeCredentials
+	authnData := &authnprovidercm.CredentialsAuthnData{
+		Identifiers: map[string]interface{}{"username": "alice"},
+		Credentials: map[string]interface{}{"password": "secret"},
+	}
 	meta := &authnprovidercm.AuthnMetadata{}
 	provErr := &serviceerror.ServiceError{
 		Code:  "PROV-ERR",
@@ -188,10 +202,10 @@ func (s *ManagerTestSuite) TestAuthenticateUser_ServerError() {
 		Error: core.I18nMessage{Key: "error.test.database_unavailable", DefaultValue: "database unavailable"},
 	}
 
-	s.mockProvider.On("Authenticate", context.Background(), identifiers, credentials, meta).
+	s.mockProvider.On("Authenticate", context.Background(), authnType, authnData, meta).
 		Return((*authnprovidercm.AuthnResult)(nil), provErr)
 
-	returnedAuthUser, svcErr := s.mgr.AuthenticateUser(context.Background(), identifiers, credentials,
+	returnedAuthUser, svcErr := s.mgr.AuthenticateUser(context.Background(), authnType, authnData,
 		nil, meta, AuthUser{})
 
 	s.NotNil(svcErr)
@@ -201,8 +215,11 @@ func (s *ManagerTestSuite) TestAuthenticateUser_ServerError() {
 }
 
 func (s *ManagerTestSuite) TestAuthenticateUser_ReAuth() {
-	identifiers := map[string]interface{}{"username": "alice"}
-	credentials := map[string]interface{}{"password": "secret"}
+	authnType := authnprovidercm.AuthnDataTypeCredentials
+	authnData := &authnprovidercm.CredentialsAuthnData{
+		Identifiers: map[string]interface{}{"username": "alice"},
+		Credentials: map[string]interface{}{"password": "secret"},
+	}
 	meta := &authnprovidercm.AuthnMetadata{}
 
 	firstResult := &authnprovidercm.AuthnResult{
@@ -214,13 +231,13 @@ func (s *ManagerTestSuite) TestAuthenticateUser_ReAuth() {
 		AttributesResponse: &authnprovidercm.AttributesResponse{},
 	}
 
-	s.mockProvider.On("Authenticate", context.Background(), identifiers, credentials, meta).
+	s.mockProvider.On("Authenticate", context.Background(), authnType, authnData, meta).
 		Return(firstResult, (*serviceerror.ServiceError)(nil)).Once()
-	s.mockProvider.On("Authenticate", context.Background(), identifiers, credentials, meta).
+	s.mockProvider.On("Authenticate", context.Background(), authnType, authnData, meta).
 		Return(secondResult, (*serviceerror.ServiceError)(nil)).Once()
 
-	au1, _ := s.mgr.AuthenticateUser(context.Background(), identifiers, credentials, nil, meta, AuthUser{})
-	au2, _ := s.mgr.AuthenticateUser(context.Background(), identifiers, credentials, nil, meta, au1)
+	au1, _ := s.mgr.AuthenticateUser(context.Background(), authnType, authnData, nil, meta, AuthUser{})
+	au2, _ := s.mgr.AuthenticateUser(context.Background(), authnType, authnData, nil, meta, au1)
 
 	s.Require().Len(au2.userHistory, 2)
 	s.Equal("tok-second", au2.userHistory[1].token, "second call must append a new user history entry")
@@ -242,7 +259,7 @@ func (s *ManagerTestSuite) TestGetUserAvailableAttributes_WithData() {
 	authUser := AuthUser{
 		userState: ProviderUserStateExists,
 		authHistory: []*authResult{
-			{authType: "password", isVerified: true},
+			{authenticator: "password", isVerified: true},
 		},
 		userHistory: []*providerUserResult{
 			{
@@ -278,7 +295,7 @@ func (s *ManagerTestSuite) TestGetUserAttributes_CacheHit() {
 	authUser := AuthUser{
 		userState: ProviderUserStateExists,
 		authHistory: []*authResult{
-			{authType: "password", isVerified: true},
+			{authenticator: "password", isVerified: true},
 		},
 		userHistory: []*providerUserResult{
 			{
@@ -302,7 +319,7 @@ func (s *ManagerTestSuite) TestGetUserAvailableAttributes_NoProviderData() {
 	authUser := AuthUser{
 		userState: ProviderUserStateExists,
 		authHistory: []*authResult{
-			{authType: "password", isVerified: true},
+			{authenticator: "password", isVerified: true},
 		},
 		userHistory: []*providerUserResult{
 			{userID: "user-1", userType: "person", ouID: "ou-1", isValuesIncluded: true},
@@ -318,7 +335,7 @@ func (s *ManagerTestSuite) TestGetUserAttributes_NoProviderData() {
 	authUser := AuthUser{
 		userState: ProviderUserStateExists,
 		authHistory: []*authResult{
-			{authType: "password", isVerified: true},
+			{authenticator: "password", isVerified: true},
 		},
 		userHistory: []*providerUserResult{
 			{userID: "user-1", userType: "person", ouID: "ou-1", isValuesIncluded: true},
@@ -334,7 +351,7 @@ func (s *ManagerTestSuite) TestGetUserAttributes_CacheMissServerError() {
 	authUser := AuthUser{
 		userState: ProviderUserStateExists,
 		authHistory: []*authResult{
-			{authType: "password", isVerified: true},
+			{authenticator: "password", isVerified: true},
 		},
 		userHistory: []*providerUserResult{
 			{userID: "user-1", userType: "person", ouID: "ou-1", token: "tok", isValuesIncluded: false},
@@ -363,7 +380,7 @@ func (s *ManagerTestSuite) TestGetUserAttributes_CacheMissClientError() {
 	authUser := AuthUser{
 		userState: ProviderUserStateExists,
 		authHistory: []*authResult{
-			{authType: "password", isVerified: true},
+			{authenticator: "password", isVerified: true},
 		},
 		userHistory: []*providerUserResult{
 			{userID: "user-1", userType: "person", ouID: "ou-1", token: "expired-tok", isValuesIncluded: false},
@@ -392,7 +409,7 @@ func (s *ManagerTestSuite) TestGetUserAttributes_CacheMiss() {
 	authUser := AuthUser{
 		userState: ProviderUserStateExists,
 		authHistory: []*authResult{
-			{authType: "password", isVerified: true},
+			{authenticator: "password", isVerified: true},
 		},
 		userHistory: []*providerUserResult{
 			{userID: "user-1", userType: "person", ouID: "ou-1", token: "tok", isValuesIncluded: false},

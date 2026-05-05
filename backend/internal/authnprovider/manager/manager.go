@@ -21,6 +21,7 @@ package manager
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	"github.com/asgardeo/thunder/internal/authnprovider/provider"
@@ -46,11 +47,11 @@ func newAuthnProviderManager(p provider.AuthnProviderInterface) AuthnProviderMan
 }
 
 // AuthenticateUser authenticates with the underlying provider and returns an updated AuthUser.
-func (m *authnProviderManager) AuthenticateUser(ctx context.Context, identifiers, credentials map[string]interface{},
+func (m *authnProviderManager) AuthenticateUser(ctx context.Context, authnType string, authnData any,
 	requestedAttributes *authnprovidercm.RequestedAttributes,
 	metadata *authnprovidercm.AuthnMetadata,
 	authUser AuthUser) (AuthUser, *serviceerror.ServiceError) {
-	result, svcErr := m.provider.Authenticate(ctx, identifiers, credentials, metadata)
+	result, svcErr := m.provider.Authenticate(ctx, authnType, authnData, metadata)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ServerErrorType {
 			m.logger.Error("provider returned server error during authentication",
@@ -67,12 +68,15 @@ func (m *authnProviderManager) AuthenticateUser(ctx context.Context, identifiers
 		}
 	}
 
+	currentTime := time.Now().Unix()
 	authResult := authResult{
-		isVerified: true,
-		authType:   result.AuthType,
+		isVerified:    true,
+		authenticator: result.AuthType,
+		timestamp:     currentTime,
 	}
 	userResult := providerUserResult{
 		attributes: make(map[string]interface{}),
+		timestamp:  currentTime,
 	}
 
 	var err error
@@ -154,6 +158,7 @@ func (m *authnProviderManager) AuthenticateResolvedUser(ctx context.Context, res
 	authUser AuthUser) (AuthUser, *serviceerror.ServiceError) {
 	userResult := providerUserResult{
 		attributes: make(map[string]interface{}),
+		timestamp:  time.Now().Unix(),
 	}
 
 	if svcErr := m.validateIdentityField(
@@ -202,9 +207,11 @@ func (m *authnProviderManager) AuthenticateForRegistration(ctx context.Context, 
 	authUser AuthUser) (AuthUser, *serviceerror.ServiceError) {
 	// TODO: this should also go through authn provider.
 
-	authResult := authResult{}
-	authResult.authType = credentialType
-	authResult.isVerified = true
+	authResult := authResult{
+		timestamp:     time.Now().Unix(),
+		authenticator: credentialType,
+		isVerified:    true,
+	}
 
 	authUser.authHistory = append(authUser.authHistory, &authResult)
 

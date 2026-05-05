@@ -173,8 +173,12 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 					`"userHistory":[{"userId":"user123","userType":"person","ouId":"org_unit_123",` +
 					`"isValuesIncluded":true}],"userState":"exists"}`
 				_ = json.Unmarshal([]byte(mockJSON), &mockAuthUser)
-				suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, identifiers,
-					authnCredentials, mock.Anything, mock.Anything, mock.Anything).
+				suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything,
+					authnprovidercm.AuthnDataTypeCredentials,
+					&authnprovidercm.CredentialsAuthnData{
+						Identifiers: identifiers,
+						Credentials: authnCredentials,
+					}, mock.Anything, mock.Anything, mock.Anything).
 					Return(mockAuthUser, (*serviceerror.ServiceError)(nil)).Once()
 				suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything).
@@ -195,8 +199,12 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 					`"user123","userType":"person","ouId":"org_unit_123","isValuesIncluded":true}],"userState":` +
 					`"exists"}`
 				_ = json.Unmarshal([]byte(mockJSON), &mockAuthUser)
-				suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, identifiers,
-					authnCredentials, mock.Anything, mock.Anything, mock.Anything).
+				suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything,
+					authnprovidercm.AuthnDataTypeCredentials,
+					&authnprovidercm.CredentialsAuthnData{
+						Identifiers: identifiers,
+						Credentials: authnCredentials,
+					}, mock.Anything, mock.Anything, mock.Anything).
 					Return(mockAuthUser, (*serviceerror.ServiceError)(nil)).Once()
 				suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything).
@@ -231,8 +239,12 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 					`"user123","userType":"person","ouId":"org_unit_123","isValuesIncluded":true}],` +
 					`"userState":"exists"}`
 				_ = json.Unmarshal([]byte(mockJSON), &mockAuthUser)
-				suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, identifiers,
-					authnCredentials, mock.Anything, mock.Anything, mock.Anything).
+				suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything,
+					authnprovidercm.AuthnDataTypeCredentials,
+					&authnprovidercm.CredentialsAuthnData{
+						Identifiers: identifiers,
+						Credentials: authnCredentials,
+					}, mock.Anything, mock.Anything, mock.Anything).
 					Return(mockAuthUser, (*serviceerror.ServiceError)(nil)).Once()
 				suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything).
@@ -284,8 +296,12 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsServ
 		"password": "wrongpass",
 	}
 
-	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, identifiers,
-		authnCredentials, mock.Anything, mock.Anything, mock.Anything).Return(
+	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything,
+		authnprovidercm.AuthnDataTypeCredentials,
+		&authnprovidercm.CredentialsAuthnData{
+			Identifiers: identifiers,
+			Credentials: authnCredentials,
+		}, mock.Anything, mock.Anything, mock.Anything).Return(
 		authnprovidermgr.AuthUser{}, &authnprovidermgr.ErrorAuthenticationFailed)
 
 	result, err := suite.service.AuthenticateWithCredentials(context.Background(), identifiers,
@@ -309,7 +325,11 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsJWTG
 		`"userType":"person","ouId":"org_unit_123","isValuesIncluded":true}],"userState":"exists"}`
 	_ = json.Unmarshal([]byte(mockJSON), &mockAuthUser)
 	suite.mockAuthnProvider.On("AuthenticateUser",
-		mock.Anything, identifiers, authnCredentials, mock.Anything, mock.Anything, mock.Anything).Return(
+		mock.Anything, authnprovidercm.AuthnDataTypeCredentials,
+		&authnprovidercm.CredentialsAuthnData{
+			Identifiers: identifiers,
+			Credentials: authnCredentials,
+		}, mock.Anything, mock.Anything, mock.Anything).Return(
 		mockAuthUser, (*serviceerror.ServiceError)(nil))
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(mockAuthUser, &authnprovidercm.AttributesResponse{}, nil)
@@ -357,7 +377,11 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsSubj
 		`"userType":"person","ouId":"org_unit_123","isValuesIncluded":true}],"userState":"exists"}`
 	_ = json.Unmarshal([]byte(mockJSON1), &mockAuthUser)
 	suite.mockAuthnProvider.On("AuthenticateUser",
-		mock.Anything, identifiers, authnCredentials, mock.Anything, mock.Anything, mock.Anything).Return(
+		mock.Anything, authnprovidercm.AuthnDataTypeCredentials,
+		&authnprovidercm.CredentialsAuthnData{
+			Identifiers: identifiers,
+			Credentials: authnCredentials,
+		}, mock.Anything, mock.Anything, mock.Anything).Return(
 		mockAuthUser, (*serviceerror.ServiceError)(nil))
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(mockAuthUser, &authnprovidercm.AttributesResponse{}, nil)
@@ -384,7 +408,11 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsInva
 		`"userType":"person","ouId":"org_unit_123","isValuesIncluded":true}],"userState":"exists"}`
 	_ = json.Unmarshal([]byte(mockJSON2), &mockAuthUser)
 	suite.mockAuthnProvider.On("AuthenticateUser",
-		mock.Anything, identifiers, authnCredentials, mock.Anything, mock.Anything, mock.Anything).Return(
+		mock.Anything, authnprovidercm.AuthnDataTypeCredentials,
+		&authnprovidercm.CredentialsAuthnData{
+			Identifiers: identifiers,
+			Credentials: authnCredentials,
+		}, mock.Anything, mock.Anything, mock.Anything).Return(
 		mockAuthUser, (*serviceerror.ServiceError)(nil))
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
 		mockAuthUser, &authnprovidercm.AttributesResponse{}, nil)
@@ -421,7 +449,11 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsExis
 		`"userType":"person","ouId":"org_unit_123","isValuesIncluded":true}],"userState":"exists"}`
 	_ = json.Unmarshal([]byte(mockJSON3), &mockAuthUser)
 	suite.mockAuthnProvider.On("AuthenticateUser",
-		mock.Anything, identifiers, authnCredentials, mock.Anything, mock.Anything, mock.Anything).Return(
+		mock.Anything, authnprovidercm.AuthnDataTypeCredentials,
+		&authnprovidercm.CredentialsAuthnData{
+			Identifiers: identifiers,
+			Credentials: authnCredentials,
+		}, mock.Anything, mock.Anything, mock.Anything).Return(
 		mockAuthUser, (*serviceerror.ServiceError)(nil))
 	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
 		mockAuthUser, &authnprovidercm.AttributesResponse{}, nil)
@@ -787,9 +819,8 @@ func (suite *AuthenticationServiceTestSuite) mockFederatedAuthnSuccess(idpType i
 		`"userState":"exists"}`
 	_ = json.Unmarshal([]byte(fedJSON), &mockAuthUser)
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
-		mock.MatchedBy(func(creds map[string]interface{}) bool {
-			_, ok := creds["federated"]
-			return ok
+		mock.MatchedBy(func(data *authnprovidercm.FederatedAuthnData) bool {
+			return data != nil
 		}), mock.Anything, mock.Anything, mock.Anything).
 		Return(mockAuthUser, (*serviceerror.ServiceError)(nil)).Once()
 	return sessionToken
@@ -853,9 +884,8 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationWithAsse
 					`"org_unit_123","isValuesIncluded":true}],"userState":"exists"}`
 				_ = json.Unmarshal([]byte(fedJSON), &mockAuthUser)
 				suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
-					mock.MatchedBy(func(creds map[string]interface{}) bool {
-						_, ok := creds["federated"]
-						return ok
+					mock.MatchedBy(func(data *authnprovidercm.FederatedAuthnData) bool {
+						return data != nil
 					}), mock.Anything, mock.Anything, mock.Anything).
 					Return(mockAuthUser, (*serviceerror.ServiceError)(nil)).Once()
 				suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).Return(
@@ -888,9 +918,8 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationWithAsse
 					`"org_unit_123","isValuesIncluded":true}],"userState":"exists"}`
 				_ = json.Unmarshal([]byte(fedJSON2), &mockAuthUser)
 				suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
-					mock.MatchedBy(func(creds map[string]interface{}) bool {
-						_, ok := creds["federated"]
-						return ok
+					mock.MatchedBy(func(data *authnprovidercm.FederatedAuthnData) bool {
+						return data != nil
 					}), mock.Anything, mock.Anything, mock.Anything).
 					Return(mockAuthUser, (*serviceerror.ServiceError)(nil)).Once()
 				suite.mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything).Return(
@@ -990,9 +1019,8 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationUserNotF
 		`"userHistory":[],"userState":"not_exists"}`
 	_ = json.Unmarshal([]byte(notExistsJSON), &mockAuthUser)
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
-		mock.MatchedBy(func(creds map[string]interface{}) bool {
-			_, ok := creds["federated"]
-			return ok
+		mock.MatchedBy(func(data *authnprovidercm.FederatedAuthnData) bool {
+			return data != nil
 		}), mock.Anything, mock.Anything, mock.Anything).
 		Return(mockAuthUser, (*serviceerror.ServiceError)(nil)).Once()
 
@@ -1009,9 +1037,8 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationProvider
 	sessionToken := suite.createSessionToken(idp.IDPTypeOAuth)
 	suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil)
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
-		mock.MatchedBy(func(creds map[string]interface{}) bool {
-			_, ok := creds["federated"]
-			return ok
+		mock.MatchedBy(func(data *authnprovidercm.FederatedAuthnData) bool {
+			return data != nil
 		}), mock.Anything, mock.Anything, mock.Anything).
 		Return(authnprovidermgr.AuthUser{}, &authnprovidermgr.ErrorAuthenticationFailed).Once()
 
@@ -1129,9 +1156,8 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationProvider
 	sessionToken := suite.createSessionToken(idp.IDPTypeOIDC)
 	suite.mockJWTService.On("VerifyJWT", sessionToken, "auth-svc", mock.Anything).Return(nil)
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
-		mock.MatchedBy(func(creds map[string]interface{}) bool {
-			_, ok := creds["federated"]
-			return ok
+		mock.MatchedBy(func(data *authnprovidercm.FederatedAuthnData) bool {
+			return data != nil
 		}), mock.Anything, mock.Anything, mock.Anything).
 		Return(authnprovidermgr.AuthUser{}, &serviceerror.InternalServerError).Once()
 
@@ -1205,9 +1231,8 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationAssertio
 		`"isValuesIncluded":true}],"userState":"exists"}`
 	_ = json.Unmarshal([]byte(assertErrFedJSON), &mockAuthUser)
 	suite.mockAuthnProvider.On("AuthenticateUser", mock.Anything, mock.Anything,
-		mock.MatchedBy(func(creds map[string]interface{}) bool {
-			_, ok := creds["federated"]
-			return ok
+		mock.MatchedBy(func(data *authnprovidercm.FederatedAuthnData) bool {
+			return data != nil
 		}), mock.Anything, mock.Anything, mock.Anything).
 		Return(mockAuthUser, (*serviceerror.ServiceError)(nil)).Once()
 
