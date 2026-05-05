@@ -39,7 +39,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/cors"
 	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
-	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/security"
@@ -84,7 +83,7 @@ func main() {
 	}
 
 	// Register the services.
-	jwtService := registerServices(mux)
+	securityMiddleware := registerServices(mux)
 
 	// Register static file handlers for frontend applications.
 	registerStaticFileHandlers(logger, mux, serverHome)
@@ -94,7 +93,7 @@ func main() {
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
 	// Create the HTTP server.
-	server := createHTTPServer(logger, cfg, mux, jwtService)
+	server := createHTTPServer(logger, cfg, mux, securityMiddleware)
 	var ln net.Listener
 	if cfg.Server.HTTPOnly {
 		logger.Info("TLS is not enabled, starting server without TLS")
@@ -189,13 +188,11 @@ func loadCertConfig(logger *log.Logger, cfg *config.Config, serverHome string) *
 
 // createHTTPServer creates and configures an HTTP server with common settings.
 func createHTTPServer(logger *log.Logger, cfg *config.Config, mux *http.ServeMux,
-	jwtService jwt.JWTServiceInterface) *http.Server {
-	securityMiddleware := createSecurityMiddleware(logger, mux, jwtService)
-
+	securityMiddleware func(http.Handler) http.Handler) *http.Server {
 	// Build the middleware chain with proper execution order.
 	// Request flow: CorrelationID (outermost) -> AccessLog -> Security -> Route Handler (innermost)
 	// Note: Middlewares are wrapped in reverse order - the last added will execute first.
-	handler := log.AccessLogHandler(logger, securityMiddleware)
+	handler := log.AccessLogHandler(logger, securityMiddleware(mux))
 	handler = middleware.CorrelationIDMiddleware(handler)
 
 	// Build the server address using hostname and port from the configurations.
@@ -228,15 +225,6 @@ func createTLSListener(logger *log.Logger, server *http.Server, tlsConfig *tls.C
 		logger.Fatal("Failed to start TLS listener", log.Error(err))
 	}
 	return ln
-}
-
-func createSecurityMiddleware(logger *log.Logger, mux *http.ServeMux,
-	jwtService jwt.JWTServiceInterface) http.Handler {
-	middlewareFunc, err := security.Initialize(jwtService)
-	if err != nil {
-		logger.Fatal("Failed to initialize security middleware", log.Error(err))
-	}
-	return middlewareFunc(mux)
 }
 
 // gracefulShutdown handles the graceful shutdown of all components.

@@ -7,8 +7,8 @@ package granthandlersmock
 import (
 	"context"
 
-	model0 "github.com/asgardeo/thunder/internal/inboundclient/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	model0 "github.com/asgardeo/thunder/pkg/inboundclient/model"
+	"github.com/asgardeo/thunder/pkg/oauth/oauth2/model"
 	mock "github.com/stretchr/testify/mock"
 )
 

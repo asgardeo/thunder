@@ -28,16 +28,16 @@ import (
 	"github.com/asgardeo/thunder/internal/agent/model"
 	"github.com/asgardeo/thunder/internal/cert"
 	"github.com/asgardeo/thunder/internal/entity"
-	"github.com/asgardeo/thunder/internal/inboundclient"
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	oauthutils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
 	sysutils "github.com/asgardeo/thunder/internal/system/utils"
+	"github.com/asgardeo/thunder/pkg/inboundclient"
+	inboundmodel "github.com/asgardeo/thunder/pkg/inboundclient/model"
+	oauth2const "github.com/asgardeo/thunder/pkg/oauth/oauth2/constants"
+	oauthutils "github.com/asgardeo/thunder/pkg/oauth/oauth2/utils"
 )
 
 // AgentServiceInterface defines the operations exposed by the agent service.

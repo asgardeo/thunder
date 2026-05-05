@@ -7,7 +7,7 @@ package authzmock
 import (
 	"context"
 
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz"
+	"github.com/asgardeo/thunder/pkg/oauth/oauth2/authz"
 	mock "github.com/stretchr/testify/mock"
 )
 

@@ -7,8 +7,8 @@ package providermock
 import (
 	"context"
 
-	"github.com/asgardeo/thunder/internal/authnprovider/common"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/pkg/authnprovider/common"
 	mock "github.com/stretchr/testify/mock"
 )
 

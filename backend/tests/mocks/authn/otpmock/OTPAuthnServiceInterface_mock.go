@@ -7,9 +7,9 @@ package otpmock
 import (
 	"context"
 
-	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/pkg/entityprovider"
 	mock "github.com/stretchr/testify/mock"
 )
 

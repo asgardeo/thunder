@@ -41,6 +41,8 @@ import (
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/pkg/application"
+	"github.com/asgardeo/thunder/pkg/application/model"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/entitytypemock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"

@@ -7,8 +7,8 @@ package consentmock
 import (
 	"context"
 
-	"github.com/asgardeo/thunder/internal/consent"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/pkg/consent"
 	mock "github.com/stretchr/testify/mock"
 )
 

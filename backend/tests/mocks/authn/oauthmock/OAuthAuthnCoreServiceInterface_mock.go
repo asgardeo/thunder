@@ -9,8 +9,8 @@ import (
 
 	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
-	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/pkg/entityprovider"
 	mock "github.com/stretchr/testify/mock"
 )
 

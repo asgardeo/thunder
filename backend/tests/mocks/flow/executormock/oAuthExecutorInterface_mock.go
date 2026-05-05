@@ -6,9 +6,9 @@ package executormock
 
 import (
 	common0 "github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/entityprovider"
-	"github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/pkg/entityprovider"
+	"github.com/asgardeo/thunder/pkg/flow/common"
+	"github.com/asgardeo/thunder/pkg/flow/core"
 	mock "github.com/stretchr/testify/mock"
 )
 

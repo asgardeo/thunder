@@ -7,7 +7,7 @@ package discoverymock
 import (
 	"context"
 
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
+	"github.com/asgardeo/thunder/pkg/oauth/oauth2/discovery"
 	mock "github.com/stretchr/testify/mock"
 )
 

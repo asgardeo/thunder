@@ -8,8 +8,8 @@ import (
 	"context"
 
 	"github.com/asgardeo/thunder/internal/cert"
-	"github.com/asgardeo/thunder/internal/inboundclient"
-	"github.com/asgardeo/thunder/internal/inboundclient/model"
+	"github.com/asgardeo/thunder/pkg/inboundclient"
+	"github.com/asgardeo/thunder/pkg/inboundclient/model"
 	mock "github.com/stretchr/testify/mock"
 )
 

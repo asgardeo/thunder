@@ -5,8 +5,8 @@
 package coremock
 
 import (
-	"github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/pkg/flow/common"
+	"github.com/asgardeo/thunder/pkg/flow/core"
 	mock "github.com/stretchr/testify/mock"
 )
 

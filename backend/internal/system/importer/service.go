@@ -25,14 +25,10 @@ import (
 	"sort"
 	"time"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	"github.com/asgardeo/thunder/internal/entitytype"
-	"github.com/asgardeo/thunder/internal/flow/common"
-	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	"github.com/asgardeo/thunder/internal/idp"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/role"
@@ -41,6 +37,10 @@ import (
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/user"
+	appmodel "github.com/asgardeo/thunder/pkg/application/model"
+	"github.com/asgardeo/thunder/pkg/flow/common"
+	flowmgt "github.com/asgardeo/thunder/pkg/flow/mgt"
+	oauth2const "github.com/asgardeo/thunder/pkg/oauth/oauth2/constants"
 )
 
 type applicationAdapter interface {

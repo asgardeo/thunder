@@ -5,8 +5,8 @@
 package granthandlersmock
 
 import (
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/granthandlers"
+	"github.com/asgardeo/thunder/pkg/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/pkg/oauth/oauth2/granthandlers"
 	mock "github.com/stretchr/testify/mock"
 )
 

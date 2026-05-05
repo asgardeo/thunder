@@ -21,10 +21,10 @@ package resolve
 import (
 	"net/http"
 
-	"github.com/asgardeo/thunder/internal/application"
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/pkg/application"
 )
 
 // Initialize initializes the design resolve service and registers its routes.

@@ -31,6 +31,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/cors"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/asgardeo/thunder/pkg/application"
 	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
 	"github.com/asgardeo/thunder/tests/mocks/entitytypemock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"

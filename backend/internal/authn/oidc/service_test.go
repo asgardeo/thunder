@@ -29,8 +29,8 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/authn/oauth"
-	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/pkg/entityprovider"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oauthmock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )

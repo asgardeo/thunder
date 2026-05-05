@@ -5,7 +5,7 @@
 package executormock
 
 import (
-	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/asgardeo/thunder/pkg/flow/common"
 	mock "github.com/stretchr/testify/mock"
 )
 

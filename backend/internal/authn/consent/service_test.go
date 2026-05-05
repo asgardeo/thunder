@@ -29,11 +29,11 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
-	"github.com/asgardeo/thunder/internal/consent"
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
+	authnprovidercm "github.com/asgardeo/thunder/pkg/authnprovider/common"
+	"github.com/asgardeo/thunder/pkg/consent"
 	"github.com/asgardeo/thunder/tests/mocks/consentmock"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )

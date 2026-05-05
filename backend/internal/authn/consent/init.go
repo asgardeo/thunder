@@ -19,8 +19,8 @@
 package consent
 
 import (
-	"github.com/asgardeo/thunder/internal/consent"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
+	"github.com/asgardeo/thunder/pkg/consent"
 )
 
 // Initialize initializes the consent enforcer service and other related components.

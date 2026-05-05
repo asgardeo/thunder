@@ -20,11 +20,9 @@
 package importer
 
 import (
-	"github.com/asgardeo/thunder/internal/application"
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	"github.com/asgardeo/thunder/internal/entitytype"
-	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/resource"
@@ -32,6 +30,8 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/user"
+	"github.com/asgardeo/thunder/pkg/application"
+	flowmgt "github.com/asgardeo/thunder/pkg/flow/mgt"
 )
 
 // notFoundErrorCodes is the set of service error codes that represent a resource-not-found condition

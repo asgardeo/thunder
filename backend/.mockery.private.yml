@@ -29,26 +29,26 @@ packages:
       pkgname: cache
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/oauth/oauth2/introspect:
+  github.com/asgardeo/thunder/pkg/oauth/oauth2/introspect:
     config:
       all: true
-      dir: internal/oauth/oauth2/introspect
+      dir: pkg/oauth/oauth2/introspect
       structname: '{{.InterfaceName}}Mock'
       pkgname: introspect
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/oauth/oauth2/par:
+  github.com/asgardeo/thunder/pkg/oauth/oauth2/par:
     config:
       all: true
-      dir: internal/oauth/oauth2/par
+      dir: pkg/oauth/oauth2/par
       structname: '{{.InterfaceName}}Mock'
       pkgname: par
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/oauth/oauth2/authz:
+  github.com/asgardeo/thunder/pkg/oauth/oauth2/authz:
     config:
       all: true
-      dir: internal/oauth/oauth2/authz
+      dir: pkg/oauth/oauth2/authz
       structname: '{{.InterfaceName}}Mock'
       pkgname: authz
       filename: "{{.InterfaceName}}_mock_test.go"
@@ -85,42 +85,42 @@ packages:
       pkgname: role
       filename: "{{.InterfaceName}}_mock_test.go"
   
-  github.com/asgardeo/thunder/internal/flow/core:
+  github.com/asgardeo/thunder/pkg/flow/core:
     config:
       all: true
-      dir: internal/flow/core
+      dir: pkg/flow/core
       structname: '{{.InterfaceName}}Mock'
       pkgname: core
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/flow/flowexec:
+  github.com/asgardeo/thunder/pkg/flow/flowexec:
     config:
       all: true
-      dir: internal/flow/flowexec
+      dir: pkg/flow/flowexec
       structname: '{{.InterfaceName}}Mock'
       pkgname: flowexec
       filename: "{{.InterfaceName}}_mock_test.go"
   
-  github.com/asgardeo/thunder/internal/flow/mgt:
+  github.com/asgardeo/thunder/pkg/flow/mgt:
     config:
       all: true
-      dir: internal/flow/mgt
+      dir: pkg/flow/mgt
       structname: '{{.InterfaceName}}Mock'
       pkgname: flowmgt
       filename: "{{.InterfaceName}}_mock_test.go"
   
-  github.com/asgardeo/thunder/internal/flow/executor:
+  github.com/asgardeo/thunder/pkg/flow/executor:
     config:
       all: true
-      dir: internal/flow/executor
+      dir: pkg/flow/executor
       structname: '{{.InterfaceName}}Mock'
       pkgname: executor
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/flow/flowmeta:
+  github.com/asgardeo/thunder/pkg/flow/flowmeta:
     config:
       all: true
-      dir: internal/flow/flowmeta
+      dir: pkg/flow/flowmeta
       structname: '{{.InterfaceName}}Mock'
       pkgname: flowmeta
       filename: "{{.InterfaceName}}_mock_test.go"
@@ -205,42 +205,42 @@ packages:
       pkgname: resolve
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/oauth/oauth2/userinfo:
+  github.com/asgardeo/thunder/pkg/oauth/oauth2/userinfo:
     config:
       all: true
-      dir: internal/oauth/oauth2/userinfo
+      dir: pkg/oauth/oauth2/userinfo
       structname: '{{.InterfaceName}}Mock'
       pkgname: userinfo
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/oauth/jwks:
+  github.com/asgardeo/thunder/pkg/oauth/jwks:
     config:
       all: true
-      dir: internal/oauth/jwks
+      dir: pkg/oauth/jwks
       structname: '{{.InterfaceName}}Mock'
       pkgname: jwks
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/oauth/oauth2/dcr:
+  github.com/asgardeo/thunder/pkg/oauth/oauth2/dcr:
     config:
       all: true
-      dir: internal/oauth/oauth2/dcr
+      dir: pkg/oauth/oauth2/dcr
       structname: '{{.InterfaceName}}Mock'
       pkgname: dcr
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/application:
+  github.com/asgardeo/thunder/pkg/application:
     config:
       all: true
-      dir: internal/application
+      dir: pkg/application
       structname: '{{.InterfaceName}}Mock'
       pkgname: application
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/inboundclient:
+  github.com/asgardeo/thunder/pkg/inboundclient:
     config:
       all: true
-      dir: internal/inboundclient
+      dir: pkg/inboundclient
       structname: '{{.InterfaceName}}Mock'
       pkgname: inboundclient
       filename: "{{.InterfaceName}}_mock_test.go"
@@ -269,10 +269,10 @@ packages:
       pkgname: mgt
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/consent:
+  github.com/asgardeo/thunder/pkg/consent:
     config:
       all: true
-      dir: internal/consent
+      dir: pkg/consent
       structname: '{{.InterfaceName}}Mock'
       pkgname: consent
       filename: "{{.InterfaceName}}_mock_test.go"

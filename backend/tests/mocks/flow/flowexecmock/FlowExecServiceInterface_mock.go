@@ -7,8 +7,8 @@ package flowexecmock
 import (
 	"context"
 
-	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/pkg/flow/flowexec"
 	mock "github.com/stretchr/testify/mock"
 )
 

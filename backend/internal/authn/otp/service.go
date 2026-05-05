@@ -26,12 +26,12 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/notification"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/pkg/entityprovider"
 )
 
 const (

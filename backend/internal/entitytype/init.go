@@ -21,13 +21,13 @@ package entitytype
 import (
 	"net/http"
 
-	"github.com/asgardeo/thunder/internal/consent"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/transaction"
+	"github.com/asgardeo/thunder/pkg/consent"
 )
 
 // Initialize initializes the entity type service and registers its routes.

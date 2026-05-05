@@ -7,7 +7,7 @@ package entityprovidermock
 import (
 	"encoding/json"
 
-	"github.com/asgardeo/thunder/internal/entityprovider"
+	"github.com/asgardeo/thunder/pkg/entityprovider"
 	mock "github.com/stretchr/testify/mock"
 )
 

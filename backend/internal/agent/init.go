@@ -22,9 +22,9 @@ import (
 	"net/http"
 
 	"github.com/asgardeo/thunder/internal/entity"
-	"github.com/asgardeo/thunder/internal/inboundclient"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/asgardeo/thunder/pkg/inboundclient"
 )
 
 // Initialize wires the agent service, registers HTTP routes and returns the service.

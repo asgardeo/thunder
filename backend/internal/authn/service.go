@@ -35,8 +35,6 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
-	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
-	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/idp"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -44,6 +42,8 @@ import (
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
+	authnprovidermgr "github.com/asgardeo/thunder/pkg/authnprovider/manager"
+	"github.com/asgardeo/thunder/pkg/entityprovider"
 )
 
 const svcLoggerComponentName = "AuthenticationService"

@@ -39,153 +39,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 )
-
-// CreateSecurityMiddlewareTestSuite defines the test suite for createSecurityMiddleware function
-type CreateSecurityMiddlewareTestSuite struct {
-	suite.Suite
-	logger         *log.Logger
-	mockJWTService *jwtmock.JWTServiceInterfaceMock
-	mux            *http.ServeMux
-}
-
-func TestCreateSecurityMiddlewareTestSuite(t *testing.T) {
-	suite.Run(t, new(CreateSecurityMiddlewareTestSuite))
-}
-
-func (suite *CreateSecurityMiddlewareTestSuite) SetupTest() {
-	suite.logger = log.GetLogger()
-	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
-	suite.mux = http.NewServeMux()
-
-	// Ensure environment variable is clean before each test
-	_ = os.Unsetenv("SKIP_SECURITY")
-}
-
-func (suite *CreateSecurityMiddlewareTestSuite) TearDownTest() {
-	// Clean up environment variable after each test
-	_ = os.Unsetenv("SKIP_SECURITY")
-}
-
-// TestCreateSecurityMiddleware_WithEnvironmentVariable tests various SKIP_SECURITY environment variable values
-func (suite *CreateSecurityMiddlewareTestSuite) TestCreateSecurityMiddleware_WithEnvironmentVariable() {
-	testCases := []struct {
-		name               string
-		envValue           string
-		setEnv             bool
-		expectSecuritySkip bool
-	}{
-		{
-			name:               "Security enabled - no env variable",
-			setEnv:             false,
-			expectSecuritySkip: false,
-		},
-		{
-			name:               "Security disabled - true",
-			envValue:           "true",
-			setEnv:             true,
-			expectSecuritySkip: true,
-		},
-		{
-			name:               "Security enabled - false",
-			envValue:           "false",
-			setEnv:             true,
-			expectSecuritySkip: false,
-		},
-		{
-			name:               "Security enabled - empty string",
-			envValue:           "",
-			setEnv:             true,
-			expectSecuritySkip: false,
-		},
-		{
-			name:               "Security enabled - invalid value",
-			envValue:           "yes",
-			setEnv:             true,
-			expectSecuritySkip: false,
-		},
-		{
-			name:               "Security enabled - uppercase TRUE",
-			envValue:           "TRUE",
-			setEnv:             true,
-			expectSecuritySkip: false,
-		},
-		{
-			name:               "Security enabled - mixed case True",
-			envValue:           "True",
-			setEnv:             true,
-			expectSecuritySkip: false,
-		},
-	}
-
-	for _, tc := range testCases {
-		suite.Run(tc.name, func() {
-			// Setup
-			if tc.setEnv {
-				_ = os.Setenv("SKIP_SECURITY", tc.envValue)
-			} else {
-				_ = os.Unsetenv("SKIP_SECURITY")
-			}
-
-			// Execute
-			handler := createSecurityMiddleware(suite.logger, suite.mux, suite.mockJWTService)
-
-			// Assert - handler is always returned now, regardless of skip security flag
-			assert.NotNil(suite.T(), handler, "Handler should always be non-nil")
-
-			// Cleanup for next iteration
-			_ = os.Unsetenv("SKIP_SECURITY")
-		})
-	}
-}
-
-// TestCreateSecurityMiddleware_MultipleInvocations tests that multiple calls work correctly
-func (suite *CreateSecurityMiddlewareTestSuite) TestCreateSecurityMiddleware_MultipleInvocations() {
-	// Execute multiple times
-	handler1 := createSecurityMiddleware(suite.logger, suite.mux, suite.mockJWTService)
-	handler2 := createSecurityMiddleware(suite.logger, suite.mux, suite.mockJWTService)
-	handler3 := createSecurityMiddleware(suite.logger, suite.mux, suite.mockJWTService)
-
-	// Assert - each call should return a new handler instance
-	assert.NotNil(suite.T(), handler1)
-	assert.NotNil(suite.T(), handler2)
-	assert.NotNil(suite.T(), handler3)
-}
-
-// TestCreateSecurityMiddleware_RuntimeToggle tests toggling security at runtime by changing environment variable
-func (suite *CreateSecurityMiddlewareTestSuite) TestCreateSecurityMiddleware_RuntimeToggle() {
-	// First call with security enabled
-	handler1 := createSecurityMiddleware(suite.logger, suite.mux, suite.mockJWTService)
-	assert.NotNil(suite.T(), handler1, "First handler should not be nil")
-
-	// Disable security
-	_ = os.Setenv("SKIP_SECURITY", "true")
-	handler2 := createSecurityMiddleware(suite.logger, suite.mux, suite.mockJWTService)
-	assert.NotNil(suite.T(), handler2, "Second handler should not be nil (skipSecurity is handled internally)")
-
-	// Re-enable security
-	_ = os.Unsetenv("SKIP_SECURITY")
-	handler3 := createSecurityMiddleware(suite.logger, suite.mux, suite.mockJWTService)
-	assert.NotNil(suite.T(), handler3, "Third handler should not be nil after re-enabling security")
-}
 
 func TestCreateHTTPServer_WithHTTPOnly(t *testing.T) {
 	logger := log.GetLogger()
-	if err := os.Setenv("SKIP_SECURITY", "true"); err != nil {
-		t.Fatalf("failed to set SKIP_SECURITY: %v", err)
-	}
-	defer func() {
-		if err := os.Unsetenv("SKIP_SECURITY"); err != nil {
-			t.Fatalf("failed to unset SKIP_SECURITY: %v", err)
-		}
-	}()
-
 	cfg := &config.Config{
 		Server: config.ServerConfig{
 			Hostname: "localhost",
@@ -195,7 +56,8 @@ func TestCreateHTTPServer_WithHTTPOnly(t *testing.T) {
 	}
 
 	mux := http.NewServeMux()
-	server := createHTTPServer(logger, cfg, mux, nil)
+	noopMiddleware := func(h http.Handler) http.Handler { return h }
+	server := createHTTPServer(logger, cfg, mux, noopMiddleware)
 
 	assert.Equal(t, "localhost:0", server.Addr)
 	assert.NotNil(t, server.Handler)

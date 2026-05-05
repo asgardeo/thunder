@@ -7,7 +7,7 @@ package coremock
 import (
 	"context"
 
-	"github.com/asgardeo/thunder/internal/flow/core"
+	"github.com/asgardeo/thunder/pkg/flow/core"
 	mock "github.com/stretchr/testify/mock"
 )
 

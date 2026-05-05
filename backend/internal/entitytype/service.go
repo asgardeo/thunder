@@ -25,7 +25,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/asgardeo/thunder/internal/consent"
 	"github.com/asgardeo/thunder/internal/entitytype/model"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
@@ -36,6 +35,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/system/utils"
+	"github.com/asgardeo/thunder/pkg/consent"
 )
 
 const entityTypeLoggerComponentName = "EntityTypeService"

@@ -32,10 +32,10 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/otp"
 	"github.com/asgardeo/thunder/internal/authn/passkey"
 	"github.com/asgardeo/thunder/internal/authn/reactsdk"
-	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
+	authnprovidermgr "github.com/asgardeo/thunder/pkg/authnprovider/manager"
 )
 
 // Initialize initializes the authentication service and registers its routes.
