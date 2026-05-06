@@ -281,6 +281,112 @@ func (_c *AuthnProviderManagerInterfaceMock_AuthenticateUser_Call) RunAndReturn(
 	return _c
 }
 
+// GetAuthenticatorFactors provides a mock function for the type AuthnProviderManagerInterfaceMock
+func (_mock *AuthnProviderManagerInterfaceMock) GetAuthenticatorFactors(authenticatorName string) []common.AuthenticationFactor {
+	ret := _mock.Called(authenticatorName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetAuthenticatorFactors")
+	}
+
+	var r0 []common.AuthenticationFactor
+	if returnFunc, ok := ret.Get(0).(func(string) []common.AuthenticationFactor); ok {
+		r0 = returnFunc(authenticatorName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]common.AuthenticationFactor)
+		}
+	}
+	return r0
+}
+
+// AuthnProviderManagerInterfaceMock_GetAuthenticatorFactors_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetAuthenticatorFactors'
+type AuthnProviderManagerInterfaceMock_GetAuthenticatorFactors_Call struct {
+	*mock.Call
+}
+
+// GetAuthenticatorFactors is a helper method to define mock.On call
+//   - authenticatorName string
+func (_e *AuthnProviderManagerInterfaceMock_Expecter) GetAuthenticatorFactors(authenticatorName interface{}) *AuthnProviderManagerInterfaceMock_GetAuthenticatorFactors_Call {
+	return &AuthnProviderManagerInterfaceMock_GetAuthenticatorFactors_Call{Call: _e.mock.On("GetAuthenticatorFactors", authenticatorName)}
+}
+
+func (_c *AuthnProviderManagerInterfaceMock_GetAuthenticatorFactors_Call) Run(run func(authenticatorName string)) *AuthnProviderManagerInterfaceMock_GetAuthenticatorFactors_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *AuthnProviderManagerInterfaceMock_GetAuthenticatorFactors_Call) Return(authenticationFactors []common.AuthenticationFactor) *AuthnProviderManagerInterfaceMock_GetAuthenticatorFactors_Call {
+	_c.Call.Return(authenticationFactors)
+	return _c
+}
+
+func (_c *AuthnProviderManagerInterfaceMock_GetAuthenticatorFactors_Call) RunAndReturn(run func(authenticatorName string) []common.AuthenticationFactor) *AuthnProviderManagerInterfaceMock_GetAuthenticatorFactors_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetAuthenticatorMetadata provides a mock function for the type AuthnProviderManagerInterfaceMock
+func (_mock *AuthnProviderManagerInterfaceMock) GetAuthenticatorMetadata(authenticatorName string) *common.AuthenticatorMeta {
+	ret := _mock.Called(authenticatorName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetAuthenticatorMetadata")
+	}
+
+	var r0 *common.AuthenticatorMeta
+	if returnFunc, ok := ret.Get(0).(func(string) *common.AuthenticatorMeta); ok {
+		r0 = returnFunc(authenticatorName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*common.AuthenticatorMeta)
+		}
+	}
+	return r0
+}
+
+// AuthnProviderManagerInterfaceMock_GetAuthenticatorMetadata_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetAuthenticatorMetadata'
+type AuthnProviderManagerInterfaceMock_GetAuthenticatorMetadata_Call struct {
+	*mock.Call
+}
+
+// GetAuthenticatorMetadata is a helper method to define mock.On call
+//   - authenticatorName string
+func (_e *AuthnProviderManagerInterfaceMock_Expecter) GetAuthenticatorMetadata(authenticatorName interface{}) *AuthnProviderManagerInterfaceMock_GetAuthenticatorMetadata_Call {
+	return &AuthnProviderManagerInterfaceMock_GetAuthenticatorMetadata_Call{Call: _e.mock.On("GetAuthenticatorMetadata", authenticatorName)}
+}
+
+func (_c *AuthnProviderManagerInterfaceMock_GetAuthenticatorMetadata_Call) Run(run func(authenticatorName string)) *AuthnProviderManagerInterfaceMock_GetAuthenticatorMetadata_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *AuthnProviderManagerInterfaceMock_GetAuthenticatorMetadata_Call) Return(authenticatorMeta *common.AuthenticatorMeta) *AuthnProviderManagerInterfaceMock_GetAuthenticatorMetadata_Call {
+	_c.Call.Return(authenticatorMeta)
+	return _c
+}
+
+func (_c *AuthnProviderManagerInterfaceMock_GetAuthenticatorMetadata_Call) RunAndReturn(run func(authenticatorName string) *common.AuthenticatorMeta) *AuthnProviderManagerInterfaceMock_GetAuthenticatorMetadata_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // GetUserAttributes provides a mock function for the type AuthnProviderManagerInterfaceMock
 func (_mock *AuthnProviderManagerInterfaceMock) GetUserAttributes(ctx context.Context, requestedAttributes *common.RequestedAttributes, metadata *common.GetAttributesMetadata, authUser manager.AuthUser) (manager.AuthUser, *common.AttributesResponse, *serviceerror.ServiceError) {
 	ret := _mock.Called(ctx, requestedAttributes, metadata, authUser)

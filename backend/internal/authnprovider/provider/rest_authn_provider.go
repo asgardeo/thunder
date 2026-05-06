@@ -168,6 +168,17 @@ func (p *restAuthnProvider) decodeError(body io.Reader, statusCode int) *service
 	}
 }
 
+// GetAuthenticatorMetadata retrieves the metadata of the specified authenticator from the external provider.
+func (p *restAuthnProvider) GetAuthenticatorMetadata(authenticatorName string) *authnprovidercm.AuthenticatorMeta {
+	reqBody := map[string]string{"authenticatorName": authenticatorName}
+	result, err := postAndDecode[authnprovidercm.AuthenticatorMeta](p, context.Background(),
+		p.baseURL+"/authenticator-metadata", reqBody)
+	if err != nil {
+		return nil
+	}
+	return result
+}
+
 func (p *restAuthnProvider) doRequest(ctx context.Context, url string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {

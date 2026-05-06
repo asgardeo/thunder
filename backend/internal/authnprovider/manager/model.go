@@ -33,6 +33,16 @@ const (
 	ProviderUserStateAmbiguous providerUserState = "ambiguous"
 )
 
+// AuthenticatorReference represents an engaged authenticator in the authentication flow.
+type AuthenticatorReference struct {
+	// Authenticator is the name of the authenticator
+	Authenticator string `json:"authenticator"`
+	// Step is the step number in the flow where this authenticator was engaged
+	Step int `json:"step"`
+	// Timestamp is the authenticator engaged time (Unix epoch time in seconds)
+	Timestamp int64 `json:"timestamp"`
+}
+
 // AuthUser accumulates per-provider authentication state produced during flow execution.
 // All fields are unexported; use the manager methods to interact with this type.
 type AuthUser struct {
@@ -147,6 +157,26 @@ func (a *AuthUser) GetRuntimeAttributes() map[string]interface{} {
 	return lastAuthResult.runtimeAttributes
 }
 
+// GetAuthenticatorReference returns a slice of unique authenticators engaged during the authentication flow.
+func (a *AuthUser) GetAuthenticatorReference() []AuthenticatorReference {
+	refs := make([]AuthenticatorReference, 0)
+	seenAuthenticators := make(map[string]bool)
+
+	for _, authResult := range a.authHistory {
+		if seenAuthenticators[authResult.authenticator] {
+			continue
+		}
+		seenAuthenticators[authResult.authenticator] = true
+		refs = append(refs, AuthenticatorReference{
+			Authenticator: authResult.authenticator,
+			Step:          len(refs) + 1,
+			Timestamp:     authResult.timestamp,
+		})
+	}
+
+	return refs
+}
+
 func (a *AuthUser) setUserState(newState providerUserState) error {
 	if a.userState == ProviderUserStateExists && newState != ProviderUserStateExists {
 		return fmt.Errorf("cannot change user state from 'exists' to '%s'", newState)
@@ -167,6 +197,7 @@ type authResultJSON struct {
 	AuthType          string                 `json:"authType"`
 	IsVerified        bool                   `json:"isVerified"`
 	RuntimeAttributes map[string]interface{} `json:"runtimeAttributes,omitempty"`
+	Timestamp         int64                  `json:"timestamp"`
 }
 
 // providerUserResultJSON is the internal proxy used for JSON serialization of ProviderUserResult.
@@ -177,6 +208,7 @@ type providerUserResultJSON struct {
 	Attributes       map[string]interface{} `json:"attributes,omitempty"`
 	IsValuesIncluded bool                   `json:"isValuesIncluded"`
 	Token            string                 `json:"token,omitempty"`
+	Timestamp        int64                  `json:"timestamp"`
 }
 
 // MarshalJSON implements json.Marshaler.
@@ -192,6 +224,7 @@ func (a *AuthUser) MarshalJSON() ([]byte, error) {
 			AuthType:          r.authenticator,
 			IsVerified:        r.isVerified,
 			RuntimeAttributes: r.runtimeAttributes,
+			Timestamp:         r.timestamp,
 		}
 	}
 
@@ -203,6 +236,7 @@ func (a *AuthUser) MarshalJSON() ([]byte, error) {
 			Attributes:       u.attributes,
 			IsValuesIncluded: u.isValuesIncluded,
 			Token:            u.token,
+			Timestamp:        u.timestamp,
 		}
 	}
 
@@ -225,6 +259,7 @@ func (a *AuthUser) UnmarshalJSON(b []byte) error {
 			authenticator:     r.AuthType,
 			isVerified:        r.IsVerified,
 			runtimeAttributes: r.RuntimeAttributes,
+			timestamp:         r.Timestamp,
 		}
 	}
 
@@ -236,6 +271,7 @@ func (a *AuthUser) UnmarshalJSON(b []byte) error {
 			attributes:       u.Attributes,
 			isValuesIncluded: u.IsValuesIncluded,
 			token:            u.Token,
+			timestamp:        u.Timestamp,
 		}
 	}
 

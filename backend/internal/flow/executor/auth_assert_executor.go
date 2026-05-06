@@ -20,16 +20,13 @@ package executor
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/authn/assert"
-	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/entityprovider"
@@ -143,7 +140,7 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 		validityPeriod = jwtConfig.ValidityPeriod
 	}
 
-	authenticatorRefs := a.extractAuthenticatorReferences(ctx.ExecutionHistory)
+	authenticatorRefs := ctx.AuthUser.GetAuthenticatorReference()
 
 	// Generate assertion from engaged authenticators
 	if len(authenticatorRefs) > 0 {
@@ -213,52 +210,6 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 	}
 
 	return token, nil
-}
-
-// extractAuthenticatorReferences extracts authenticator references from execution history.
-func (a *authAssertExecutor) extractAuthenticatorReferences(
-	history map[string]*common.NodeExecutionRecord) []authncm.AuthenticatorReference {
-	refs := make([]authncm.AuthenticatorReference, 0)
-	seenAuthenticators := make(map[string]bool)
-
-	for _, record := range history {
-		if record.ExecutorType != common.ExecutorTypeAuthentication {
-			continue
-		}
-		if record.Status != common.FlowStatusComplete {
-			continue
-		}
-
-		// Map executor name to the authn service name
-		authnServiceName := getAuthnServiceName(record.ExecutorName)
-		if authnServiceName == "" {
-			continue
-		}
-
-		// Skip if we've already seen this authenticator
-		if seenAuthenticators[authnServiceName] {
-			continue
-		}
-		seenAuthenticators[authnServiceName] = true
-
-		refs = append(refs, authncm.AuthenticatorReference{
-			Authenticator: authnServiceName,
-			Step:          record.Step,
-			Timestamp:     record.EndTime,
-		})
-	}
-
-	// Sort by step field
-	sort.Slice(refs, func(i, j int) bool {
-		return refs[i].Step < refs[j].Step
-	})
-
-	// Renumber Step field to be auth step
-	for i := range refs {
-		refs[i].Step = i + 1
-	}
-
-	return refs
 }
 
 // getRequiredUserAttributes determines the list of user attribute keys that should be included in the
@@ -348,16 +299,12 @@ func (a *authAssertExecutor) resolveUserAttributes(ctx *core.NodeContext, reques
 			continue
 		}
 
-		// Fetch from user/authentication provider
-		if ctx.AuthUser.GetUserID() != "" && fetchedAttributes == nil {
+		// Fetch from authentication provider
+		if fetchedAttributes == nil {
 			var err error
-			if ctx.AuthUser.IsAuthenticated() {
-				metadata := a.buildGetAttributesMetadata(ctx)
-				fetchedAttributes, err = a.getUserAttributesFromAuthnProvider(ctx.Context,
-					requestedAttributes, metadata, ctx.AuthUser)
-			} else {
-				fetchedAttributes, err = a.getUserAttributesFromUserProvider(ctx.AuthUser.GetUserID())
-			}
+			metadata := a.buildGetAttributesMetadata(ctx)
+			fetchedAttributes, err = a.getUserAttributesFromAuthnProvider(ctx.Context,
+				requestedAttributes, metadata, ctx.AuthUser)
 			if err != nil {
 				return nil, err
 			}
@@ -453,35 +400,6 @@ func (a *authAssertExecutor) getUserAttributesFromAuthnProvider(ctx context.Cont
 			}
 		}
 	}
-	return attrs, nil
-}
-
-// getUserAttributesFromUserProvider retrieves user attributes from the user provider.
-func (a *authAssertExecutor) getUserAttributesFromUserProvider(userID string) (
-	map[string]interface{}, error) {
-	logger := a.logger.With(log.MaskedString(log.LoggerKeyUserID, userID))
-
-	var jsonAttrs json.RawMessage
-	res, err := a.entityProvider.GetEntity(userID)
-	if err != nil {
-		logger.Error("Failed to fetch user attributes",
-			log.MaskedString(log.LoggerKeyUserID, userID), log.Any("error", err))
-		return nil, errors.New("something went wrong while fetching user attributes: " + err.Error())
-	}
-	jsonAttrs = res.Attributes
-
-	if len(jsonAttrs) == 0 {
-		logger.Error("No user attributes returned")
-		return nil, errors.New("no user attributes returned")
-	}
-
-	var attrs map[string]interface{}
-	if err := json.Unmarshal(jsonAttrs, &attrs); err != nil {
-		logger.Error("Failed to unmarshal user attributes", log.MaskedString(log.LoggerKeyUserID, userID),
-			log.Error(err))
-		return nil, errors.New("something went wrong while unmarshalling user attributes: " + err.Error())
-	}
-
 	return attrs, nil
 }
 

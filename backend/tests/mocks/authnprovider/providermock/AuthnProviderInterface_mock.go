@@ -202,3 +202,56 @@ func (_c *AuthnProviderInterfaceMock_GetAttributes_Call) RunAndReturn(run func(c
 	_c.Call.Return(run)
 	return _c
 }
+
+// GetAuthenticatorMetadata provides a mock function for the type AuthnProviderInterfaceMock
+func (_mock *AuthnProviderInterfaceMock) GetAuthenticatorMetadata(authenticatorName string) *common.AuthenticatorMeta {
+	ret := _mock.Called(authenticatorName)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetAuthenticatorMetadata")
+	}
+
+	var r0 *common.AuthenticatorMeta
+	if returnFunc, ok := ret.Get(0).(func(string) *common.AuthenticatorMeta); ok {
+		r0 = returnFunc(authenticatorName)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*common.AuthenticatorMeta)
+		}
+	}
+	return r0
+}
+
+// AuthnProviderInterfaceMock_GetAuthenticatorMetadata_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetAuthenticatorMetadata'
+type AuthnProviderInterfaceMock_GetAuthenticatorMetadata_Call struct {
+	*mock.Call
+}
+
+// GetAuthenticatorMetadata is a helper method to define mock.On call
+//   - authenticatorName string
+func (_e *AuthnProviderInterfaceMock_Expecter) GetAuthenticatorMetadata(authenticatorName interface{}) *AuthnProviderInterfaceMock_GetAuthenticatorMetadata_Call {
+	return &AuthnProviderInterfaceMock_GetAuthenticatorMetadata_Call{Call: _e.mock.On("GetAuthenticatorMetadata", authenticatorName)}
+}
+
+func (_c *AuthnProviderInterfaceMock_GetAuthenticatorMetadata_Call) Run(run func(authenticatorName string)) *AuthnProviderInterfaceMock_GetAuthenticatorMetadata_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *AuthnProviderInterfaceMock_GetAuthenticatorMetadata_Call) Return(authenticatorMeta *common.AuthenticatorMeta) *AuthnProviderInterfaceMock_GetAuthenticatorMetadata_Call {
+	_c.Call.Return(authenticatorMeta)
+	return _c
+}
+
+func (_c *AuthnProviderInterfaceMock_GetAuthenticatorMetadata_Call) RunAndReturn(run func(authenticatorName string) *common.AuthenticatorMeta) *AuthnProviderInterfaceMock_GetAuthenticatorMetadata_Call {
+	_c.Call.Return(run)
+	return _c
+}

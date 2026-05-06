@@ -104,6 +104,7 @@ func (p *defaultAuthnProvider) Authenticate(
 		IsExistingUser:            true,
 		ExternalSub:               authOutcome.externalSub,
 		ExternalClaims:            authOutcome.externalClaims,
+		AuthType:                  authOutcome.credentialType,
 	}, nil
 }
 
@@ -358,6 +359,54 @@ func (p *defaultAuthnProvider) GetAttributes(
 		UserType:           entityResult.Type,
 		AttributesResponse: attributesResponse,
 	}, nil
+}
+
+// GetAuthenticatorMetadata returns the metadata of the specified authenticator.
+func (p *defaultAuthnProvider) GetAuthenticatorMetadata(authenticatorName string) *authnprovidercm.AuthenticatorMeta {
+	if authenticatorName == authnprovidercm.AuthenticatorCredentials {
+		return &authnprovidercm.AuthenticatorMeta{
+			Name:    authnprovidercm.AuthenticatorCredentials,
+			Factors: []authnprovidercm.AuthenticationFactor{authnprovidercm.FactorKnowledge},
+		}
+	}
+	if authenticatorName == authnprovidercm.AuthenticatorPasskey {
+		return &authnprovidercm.AuthenticatorMeta{
+			Name: authnprovidercm.AuthenticatorPasskey,
+			Factors: []authnprovidercm.AuthenticationFactor{authnprovidercm.FactorPossession,
+				authnprovidercm.FactorInherence},
+		}
+	}
+	if authenticatorName == authnprovidercm.AuthenticatorSMSOTP {
+		return &authnprovidercm.AuthenticatorMeta{
+			Name:    authnprovidercm.AuthenticatorSMSOTP,
+			Factors: []authnprovidercm.AuthenticationFactor{authnprovidercm.FactorPossession},
+		}
+	}
+	if authenticatorName == authnprovidercm.AuthenticatorOAuth {
+		return &authnprovidercm.AuthenticatorMeta{
+			Name:    authnprovidercm.AuthenticatorOAuth,
+			Factors: []authnprovidercm.AuthenticationFactor{authnprovidercm.FactorKnowledge},
+		}
+	}
+	if authenticatorName == authnprovidercm.AuthenticatorOIDC {
+		return &authnprovidercm.AuthenticatorMeta{
+			Name:    authnprovidercm.AuthenticatorOIDC,
+			Factors: []authnprovidercm.AuthenticationFactor{authnprovidercm.FactorKnowledge},
+		}
+	}
+	if authenticatorName == authnprovidercm.AuthenticatorGithub {
+		return &authnprovidercm.AuthenticatorMeta{
+			Name:    authnprovidercm.AuthenticatorGithub,
+			Factors: []authnprovidercm.AuthenticationFactor{authnprovidercm.FactorKnowledge},
+		}
+	}
+	if authenticatorName == authnprovidercm.AuthenticatorGoogle {
+		return &authnprovidercm.AuthenticatorMeta{
+			Name:    authnprovidercm.AuthenticatorGoogle,
+			Factors: []authnprovidercm.AuthenticationFactor{authnprovidercm.FactorKnowledge},
+		}
+	}
+	return nil
 }
 
 func buildAttributesResponse(attrs map[string]interface{}) *authnprovidercm.AttributesResponse {

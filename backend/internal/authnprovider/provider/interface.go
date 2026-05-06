@@ -33,4 +33,5 @@ type AuthnProviderInterface interface {
 	GetAttributes(ctx context.Context, token string, requestedAttributes *authnprovidercm.RequestedAttributes,
 		metadata *authnprovidercm.GetAttributesMetadata) (
 		*authnprovidercm.GetAttributesResult, *serviceerror.ServiceError)
+	GetAuthenticatorMetadata(authenticatorName string) *authnprovidercm.AuthenticatorMeta
 }

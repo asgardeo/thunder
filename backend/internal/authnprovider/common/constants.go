@@ -36,3 +36,12 @@ const (
 	AuthnDataTypeFederated   = "Federated"
 	AuthnDataTypePasskey     = "Passkey"
 )
+
+const (
+	// FactorKnowledge represents "something you know" (e.g., password, PIN).
+	FactorKnowledge AuthenticationFactor = "KNOWLEDGE"
+	// FactorPossession represents "something you have" (e.g., OTP device, SMS).
+	FactorPossession AuthenticationFactor = "POSSESSION"
+	// FactorInherence represents "something you are" (e.g., biometrics).
+	FactorInherence AuthenticationFactor = "INHERENCE"
+)

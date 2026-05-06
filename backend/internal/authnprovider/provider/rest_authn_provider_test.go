@@ -166,6 +166,48 @@ func (suite *RestAuthnProviderTestSuite) TestGetAttributes_InvalidToken() {
 	suite.Equal(authnprovidercm.ErrorCodeInvalidToken, err.Code)
 }
 
+func (suite *RestAuthnProviderTestSuite) TestGetAuthenticatorMetadata_Success() {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		suite.Equal("/authenticator-metadata", r.URL.Path)
+		suite.Equal(http.MethodPost, r.Method)
+
+		var req map[string]string
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		suite.Equal(authnprovidercm.AuthenticatorCredentials, req["authenticatorName"])
+
+		resp := authnprovidercm.AuthenticatorMeta{
+			Name:    authnprovidercm.AuthenticatorCredentials,
+			Factors: []authnprovidercm.AuthenticationFactor{authnprovidercm.FactorKnowledge},
+		}
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer ts.Close()
+
+	provider := newRestAuthnProvider(ts.URL, "apikey123", suite.setupMockClient())
+	result := provider.GetAuthenticatorMetadata(authnprovidercm.AuthenticatorCredentials)
+
+	suite.NotNil(result)
+	suite.Equal(authnprovidercm.AuthenticatorCredentials, result.Name)
+	suite.Equal([]authnprovidercm.AuthenticationFactor{authnprovidercm.FactorKnowledge}, result.Factors)
+}
+
+func (suite *RestAuthnProviderTestSuite) TestGetAuthenticatorMetadata_NotFound() {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(apiErrorResponse{
+			Code:    authnprovidercm.ErrorCodeInvalidRequest,
+			Message: "Authenticator not found",
+		})
+	}))
+	defer ts.Close()
+
+	provider := newRestAuthnProvider(ts.URL, "", suite.setupMockClient())
+	result := provider.GetAuthenticatorMetadata("UnknownAuthenticator")
+
+	suite.Nil(result)
+}
+
 func (suite *RestAuthnProviderTestSuite) TestSystemError_Decoding() {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Return malformed JSON

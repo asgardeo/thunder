@@ -290,6 +290,21 @@ func (m *authnProviderManager) GetUserAttributes(ctx context.Context,
 	return authUser, result, nil
 }
 
+// GetAuthenticatorMetadata returns the metadata for the given authenticator by delegating to the provider.
+func (m *authnProviderManager) GetAuthenticatorMetadata(authenticatorName string) *authnprovidercm.AuthenticatorMeta {
+	return m.provider.GetAuthenticatorMetadata(authenticatorName)
+}
+
+// GetAuthenticatorFactors returns the authentication factors for the given authenticator.
+func (m *authnProviderManager) GetAuthenticatorFactors(
+	authenticatorName string) []authnprovidercm.AuthenticationFactor {
+	meta := m.GetAuthenticatorMetadata(authenticatorName)
+	if meta == nil {
+		return nil
+	}
+	return meta.Factors
+}
+
 // isAttributeRequested returns true if attrName should be included in the response.
 // If no attribute filter is specified, all attributes are included.
 func isAttributeRequested(attrName string, requestedAttributes *authnprovidercm.RequestedAttributes) bool {

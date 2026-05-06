@@ -43,6 +43,42 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthnProviderError'
 
+  /authenticator-metadata:
+    post:
+      summary: Get authenticator metadata
+      operationId: getAuthenticatorMetadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticatorMetadataRequest'
+      responses:
+        '200':
+          description: Authenticator metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatorMeta'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthnProviderError'
+        '404':
+          description: Authenticator not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthnProviderError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthnProviderError'
+
   /attributes:
     post:
       summary: Get user attributes
@@ -379,6 +415,45 @@ components:
           description: The attribute value
         assuranceMetadataResponse:
           $ref: '#/components/schemas/AssuranceMetadataResponse'
+
+    AuthenticatorMetadataRequest:
+      type: object
+      properties:
+        authenticatorName:
+          type: string
+          description: The name of the authenticator to retrieve metadata for
+      required:
+        - authenticatorName
+
+    AuthenticationFactor:
+      type: string
+      description: |
+        Authentication factor type:
+        - KNOWLEDGE: Something you know (e.g., password, PIN)
+        - POSSESSION: Something you have (e.g., OTP device, SMS)
+        - INHERENCE: Something you are (e.g., biometrics)
+      enum:
+        - KNOWLEDGE
+        - POSSESSION
+        - INHERENCE
+
+    AuthenticatorMeta:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Unique identifier for the authenticator
+        factors:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuthenticationFactor'
+          description: Authentication factors this authenticator validates
+        associatedIDP:
+          type: string
+          description: Optional identity provider type this authenticator is associated with
+      required:
+        - name
+        - factors
 
     ErrorCode:
       type: string

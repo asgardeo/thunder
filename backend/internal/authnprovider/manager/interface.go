@@ -43,4 +43,6 @@ type AuthnProviderManagerInterface interface {
 		requestedAttributes *authnprovidercm.RequestedAttributes,
 		metadata *authnprovidercm.GetAttributesMetadata,
 		authUser AuthUser) (AuthUser, *authnprovidercm.AttributesResponse, *serviceerror.ServiceError)
+	GetAuthenticatorMetadata(authenticatorName string) *authnprovidercm.AuthenticatorMeta
+	GetAuthenticatorFactors(authenticatorName string) []authnprovidercm.AuthenticationFactor
 }

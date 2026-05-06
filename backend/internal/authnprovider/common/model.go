@@ -172,3 +172,14 @@ type FederatedAuthnData struct {
 type OAuthCredential struct {
 	Code string
 }
+
+// AuthenticationFactor represents the type of authentication factor.
+type AuthenticationFactor string
+
+// AuthenticatorMeta represents an authenticator's metadata including authentication factors.
+type AuthenticatorMeta struct {
+	// Name is the unique identifier for the authenticator (used in individual authentication APIs)
+	Name string
+	// Factors represents the authentication factors this authenticator validates
+	Factors []AuthenticationFactor
+}

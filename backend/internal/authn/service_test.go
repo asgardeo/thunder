@@ -33,7 +33,6 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/passkey"
 	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
-	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/idp"
 	notifcommon "github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -100,24 +99,6 @@ func (suite *AuthenticationServiceTestSuite) SetupSuite() {
 	if err != nil {
 		suite.T().Fatalf("Failed to initialize server runtime: %v", err)
 	}
-
-	// Register authenticators for IDP types
-	common.RegisterAuthenticator(common.AuthenticatorMeta{
-		Name:          "OAuthAuthenticator",
-		AssociatedIDP: idp.IDPTypeOAuth,
-	})
-	common.RegisterAuthenticator(common.AuthenticatorMeta{
-		Name:          "OIDCAuthenticator",
-		AssociatedIDP: idp.IDPTypeOIDC,
-	})
-	common.RegisterAuthenticator(common.AuthenticatorMeta{
-		Name:          "GoogleAuthenticator",
-		AssociatedIDP: idp.IDPTypeGoogle,
-	})
-	common.RegisterAuthenticator(common.AuthenticatorMeta{
-		Name:          "GitHubAuthenticator",
-		AssociatedIDP: idp.IDPTypeGitHub,
-	})
 }
 
 func (suite *AuthenticationServiceTestSuite) SetupTest() {
@@ -180,9 +161,6 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 						Credentials: authnCredentials,
 					}, mock.Anything, mock.Anything, mock.Anything).
 					Return(mockAuthUser, (*serviceerror.ServiceError)(nil)).Once()
-				suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything,
-					mock.Anything, mock.Anything).
-					Return(mockAuthUser, &authnprovidercm.AttributesResponse{}, nil).Once()
 			},
 			validateAssertion: func(result *common.AuthenticationResponse) {
 				suite.Empty(result.Assertion)
@@ -206,9 +184,6 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 						Credentials: authnCredentials,
 					}, mock.Anything, mock.Anything, mock.Anything).
 					Return(mockAuthUser, (*serviceerror.ServiceError)(nil)).Once()
-				suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything,
-					mock.Anything, mock.Anything).
-					Return(mockAuthUser, &authnprovidercm.AttributesResponse{}, nil).Once()
 				suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).Return(
 					&assert.AssertionResult{
 						Context: &assert.AssuranceContext{
@@ -246,9 +221,6 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 						Credentials: authnCredentials,
 					}, mock.Anything, mock.Anything, mock.Anything).
 					Return(mockAuthUser, (*serviceerror.ServiceError)(nil)).Once()
-				suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything,
-					mock.Anything, mock.Anything).
-					Return(mockAuthUser, &authnprovidercm.AttributesResponse{}, nil).Once()
 				suite.mockJWTService.On("VerifyJWT", mock.Anything, "", mock.Anything).Return(nil).Once()
 				suite.mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything).Return(
 					&assert.AssertionResult{
@@ -331,8 +303,6 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsJWTG
 			Credentials: authnCredentials,
 		}, mock.Anything, mock.Anything, mock.Anything).Return(
 		mockAuthUser, (*serviceerror.ServiceError)(nil))
-	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(mockAuthUser, &authnprovidercm.AttributesResponse{}, nil)
 	suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).Return(
 		&assert.AssertionResult{
 			Context: &assert.AssuranceContext{
@@ -383,8 +353,6 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsSubj
 			Credentials: authnCredentials,
 		}, mock.Anything, mock.Anything, mock.Anything).Return(
 		mockAuthUser, (*serviceerror.ServiceError)(nil))
-	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(mockAuthUser, &authnprovidercm.AttributesResponse{}, nil)
 	suite.mockJWTService.On("VerifyJWT", existingAssertion, "", mock.Anything).Return(nil)
 
 	result, err := suite.service.AuthenticateWithCredentials(context.Background(), identifiers,
@@ -414,8 +382,6 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsInva
 			Credentials: authnCredentials,
 		}, mock.Anything, mock.Anything, mock.Anything).Return(
 		mockAuthUser, (*serviceerror.ServiceError)(nil))
-	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
-		mockAuthUser, &authnprovidercm.AttributesResponse{}, nil)
 	suite.mockJWTService.On("VerifyJWT", invalidAssertion, "", mock.Anything).Return(&serviceerror.ServiceError{
 		Type:  serviceerror.ServerErrorType,
 		Code:  "INVALID_JWT",
@@ -455,8 +421,6 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsExis
 			Credentials: authnCredentials,
 		}, mock.Anything, mock.Anything, mock.Anything).Return(
 		mockAuthUser, (*serviceerror.ServiceError)(nil))
-	suite.mockAuthnProvider.On("GetUserAttributes", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
-		mockAuthUser, &authnprovidercm.AttributesResponse{}, nil)
 	suite.mockJWTService.On("VerifyJWT", existingAssertion, "", mock.Anything).Return(nil)
 
 	result, err := suite.service.AuthenticateWithCredentials(context.Background(), identifiers,
@@ -1183,15 +1147,14 @@ func (suite *AuthenticationServiceTestSuite) createSessionToken(idpType idp.IDPT
 }
 
 func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionExtractClaimsError() {
-	testUser := &entityprovider.Entity{
+	var mockAuthUser authnprovidermgr.AuthUser
+	mockJSON := `{"authHistory":[{"authType":"LOCAL","isVerified":true}],"userHistory":[{"userId":"user123",` +
+		`"userType":"person","ouId":"org_unit_123","isValuesIncluded":true}],"userState":"exists"}`
+	_ = json.Unmarshal([]byte(mockJSON), &mockAuthUser)
+	authResponse := &common.AuthenticationResponse{
 		ID:   testUserID,
 		Type: "person",
 		OUID: testOrgUnit,
-	}
-	authResponse := &common.AuthenticationResponse{
-		ID:   testUserID,
-		Type: testUser.Type,
-		OUID: testUser.OUID,
 	}
 	logger := log.GetLogger()
 
@@ -1202,7 +1165,7 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionE
 			"ial": "ial1",
 			"authenticators": []map[string]interface{}{
 				{
-					"authenticator": common.AuthenticatorCredentials,
+					"authenticator": "CredentialsAuthenticator",
 					"step":          1,
 					"timestamp":     int64(1735689600),
 				},
@@ -1216,7 +1179,7 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionE
 	suite.mockJWTService.On("VerifyJWT", invalidAssertion, "", mock.Anything).Return(nil).Once()
 
 	svcErr := suite.service.validateAndAppendAuthAssertion(
-		authResponse, testUser, common.AuthenticatorSMSOTP, invalidAssertion, logger)
+		authResponse, &mockAuthUser, invalidAssertion, logger)
 
 	suite.NotNil(svcErr)
 	suite.Equal(common.ErrorInvalidAssertion.Code, svcErr.Code)
@@ -1255,15 +1218,14 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationAssertio
 }
 
 func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionStepOne() {
-	testUser := &entityprovider.Entity{
+	var mockAuthUser authnprovidermgr.AuthUser
+	mockJSON := `{"authHistory":[{"authType":"LOCAL","isVerified":true}],"userHistory":[{"userId":"user123",` +
+		`"userType":"person","ouId":"org_unit_123","isValuesIncluded":true}],"userState":"exists"}`
+	_ = json.Unmarshal([]byte(mockJSON), &mockAuthUser)
+	authResponse := &common.AuthenticationResponse{
 		ID:   testUserID,
 		Type: "person",
 		OUID: testOrgUnit,
-	}
-	authResponse := &common.AuthenticationResponse{
-		ID:   testUserID,
-		Type: testUser.Type,
-		OUID: testUser.OUID,
 	}
 	logger := log.GetLogger()
 
@@ -1280,21 +1242,20 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionS
 
 	// Test with empty existingAssertion
 	svcErr := suite.service.validateAndAppendAuthAssertion(
-		authResponse, testUser, common.AuthenticatorCredentials, "", logger)
+		authResponse, &mockAuthUser, "", logger)
 	suite.Nil(svcErr)
 	suite.Equal(testJWTToken, authResponse.Assertion)
 }
 
 func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionSubjectMismatch() {
-	testUser := &entityprovider.Entity{
+	var mockAuthUser authnprovidermgr.AuthUser
+	mockJSON := `{"authHistory":[{"authType":"LOCAL","isVerified":true}],"userHistory":[{"userId":"user123",` +
+		`"userType":"person","ouId":"org_unit_123","isValuesIncluded":true}],"userState":"exists"}`
+	_ = json.Unmarshal([]byte(mockJSON), &mockAuthUser)
+	authResponse := &common.AuthenticationResponse{
 		ID:   testUserID,
 		Type: "person",
 		OUID: testOrgUnit,
-	}
-	authResponse := &common.AuthenticationResponse{
-		ID:   testUserID,
-		Type: testUser.Type,
-		OUID: testUser.OUID,
 	}
 
 	// Create assertion with different subject
@@ -1303,7 +1264,7 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionS
 	suite.mockJWTService.On("VerifyJWT", existingAssertion, "", mock.Anything).Return(nil)
 
 	svcErr := suite.service.validateAndAppendAuthAssertion(
-		authResponse, testUser, common.AuthenticatorSMSOTP, existingAssertion, log.GetLogger())
+		authResponse, &mockAuthUser, existingAssertion, log.GetLogger())
 
 	suite.NotNil(svcErr)
 	suite.Equal(common.ErrorAssertionSubjectMismatch.Code, svcErr.Code)
@@ -1338,7 +1299,7 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionError
 					"ial": "ial1",
 					"authenticators": []map[string]interface{}{
 						{
-							"authenticator": common.AuthenticatorCredentials,
+							"authenticator": "CredentialsAuthenticator",
 							"step":          1,
 							"timestamp":     int64(1735689600),
 						},
@@ -1358,7 +1319,7 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionError
 					"ial": "ial1",
 					"authenticators": []map[string]interface{}{
 						{
-							"authenticator": common.AuthenticatorCredentials,
+							"authenticator": "CredentialsAuthenticator",
 							"step":          1,
 							"timestamp":     int64(1735689600),
 						},
@@ -1378,7 +1339,7 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionError
 					"ial": "ial1",
 					"authenticators": []map[string]interface{}{
 						{
-							"authenticator": common.AuthenticatorCredentials,
+							"authenticator": "CredentialsAuthenticator",
 							"step":          1,
 							"timestamp":     int64(1735689600),
 						},
@@ -1534,11 +1495,10 @@ func (suite *AuthenticationServiceTestSuite) TestExtractClaimsFromAssertionMalfo
 }
 
 func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionGenerationError() {
-	testUser := &entityprovider.Entity{
-		ID:   testUserID,
-		Type: "person",
-		OUID: testOrgUnit,
-	}
+	var mockAuthUser authnprovidermgr.AuthUser
+	mockJSON := `{"authHistory":[{"authType":"LOCAL","isVerified":true}],"userHistory":[{"userId":"user123",` +
+		`"userType":"person","ouId":"org_unit_123","isValuesIncluded":true}],"userState":"exists"}`
+	_ = json.Unmarshal([]byte(mockJSON), &mockAuthUser)
 	authResponse := &common.AuthenticationResponse{
 		ID:   testUserID,
 		Type: "person",
@@ -1565,22 +1525,21 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionG
 		jwtService:             suite.mockJWTService,
 	}
 
-	err := service.validateAndAppendAuthAssertion(authResponse, testUser, common.AuthenticatorCredentials, "", logger)
+	err := service.validateAndAppendAuthAssertion(authResponse, &mockAuthUser, "", logger)
 
 	suite.NotNil(err)
 	suite.Equal("ASSERTION_ERROR", err.Code)
 }
 
 func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionUpdateError() {
-	testUser := &entityprovider.Entity{
+	var mockAuthUser authnprovidermgr.AuthUser
+	mockJSON := `{"authHistory":[{"authType":"LOCAL","isVerified":true}],"userHistory":[{"userId":"user123",` +
+		`"userType":"person","ouId":"org_unit_123","isValuesIncluded":true}],"userState":"exists"}`
+	_ = json.Unmarshal([]byte(mockJSON), &mockAuthUser)
+	authResponse := &common.AuthenticationResponse{
 		ID:   testUserID,
 		Type: "person",
 		OUID: testOrgUnit,
-	}
-	authResponse := &common.AuthenticationResponse{
-		ID:   testUserID,
-		Type: testUser.Type,
-		OUID: testUser.OUID,
 	}
 	logger := log.GetLogger()
 	existingAssertion := suite.createTestAssertion(testUserID)
@@ -1606,8 +1565,7 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionU
 		jwtService:             suite.mockJWTService,
 	}
 
-	err := service.validateAndAppendAuthAssertion(authResponse, testUser, common.AuthenticatorSMSOTP,
-		existingAssertion, logger)
+	err := service.validateAndAppendAuthAssertion(authResponse, &mockAuthUser, existingAssertion, logger)
 
 	suite.NotNil(err)
 	suite.Equal("UPDATE_ERROR", err.Code)
@@ -1823,14 +1781,12 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Suc
 	// Mock assertion generation
 	mockAssertionResult := &assert.AssertionResult{
 		Context: &assert.AssuranceContext{
-			Authenticators: []common.AuthenticatorReference{
-				{Authenticator: common.AuthenticatorPasskey, Step: 1},
+			Authenticators: []authnprovidermgr.AuthenticatorReference{
+				{Authenticator: "Passkey", Step: 1},
 			},
 		},
 	}
-	suite.mockAssertGenerator.On("GenerateAssertion", mock.MatchedBy(func(refs []common.AuthenticatorReference) bool {
-		return len(refs) == 1 && refs[0].Authenticator == common.AuthenticatorPasskey
-	})).Return(mockAssertionResult, nil).Once()
+	suite.mockAssertGenerator.On("GenerateAssertion", mock.Anything).Return(mockAssertionResult, nil).Once()
 
 	suite.mockJWTService.On("GenerateJWT", testUserID, mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
@@ -1904,9 +1860,9 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Wit
 	// Mock assertion update
 	mockUpdatedResult := &assert.AssertionResult{
 		Context: &assert.AssuranceContext{
-			Authenticators: []common.AuthenticatorReference{
-				{Authenticator: common.AuthenticatorCredentials, Step: 1},
-				{Authenticator: common.AuthenticatorPasskey, Step: 2},
+			Authenticators: []authnprovidermgr.AuthenticatorReference{
+				{Authenticator: "CredentialsAuthenticator", Step: 1},
+				{Authenticator: "Passkey", Step: 2},
 			},
 		},
 	}
@@ -1963,7 +1919,7 @@ func (suite *AuthenticationServiceTestSuite) createTestAssertion(subject string)
 		"ial": "ial1",
 		"authenticators": []map[string]interface{}{
 			{
-				"authenticator": common.AuthenticatorCredentials,
+				"authenticator": "CredentialsAuthenticator",
 				"step":          1,
 				"timestamp":     int64(1735689600), // 2025-01-01T00:00:00Z in Unix epoch
 			},
