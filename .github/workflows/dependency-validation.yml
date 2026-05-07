@@ -57,11 +57,12 @@ jobs:
         id: validate
         continue-on-error: true
         run: |
-          chmod +x scripts/validate-go-dependencies.sh
-          scripts/validate-go-dependencies.sh \
+          chmod +x engineering-governance/scripts/validate-go-dependencies.sh
+          engineering-governance/scripts/validate-go-dependencies.sh \
             "${{ github.event.pull_request.base.sha }}" \
             "${{ github.event.pull_request.head.sha }}" \
-            "engineering-governance/dependency-registry/go.yaml"
+            "engineering-governance/dependency-registry/go.yaml" \
+            "thunder-id" # Change this scope value according to the repository
 
       - name: Comment on PR - Validation Failed
         if: steps.validate.outcome == 'failure'
