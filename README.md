@@ -6,6 +6,7 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/asgardeo/thunder.svg)](https://github.com/asgardeo/thunder/commits/main)
 [![GitHub issues](https://img.shields.io/github/issues/asgardeo/thunder.svg)](https://github.com/asgardeo/thunder/issues)
 [![codecov.io](https://codecov.io/github/asgardeo/thunder/coverage.svg?branch=main)](https://codecov.io/github/asgardeo/thunder?branch=main)
+[![👷🛠️ PR Builder](https://github.com/samadhisaku/thunder/actions/workflows/pr-builder.yml/badge.svg?branch=Build_and_Test_Badge&event=push)](https://github.com/samadhisaku/thunder/actions/workflows/pr-builder.yml)
 
 ThunderID is a modern, open-source identity management service designed for teams building secure, customizable authentication experiences across applications, services, and AI agents. It enables developers to design and orchestrate login, registration, and recovery flows using a flexible identity flow designer.
 
