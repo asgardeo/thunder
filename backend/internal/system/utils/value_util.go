@@ -18,7 +18,10 @@
 
 package utils
 
-import "strconv"
+import (
+	"math"
+	"strconv"
+)
 
 // CompareValues performs a type-flexible equality comparison between two values.
 // This is useful when comparing values that may have different numeric types
@@ -96,6 +99,49 @@ func ToFloat64(v interface{}) (float64, bool) {
 		return float64(n), true
 	case uint64:
 		return float64(n), true
+	default:
+		return 0, false
+	}
+}
+
+// ToInt64 attempts to convert a value to int64.
+// Supports conversion from all standard numeric types:
+// - Floating-point: float32, float64 (truncated toward zero)
+// - Signed integers: int, int8, int16, int32, int64
+// - Unsigned integers: uint, uint8, uint16, uint32, uint64
+// Returns the int64 value and true if successful, or 0 and false if not convertible.
+func ToInt64(v any) (int64, bool) {
+	switch n := v.(type) {
+	case int64:
+		return n, true
+	case int:
+		return int64(n), true
+	case int8:
+		return int64(n), true
+	case int16:
+		return int64(n), true
+	case int32:
+		return int64(n), true
+	case uint:
+		if uint64(n) > math.MaxInt64 {
+			return 0, false
+		}
+		return int64(n), true // #nosec G115 -- bounds checked above
+	case uint8:
+		return int64(n), true
+	case uint16:
+		return int64(n), true
+	case uint32:
+		return int64(n), true
+	case uint64:
+		if n > math.MaxInt64 {
+			return 0, false
+		}
+		return int64(n), true // #nosec G115 -- bounds checked above
+	case float32:
+		return int64(n), true
+	case float64:
+		return int64(n), true
 	default:
 		return 0, false
 	}
