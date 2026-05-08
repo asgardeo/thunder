@@ -28,6 +28,7 @@ import (
 	"crypto/sha512"
 	"errors"
 	"hash"
+	"math/big"
 )
 
 // Sign errors.
@@ -149,7 +150,15 @@ func newECDSASign(hashed []byte, privateKey crypto.PrivateKey) ([]byte, error) {
 	if !ok {
 		return nil, ErrInvalidPrivateKey
 	}
-	return ecdsa.SignASN1(rand.Reader, ecdsaKey, hashed)
+	r, s, err := ecdsa.Sign(rand.Reader, ecdsaKey, hashed)
+	if err != nil {
+		return nil, err
+	}
+	keySize := (ecdsaKey.Curve.Params().BitSize + 7) / 8
+	sig := make([]byte, 2*keySize)
+	r.FillBytes(sig[:keySize])
+	s.FillBytes(sig[keySize:])
+	return sig, nil
 }
 
 func verifyECDSA(hashed, signature []byte, publicKey crypto.PublicKey) error {
@@ -157,7 +166,13 @@ func verifyECDSA(hashed, signature []byte, publicKey crypto.PublicKey) error {
 	if !ok {
 		return ErrInvalidPublicKey
 	}
-	if !ecdsa.VerifyASN1(ecdsaPub, hashed, signature) {
+	keySize := (ecdsaPub.Curve.Params().BitSize + 7) / 8
+	if len(signature) != 2*keySize {
+		return ErrInvalidSignature
+	}
+	r := new(big.Int).SetBytes(signature[:keySize])
+	s := new(big.Int).SetBytes(signature[keySize:])
+	if !ecdsa.Verify(ecdsaPub, hashed, r, s) {
 		return ErrInvalidSignature
 	}
 	return nil
