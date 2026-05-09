@@ -17,7 +17,7 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
-$PRODUCT_NAME = "Thunder"
+$PRODUCT_NAME = "ThunderID"
 
 # Check for PowerShell Version Compatibility
 if ($PSVersionTable.PSVersion.Major -lt 7) {
@@ -137,6 +137,11 @@ $customerUserTypeData = ([ordered]@{
             displayName = "Last Name"
             required = $false
         }
+        name = @{
+            type = "string"
+            displayName = "Full Name"
+            required = $false
+        }
         mobileNumber = @{
             type = "string"
             displayName = "Mobile Number"
@@ -148,7 +153,7 @@ $customerUserTypeData = ([ordered]@{
     }
 } | ConvertTo-Json -Depth 5)
 
-$response = Invoke-Api -Method POST -Endpoint "/user-schemas" -Data $customerUserTypeData
+$response = Invoke-Api -Method POST -Endpoint "/user-types" -Data $customerUserTypeData
 
 if ($response.StatusCode -eq 201 -or $response.StatusCode -eq 200) {
     Log-Success "Customer user type created successfully"

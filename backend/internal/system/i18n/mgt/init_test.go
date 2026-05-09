@@ -39,24 +39,24 @@ func TestInitTestSuite(t *testing.T) {
 }
 
 func (suite *InitTestSuite) SetupTest() {
-	// Initialize ThunderRuntime for each test
-	config.ResetThunderRuntime()
+	// Initialize server runtime for each test
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
 }
 
 func (suite *InitTestSuite) TearDownTest() {
 	// Clean up after each test
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 func (suite *InitTestSuite) TestInitialize_MutableMode() {
 	// Setup
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.DeclarativeResources.Enabled = false
 
 	mux := http.NewServeMux()
@@ -76,7 +76,7 @@ func (suite *InitTestSuite) TestInitialize_MutableMode() {
 
 func (suite *InitTestSuite) TestInitialize_DeclarativeMode() {
 	// Setup
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.DeclarativeResources.Enabled = true
 
 	mux := http.NewServeMux()
@@ -96,7 +96,7 @@ func (suite *InitTestSuite) TestInitialize_DeclarativeMode() {
 
 func (suite *InitTestSuite) TestInitialize_DeclarativeMode_LoadError() {
 	// Setup temp dir for resources
-	tempDir, err := os.MkdirTemp("", "thunder_test_resources")
+	tempDir, err := os.MkdirTemp("", "test_resources")
 	suite.NoError(err)
 	defer func() {
 		_ = os.RemoveAll(tempDir)
@@ -113,13 +113,13 @@ func (suite *InitTestSuite) TestInitialize_DeclarativeMode_LoadError() {
 	suite.NoError(err)
 
 	// Setup Runtime with temp dir
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 	}
-	_ = config.InitializeThunderRuntime(tempDir, testConfig)
+	_ = config.InitializeServerRuntime(tempDir, testConfig)
 
 	mux := http.NewServeMux()
 

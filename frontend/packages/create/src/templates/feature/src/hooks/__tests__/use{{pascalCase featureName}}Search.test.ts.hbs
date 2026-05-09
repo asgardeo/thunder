@@ -1,0 +1,220 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {renderHook, act} from '@testing-library/react';
+import {vi} from 'vitest';
+import use{{pascalCase featureName}}Search from '../use{{pascalCase featureName}}Search';
+import type Basic{{pascalCase featureName}} from '../../models/{{camelCase featureName}}';
+
+// Mock logger
+vi.mock('@thunderid/logger/react', () => ({
+  useLogger: () => ({
+    info: vi.fn(),
+    error: vi.fn(),
+  }),
+}));
+
+const mock{{pascalCase featureName}}s: Basic{{pascalCase featureName}}[] = [
+  {
+    id: '1',
+    name: 'Alpha {{pascalCase featureName}}',
+    description: 'First {{camelCase featureName}} description',
+    createdAt: '2025-01-01T00:00:00Z',
+  },
+  {
+    id: '2',
+    name: 'Beta {{pascalCase featureName}}',
+    description: 'Second {{camelCase featureName}} description',
+    createdAt: '2025-01-02T00:00:00Z',
+  },
+  {
+    id: '3',
+    name: 'Gamma {{pascalCase featureName}}',
+    description: 'Third {{camelCase featureName}} description',
+    createdAt: '2025-01-03T00:00:00Z',
+  },
+  {
+    id: '4',
+    name: 'Delta {{pascalCase featureName}}',
+    description: 'Fourth {{camelCase featureName}} description',
+    createdAt: '2025-01-04T00:00:00Z',
+  },
+  {
+    id: '5',
+    name: 'Epsilon {{pascalCase featureName}}',
+    description: 'Fifth {{camelCase featureName}} description',
+    createdAt: '2025-01-05T00:00:00Z',
+  },
+];
+
+describe('use{{pascalCase featureName}}Search', () => {
+  it('should initialize with default options', () => {
+    const {result} = renderHook(() => use{{pascalCase featureName}}Search(mock{{pascalCase featureName}}s));
+
+    expect(result.current.options.searchTerm).toBe('');
+    expect(result.current.options.sortField).toBe('name');
+    expect(result.current.options.sortDirection).toBe('asc');
+    expect(result.current.options.itemsPerPage).toBe(10);
+    expect(result.current.options.currentPage).toBe(1);
+  });
+
+  it('should return all {{camelCase featureName}}s when no search term', () => {
+    const {result} = renderHook(() => use{{pascalCase featureName}}Search(mock{{pascalCase featureName}}s));
+
+    expect(result.current.{{camelCase featureName}}s).toHaveLength(5);
+    expect(result.current.totalCount).toBe(5);
+    expect(result.current.totalPages).toBe(1);
+  });
+
+  it('should filter {{camelCase featureName}}s by search term', () => {
+    const {result} = renderHook(() => use{{pascalCase featureName}}Search(mock{{pascalCase featureName}}s));
+
+    act(() => {
+      result.current.setSearchTerm('Alpha');
+    });
+
+    expect(result.current.{{camelCase featureName}}s).toHaveLength(1);
+    expect(result.current.{{camelCase featureName}}s[0].name).toBe('Alpha {{pascalCase featureName}}');
+    expect(result.current.totalCount).toBe(1);
+  });
+
+  it('should sort {{camelCase featureName}}s by name descending', () => {
+    const {result} = renderHook(() => use{{pascalCase featureName}}Search(mock{{pascalCase featureName}}s));
+
+    act(() => {
+      result.current.setSortDirection('desc');
+    });
+
+    expect(result.current.{{camelCase featureName}}s[0].name).toBe('Epsilon {{pascalCase featureName}}');
+    expect(result.current.{{camelCase featureName}}s[4].name).toBe('Alpha {{pascalCase featureName}}');
+  });
+
+  it('should sort by different fields', () => {
+    const {result} = renderHook(() => use{{pascalCase featureName}}Search(mock{{pascalCase featureName}}s));
+
+    act(() => {
+      result.current.setSortField('createdAt');
+    });
+
+    expect(result.current.{{camelCase featureName}}s[0].createdAt).toBe('2025-01-01T00:00:00Z');
+    expect(result.current.{{camelCase featureName}}s[4].createdAt).toBe('2025-01-05T00:00:00Z');
+  });
+
+  it('should handle pagination', () => {
+    const {result} = renderHook(() => use{{pascalCase featureName}}Search(mock{{pascalCase featureName}}s));
+
+    act(() => {
+      result.current.setItemsPerPage(2);
+    });
+
+    expect(result.current.{{camelCase featureName}}s).toHaveLength(2);
+    expect(result.current.totalPages).toBe(3);
+    expect(result.current.totalCount).toBe(5);
+
+    act(() => {
+      result.current.setCurrentPage(2);
+    });
+
+    expect(result.current.{{camelCase featureName}}s).toHaveLength(2);
+    expect(result.current.{{camelCase featureName}}s[0].name).toBe('Gamma {{pascalCase featureName}}');
+    expect(result.current.{{camelCase featureName}}s[1].name).toBe('Delta {{pascalCase featureName}}');
+  });
+
+  it('should reset to first page when search term changes', () => {
+    const {result} = renderHook(() => use{{pascalCase featureName}}Search(mock{{pascalCase featureName}}s));
+
+    act(() => {
+      result.current.setItemsPerPage(2);
+      result.current.setCurrentPage(2);
+    });
+
+    expect(result.current.options.currentPage).toBe(2);
+
+    act(() => {
+      result.current.setSearchTerm('Alpha');
+    });
+
+    expect(result.current.options.currentPage).toBe(1);
+  });
+
+  it('should adjust page when total pages decrease', () => {
+    const {result} = renderHook(() => use{{pascalCase featureName}}Search(mock{{pascalCase featureName}}s));
+
+    act(() => {
+      result.current.setItemsPerPage(2);
+      result.current.setCurrentPage(3);
+    });
+
+    expect(result.current.options.currentPage).toBe(3);
+
+    // Filter to only 2 items (1 page)
+    act(() => {
+      result.current.setSearchTerm('Alpha');
+    });
+
+    expect(result.current.options.currentPage).toBe(1);
+  });
+
+  it('should reset all filters', () => {
+    const {result} = renderHook(() => use{{pascalCase featureName}}Search(mock{{pascalCase featureName}}s));
+
+    act(() => {
+      result.current.setSearchTerm('test');
+      result.current.setSortField('createdAt');
+      result.current.setSortDirection('desc');
+      result.current.setItemsPerPage(5);
+      result.current.setCurrentPage(2);
+    });
+
+    act(() => {
+      result.current.resetFilters();
+    });
+
+    expect(result.current.options.searchTerm).toBe('');
+    expect(result.current.options.sortField).toBe('name');
+    expect(result.current.options.sortDirection).toBe('asc');
+    expect(result.current.options.itemsPerPage).toBe(10);
+    expect(result.current.options.currentPage).toBe(1);
+  });
+
+  it('should accept initial options', () => {
+    const initialOptions = {
+      searchTerm: 'Beta',
+      sortDirection: 'desc' as const,
+      itemsPerPage: 3,
+    };
+
+    const {result} = renderHook(() =>
+      use{{pascalCase featureName}}Search(mock{{pascalCase featureName}}s, initialOptions)
+    );
+
+    expect(result.current.options.searchTerm).toBe('Beta');
+    expect(result.current.options.sortDirection).toBe('desc');
+    expect(result.current.options.itemsPerPage).toBe(3);
+    expect(result.current.{{camelCase featureName}}s).toHaveLength(1);
+    expect(result.current.{{camelCase featureName}}s[0].name).toBe('Beta {{pascalCase featureName}}');
+  });
+
+  it('should handle empty {{camelCase featureName}}s array', () => {
+    const {result} = renderHook(() => use{{pascalCase featureName}}Search([]));
+
+    expect(result.current.{{camelCase featureName}}s).toHaveLength(0);
+    expect(result.current.totalCount).toBe(0);
+    expect(result.current.totalPages).toBe(0);
+  });
+});

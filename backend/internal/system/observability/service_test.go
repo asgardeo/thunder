@@ -29,7 +29,7 @@ import (
 // setupTestService creates a test service with controlled configuration.
 func setupTestService(enabled bool) ObservabilityServiceInterface {
 	// Reset the global runtime config
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 
 	// Create a test config
 	cfg := &config.Config{
@@ -46,7 +46,7 @@ func setupTestService(enabled bool) ObservabilityServiceInterface {
 	}
 
 	// Initialize the global runtime
-	err := config.InitializeThunderRuntime("/tmp/thunder-test", cfg)
+	err := config.InitializeServerRuntime("/tmp/test", cfg)
 	if err != nil {
 		panic("failed to initialize test runtime: " + err.Error())
 	}

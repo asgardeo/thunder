@@ -16,13 +16,19 @@ servers:
       port:
         default: "8090"
 
+tags:
+  - name: flow-execution
+    description: Execute app native authentication and registration flow steps.
+
+security: []
+
 paths:
   /flow/execute:
     post:
       summary: Execute a flow step
       description: Execute a step in an authentication flow.
       tags:
-        - Execute a flow step
+        - flow-execution
       requestBody:
         required: true
         content:
@@ -49,7 +55,9 @@ paths:
                   }
       responses:
         "200":
-          description: Flow step executed successfully
+          description: |
+            Flow step executed successfully.
+            Flow-level failures are returned with HTTP 200 and `flowStatus: ERROR` in the response body.
           content:
             application/json:
               schema:
@@ -57,6 +65,13 @@ paths:
                   - $ref: '#/components/schemas/IncompleteFlowResponse'
                   - $ref: '#/components/schemas/CompleteFlowResponse'
                   - $ref: '#/components/schemas/ErrorFlowResponse'
+                discriminator:
+                  propertyName: flowStatus
+                  mapping:
+                    INCOMPLETE: '#/components/schemas/IncompleteFlowResponse'
+                    PROMPT_ONLY: '#/components/schemas/IncompleteFlowResponse'
+                    COMPLETE: '#/components/schemas/CompleteFlowResponse'
+                    ERROR: '#/components/schemas/ErrorFlowResponse'
               examples:
                 incompleteFlow:
                   summary: Incomplete flow (prompt for user input)
@@ -126,13 +141,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
 components:
   schemas:
@@ -334,25 +349,13 @@ components:
           description: Whether the input is required
           example: true
 
-    ClientErrorResponse:
+    Error:
       type: object
       properties:
         code:
           type: string
-          description: Error code
+          description: "Error code. Client errors follow the FES-XXXX convention; server errors use SSE-XXXX."
           example: "FES-1003"
-        message:
-          $ref: '#/components/schemas/I18nMessage'
-        description:
-          $ref: '#/components/schemas/I18nMessage'
-
-    ServerErrorResponse:
-      type: object
-      properties:
-        code:
-          type: string
-          description: Error code
-          example: "SSE-5000"
         message:
           $ref: '#/components/schemas/I18nMessage'
         description:

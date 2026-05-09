@@ -29,20 +29,20 @@ var (
 	// queryGetRootOrganizationUnitListCount is the query to get total count of organization units.
 	queryGetRootOrganizationUnitListCount = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-01",
-		Query: `SELECT COUNT(*) as total FROM ORGANIZATION_UNIT WHERE PARENT_ID IS NULL AND DEPLOYMENT_ID = $1`,
+		Query: `SELECT COUNT(*) as total FROM "ORGANIZATION_UNIT" WHERE PARENT_ID IS NULL AND DEPLOYMENT_ID = $1`,
 	}
 
 	// queryGetRootOrganizationUnitList is the query to get organization units with pagination.
 	queryGetRootOrganizationUnitList = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-02",
-		Query: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, PARENT_ID, METADATA FROM ORGANIZATION_UNIT ` +
+		Query: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, PARENT_ID, METADATA FROM "ORGANIZATION_UNIT" ` +
 			`WHERE PARENT_ID IS NULL AND DEPLOYMENT_ID = $3 ORDER BY NAME LIMIT $1 OFFSET $2`,
 	}
 
 	// queryCreateOrganizationUnit is the query to create a new organization unit.
 	queryCreateOrganizationUnit = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-03",
-		Query: `INSERT INTO ORGANIZATION_UNIT (
+		Query: `INSERT INTO "ORGANIZATION_UNIT" (
 			OU_ID, PARENT_ID, HANDLE, NAME, DESCRIPTION, THEME_ID, LAYOUT_ID, METADATA, DEPLOYMENT_ID
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9
@@ -53,7 +53,7 @@ var (
 	queryGetOrganizationUnitByID = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-04",
 		Query: `SELECT OU_ID, PARENT_ID, HANDLE, NAME, DESCRIPTION, THEME_ID, LAYOUT_ID, METADATA
-		FROM ORGANIZATION_UNIT
+		FROM "ORGANIZATION_UNIT"
 		WHERE OU_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
@@ -61,7 +61,7 @@ var (
 	queryGetRootOrganizationUnitByHandle = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-05",
 		Query: `SELECT OU_ID, PARENT_ID, HANDLE, NAME, DESCRIPTION, THEME_ID, LAYOUT_ID, METADATA
-		FROM ORGANIZATION_UNIT
+		FROM "ORGANIZATION_UNIT"
 		WHERE HANDLE = $1 AND PARENT_ID IS NULL AND DEPLOYMENT_ID = $2`,
 	}
 
@@ -69,39 +69,39 @@ var (
 	queryGetOrganizationUnitByHandle = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-06",
 		Query: `SELECT OU_ID, PARENT_ID, HANDLE, NAME, DESCRIPTION, THEME_ID, LAYOUT_ID, METADATA
-		FROM ORGANIZATION_UNIT
+		FROM "ORGANIZATION_UNIT"
 		WHERE HANDLE = $1 AND PARENT_ID = $2 AND DEPLOYMENT_ID = $3`,
 	}
 
 	// queryCheckOrganizationUnitExists is the query to check if an organization unit exists.
 	queryCheckOrganizationUnitExists = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-07",
-		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT WHERE OU_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `SELECT COUNT(*) as count FROM "ORGANIZATION_UNIT" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryUpdateOrganizationUnit is the query to update an organization unit.
 	queryUpdateOrganizationUnit = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-08",
-		Query: `UPDATE ORGANIZATION_UNIT SET PARENT_ID = $2, HANDLE = $3, NAME = $4, DESCRIPTION = $5, ` +
+		Query: `UPDATE "ORGANIZATION_UNIT" SET PARENT_ID = $2, HANDLE = $3, NAME = $4, DESCRIPTION = $5, ` +
 			`THEME_ID = $6, LAYOUT_ID = $7, METADATA = $8 WHERE OU_ID = $1 AND DEPLOYMENT_ID = $9`,
 	}
 
 	// queryDeleteOrganizationUnit is the query to delete an organization unit.
 	queryDeleteOrganizationUnit = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-09",
-		Query: `DELETE FROM ORGANIZATION_UNIT WHERE OU_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `DELETE FROM "ORGANIZATION_UNIT" WHERE OU_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryGetOrganizationUnitChildrenCount is the query to get total count of child organization units.
 	queryGetOrganizationUnitChildrenCount = dbmodel.DBQuery{
 		ID:    "OUQ-OU_MGT-10",
-		Query: `SELECT COUNT(*) as total FROM ORGANIZATION_UNIT WHERE PARENT_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `SELECT COUNT(*) as total FROM "ORGANIZATION_UNIT" WHERE PARENT_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryGetOrganizationUnitChildrenList is the query to get child organization units with pagination.
 	queryGetOrganizationUnitChildrenList = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-11",
-		Query: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, METADATA FROM ORGANIZATION_UNIT ` +
+		Query: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, METADATA FROM "ORGANIZATION_UNIT" ` +
 			`WHERE PARENT_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY NAME LIMIT $2 OFFSET $3`,
 	}
 
@@ -109,7 +109,7 @@ var (
 	// unit name conflicts under the same parent.
 	queryCheckOrganizationUnitNameConflict = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-16",
-		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT ` +
+		Query: `SELECT COUNT(*) as count FROM "ORGANIZATION_UNIT" ` +
 			`WHERE NAME = $1 AND PARENT_ID = $2 AND DEPLOYMENT_ID = $3`,
 	}
 
@@ -117,7 +117,7 @@ var (
 	// unit name conflicts at root level.
 	queryCheckOrganizationUnitNameConflictRoot = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-17",
-		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT ` +
+		Query: `SELECT COUNT(*) as count FROM "ORGANIZATION_UNIT" ` +
 			`WHERE NAME = $1 AND PARENT_ID IS NULL AND DEPLOYMENT_ID = $2`,
 	}
 
@@ -125,7 +125,7 @@ var (
 	// unit handle conflicts under the same parent.
 	queryCheckOrganizationUnitHandleConflict = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-18",
-		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT ` +
+		Query: `SELECT COUNT(*) as count FROM "ORGANIZATION_UNIT" ` +
 			`WHERE HANDLE = $1 AND PARENT_ID = $2 AND DEPLOYMENT_ID = $3`,
 	}
 
@@ -133,7 +133,7 @@ var (
 	// unit handle conflicts at root level.
 	queryCheckOrganizationUnitHandleConflictRoot = dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-19",
-		Query: `SELECT COUNT(*) as count FROM ORGANIZATION_UNIT ` +
+		Query: `SELECT COUNT(*) as count FROM "ORGANIZATION_UNIT" ` +
 			`WHERE HANDLE = $1 AND PARENT_ID IS NULL AND DEPLOYMENT_ID = $2`,
 	}
 )
@@ -161,9 +161,9 @@ func buildGetOrganizationUnitsByIDsQuery(ids []string) dbmodel.DBQuery {
 
 	return dbmodel.DBQuery{
 		ID: "OUQ-OU_MGT-21",
-		PostgresQuery: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, METADATA FROM ORGANIZATION_UNIT ` +
+		PostgresQuery: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, METADATA FROM "ORGANIZATION_UNIT" ` +
 			`WHERE OU_ID IN (` + pgInClause + `) AND DEPLOYMENT_ID = ` + deploymentIDParam + ` ORDER BY NAME`,
-		SQLiteQuery: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, METADATA FROM ORGANIZATION_UNIT ` +
+		SQLiteQuery: `SELECT OU_ID, HANDLE, NAME, DESCRIPTION, METADATA FROM "ORGANIZATION_UNIT" ` +
 			`WHERE OU_ID IN (` + sqliteInClause + `) AND DEPLOYMENT_ID = ? ORDER BY NAME`,
 	}
 }

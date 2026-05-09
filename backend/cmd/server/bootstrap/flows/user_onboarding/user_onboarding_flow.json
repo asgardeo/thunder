@@ -6,7 +6,17 @@
         {
             "id": "start",
             "type": "START",
-            "onSuccess": "permission_validator"
+            "onSuccess": "permission_validator",
+            "layout": {
+                "size": {
+                    "width": 101,
+                    "height": 34
+                },
+                "position": {
+                    "x": 47,
+                    "y": 571
+                }
+            }
         },
         {
             "id": "permission_validator",
@@ -19,7 +29,17 @@
             "executor": {
                 "name": "PermissionValidator"
             },
-            "onSuccess": "user_type_resolver"
+            "onSuccess": "user_type_resolver",
+            "layout": {
+                "size": {
+                    "width": 206,
+                    "height": 113
+                },
+                "position": {
+                    "x": 248,
+                    "y": 531
+                }
+            }
         },
         {
             "id": "user_type_resolver",
@@ -28,7 +48,17 @@
                 "name": "UserTypeResolver"
             },
             "onSuccess": "ou_selection",
-            "onIncomplete": "prompt_usertype"
+            "onIncomplete": "prompt_usertype",
+            "layout": {
+                "size": {
+                    "width": 205,
+                    "height": 113
+                },
+                "position": {
+                    "x": 554,
+                    "y": 545
+                }
+            }
         },
         {
             "id": "prompt_usertype",
@@ -45,7 +75,8 @@
                     {
                         "type": "TEXT",
                         "id": "subtitle_usertype",
-                        "label": "{{ t(onboarding:forms.user_type.subtitle) }}"
+                        "label": "{{ t(onboarding:forms.user_type.subtitle) }}",
+                        "variant": "HEADING_6"
                     },
                     {
                         "type": "BLOCK",
@@ -86,7 +117,17 @@
                         "nextNode": "user_type_resolver"
                     }
                 }
-            ]
+            ],
+            "layout": {
+                "size": {
+                    "width": 350,
+                    "height": 529
+                },
+                "position": {
+                    "x": 830,
+                    "y": -84
+                }
+            }
         },
         {
             "id": "ou_selection",
@@ -98,7 +139,17 @@
                 "name": "OUResolverExecutor"
             },
             "onSuccess": "prompt_mode",
-            "onIncomplete": "prompt_ou_selection"
+            "onIncomplete": "prompt_ou_selection",
+            "layout": {
+                "size": {
+                    "width": 200,
+                    "height": 113
+                },
+                "position": {
+                    "x": 939,
+                    "y": 610
+                }
+            }
         },
         {
             "id": "prompt_ou_selection",
@@ -115,7 +166,8 @@
                     {
                         "type": "TEXT",
                         "id": "subtitle_ou_selection",
-                        "label": "{{ t(onboarding:forms.ou_selection.subtitle) }}"
+                        "label": "{{ t(onboarding:forms.ou_selection.subtitle) }}",
+                        "variant": "HEADING_6"
                     },
                     {
                         "type": "BLOCK",
@@ -154,7 +206,17 @@
                         "nextNode": "ou_selection"
                     }
                 }
-            ]
+            ],
+            "layout": {
+                "size": {
+                    "width": 350,
+                    "height": 525
+                },
+                "position": {
+                    "x": 829,
+                    "y": 823
+                }
+            }
         },
         {
             "id": "prompt_mode",
@@ -268,7 +330,17 @@
                         "nextNode": "check_email_uniqueness_create"
                     }
                 }
-            ]
+            ],
+            "layout": {
+                "size": {
+                    "width": 350,
+                    "height": 431
+                },
+                "position": {
+                    "x": 1384,
+                    "y": 452
+                }
+            }
         },
         {
             "id": "check_email_uniqueness_create",
@@ -338,7 +410,17 @@
                 "name": "AttributeUniquenessValidator"
             },
             "onSuccess": "prompt_invite_method",
-            "onIncomplete": "prompt_email_invite"
+            "onIncomplete": "prompt_email_invite",
+            "layout": {
+                "size": {
+                    "width": 272,
+                    "height": 113
+                },
+                "position": {
+                    "x": 1890,
+                    "y": 675
+                }
+            }
         },
         {
             "id": "prompt_invite_method",
@@ -355,7 +437,8 @@
                     {
                         "type": "TEXT",
                         "id": "text_subtitle_invite_method",
-                        "label": "{{ t(onboarding:forms.invite_mode.subtitle) }}"
+                        "label": "{{ t(onboarding:forms.invite_mode.subtitle) }}",
+                        "variant": "HEADING_6"
                     },
                     {
                         "type": "BLOCK",
@@ -400,7 +483,17 @@
                         "nextNode": "invite_generate_manual"
                     }
                 }
-            ]
+            ],
+            "layout": {
+                "size": {
+                    "width": 350,
+                    "height": 566
+                },
+                "position": {
+                    "x": 2323,
+                    "y": 447
+                }
+            }
         },
         {
             "id": "invite_generate_manual",
@@ -409,7 +502,17 @@
                 "name": "InviteExecutor",
                 "mode": "generate"
             },
-            "onSuccess": "invite_link_status"
+            "onSuccess": "invite_link_status",
+            "layout": {
+                "size": {
+                    "width": 200,
+                    "height": 113
+                },
+                "position": {
+                    "x": 2794,
+                    "y": 594
+                }
+            }
         },
         {
             "id": "invite_generate_email",
@@ -418,7 +521,17 @@
                 "name": "InviteExecutor",
                 "mode": "generate"
             },
-            "onSuccess": "send_invite_email"
+            "onSuccess": "send_invite_email",
+            "layout": {
+                "size": {
+                    "width": 200,
+                    "height": 113
+                },
+                "position": {
+                    "x": 2791,
+                    "y": 809
+                }
+            }
         },
         {
             "id": "send_invite_email",
@@ -431,7 +544,17 @@
                 "mode": "send"
             },
             "onSuccess": "email_invite_status",
-            "onFailure": "invite_email_service_unavailable"
+            "onFailure": "invite_email_service_unavailable",
+            "layout": {
+                "size": {
+                    "width": 200,
+                    "height": 113
+                },
+                "position": {
+                    "x": 3114,
+                    "y": 808
+                }
+            }
         },
         {
             "id": "email_invite_status",
@@ -456,12 +579,23 @@
                         "align": "center",
                         "type": "TEXT",
                         "id": "email_status_message",
-                        "label": "{{ t(onboarding:forms.invite_email_sent.message) }}"
+                        "label": "{{ t(onboarding:forms.invite_email_sent.message) }}",
+                        "variant": "HEADING_6"
                     }
                 ]
             },
             "message": "{{ t(onboarding:forms.invite_email_sent.title) }}",
-            "next": "invite_verify"
+            "next": "invite_verify",
+            "layout": {
+                "size": {
+                    "width": 350,
+                    "height": 381
+                },
+                "position": {
+                    "x": 3714,
+                    "y": 673
+                }
+            }
         },
         {
             "id": "invite_email_service_unavailable",
@@ -486,7 +620,8 @@
                         "align": "center",
                         "type": "TEXT",
                         "id": "email_unavailable_message",
-                        "label": "{{ t(onboarding:forms.invite_email_unavailable.message) }}"
+                        "label": "{{ t(onboarding:forms.invite_email_unavailable.message) }}",
+                        "variant": "HEADING_6"
                     },
                     {
                         "type": "COPYABLE_TEXT",
@@ -497,7 +632,17 @@
                 ]
             },
             "message": "{{ t(onboarding:forms.invite_email_unavailable.title) }}",
-            "next": "invite_link_status"
+            "next": "invite_link_status",
+            "layout": {
+                "size": {
+                    "width": 350,
+                    "height": 433
+                },
+                "position": {
+                    "x": 3240,
+                    "y": 1021
+                }
+            }
         },
         {
             "id": "invite_link_status",
@@ -522,7 +667,8 @@
                         "align": "center",
                         "type": "TEXT",
                         "id": "link_status_message",
-                        "label": "{{ t(onboarding:forms.invite_link_status.message) }}"
+                        "label": "{{ t(onboarding:forms.invite_link_status.message) }}",
+                        "variant": "HEADING_6"
                     },
                     {
                         "type": "COPYABLE_TEXT",
@@ -533,7 +679,17 @@
                 ]
             },
             "message": "The invite link is ready to share",
-            "next": "invite_verify"
+            "next": "invite_verify",
+            "layout": {
+                "size": {
+                    "width": 350,
+                    "height": 410
+                },
+                "position": {
+                    "x": 4256,
+                    "y": 931
+                }
+            }
         },
         {
             "id": "invite_verify",
@@ -550,7 +706,17 @@
                 "name": "InviteExecutor",
                 "mode": "verify"
             },
-            "onSuccess": "prompt_user_details"
+            "onSuccess": "prompt_user_details",
+            "layout": {
+                "size": {
+                    "width": 200,
+                    "height": 113
+                },
+                "position": {
+                    "x": 4775,
+                    "y": 927
+                }
+            }
         },
         {
             "id": "prompt_user_details",
@@ -630,7 +796,17 @@
                         "nextNode": "check_user_details_uniqueness"
                     }
                 }
-            ]
+            ],
+            "layout": {
+                "size": {
+                    "width": 350,
+                    "height": 590
+                },
+                "position": {
+                    "x": 5110,
+                    "y": 687
+                }
+            }
         },
         {
             "id": "check_user_details_uniqueness",
@@ -639,7 +815,17 @@
                 "name": "AttributeUniquenessValidator"
             },
             "onSuccess": "prompt_credential",
-            "onIncomplete": "prompt_user_details"
+            "onIncomplete": "prompt_user_details",
+            "layout": {
+                "size": {
+                    "width": 272,
+                    "height": 113
+                },
+                "position": {
+                    "x": 5640,
+                    "y": 915
+                }
+            }
         },
         {
             "id": "prompt_credential",
@@ -691,7 +877,17 @@
                         "nextNode": "provisioning"
                     }
                 }
-            ]
+            ],
+            "layout": {
+                "size": {
+                    "width": 350,
+                    "height": 431
+                },
+                "position": {
+                    "x": 6020,
+                    "y": 757
+                }
+            }
         },
         {
             "id": "provisioning",
@@ -732,7 +928,17 @@
                 "name": "ProvisioningExecutor"
             },
             "onSuccess": "registration_complete",
-            "onIncomplete": "prompt_credential"
+            "onIncomplete": "prompt_credential",
+            "layout": {
+                "size": {
+                    "width": 200,
+                    "height": 113
+                },
+                "position": {
+                    "x": 6484,
+                    "y": 979
+                }
+            }
         },
         {
             "id": "registration_complete",
@@ -757,16 +963,37 @@
                         "align": "center",
                         "type": "TEXT",
                         "id": "registration_complete_message",
-                        "label": "{{ t(onboarding:forms.create_complete.message) }}"
+                        "label": "{{ t(onboarding:forms.create_complete.message) }}",
+                        "variant": "HEADING_6"
                     }
                 ]
             },
             "message": "{{ t(onboarding:forms.create_complete.title) }}",
-            "next": "end"
+            "next": "end",
+            "layout": {
+                "size": {
+                    "width": 350,
+                    "height": 358
+                },
+                "position": {
+                    "x": 6796,
+                    "y": 857
+                }
+            }
         },
         {
             "id": "end",
-            "type": "END"
+            "type": "END",
+            "layout": {
+                "size": {
+                    "width": 85,
+                    "height": 34
+                },
+                "position": {
+                    "x": 7275,
+                    "y": 1019
+                }
+            }
         }
     ]
 }

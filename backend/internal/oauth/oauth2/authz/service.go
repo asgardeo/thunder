@@ -32,6 +32,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
 	"github.com/asgardeo/thunder/internal/inboundclient"
 	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz/requestvalidator"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/par"
@@ -219,6 +220,7 @@ func (as *authorizeService) handleStandardAuthorizationRequest(
 	claimsLocales := msg.RequestQueryParams[oauth2const.RequestParamClaimsLocales]
 
 	nonce := msg.RequestQueryParams[oauth2const.RequestParamNonce]
+	acrValues := msg.RequestQueryParams[oauth2const.RequestParamAcrValues]
 
 	// Parse the claims parameter if present.
 	var claimsRequest *oauth2model.ClaimsRequest
@@ -280,6 +282,7 @@ func (as *authorizeService) handleStandardAuthorizationRequest(
 		ClaimsRequest:       claimsRequest,
 		ClaimsLocales:       claimsLocales,
 		Nonce:               nonce,
+		AcrValues:           acrValues,
 	}
 
 	// Set the redirect URI if not provided in the request. Invalid cases are already handled at this point.
@@ -304,6 +307,7 @@ func (as *authorizeService) handleStandardAuthorizationRequest(
 func (as *authorizeService) initiateFlowAndStoreRequest(
 	ctx context.Context, oauthParams *oauth2model.OAuthParameters, app *inboundmodel.OAuthClient,
 ) (*AuthorizationInitResult, *AuthorizationError) {
+	effectiveAcrValues := requestvalidator.ResolveACRValues(oauthParams.AcrValues, app.AcrValues)
 	essentialAttributes, optionalAttributes := getRequiredAttributes(
 		oauthParams.StandardScopes, oauthParams.ClaimsRequest, oauthParams.ResponseType, app)
 
@@ -316,8 +320,11 @@ func (as *authorizeService) initiateFlowAndStoreRequest(
 		flowcm.RuntimeKeyRequiredLocales:               oauthParams.ClaimsLocales,
 		flowcm.RuntimeKeyUserAttributesCacheTTLSeconds: fmt.Sprintf("%d", resolveUserAttributesCacheTTL(app)),
 	}
+	if effectiveAcrValues != "" {
+		runtimeData[flowcm.RuntimeKeyRequestedAuthClasses] = effectiveAcrValues
+	}
 	flowInitCtx := &flowexec.FlowInitContext{
-		ApplicationID: app.AppID,
+		ApplicationID: app.ID,
 		FlowType:      string(flowcm.FlowTypeAuthentication),
 		RuntimeData:   runtimeData,
 	}
@@ -355,7 +362,7 @@ func (as *authorizeService) initiateFlowAndStoreRequest(
 	// Build query parameters for login page redirect.
 	queryParams := make(map[string]string)
 	queryParams[oauth2const.AuthID] = identifier
-	queryParams[oauth2const.AppID] = app.AppID
+	queryParams[oauth2const.AppID] = app.ID
 	queryParams[oauth2const.ExecutionID] = executionID
 
 	// Add insecure warning if the redirect URI is not using TLS.
@@ -509,7 +516,7 @@ func (as *authorizeService) HandleAuthorizationCallback(ctx context.Context, aut
 		// Construct the redirect URI with the authorization code.
 		queryParams := map[string]string{
 			"code":                      authzCode.Code,
-			oauth2const.RequestParamIss: config.GetThunderRuntime().Config.JWT.Issuer,
+			oauth2const.RequestParamIss: config.GetServerRuntime().Config.JWT.Issuer,
 		}
 		if authRequestCtx.OAuthParameters.State != "" {
 			queryParams[oauth2const.RequestParamState] = authRequestCtx.OAuthParameters.State
@@ -625,6 +632,15 @@ func decodeAttributesFromAssertion(assertion string) (assertionClaims, time.Time
 			claims.attributeCacheID = strValue
 			continue
 		}
+
+		if key == oauth2const.ClaimCompletedAuthClass {
+			strValue, ok := value.(string)
+			if !ok {
+				return claims, time.Time{}, errors.New("JWT 'completed_auth_class' claim is not a string")
+			}
+			claims.completedACR = strValue
+			continue
+		}
 	}
 
 	return claims, authTime, nil
@@ -658,7 +674,7 @@ func createAuthorizationCode(
 	allScopes := append(append([]string{}, standardScopes...), permissionScopes...)
 	resources := authRequestCtx.OAuthParameters.Resources
 
-	oauthConfig := config.GetThunderRuntime().Config.OAuth
+	oauthConfig := config.GetServerRuntime().Config.OAuth
 	validityPeriod := oauthConfig.AuthorizationCode.ValidityPeriod
 	expiryTime := authTime.Add(time.Duration(validityPeriod) * time.Second)
 
@@ -689,6 +705,7 @@ func createAuthorizationCode(
 		ClaimsRequest:       authRequestCtx.OAuthParameters.ClaimsRequest,
 		ClaimsLocales:       authRequestCtx.OAuthParameters.ClaimsLocales,
 		Nonce:               authRequestCtx.OAuthParameters.Nonce,
+		CompletedACR:        claims.completedACR,
 	}, nil
 }
 
@@ -902,6 +919,6 @@ func resolveUserAttributesCacheTTL(app *inboundmodel.OAuthClient) int64 {
 			maxTTL = refreshTTL
 		}
 	}
-	authCodeTTL := config.GetThunderRuntime().Config.OAuth.AuthorizationCode.ValidityPeriod
+	authCodeTTL := config.GetServerRuntime().Config.OAuth.AuthorizationCode.ValidityPeriod
 	return maxTTL + authCodeTTL + oauth2const.AttributeCacheTTLBufferSeconds
 }

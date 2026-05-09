@@ -103,21 +103,21 @@ func GetDBProviderCloser() DBProviderCloser {
 // GetConfigDBClient returns a database client for config datasource.
 // Not required to close the returned client manually since it manages its own connection pool.
 func (d *dbProvider) GetConfigDBClient() (DBClientInterface, error) {
-	configDBConfig := config.GetThunderRuntime().Config.Database.Config
+	configDBConfig := config.GetServerRuntime().Config.Database.Config
 	return d.getOrInitClient(&d.configClient, &d.configMutex, configDBConfig, dbNameConfig)
 }
 
 // GetRuntimeDBClient returns a database client for runtime datasource.
 // Not required to close the returned client manually since it manages its own connection pool.
 func (d *dbProvider) GetRuntimeDBClient() (DBClientInterface, error) {
-	runtimeDBConfig := config.GetThunderRuntime().Config.Database.Runtime
+	runtimeDBConfig := config.GetServerRuntime().Config.Database.Runtime
 	return d.getOrInitClient(&d.runtimeClient, &d.runtimeMutex, runtimeDBConfig, dbNameRuntime)
 }
 
 // GetUserDBClient returns a database client for runtime datasource.
 // Not required to close the returned client manually since it manages its own connection pool.
 func (d *dbProvider) GetUserDBClient() (DBClientInterface, error) {
-	userDBConfig := config.GetThunderRuntime().Config.Database.User
+	userDBConfig := config.GetServerRuntime().Config.Database.User
 	return d.getOrInitClient(&d.userClient, &d.userMutex, userDBConfig, dbNameUser)
 }
 
@@ -137,7 +137,7 @@ func (d *dbProvider) GetUserDBTransactioner() (transaction.Transactioner, error)
 func (d *dbProvider) GetRuntimeDBTransactioner() (transaction.Transactioner, error) {
 	// When the runtime store is Redis, a no-op transactioner is returned since Redis does
 	// not support SQL-style transactions.
-	if config.GetThunderRuntime().Config.Database.Runtime.Type == DataSourceTypeRedis {
+	if config.GetServerRuntime().Config.Database.Runtime.Type == DataSourceTypeRedis {
 		return transaction.NewNoOpTransactioner(), nil
 	}
 	return d.getTransactioner(d.GetRuntimeDBClient, dbNameRuntime)
@@ -160,13 +160,13 @@ func (d *dbProvider) getTransactioner(
 func (d *dbProvider) initializeAllClients() {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "DBProvider"))
 
-	configDBConfig := config.GetThunderRuntime().Config.Database.Config
+	configDBConfig := config.GetServerRuntime().Config.Database.Config
 	err := d.initializeClient(&d.configClient, configDBConfig, dbNameConfig)
 	if err != nil {
 		logger.Error("Failed to initialize config database client", log.Error(err))
 	}
 
-	runtimeDBConfig := config.GetThunderRuntime().Config.Database.Runtime
+	runtimeDBConfig := config.GetServerRuntime().Config.Database.Runtime
 	if runtimeDBConfig.Type != DataSourceTypeRedis {
 		err = d.initializeClient(&d.runtimeClient, runtimeDBConfig, dbNameRuntime)
 		if err != nil {
@@ -174,7 +174,7 @@ func (d *dbProvider) initializeAllClients() {
 		}
 	}
 
-	userDBConfig := config.GetThunderRuntime().Config.Database.User
+	userDBConfig := config.GetServerRuntime().Config.Database.User
 	err = d.initializeClient(&d.userClient, userDBConfig, dbNameUser)
 	if err != nil {
 		logger.Error("Failed to initialize user database client", log.Error(err))
@@ -301,7 +301,7 @@ func (d *dbProvider) getDBConfig(dataSource config.DataSource) dbConfig {
 		if options != "" && options[0] != '?' {
 			options = "?" + options
 		}
-		dbConfig.dsn = fmt.Sprintf("%s%s", path.Join(config.GetThunderRuntime().ThunderHome, sl.Path), options)
+		dbConfig.dsn = fmt.Sprintf("%s%s", path.Join(config.GetServerRuntime().ServerHome, sl.Path), options)
 	}
 
 	return dbConfig

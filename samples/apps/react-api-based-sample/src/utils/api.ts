@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import { getConfig } from "../config";
+import { getConfig } from '../config';
 
 export interface OrganizationUnit {
   id: string;
@@ -38,14 +38,14 @@ async function fetchOrganizationUnits(): Promise<OrganizationUnit[]> {
   const { baseUrl } = getConfig();
 
   const response = await fetch(`${baseUrl}/organization-units`, {
-    method: "GET",
+    method: 'GET',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fetch organization units");
+    throw new Error('Failed to fetch organization units');
   }
 
   const data: OrganizationUnitListResponse = await response.json();
@@ -60,7 +60,7 @@ export async function getOrganizationUnitId(handle: string): Promise<string> {
   const organizationUnits = await fetchOrganizationUnits();
 
   if (organizationUnits.length === 0) {
-    throw new Error("No organization units found");
+    throw new Error('No organization units found');
   }
 
   const ou = organizationUnits.find((ou) => ou.handle === handle);
@@ -74,11 +74,11 @@ export async function getOrganizationUnitId(handle: string): Promise<string> {
 }
 
 export async function getDefaultOrganizationUnitId(): Promise<string> {
-  return getOrganizationUnitId("default");
+  return getOrganizationUnitId('default');
 }
 
 export async function getCustomersOrganizationUnitId(): Promise<string> {
-  return getOrganizationUnitId("customers");
+  return getOrganizationUnitId('customers');
 }
 
 export interface User {
@@ -110,14 +110,14 @@ export async function fetchUsers(filter?: string): Promise<User[]> {
   }
 
   const response = await fetch(url, {
-    method: "GET",
+    method: 'GET',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fetch users");
+    throw new Error('Failed to fetch users');
   }
 
   const data: UserListResponse = await response.json();
@@ -133,17 +133,17 @@ export async function fetchUserById(userId: string): Promise<User> {
   const { baseUrl } = getConfig();
 
   const response = await fetch(`${baseUrl}/users/${userId}`, {
-    method: "GET",
+    method: 'GET',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
   });
 
   if (!response.ok) {
     if (response.status === 404) {
-      throw new Error("User not found");
+      throw new Error('User not found');
     }
-    throw new Error("Failed to fetch user");
+    throw new Error('Failed to fetch user');
   }
 
   return await response.json();
@@ -171,20 +171,20 @@ export interface ApiError {
 
 /**
  * Sends an SMS OTP to the user's mobile number
- * @param senderId - The notification sender ID configured in Thunder
+ * @param senderId - The notification sender ID configured in ThunderID
  * @param recipient - The mobile number to send OTP to (e.g., +1234567890)
  * @returns Promise with session token for OTP verification
  */
 export async function sendSMSOTP(
   senderId: string,
-  recipient: string
+  recipient: string,
 ): Promise<SendOTPResponse> {
   const { baseUrl } = getConfig();
 
   const response = await fetch(`${baseUrl}/auth/otp/sms/send`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       sender_id: senderId,
@@ -193,10 +193,10 @@ export async function sendSMSOTP(
   });
 
   if (!response.ok) {
-    let errorMessage = "Failed to send OTP";
+    let errorMessage = 'Failed to send OTP';
     try {
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
         const errorData: ApiError = await response.json();
         errorMessage = errorData.message?.defaultValue || errorMessage;
       } else {
@@ -221,14 +221,14 @@ export async function sendSMSOTP(
 export async function verifySMSOTP(
   sessionToken: string,
   otp: string,
-  existingAssertion: string
+  existingAssertion: string,
 ): Promise<VerifyOTPResponse> {
   const { baseUrl } = getConfig();
 
   const response = await fetch(`${baseUrl}/auth/otp/sms/verify`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       session_token: sessionToken,
@@ -238,10 +238,10 @@ export async function verifySMSOTP(
   });
 
   if (!response.ok) {
-    let errorMessage = "OTP verification failed";
+    let errorMessage = 'OTP verification failed';
     try {
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
         const errorData: ApiError = await response.json();
         errorMessage = errorData.message?.defaultValue || errorMessage;
       } else {

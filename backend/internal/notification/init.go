@@ -38,7 +38,7 @@ func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface,
 	var notificationStore notificationStoreInterface
 	var tx transaction.Transactioner
 
-	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
+	if config.GetServerRuntime().Config.DeclarativeResources.Enabled {
 		notificationStore, tx = newNotificationFileBasedStore()
 	} else {
 		var err error
@@ -51,7 +51,7 @@ func Initialize(mux *http.ServeMux, jwtService jwt.JWTServiceInterface,
 
 	mgtService := newNotificationSenderMgtService(notificationStore, tx)
 
-	if config.GetThunderRuntime().Config.DeclarativeResources.Enabled {
+	if config.GetServerRuntime().Config.DeclarativeResources.Enabled {
 		if err := loadDeclarativeResources(notificationStore); err != nil {
 			return nil, nil, nil, nil, err
 		}

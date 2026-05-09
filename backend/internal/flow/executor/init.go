@@ -24,6 +24,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/consent"
 	"github.com/asgardeo/thunder/internal/authn/github"
 	"github.com/asgardeo/thunder/internal/authn/google"
+	"github.com/asgardeo/thunder/internal/authn/magiclink"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
@@ -40,10 +41,9 @@ import (
 	"github.com/asgardeo/thunder/internal/role"
 	"github.com/asgardeo/thunder/internal/system/email"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
-	"github.com/asgardeo/thunder/internal/system/observability"
 	"github.com/asgardeo/thunder/internal/system/template"
 
-	"github.com/asgardeo/thunder/internal/userschema"
+	"github.com/asgardeo/thunder/internal/entitytype"
 )
 
 // Initialize registers available executors and returns the executor registry.
@@ -58,9 +58,9 @@ func Initialize(
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	otpService otp.OTPAuthnServiceInterface,
 	passkeyService passkey.PasskeyServiceInterface,
+	magicLinkService magiclink.MagicLinkAuthnServiceInterface,
 	authZService authz.AuthorizationServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
-	observabilitySvc observability.ObservabilityServiceInterface,
+	entityTypeService entitytype.EntityTypeServiceInterface,
 	groupService group.GroupServiceInterface,
 	roleService role.RoleServiceInterface,
 	entityProvider entityprovider.EntityProviderInterface,
@@ -79,20 +79,21 @@ func Initialize(
 		flowFactory, otpService, authnProvider, entityProvider))
 	reg.RegisterExecutor(ExecutorNamePasskeyAuth, newPasskeyAuthExecutor(
 		flowFactory, passkeyService, authnProvider, entityProvider))
-
+	reg.RegisterExecutor(ExecutorNameMagicLinkAuth, newMagicLinkAuthExecutor(
+		flowFactory, magicLinkService, entityProvider))
 	reg.RegisterExecutor(ExecutorNameOAuth, newOAuthExecutor(
-		"", []common.Input{}, []common.Input{}, flowFactory, idpService, userSchemaService,
+		"", []common.Input{}, []common.Input{}, flowFactory, idpService, entityTypeService,
 		oauthSvc, authnProvider, idp.IDPTypeOAuth))
 	reg.RegisterExecutor(ExecutorNameOIDCAuth, newOIDCAuthExecutor(
-		"", []common.Input{}, []common.Input{}, flowFactory, idpService, userSchemaService,
+		"", []common.Input{}, []common.Input{}, flowFactory, idpService, entityTypeService,
 		oidcSvc, authnProvider, idp.IDPTypeOIDC))
 	reg.RegisterExecutor(ExecutorNameGitHubAuth, newGithubOAuthExecutor(
-		flowFactory, idpService, userSchemaService, githubSvc, authnProvider))
+		flowFactory, idpService, entityTypeService, githubSvc, authnProvider))
 	reg.RegisterExecutor(ExecutorNameGoogleAuth, newGoogleOIDCAuthExecutor(
-		flowFactory, idpService, userSchemaService, googleSvc, authnProvider))
+		flowFactory, idpService, entityTypeService, googleSvc, authnProvider))
 
 	reg.RegisterExecutor(ExecutorNameProvisioning, newProvisioningExecutor(flowFactory,
-		groupService, roleService, entityProvider, userSchemaService))
+		groupService, roleService, entityProvider, entityTypeService))
 	reg.RegisterExecutor(ExecutorNameOUCreation, newOUExecutor(flowFactory, ouService))
 
 	reg.RegisterExecutor(ExecutorNameAttributeCollect, newAttributeCollector(flowFactory, entityProvider))
@@ -101,7 +102,7 @@ func Initialize(
 		attributeCacheSvc, roleService))
 	reg.RegisterExecutor(ExecutorNameAuthorization, newAuthorizationExecutor(flowFactory, authZService, entityProvider))
 	reg.RegisterExecutor(ExecutorNameHTTPRequest, newHTTPRequestExecutor(flowFactory, ouService))
-	reg.RegisterExecutor(ExecutorNameUserTypeResolver, newUserTypeResolver(flowFactory, userSchemaService, ouService))
+	reg.RegisterExecutor(ExecutorNameUserTypeResolver, newUserTypeResolver(flowFactory, entityTypeService, ouService))
 	reg.RegisterExecutor(ExecutorNameInviteExecutor, newInviteExecutor(flowFactory))
 	reg.RegisterExecutor(ExecutorNameEmailExecutor, newEmailExecutor(
 		flowFactory, emailClient, templateService, entityProvider))
@@ -113,7 +114,7 @@ func Initialize(
 	reg.RegisterExecutor(ExecutorNameConsent, newConsentExecutor(flowFactory, consentEnforcer))
 	reg.RegisterExecutor(ExecutorNameOUResolver, newOUResolverExecutor(flowFactory, ouService))
 	reg.RegisterExecutor(ExecutorNameAttributeUniquenessValidator, newAttributeUniquenessValidator(
-		flowFactory, userSchemaService, entityProvider))
+		flowFactory, entityTypeService, entityProvider))
 	reg.RegisterExecutor(ExecutorNameSMSExecutor, newSMSExecutor(flowFactory, notifSenderSvc, templateService))
 	reg.RegisterExecutor(ExecutorNameFederatedAuthResolver, newFederatedAuthResolverExecutor(flowFactory))
 

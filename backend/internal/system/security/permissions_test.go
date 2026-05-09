@@ -31,6 +31,8 @@ import (
 // ---------------------------------------------------------------------------
 
 func (s *SecurityContextTestSuite) TestHasSystemPermission() {
+	InitSystemPermissions("")
+
 	tests := []struct {
 		name        string
 		permissions []string
@@ -197,35 +199,38 @@ func (s *SecurityContextTestSuite) TestHasSufficientPermission() {
 // ---------------------------------------------------------------------------
 
 func (s *SecurityContextTestSuite) TestResolveActionPermission() {
+	InitSystemPermissions("")
+	p := GetSystemPermissions()
+
 	tests := []struct {
 		name     string
 		action   Action
 		wantPerm string
 	}{
 		// OU actions.
-		{name: "CreateOU", action: ActionCreateOU, wantPerm: PermissionOU},
-		{name: "ReadOU", action: ActionReadOU, wantPerm: PermissionOUView},
-		{name: "UpdateOU", action: ActionUpdateOU, wantPerm: PermissionOU},
-		{name: "DeleteOU", action: ActionDeleteOU, wantPerm: PermissionOU},
-		{name: "ListOUs", action: ActionListOUs, wantPerm: PermissionOUView},
+		{name: "CreateOU", action: ActionCreateOU, wantPerm: p.OU},
+		{name: "ReadOU", action: ActionReadOU, wantPerm: p.OUView},
+		{name: "UpdateOU", action: ActionUpdateOU, wantPerm: p.OU},
+		{name: "DeleteOU", action: ActionDeleteOU, wantPerm: p.OU},
+		{name: "ListOUs", action: ActionListOUs, wantPerm: p.OUView},
 
 		// User actions.
-		{name: "CreateUser", action: ActionCreateUser, wantPerm: PermissionUser},
-		{name: "ReadUser", action: ActionReadUser, wantPerm: PermissionUserView},
-		{name: "UpdateUser", action: ActionUpdateUser, wantPerm: PermissionUser},
-		{name: "DeleteUser", action: ActionDeleteUser, wantPerm: PermissionUser},
-		{name: "ListUsers", action: ActionListUsers, wantPerm: PermissionUserView},
+		{name: "CreateUser", action: ActionCreateUser, wantPerm: p.User},
+		{name: "ReadUser", action: ActionReadUser, wantPerm: p.UserView},
+		{name: "UpdateUser", action: ActionUpdateUser, wantPerm: p.User},
+		{name: "DeleteUser", action: ActionDeleteUser, wantPerm: p.User},
+		{name: "ListUsers", action: ActionListUsers, wantPerm: p.UserView},
 
 		// Group actions.
-		{name: "CreateGroup", action: ActionCreateGroup, wantPerm: PermissionGroup},
-		{name: "ReadGroup", action: ActionReadGroup, wantPerm: PermissionGroupView},
-		{name: "UpdateGroup", action: ActionUpdateGroup, wantPerm: PermissionGroup},
-		{name: "DeleteGroup", action: ActionDeleteGroup, wantPerm: PermissionGroup},
-		{name: "ListGroups", action: ActionListGroups, wantPerm: PermissionGroupView},
+		{name: "CreateGroup", action: ActionCreateGroup, wantPerm: p.Group},
+		{name: "ReadGroup", action: ActionReadGroup, wantPerm: p.GroupView},
+		{name: "UpdateGroup", action: ActionUpdateGroup, wantPerm: p.Group},
+		{name: "DeleteGroup", action: ActionDeleteGroup, wantPerm: p.Group},
+		{name: "ListGroups", action: ActionListGroups, wantPerm: p.GroupView},
 
-		// Unmapped action falls back to SystemPermission.
-		{name: "UnmappedAction_FallsBackToSystem", action: Action("custom:unknown"), wantPerm: SystemPermission},
-		{name: "EmptyAction_FallsBackToSystem", action: Action(""), wantPerm: SystemPermission},
+		// Unmapped action falls back to Root (system).
+		{name: "UnmappedAction_FallsBackToSystem", action: Action("custom:unknown"), wantPerm: p.Root},
+		{name: "EmptyAction_FallsBackToSystem", action: Action(""), wantPerm: p.Root},
 	}
 
 	for _, tt := range tests {
@@ -238,6 +243,7 @@ func (s *SecurityContextTestSuite) TestResolveActionPermission() {
 // TestResolveActionPermission_CoversAllMappedActions ensures every entry in
 // actionPermissionMap is reachable and returns the expected permission.
 func (s *SecurityContextTestSuite) TestResolveActionPermission_CoversAllMappedActions() {
+	InitSystemPermissions("")
 	for action, expectedPerm := range actionPermissionMap {
 		s.Run(string(action), func() {
 			s.Equal(expectedPerm, ResolveActionPermission(action))
@@ -246,10 +252,72 @@ func (s *SecurityContextTestSuite) TestResolveActionPermission_CoversAllMappedAc
 }
 
 // ---------------------------------------------------------------------------
+// InitSystemPermissions
+// ---------------------------------------------------------------------------
+
+func TestInitSystemPermissions_EmptyHandle(t *testing.T) {
+	InitSystemPermissions("")
+	p := GetSystemPermissions()
+	require.NotNil(t, p)
+
+	assert.Equal(t, "system", p.Root)
+	assert.Equal(t, "system:ou", p.OU)
+	assert.Equal(t, "system:ou:view", p.OUView)
+	assert.Equal(t, "system:user", p.User)
+	assert.Equal(t, "system:user:view", p.UserView)
+	assert.Equal(t, "system:group", p.Group)
+	assert.Equal(t, "system:group:view", p.GroupView)
+	assert.Equal(t, "system:usertype", p.UserType)
+	assert.Equal(t, "system:usertype:view", p.UserTypeView)
+	assert.Equal(t, "system:agenttype", p.AgentType)
+	assert.Equal(t, "system:agenttype:view", p.AgentTypeView)
+}
+
+func TestInitSystemPermissions_NonEmptyHandle(t *testing.T) {
+	InitSystemPermissions("mgmt")
+	p := GetSystemPermissions()
+	require.NotNil(t, p)
+
+	assert.Equal(t, "mgmt:system", p.Root)
+	assert.Equal(t, "mgmt:system:ou", p.OU)
+	assert.Equal(t, "mgmt:system:ou:view", p.OUView)
+	assert.Equal(t, "mgmt:system:user", p.User)
+	assert.Equal(t, "mgmt:system:user:view", p.UserView)
+	assert.Equal(t, "mgmt:system:group", p.Group)
+	assert.Equal(t, "mgmt:system:group:view", p.GroupView)
+	assert.Equal(t, "mgmt:system:usertype", p.UserType)
+	assert.Equal(t, "mgmt:system:usertype:view", p.UserTypeView)
+	assert.Equal(t, "mgmt:system:agenttype", p.AgentType)
+	assert.Equal(t, "mgmt:system:agenttype:view", p.AgentTypeView)
+
+	// Restore default for other tests.
+	InitSystemPermissions("")
+}
+
+func TestInitSystemPermissions_RebuildsActionMap(t *testing.T) {
+	InitSystemPermissions("x")
+	assert.Equal(t, "x:system:ou", ResolveActionPermission(ActionCreateOU))
+
+	InitSystemPermissions("")
+	assert.Equal(t, "system:ou", ResolveActionPermission(ActionCreateOU))
+}
+
+func TestHasSystemPermission_WithCustomHandle(t *testing.T) {
+	InitSystemPermissions("mgmt")
+	defer InitSystemPermissions("")
+
+	assert.True(t, HasSystemPermission([]string{"mgmt:system"}))
+	assert.False(t, HasSystemPermission([]string{"system"}))
+}
+
+// ---------------------------------------------------------------------------
 // GetRequiredPermissionForAPI
 // ---------------------------------------------------------------------------
 
 func TestGetRequiredPermissionForAPI(t *testing.T) {
+	InitSystemPermissions("")
+	p := GetSystemPermissions()
+
 	svc, err := newSecurityService(nil, []string{}, apiPermissionEntries)
 	require.NoError(t, err)
 
@@ -262,16 +330,16 @@ func TestGetRequiredPermissionForAPI(t *testing.T) {
 		// ---- Exact matches ----
 		{
 			name:   "GET /organization-units exact",
-			method: http.MethodGet, path: "/organization-units", wantPerm: PermissionOUView,
+			method: http.MethodGet, path: "/organization-units", wantPerm: p.OUView,
 		},
 		{
 			name:   "POST /organization-units exact",
-			method: http.MethodPost, path: "/organization-units", wantPerm: PermissionOU,
+			method: http.MethodPost, path: "/organization-units", wantPerm: p.OU,
 		},
-		{name: "GET /users exact", method: http.MethodGet, path: "/users", wantPerm: PermissionUserView},
-		{name: "POST /users exact", method: http.MethodPost, path: "/users", wantPerm: PermissionUser},
-		{name: "GET /groups exact", method: http.MethodGet, path: "/groups", wantPerm: PermissionGroupView},
-		{name: "POST /groups exact", method: http.MethodPost, path: "/groups", wantPerm: PermissionGroup},
+		{name: "GET /users exact", method: http.MethodGet, path: "/users", wantPerm: p.UserView},
+		{name: "POST /users exact", method: http.MethodPost, path: "/users", wantPerm: p.User},
+		{name: "GET /groups exact", method: http.MethodGet, path: "/groups", wantPerm: p.GroupView},
+		{name: "POST /groups exact", method: http.MethodPost, path: "/groups", wantPerm: p.Group},
 
 		// ---- Self-service paths (empty permission = any authenticated user) ----
 		{name: "GET /users/me self-service", method: http.MethodGet, path: "/users/me", wantPerm: ""},
@@ -294,39 +362,38 @@ func TestGetRequiredPermissionForAPI(t *testing.T) {
 		// ---- Prefix match — dynamic path segments ----
 		{
 			name:   "GET /organization-units/{id} prefix",
-			method: http.MethodGet, path: "/organization-units/ou-123", wantPerm: PermissionOUView,
+			method: http.MethodGet, path: "/organization-units/ou-123", wantPerm: p.OUView,
 		},
 		{
 			name:   "PUT /organization-units/{id} prefix",
-			method: http.MethodPut, path: "/organization-units/ou-123", wantPerm: PermissionOU,
+			method: http.MethodPut, path: "/organization-units/ou-123", wantPerm: p.OU,
 		},
 		{
 			name:   "DELETE /organization-units/{id} prefix",
-			method: http.MethodDelete, path: "/organization-units/ou-123", wantPerm: PermissionOU,
+			method: http.MethodDelete, path: "/organization-units/ou-123", wantPerm: p.OU,
 		},
 		{
 			name:   "GET /users/{id} prefix",
-			method: http.MethodGet, path: "/users/user-456", wantPerm: PermissionUserView,
+			method: http.MethodGet, path: "/users/user-456", wantPerm: p.UserView,
 		},
 		{
 			name:   "PUT /users/{id} prefix",
-			method: http.MethodPut, path: "/users/user-456", wantPerm: PermissionUser,
+			method: http.MethodPut, path: "/users/user-456", wantPerm: p.User,
 		},
 		{
 			name:   "DELETE /users/{id} prefix",
-			method: http.MethodDelete, path: "/users/user-789", wantPerm: PermissionUser,
+			method: http.MethodDelete, path: "/users/user-789", wantPerm: p.User,
 		},
 		{
 			name:   "GET /groups/{id} prefix",
-			method: http.MethodGet, path: "/groups/grp-111", wantPerm: PermissionGroupView,
+			method: http.MethodGet, path: "/groups/grp-111", wantPerm: p.GroupView,
 		},
 		{
 			name:   "DELETE /groups/{id} prefix",
-			method: http.MethodDelete, path: "/groups/grp-222", wantPerm: PermissionGroup,
+			method: http.MethodDelete, path: "/groups/grp-222", wantPerm: p.Group,
 		},
 
 		// ---- Self-service wins over parent prefix ----
-		// /users/me must match "" even though /users/ would match PermissionUserView.
 		{name: "GET /users/me wins over /users/ prefix", method: http.MethodGet, path: "/users/me", wantPerm: ""},
 		{
 			name:   "GET /users/me/profile wins over /users/ prefix",
@@ -336,40 +403,36 @@ func TestGetRequiredPermissionForAPI(t *testing.T) {
 		// ---- OU tree paths ----
 		{
 			name:   "GET /organization-units/tree",
-			method: http.MethodGet, path: "/organization-units/tree", wantPerm: PermissionOUView,
+			method: http.MethodGet, path: "/organization-units/tree", wantPerm: p.OUView,
 		},
 		{
 			name:   "PUT /organization-units/tree",
-			method: http.MethodPut, path: "/organization-units/tree", wantPerm: PermissionOU,
+			method: http.MethodPut, path: "/organization-units/tree", wantPerm: p.OU,
 		},
 		{
 			name:   "DELETE /organization-units/tree",
-			method: http.MethodDelete, path: "/organization-units/tree", wantPerm: PermissionOU,
+			method: http.MethodDelete, path: "/organization-units/tree", wantPerm: p.OU,
 		},
 
-		// ---- Unmapped paths fall back to SystemPermission ----
+		// ---- Unmapped paths fall back to Root ----
 		{
 			name:   "Unmapped path falls back to system",
-			method: http.MethodGet, path: "/applications", wantPerm: SystemPermission,
+			method: http.MethodGet, path: "/applications", wantPerm: p.Root,
 		},
-		{name: "Root path falls back to system", method: http.MethodGet, path: "/", wantPerm: SystemPermission},
+		{name: "Root path falls back to system", method: http.MethodGet, path: "/", wantPerm: p.Root},
 		{
 			name:   "Unknown POST falls back to system",
-			method: http.MethodPost, path: "/configs", wantPerm: SystemPermission,
+			method: http.MethodPost, path: "/configs", wantPerm: p.Root,
 		},
 		{
-			// /users/menu has no explicit entry but matches the GET /users/** wildcard,
-			// so it requires PermissionUserView — the same as any other /users/<id> path.
-			// It previously returned "" (self-service) because the old string-prefix logic
-			// let "GET /users/me" accidentally act as a prefix of "GET /users/menu".
 			name:   "GET /users/menu matches users wildcard",
-			method: http.MethodGet, path: "/users/menu", wantPerm: PermissionUserView,
+			method: http.MethodGet, path: "/users/menu", wantPerm: p.UserView,
 		},
 
 		// ---- Wrong method does not match mapped path ----
 		{
 			name:   "PATCH /users unmapped method falls back to system",
-			method: http.MethodPatch, path: "/users", wantPerm: SystemPermission,
+			method: http.MethodPatch, path: "/users", wantPerm: p.Root,
 		},
 	}
 

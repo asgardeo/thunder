@@ -7,7 +7,7 @@ description: Register OAuth 2.0 clients programmatically via the DCR endpoint, i
 
 # Dynamic Client Registration
 
-Dynamic Client Registration (DCR) lets you register OAuth 2.0 clients with Thunder programmatically, without using the Console. It follows [RFC 7591](https://www.rfc-editor.org/rfc/rfc7591).
+Dynamic Client Registration (DCR) lets you register OAuth 2.0 clients with <ProductName /> programmatically, without using the Console. It follows [RFC 7591](https://www.rfc-editor.org/rfc/rfc7591).
 
 **Endpoint:** `POST /oauth2/dcr/register`
 
@@ -46,7 +46,7 @@ A successful registration returns `201 Created` with the assigned `client_id`, `
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `redirect_uris` | Yes | One or more URIs Thunder redirects to after authentication. |
+| `redirect_uris` | Yes | One or more URIs <ProductName /> redirects to after authentication. |
 | `grant_types` | No | OAuth 2.0 grant types the client may use. Defaults to `["authorization_code"]`. |
 | `response_types` | No | OAuth 2.0 response types. Defaults to `["code"]`. |
 | `token_endpoint_auth_method` | No | How the client authenticates at the token endpoint (`client_secret_basic`, `client_secret_post`, `none`). Defaults to `client_secret_basic`. |
@@ -89,7 +89,7 @@ All localized fields are echoed back in the registration response.
 | Rule | Details |
 |------|---------|
 | **Valid BCP 47 tag** | The tag must be a well-formed BCP 47 language tag (e.g. `fr`, `en-US`, `zh-Hant`). Invalid tags return `400`. |
-| **Canonical form required** | The tag must be in canonical form — `en-US` is accepted, `en-us` is not. Thunder normalizes the tag to its canonical BCP 47 form. |
+| **Canonical form required** | The tag must be in canonical form — `en-US` is accepted, `en-us` is not. <ProductName /> normalizes the tag to its canonical BCP 47 form. |
 | **Maximum 20 variants per field** | You may provide at most 20 language variants for each field. Exceeding this limit returns `400`. |
 
 ### Error Responses
@@ -103,5 +103,5 @@ All localized fields are echoed back in the registration response.
 
 ## Related Guides
 
-- [Manage Applications](./manage-applications) - Register and manage applications from the Thunder Console
+- [Manage Applications](./manage-applications) - Register and manage applications from the <ProductName /> Console
 - [Application Settings](./application-settings) - Configure flows, tokens, and OAuth 2.0 settings

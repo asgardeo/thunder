@@ -27,7 +27,7 @@ import (
 func InitializeEntityProvider(
 	entitySvc entity.EntityServiceInterface,
 ) EntityProviderInterface {
-	entityProviderConfig := config.GetThunderRuntime().Config.EntityProvider
+	entityProviderConfig := config.GetServerRuntime().Config.EntityProvider
 	switch entityProviderConfig.Type {
 	case "disabled":
 		return initializeDisabledEntityProvider()

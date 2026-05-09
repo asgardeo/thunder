@@ -58,7 +58,9 @@ func (s *ApplicationServiceConsentTestSuite) TestValidateConsentConfig_NegativeV
 	svc := newTestApplicationService()
 
 	app := &model.ApplicationDTO{
-		LoginConsent: &inboundmodel.LoginConsentConfig{ValidityPeriod: -100},
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			LoginConsent: &inboundmodel.LoginConsentConfig{ValidityPeriod: -100},
+		},
 	}
 	svc.validateConsentConfig(app)
 

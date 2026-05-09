@@ -31,8 +31,6 @@ import (
 	managerpkg "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
-	"github.com/asgardeo/thunder/internal/system/crypto"
-	"github.com/asgardeo/thunder/internal/system/crypto/runtime"
 )
 
 // EngineContext holds the overall context used by the flow engine during execution.
@@ -126,28 +124,6 @@ type FlowContextDB struct {
 	UpdatedAt   time.Time
 }
 
-// isEncrypted reports whether the Context field is still in encrypted form.
-func (f *FlowContextDB) isEncrypted() bool {
-	var encCheck struct {
-		Algorithm string `json:"alg"`
-	}
-	return json.Unmarshal([]byte(f.Context), &encCheck) == nil && encCheck.Algorithm != ""
-}
-
-// decrypt decrypts the Context field in-place if it is still encrypted.
-func (f *FlowContextDB) decrypt(ctx context.Context) error {
-	if !f.isEncrypted() {
-		return nil
-	}
-	decrypted, err := runtime.GetRuntimeCryptoService().Decrypt(
-		ctx, crypto.KeyRef{}, crypto.AlgorithmParams{Algorithm: crypto.AlgorithmAESGCM}, []byte(f.Context))
-	if err != nil {
-		return err
-	}
-	f.Context = string(decrypted)
-	return nil
-}
-
 // flowContextContent holds all flow state serialized into the CONTEXT JSON column.
 type flowContextContent struct {
 	AppID               string  `json:"appId"`
@@ -170,25 +146,8 @@ type flowContextContent struct {
 	ChallengeTokenHash  *string `json:"challengeTokenHash,omitempty"`
 }
 
-// encrypt marshals and encrypts the content, returning the encrypted string.
-func (c *flowContextContent) encrypt(ctx context.Context) (string, error) {
-	data, err := json.Marshal(c)
-	if err != nil {
-		return "", err
-	}
-	encrypted, _, err := runtime.GetRuntimeCryptoService().Encrypt(
-		ctx, crypto.KeyRef{}, crypto.AlgorithmParams{Algorithm: crypto.AlgorithmAESGCM}, data)
-	if err != nil {
-		return "", err
-	}
-	return string(encrypted), nil
-}
-
 // GetGraphID extracts the graph ID from the context JSON.
-func (f *FlowContextDB) GetGraphID(ctx context.Context) (string, error) {
-	if err := f.decrypt(ctx); err != nil {
-		return "", err
-	}
+func (f *FlowContextDB) GetGraphID(_ context.Context) (string, error) {
 	var content flowContextContent
 	if err := json.Unmarshal([]byte(f.Context), &content); err != nil {
 		return "", err
@@ -198,10 +157,6 @@ func (f *FlowContextDB) GetGraphID(ctx context.Context) (string, error) {
 
 // ToEngineContext converts the database model to the flow engine context.
 func (f *FlowContextDB) ToEngineContext(ctx context.Context, graph core.GraphInterface) (EngineContext, error) {
-	// Ensure context is decrypted before parsing
-	if err := f.decrypt(ctx); err != nil {
-		return EngineContext{}, err
-	}
 	var content flowContextContent
 	if err := json.Unmarshal([]byte(f.Context), &content); err != nil {
 		return EngineContext{}, err
@@ -460,13 +415,13 @@ func FromEngineContext(ctx EngineContext) (*FlowContextDB, error) {
 		ChallengeTokenHash:  challengeTokenHash,
 	}
 
-	encryptedContext, err := content.encrypt(ctx.Context)
+	contextJSON, err := json.Marshal(content)
 	if err != nil {
 		return nil, err
 	}
 
 	return &FlowContextDB{
 		ExecutionID: ctx.ExecutionID,
-		Context:     encryptedContext,
+		Context:     string(contextJSON),
 	}, nil
 }

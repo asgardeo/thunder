@@ -39,14 +39,17 @@ type cacheBackedFlowStore struct {
 }
 
 // newCacheBackedFlowStore creates a new instance of cacheBackedFlowStore.
-func newCacheBackedFlowStore() (flowStoreInterface, transaction.Transactioner, error) {
+func newCacheBackedFlowStore(
+	flowByIDCache cache.CacheInterface[*CompleteFlowDefinition],
+	flowByHandleCache cache.CacheInterface[*CompleteFlowDefinition],
+) (flowStoreInterface, transaction.Transactioner, error) {
 	store, transactioner, err := newFlowStore()
 	if err != nil {
 		return nil, nil, err
 	}
 	return &cacheBackedFlowStore{
-		flowByIDCache:     cache.GetCache[*CompleteFlowDefinition]("FlowByIDCache"),
-		flowByHandleCache: cache.GetCache[*CompleteFlowDefinition]("FlowByHandleCache"),
+		flowByIDCache:     flowByIDCache,
+		flowByHandleCache: flowByHandleCache,
 		store:             store,
 		logger: log.GetLogger().With(
 			log.String(log.LoggerKeyComponentName, cacheBackedStoreLoggerComponentName)),

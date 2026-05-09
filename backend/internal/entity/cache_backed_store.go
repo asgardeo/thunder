@@ -35,9 +35,10 @@ type cacheBackedEntityStore struct {
 }
 
 // newCacheBackedEntityStore creates a cache-backed wrapper around the given store.
-func newCacheBackedEntityStore(store entityStoreInterface) entityStoreInterface {
+func newCacheBackedEntityStore(store entityStoreInterface,
+	entityByIDCache cache.CacheInterface[*Entity]) entityStoreInterface {
 	return &cacheBackedEntityStore{
-		entityByIDCache: cache.GetCache[*Entity]("EntityByIDCache"),
+		entityByIDCache: entityByIDCache,
 		store:           store,
 		logger: log.GetLogger().With(
 			log.String(log.LoggerKeyComponentName, "CacheBackedEntityStore")),

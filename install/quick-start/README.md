@@ -1,6 +1,6 @@
-# Thunder Quick Start
+# ThunderID Quick Start
 
-Run Thunder locally using Docker Compose. This is the fastest way to get Thunder up and running with all dependencies configured.
+Run ThunderID locally using Docker Compose. This is the fastest way to get ThunderID up and running with all dependencies configured.
 
 ## Prerequisites
 
@@ -9,7 +9,7 @@ Run Thunder locally using Docker Compose. This is the fastest way to get Thunder
 
 ---
 
-## Running Thunder
+## Running ThunderID
 
 Start all services with a single command:
 
@@ -20,14 +20,14 @@ docker compose up
 This will automatically:
 1. **Initialize** the database from the image
 2. **Run setup** — bootstraps default resources (admin user, sample apps, etc.)
-3. **Start the server** — Thunder is ready to serve requests
+3. **Start the server** — ThunderID is ready to serve requests
 
-Once running, Thunder is available at:
+Once running, ThunderID is available at:
 
 | URL | Description |
 |------|-------------|
-| `https://localhost:8090` | Thunder Server |
-| `https://localhost:8090/console` | Thunder Console |
+| `https://localhost:8090` | ThunderID Server |
+| `https://localhost:8090/console` | ThunderID Console |
 
 > **Default credentials:** `admin` / `admin`
 
@@ -39,15 +39,15 @@ The Compose file defines three services:
 
 | Service | Description |
 |---|---|
-| `thunder-db-init` | One-shot container that copies the initial database files to a shared volume |
-| `thunder-setup` | One-shot container that bootstraps default resources via `setup.sh` |
-| `thunder` | The Thunder server — starts after setup completes |
+| `thunderid-db-init` | One-shot container that copies the initial database files to a shared volume |
+| `thunderid-setup` | One-shot container that bootstraps default resources via `setup.sh` |
+| `thunderid` | The ThunderID server — starts after setup completes |
 
-The `thunder-db-init` and `thunder-setup` services run once and exit. Only `thunder` stays running.
+The `thunderid-db-init` and `thunderid-setup` services run once and exit. Only `thunderid` stays running.
 
 ---
 
-## Stopping Thunder
+## Stopping ThunderID
 
 ```bash
 # Stop and keep data
@@ -61,7 +61,7 @@ docker compose down -v
 
 ## Custom Host and Port
 
-By default, Thunder runs on `localhost:8090`. To run it on a different hostname or port — for example a custom domain, a server IP, or a local alias like `thunder.local` — you need to override three configuration files.
+By default, ThunderID runs on `localhost:8090`. To run it on a different hostname or port — for example a custom domain, a server IP, or a local alias like `thunderid.local` — you need to override three configuration files.
 
 ### How It Works
 
@@ -69,9 +69,9 @@ The Docker image bakes in default configuration files. You can override them wit
 
 | File in container | Purpose |
 |---|---|
-| `/opt/thunder/repository/conf/deployment.yaml` | Backend server — bind address, public URL, CORS, Gate client redirect |
-| `/opt/thunder/apps/console/config.js` | Management Console frontend |
-| `/opt/thunder/apps/gate/config.js` | Gate login app frontend |
+| `/opt/thunderid/repository/conf/deployment.yaml` | Backend server — bind address, public URL, CORS, Gate client redirect |
+| `/opt/thunderid/apps/console/config.js` | Management Console frontend |
+| `/opt/thunderid/apps/gate/config.js` | Gate login app frontend |
 
 ### Step 1: Create Your Configuration Files
 
@@ -81,7 +81,7 @@ Create the following three files in the same directory as `docker-compose.yml`:
 .
 ├── docker-compose.yml
 ├── deployment.yaml       ← backend configuration
-├── console-config.js     ← Thunder Console configuration
+├── console-config.js     ← ThunderID Console configuration
 └── gate-config.js        ← Gate login app configuration
 ```
 
@@ -91,7 +91,7 @@ Create the following three files in the same directory as `docker-compose.yml`:
 server:
   hostname: "0.0.0.0"                            # Keep as-is — binds to all interfaces
   port: <your-port>                              # e.g. 8090
-  public_url: "https://<your-host>:<your-port>" # e.g. https://thunder.local:8090
+  public_url: "https://<your-host>:<your-port>" # e.g. https://thunderid.local:8090
 
 gate_client:
   hostname: "<your-host>"
@@ -101,11 +101,11 @@ gate_client:
 
 cors:
   allowed_origins:
-    - "https://<your-host>:<your-port>"  # e.g. https://thunder.local:8090
+    - "https://<your-host>:<your-port>"  # e.g. https://thunderid.local:8090
 
 passkey:
   allowed_origins:
-    - "https://<your-host>:<your-port>"  # e.g. https://thunder.local:8090
+    - "https://<your-host>:<your-port>"  # e.g. https://thunderid.local:8090
 
 # Other configurations...
 ```
@@ -113,14 +113,14 @@ passkey:
 #### `console-config.js`
 
 ```js
-window.__THUNDER_RUNTIME_CONFIG__ = {
+window.__THUNDERID_RUNTIME_CONFIG__ = {
   client: {
     base: '/console',
     client_id: 'CONSOLE',
     scopes: ['openid', 'profile', 'email', 'system'],
   },
   server: {
-    public_url: 'https://<your-host>:<your-port>', // e.g. https://thunder.local:8090
+    public_url: 'https://<your-host>:<your-port>', // e.g. https://thunderid.local:8090
   },
 };
 ```
@@ -128,70 +128,70 @@ window.__THUNDER_RUNTIME_CONFIG__ = {
 #### `gate-config.js`
 
 ```js
-window.__THUNDER_RUNTIME_CONFIG__ = {
+window.__THUNDERID_RUNTIME_CONFIG__ = {
   client: {
     base: '/gate',
   },
   server: {
-    public_url: 'https://<your-host>:<your-port>', // e.g. https://thunder.local:8090
+    public_url: 'https://<your-host>:<your-port>', // e.g. https://thunderid.local:8090
   },
 };
 ```
 
 ### Step 2: Add Volume Mounts to `docker-compose.yml`
 
-Add the following volume mounts to the `thunder-setup` and `thunder` services:
+Add the following volume mounts to the `thunderid-setup` and `thunderid` services:
 
 ```yaml
 services:
-  thunder-setup:
+  thunderid-setup:
     # ...
     volumes:
       # ...
-      - ./deployment.yaml:/opt/thunder/repository/conf/deployment.yaml:ro
+      - ./deployment.yaml:/opt/thunderid/repository/conf/deployment.yaml:ro
 
-  thunder:
+  thunderid:
     # ...
     ports:
       - "<your-port>:<your-port>"  # Update if changing the port, e.g. 9090:9090
     volumes:
       # ...
-      - ./deployment.yaml:/opt/thunder/repository/conf/deployment.yaml:ro
-      - ./console-config.js:/opt/thunder/apps/console/config.js:ro
-      - ./gate-config.js:/opt/thunder/apps/gate/config.js:ro
+      - ./deployment.yaml:/opt/thunderid/repository/conf/deployment.yaml:ro
+      - ./console-config.js:/opt/thunderid/apps/console/config.js:ro
+      - ./gate-config.js:/opt/thunderid/apps/gate/config.js:ro
 ```
 
-> **Note:** `deployment.yaml` must be mounted into `thunder-setup` too, because the setup process starts a temporary server to bootstrap resources. The frontend `config.js` files only need to be in the `thunder` service.
+> **Note:** `deployment.yaml` must be mounted into `thunderid-setup` too, because the setup process starts a temporary server to bootstrap resources. The frontend `config.js` files only need to be in the `thunderid` service.
 >
 > The `ports` mapping only needs updating if you change the port number. If you are only changing the hostname, leave it as `8090:8090`.
 
-### Step 3: Start Thunder
+### Step 3: Start ThunderID
 
 ```bash
 docker compose up
 ```
 
-### Example: Using `thunder.local`
+### Example: Using `thunderid.local`
 
 First, add the alias to your hosts file:
 
 **macOS / Linux:**
 ```bash
-echo "127.0.0.1 thunder.local" | sudo tee -a /etc/hosts
+echo "127.0.0.1 thunderid.local" | sudo tee -a /etc/hosts
 ```
 
 **Windows (run as Administrator):**
 ```powershell
-Add-Content -Path "C:\Windows\System32\drivers\etc\hosts" -Value "127.0.0.1 thunder.local"
+Add-Content -Path "C:\Windows\System32\drivers\etc\hosts" -Value "127.0.0.1 thunderid.local"
 ```
 
-Then replace `<your-host>` with `thunder.local` and `<your-port>` with `8090` (or your chosen port) in all three configuration files.
+Then replace `<your-host>` with `thunderid.local` and `<your-port>` with `8090` (or your chosen port) in all three configuration files.
 
 ---
 
 ## Running with Redis Cache
 
-By default, Thunder cache is disabled. To use Redis, start a Redis instance and configure Thunder to point to it.
+By default, ThunderID cache is disabled. To use Redis, start a Redis instance and configure ThunderID to point to it.
 
 ### Step 1: Start Redis
 
@@ -203,9 +203,9 @@ docker compose -f ./install/local-development/redis/docker-compose.yml up -d
 
 This starts Redis with a persistent volume.
 
-### Step 2: Configure Thunder to Use Redis
+### Step 2: Configure ThunderID to Use Redis
 
-Add the following cache section to your `deployment.yaml` override file (see [Custom Host and Port](#custom-host-and-port) for how to create and mount it), then start Thunder with `docker compose up`.
+Add the following cache section to your `deployment.yaml` override file (see [Custom Host and Port](#custom-host-and-port) for how to create and mount it), then start ThunderID with `docker compose up`.
 
 ```yaml
 cache:
@@ -215,7 +215,7 @@ cache:
     username: "<your-redis-username>"
     password: "<your-redis-password>"
     db: <your-redis-db>
-    key_prefix: "thunder:"
+    key_prefix: "thunderid:"
 ```
 
 ---

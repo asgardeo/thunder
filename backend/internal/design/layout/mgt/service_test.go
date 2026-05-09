@@ -48,8 +48,8 @@ func (suite *LayoutServiceTestSuite) SetupTest() {
 			Enabled: false,
 		},
 	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("/tmp/test", testConfig)
 	if err != nil {
 		suite.Fail("Failed to initialize runtime", err)
 	}
@@ -200,7 +200,7 @@ func (suite *LayoutServiceTestSuite) TestCreateLayout_DuplicateHandle() {
 
 // Test CreateLayout - Declarative mode enabled
 func (suite *LayoutServiceTestSuite) TestCreateLayout_DeclarativeModeEnabled() {
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Layout.Store = "declarative"
 
 	layoutRequest := CreateLayoutRequest{

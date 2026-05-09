@@ -37,7 +37,7 @@ func setupMockObservability(t *testing.T) *observabilitymock.ObservabilityServic
 	t.Helper()
 
 	// Initialize runtime with observability enabled
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		Observability: config.ObservabilityConfig{
 			Enabled: true,
@@ -50,9 +50,9 @@ func setupMockObservability(t *testing.T) *observabilitymock.ObservabilityServic
 		},
 	}
 
-	err := config.InitializeThunderRuntime("/tmp/thunder-test-events", testConfig)
+	err := config.InitializeServerRuntime("/tmp/test-events", testConfig)
 	if err != nil {
-		t.Fatalf("Failed to initialize Thunder runtime: %v", err)
+		t.Fatalf("Failed to initialize server runtime: %v", err)
 	}
 
 	// Create mockery-generated mock
@@ -70,7 +70,7 @@ func setupMockObservability(t *testing.T) *observabilitymock.ObservabilityServic
 func TestPublishFlowStartedEvent(t *testing.T) {
 	mockObs := setupMockObservability(t)
 	defer mockObs.Shutdown()
-	defer config.ResetThunderRuntime()
+	defer config.ResetServerRuntime()
 
 	t.Run("with_authenticated_user", func(t *testing.T) {
 		ctx := &EngineContext{
@@ -113,7 +113,7 @@ func TestPublishFlowStartedEvent(t *testing.T) {
 func TestPublishFlowCompletedEvent(t *testing.T) {
 	mockObs := setupMockObservability(t)
 	defer mockObs.Shutdown()
-	defer config.ResetThunderRuntime()
+	defer config.ResetServerRuntime()
 
 	ctx := &EngineContext{
 		ExecutionID: "flow-003",
@@ -141,7 +141,7 @@ func TestPublishFlowCompletedEvent(t *testing.T) {
 func TestPublishFlowFailedEvent(t *testing.T) {
 	mockObs := setupMockObservability(t)
 	defer mockObs.Shutdown()
-	defer config.ResetThunderRuntime()
+	defer config.ResetServerRuntime()
 
 	t.Run("with_error_description", func(t *testing.T) {
 		ctx := &EngineContext{
@@ -197,7 +197,7 @@ func TestPublishFlowFailedEvent(t *testing.T) {
 func TestPublishNodeExecutionStartedEvent(t *testing.T) {
 	mockObs := setupMockObservability(t)
 	defer mockObs.Shutdown()
-	defer config.ResetThunderRuntime()
+	defer config.ResetServerRuntime()
 
 	t.Run("new_node_execution", func(t *testing.T) {
 		node := coremock.NewNodeInterfaceMock(t)
@@ -254,7 +254,7 @@ func TestPublishNodeExecutionStartedEvent(t *testing.T) {
 func TestPublishNodeExecutionCompletedEvent(t *testing.T) {
 	mockObs := setupMockObservability(t)
 	defer mockObs.Shutdown()
-	defer config.ResetThunderRuntime()
+	defer config.ResetServerRuntime()
 
 	t.Run("node_completed_successfully", func(t *testing.T) {
 		node := coremock.NewNodeInterfaceMock(t)
@@ -367,8 +367,8 @@ func TestPublishNodeExecutionCompletedEvent(t *testing.T) {
 
 // TestObservabilityDisabled verifies that no events are published when observability is disabled
 func TestObservabilityDisabled(t *testing.T) {
-	config.ResetThunderRuntime()
-	defer config.ResetThunderRuntime()
+	config.ResetServerRuntime()
+	defer config.ResetServerRuntime()
 
 	testConfig := &config.Config{
 		Observability: config.ObservabilityConfig{
@@ -376,9 +376,9 @@ func TestObservabilityDisabled(t *testing.T) {
 		},
 	}
 
-	err := config.InitializeThunderRuntime("/tmp/thunder-test-disabled", testConfig)
+	err := config.InitializeServerRuntime("/tmp/test-disabled", testConfig)
 	if err != nil {
-		t.Fatalf("Failed to initialize Thunder runtime: %v", err)
+		t.Fatalf("Failed to initialize server runtime: %v", err)
 	}
 
 	mockObs := &observabilitymock.ObservabilityServiceInterfaceMock{}

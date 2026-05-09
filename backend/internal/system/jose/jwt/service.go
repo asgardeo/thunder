@@ -20,6 +20,7 @@
 package jwt
 
 import (
+	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
@@ -34,19 +35,20 @@ import (
 	"time"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/crypto/pki"
-	"github.com/asgardeo/thunder/internal/system/crypto/sign"
+	"github.com/asgardeo/thunder/internal/system/cryptolab"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/jose/jws"
+	"github.com/asgardeo/thunder/internal/system/kmprovider"
+	"github.com/asgardeo/thunder/internal/system/kmprovider/defaultkm/pkiservice"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
 // JWTServiceInterface defines the interface for JWT operations.
 type JWTServiceInterface interface {
-	GenerateJWT(sub, iss string, validityPeriod int64, claims map[string]interface{}, typ, alg string) (
-		string, int64, *serviceerror.ServiceError)
+	GenerateJWT(ctx context.Context, sub, iss string, validityPeriod int64,
+		claims map[string]interface{}, typ, alg string) (string, int64, *serviceerror.ServiceError)
 	VerifyJWT(jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError
 	VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud,
 		expectedIss string) *serviceerror.ServiceError
@@ -64,19 +66,23 @@ type jwksCacheEntry struct {
 
 // jwtService implements the JWTServiceInterface for generating and managing JWT tokens.
 type jwtService struct {
-	privateKey crypto.PrivateKey
-	signAlg    sign.SignAlgorithm
-	jwsAlg     jws.Algorithm
-	kid        string
-	logger     *log.Logger
-	jwksCache  sync.Map
-	httpClient httpservice.HTTPClientInterface
+	cryptoProvider kmprovider.RuntimeCryptoProvider
+	keyRef         kmprovider.KeyRef
+	publicKey      crypto.PublicKey
+	signAlg        cryptolab.SignAlgorithm
+	jwsAlg         jws.Algorithm
+	kid            string
+	logger         *log.Logger
+	jwksCache      sync.Map
+	httpClient     httpservice.HTTPClientInterface
 }
 
 // newJWTService creates a new JWT service instance.
-func newJWTService(pkiService pki.PKIServiceInterface,
-	httpClient httpservice.HTTPClientInterface) (JWTServiceInterface, error) {
-	preferredKid := config.GetThunderRuntime().Config.JWT.PreferredKeyID
+func newJWTService(
+	pkiService pkiservice.PKIServiceInterface,
+	httpClient httpservice.HTTPClientInterface, cryptoProvider kmprovider.RuntimeCryptoProvider,
+) (JWTServiceInterface, error) {
+	preferredKid := config.GetServerRuntime().Config.JWT.PreferredKeyID
 
 	privateKey, err := pkiService.GetPrivateKey(preferredKid)
 	if err != nil {
@@ -84,18 +90,21 @@ func newJWTService(pkiService pki.PKIServiceInterface,
 	}
 
 	kid := pkiService.GetCertThumbprint(preferredKid)
+	keyRef := kmprovider.KeyRef{KeyID: preferredKid}
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService"))
 
 	// Get algorithm based on the type of private key
 	switch k := privateKey.(type) {
 	case *rsa.PrivateKey:
 		return &jwtService{
-			privateKey: k,
-			signAlg:    sign.RSASHA256,
-			jwsAlg:     jws.RS256,
-			kid:        kid,
-			logger:     logger,
-			httpClient: httpClient,
+			cryptoProvider: cryptoProvider,
+			keyRef:         keyRef,
+			publicKey:      &k.PublicKey,
+			signAlg:        cryptolab.RSASHA256,
+			jwsAlg:         jws.RS256,
+			kid:            kid,
+			logger:         logger,
+			httpClient:     httpClient,
 		}, nil
 	case *ecdsa.PrivateKey:
 		// Determine ECDSA algorithm based on curve
@@ -103,42 +112,50 @@ func newJWTService(pkiService pki.PKIServiceInterface,
 		switch crvName {
 		case jws.P256:
 			return &jwtService{
-				privateKey: k,
-				signAlg:    sign.ECDSASHA256,
-				jwsAlg:     jws.ES256,
-				kid:        kid,
-				logger:     logger,
-				httpClient: httpClient,
+				cryptoProvider: cryptoProvider,
+				keyRef:         keyRef,
+				publicKey:      &k.PublicKey,
+				signAlg:        cryptolab.ECDSASHA256,
+				jwsAlg:         jws.ES256,
+				kid:            kid,
+				logger:         logger,
+				httpClient:     httpClient,
 			}, nil
 		case jws.P384:
 			return &jwtService{
-				privateKey: k,
-				signAlg:    sign.ECDSASHA384,
-				jwsAlg:     jws.ES384,
-				kid:        kid,
-				logger:     logger,
-				httpClient: httpClient,
+				cryptoProvider: cryptoProvider,
+				keyRef:         keyRef,
+				publicKey:      &k.PublicKey,
+				signAlg:        cryptolab.ECDSASHA384,
+				jwsAlg:         jws.ES384,
+				kid:            kid,
+				logger:         logger,
+				httpClient:     httpClient,
 			}, nil
 		case jws.P521:
 			return &jwtService{
-				privateKey: k,
-				signAlg:    sign.ECDSASHA512,
-				jwsAlg:     jws.ES512,
-				kid:        kid,
-				logger:     logger,
-				httpClient: httpClient,
+				cryptoProvider: cryptoProvider,
+				keyRef:         keyRef,
+				publicKey:      &k.PublicKey,
+				signAlg:        cryptolab.ECDSASHA512,
+				jwsAlg:         jws.ES512,
+				kid:            kid,
+				logger:         logger,
+				httpClient:     httpClient,
 			}, nil
 		default:
 			return nil, errors.New("unsupported EC curve: " + crvName + " only P-256, P-384 and P-521 are supported")
 		}
 	case ed25519.PrivateKey:
 		return &jwtService{
-			privateKey: k,
-			signAlg:    sign.ED25519,
-			jwsAlg:     jws.EdDSA,
-			kid:        kid,
-			logger:     logger,
-			httpClient: httpClient,
+			cryptoProvider: cryptoProvider,
+			keyRef:         keyRef,
+			publicKey:      k.Public(),
+			signAlg:        cryptolab.ED25519,
+			jwsAlg:         jws.EdDSA,
+			kid:            kid,
+			logger:         logger,
+			httpClient:     httpClient,
 		}, nil
 	default:
 		return nil, errors.New("unsupported private key type")
@@ -153,8 +170,12 @@ func newJWTService(pkiService pki.PKIServiceInterface,
 // claims["aud"] must be set by the caller as either a string or []string; omitting it
 // or providing another type is a programmer error and returns InternalServerError.
 func (js *jwtService) GenerateJWT(
-	sub, iss string, validityPeriod int64, claims map[string]interface{}, typ, alg string,
+	ctx context.Context, sub, iss string, validityPeriod int64, claims map[string]interface{}, typ, alg string,
 ) (string, int64, *serviceerror.ServiceError) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	jwsAlg := js.jwsAlg
 	if alg != "" {
 		mapped, err := jws.MapAlgorithmToSignAlg(jws.Algorithm(alg))
@@ -163,8 +184,8 @@ func (js *jwtService) GenerateJWT(
 		}
 		jwsAlg = jws.Algorithm(alg)
 	}
-	if js.privateKey == nil {
-		js.logger.Error("Private key not found for JWT generation")
+	if js.cryptoProvider == nil {
+		js.logger.Error("Crypto provider not initialized for JWT generation")
 		return "", 0, &serviceerror.InternalServerError
 	}
 
@@ -182,7 +203,7 @@ func (js *jwtService) GenerateJWT(
 		return "", 0, &serviceerror.InternalServerError
 	}
 
-	thunderRuntime := config.GetThunderRuntime()
+	serverRuntime := config.GetServerRuntime()
 
 	// Create the JWT header.
 	if typ == "" {
@@ -202,12 +223,12 @@ func (js *jwtService) GenerateJWT(
 
 	tokenIssuer := iss
 	if tokenIssuer == "" {
-		tokenIssuer = thunderRuntime.Config.JWT.Issuer
+		tokenIssuer = serverRuntime.Config.JWT.Issuer
 	}
 
 	// Calculate the expiration time based on the validity period.
 	if validityPeriod == 0 {
-		validityPeriod = thunderRuntime.Config.JWT.ValidityPeriod
+		validityPeriod = serverRuntime.Config.JWT.ValidityPeriod
 	}
 	iat := time.Now()
 	expirationTime := iat.Add(time.Duration(validityPeriod) * time.Second).Unix()
@@ -245,9 +266,9 @@ func (js *jwtService) GenerateJWT(
 	headerBase64 := base64.RawURLEncoding.EncodeToString(headerJSON)
 	payloadBase64 := base64.RawURLEncoding.EncodeToString(payloadJSON)
 
-	// Create the signing input and sign it with the private key.
+	// Create the signing input and sign it with the crypto provider.
 	signingInput := headerBase64 + "." + payloadBase64
-	signature, err := sign.Generate([]byte(signingInput), js.signAlg, js.privateKey)
+	signature, err := js.cryptoProvider.Sign(ctx, js.keyRef, js.signAlg, []byte(signingInput))
 	if err != nil {
 		js.logger.Error("Failed to sign JWT: " + err.Error())
 		return "", 0, &serviceerror.InternalServerError
@@ -261,8 +282,8 @@ func (js *jwtService) GenerateJWT(
 
 // VerifyJWT verifies the JWT token using the server's public key.
 func (js *jwtService) VerifyJWT(jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError {
-	if js.privateKey == nil {
-		js.logger.Error("Private key not found for JWT verification")
+	if js.publicKey == nil {
+		js.logger.Error("Public key not found for JWT verification")
 		return &serviceerror.InternalServerError
 	}
 
@@ -321,21 +342,8 @@ func (js *jwtService) VerifyJWTSignature(jwtToken string) *serviceerror.ServiceE
 	// Create the signing input
 	signingInput := parts[0] + "." + parts[1]
 
-	// Derive public key from configured private key
-	var pubKey crypto.PublicKey
-	switch k := js.privateKey.(type) {
-	case *rsa.PrivateKey:
-		pubKey = &k.PublicKey
-	case *ecdsa.PrivateKey:
-		pubKey = &k.PublicKey
-	case ed25519.PrivateKey:
-		pubKey = k.Public()
-	default:
-		return &ErrorUnsupportedJWSAlgorithm
-	}
-
 	// Verify the signature using the configured algorithm
-	err = sign.Verify([]byte(signingInput), signature, js.signAlg, pubKey)
+	err = cryptolab.Verify([]byte(signingInput), signature, js.signAlg, js.publicKey)
 	if err != nil {
 		return &ErrorInvalidTokenSignature
 	}
@@ -371,7 +379,7 @@ func (js *jwtService) VerifyJWTSignatureWithPublicKey(jwtToken string,
 	}
 
 	// Verify the signature
-	err = sign.Verify([]byte(signingInput), signature, alg, jwtPublicKey)
+	err = cryptolab.Verify([]byte(signingInput), signature, alg, jwtPublicKey)
 	if err != nil {
 		return &ErrorInvalidTokenSignature
 	}
@@ -463,7 +471,7 @@ func (js *jwtService) getJWKSKeys(jwksURL string) ([]map[string]interface{}, *se
 		return nil, &ErrorFailedToParseJWKS
 	}
 
-	ttl := time.Duration(config.GetThunderRuntime().Config.Server.SecurityConfig.JWKSCacheTTL) * time.Second
+	ttl := time.Duration(config.GetServerRuntime().Config.Server.SecurityConfig.JWKSCacheTTL) * time.Second
 	js.jwksCache.Store(jwksURL, &jwksCacheEntry{
 		keys:      jwks.Keys,
 		expiresAt: time.Now().Add(ttl),
@@ -482,7 +490,7 @@ func (js *jwtService) verifyJWTClaims(jwtToken string, expectedAud, expectedIss 
 	}
 
 	// Get leeway from config to account for clock skew
-	leeway := config.GetThunderRuntime().Config.JWT.Leeway
+	leeway := config.GetServerRuntime().Config.JWT.Leeway
 
 	// Validate standard claims (exp, nbf, aud, iss)
 	now := time.Now().Unix()

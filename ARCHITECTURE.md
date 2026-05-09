@@ -1,4 +1,4 @@
-# Thunder – Architecture Reference
+# ThunderID – Architecture Reference
 
 Go IAM server (`github.com/asgardeo/thunder`). Single binary serving a REST API + two React SPAs (`/gate`, `/console`).
 
@@ -20,9 +20,9 @@ backend/internal/
   consent/ application/ user/ group/ role/ ou/ idp/   # management domains
   system/               # config · database · cache · jose/jwt · security · mcp · log · i18n
 frontend/apps/
-  thunder-gate/         # login/registration SPA  (@asgardeo/react — app-native mode)
-  thunder-console/      # admin SPA               (@asgardeo/react — redirect mode)
-frontend/packages/      # @thunder/contexts · design · hooks · i18n · utils · types · logger
+  gate/         # login/registration SPA  (@asgardeo/react — app-native mode)
+  console/      # admin SPA               (@asgardeo/react — redirect mode)
+frontend/packages/      # @thunderid/contexts · design · hooks · i18n · utils · types · logger
 samples/apps/           # react-sdk-sample · react-api-based-sample · react-vanilla-sample
 ```
 
@@ -40,7 +40,7 @@ Authentication/registration are JSON node graphs (`START → PROMPT → TASK →
 
 | Mode | `AsgardeoProvider` props | Used in |
 |------|--------------------------|---------|
-| Redirect (Thunder-hosted login) | `clientId` + `baseUrl` + `platform="AsgardeoV2"` | `Console`, `react-sdk-sample` |
+| Redirect (ThunderID-hosted login) | `clientId` + `baseUrl` + `platform="AsgardeoV2"` | `Console`, `react-sdk-sample` |
 | App-native (Flow API) | `applicationId` + `baseUrl` + `platform="AsgardeoV2"` | `Gate`, `react-api-based-sample` |
 
 `clientId` vs `applicationId` is the critical distinction. Common primitives: `useAsgardeo()`, `<SignedIn/Out>`, `<SignInButton/SignOutButton>`, `<ProtectedRoute>` (`@asgardeo/react-router@2.0`).

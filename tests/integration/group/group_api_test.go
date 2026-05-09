@@ -38,7 +38,7 @@ var (
 		Parent:      nil,
 	}
 
-	testUserSchema = testutils.UserSchema{
+	testUserType = testutils.UserType{
 		Name: "group-test-person",
 		Schema: map[string]interface{}{
 			"email": map[string]interface{}{
@@ -78,7 +78,7 @@ var (
 	createdGroupID string
 	testOUID       string
 	testUserID     string
-	userSchemaID   string
+	entityTypeID   string
 )
 
 type GroupAPITestSuite struct {
@@ -92,14 +92,14 @@ func (suite *GroupAPITestSuite) SetupSuite() {
 		suite.T().Fatalf("Failed to create test organization unit during setup: %v", err)
 	}
 	testOUID = ouID
-	testUserSchema.OUID = testOUID
+	testUserType.OUID = testOUID
 
 	// Create test user type
-	schemaID, err := testutils.CreateUserType(testUserSchema)
+	schemaID, err := testutils.CreateUserType(testUserType)
 	if err != nil {
 		suite.T().Fatalf("Failed to create test user type during setup: %v", err)
 	}
-	userSchemaID = schemaID
+	entityTypeID = schemaID
 
 	// Create test user with the created OU
 	testUser := testUser
@@ -145,8 +145,8 @@ func (suite *GroupAPITestSuite) TearDownSuite() {
 	}
 
 	// Delete test user type
-	if userSchemaID != "" {
-		err := testutils.DeleteUserType(userSchemaID)
+	if entityTypeID != "" {
+		err := testutils.DeleteUserType(entityTypeID)
 		if err != nil {
 			suite.T().Logf("Failed to delete user type during teardown: %v", err)
 		}

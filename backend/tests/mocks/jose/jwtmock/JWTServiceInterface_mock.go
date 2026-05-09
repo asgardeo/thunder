@@ -5,6 +5,7 @@
 package jwtmock
 
 import (
+	"context"
 	"crypto"
 
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -39,8 +40,8 @@ func (_m *JWTServiceInterfaceMock) EXPECT() *JWTServiceInterfaceMock_Expecter {
 }
 
 // GenerateJWT provides a mock function for the type JWTServiceInterfaceMock
-func (_mock *JWTServiceInterfaceMock) GenerateJWT(sub string, iss string, validityPeriod int64, claims map[string]interface{}, typ string, alg string) (string, int64, *serviceerror.ServiceError) {
-	ret := _mock.Called(sub, iss, validityPeriod, claims, typ, alg)
+func (_mock *JWTServiceInterfaceMock) GenerateJWT(ctx context.Context, sub string, iss string, validityPeriod int64, claims map[string]interface{}, typ string, alg string) (string, int64, *serviceerror.ServiceError) {
+	ret := _mock.Called(ctx, sub, iss, validityPeriod, claims, typ, alg)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GenerateJWT")
@@ -49,21 +50,21 @@ func (_mock *JWTServiceInterfaceMock) GenerateJWT(sub string, iss string, validi
 	var r0 string
 	var r1 int64
 	var r2 *serviceerror.ServiceError
-	if returnFunc, ok := ret.Get(0).(func(string, string, int64, map[string]interface{}, string, string) (string, int64, *serviceerror.ServiceError)); ok {
-		return returnFunc(sub, iss, validityPeriod, claims, typ, alg)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, int64, map[string]interface{}, string, string) (string, int64, *serviceerror.ServiceError)); ok {
+		return returnFunc(ctx, sub, iss, validityPeriod, claims, typ, alg)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, string, int64, map[string]interface{}, string, string) string); ok {
-		r0 = returnFunc(sub, iss, validityPeriod, claims, typ, alg)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, int64, map[string]interface{}, string, string) string); ok {
+		r0 = returnFunc(ctx, sub, iss, validityPeriod, claims, typ, alg)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, string, int64, map[string]interface{}, string, string) int64); ok {
-		r1 = returnFunc(sub, iss, validityPeriod, claims, typ, alg)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, int64, map[string]interface{}, string, string) int64); ok {
+		r1 = returnFunc(ctx, sub, iss, validityPeriod, claims, typ, alg)
 	} else {
 		r1 = ret.Get(1).(int64)
 	}
-	if returnFunc, ok := ret.Get(2).(func(string, string, int64, map[string]interface{}, string, string) *serviceerror.ServiceError); ok {
-		r2 = returnFunc(sub, iss, validityPeriod, claims, typ, alg)
+	if returnFunc, ok := ret.Get(2).(func(context.Context, string, string, int64, map[string]interface{}, string, string) *serviceerror.ServiceError); ok {
+		r2 = returnFunc(ctx, sub, iss, validityPeriod, claims, typ, alg)
 	} else {
 		if ret.Get(2) != nil {
 			r2 = ret.Get(2).(*serviceerror.ServiceError)
@@ -78,41 +79,46 @@ type JWTServiceInterfaceMock_GenerateJWT_Call struct {
 }
 
 // GenerateJWT is a helper method to define mock.On call
+//   - ctx context.Context
 //   - sub string
 //   - iss string
 //   - validityPeriod int64
 //   - claims map[string]interface{}
 //   - typ string
 //   - alg string
-func (_e *JWTServiceInterfaceMock_Expecter) GenerateJWT(sub interface{}, iss interface{}, validityPeriod interface{}, claims interface{}, typ interface{}, alg interface{}) *JWTServiceInterfaceMock_GenerateJWT_Call {
-	return &JWTServiceInterfaceMock_GenerateJWT_Call{Call: _e.mock.On("GenerateJWT", sub, iss, validityPeriod, claims, typ, alg)}
+func (_e *JWTServiceInterfaceMock_Expecter) GenerateJWT(ctx interface{}, sub interface{}, iss interface{}, validityPeriod interface{}, claims interface{}, typ interface{}, alg interface{}) *JWTServiceInterfaceMock_GenerateJWT_Call {
+	return &JWTServiceInterfaceMock_GenerateJWT_Call{Call: _e.mock.On("GenerateJWT", ctx, sub, iss, validityPeriod, claims, typ, alg)}
 }
 
-func (_c *JWTServiceInterfaceMock_GenerateJWT_Call) Run(run func(sub string, iss string, validityPeriod int64, claims map[string]interface{}, typ string, alg string)) *JWTServiceInterfaceMock_GenerateJWT_Call {
+func (_c *JWTServiceInterfaceMock_GenerateJWT_Call) Run(run func(ctx context.Context, sub string, iss string, validityPeriod int64, claims map[string]interface{}, typ string, alg string)) *JWTServiceInterfaceMock_GenerateJWT_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 string
+		var arg0 context.Context
 		if args[0] != nil {
-			arg0 = args[0].(string)
+			arg0 = args[0].(context.Context)
 		}
 		var arg1 string
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 int64
+		var arg2 string
 		if args[2] != nil {
-			arg2 = args[2].(int64)
+			arg2 = args[2].(string)
 		}
-		var arg3 map[string]interface{}
+		var arg3 int64
 		if args[3] != nil {
-			arg3 = args[3].(map[string]interface{})
+			arg3 = args[3].(int64)
 		}
-		var arg4 string
+		var arg4 map[string]interface{}
 		if args[4] != nil {
-			arg4 = args[4].(string)
+			arg4 = args[4].(map[string]interface{})
 		}
 		var arg5 string
 		if args[5] != nil {
 			arg5 = args[5].(string)
+		}
+		var arg6 string
+		if args[6] != nil {
+			arg6 = args[6].(string)
 		}
 		run(
 			arg0,
@@ -121,6 +127,7 @@ func (_c *JWTServiceInterfaceMock_GenerateJWT_Call) Run(run func(sub string, iss
 			arg3,
 			arg4,
 			arg5,
+			arg6,
 		)
 	})
 	return _c
@@ -131,7 +138,7 @@ func (_c *JWTServiceInterfaceMock_GenerateJWT_Call) Return(s string, n int64, se
 	return _c
 }
 
-func (_c *JWTServiceInterfaceMock_GenerateJWT_Call) RunAndReturn(run func(sub string, iss string, validityPeriod int64, claims map[string]interface{}, typ string, alg string) (string, int64, *serviceerror.ServiceError)) *JWTServiceInterfaceMock_GenerateJWT_Call {
+func (_c *JWTServiceInterfaceMock_GenerateJWT_Call) RunAndReturn(run func(ctx context.Context, sub string, iss string, validityPeriod int64, claims map[string]interface{}, typ string, alg string) (string, int64, *serviceerror.ServiceError)) *JWTServiceInterfaceMock_GenerateJWT_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -181,6 +181,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 	}
 
 	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
+		Context:          ctx,
 		Subject:          refreshTokenClaims.Sub,
 		Audiences:        audiences,
 		ClientID:         tokenRequest.ClientID,
@@ -208,6 +209,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 	// Generate ID token if 'openid' scope is present
 	if slices.Contains(newTokenScopes, constants.ScopeOpenID) {
 		idToken, idErr := h.tokenBuilder.BuildIDToken(&tokenservice.IDTokenBuildContext{
+			Context:        ctx,
 			Subject:        refreshTokenClaims.Sub,
 			Audience:       tokenRequest.ClientID,
 			Scopes:         newTokenScopes,
@@ -226,7 +228,7 @@ func (h *refreshTokenGrantHandler) HandleGrant(ctx context.Context, tokenRequest
 	}
 
 	// Check configuration for refresh token renewal
-	conf := config.GetThunderRuntime().Config
+	conf := config.GetServerRuntime().Config
 	renewRefreshToken := conf.OAuth.RefreshToken.RenewOnGrant
 
 	// Issue a new refresh token if renew_on_grant is enabled; otherwise reuse the existing one.
@@ -271,6 +273,7 @@ func (h *refreshTokenGrantHandler) IssueRefreshToken(
 	attributeCacheID string,
 ) *model.ErrorResponse {
 	tokenCtx := &tokenservice.RefreshTokenBuildContext{
+		Context:              ctx,
 		ClientID:             oauthApp.ClientID,
 		Scopes:               scopes,
 		GrantType:            grantType,

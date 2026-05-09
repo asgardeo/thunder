@@ -60,7 +60,7 @@ func newRedisFlowStore(p provider.RedisProviderInterface) flowStoreInterface {
 	return &redisFlowStore{
 		client:       p.GetRedisClient(),
 		keyPrefix:    p.GetKeyPrefix(),
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
 	}
 }
 
@@ -69,14 +69,9 @@ func (s *redisFlowStore) flowKey(executionID string) string {
 	return fmt.Sprintf("%s:runtime:%s:flow:%s", s.keyPrefix, s.deploymentID, executionID)
 }
 
-// StoreFlowContext serializes the engine context and stores it in Redis with a TTL.
-func (s *redisFlowStore) StoreFlowContext(ctx context.Context, engineCtx EngineContext, expirySeconds int64) error {
+// StoreFlowContext stores the flow context in Redis with a TTL.
+func (s *redisFlowStore) StoreFlowContext(ctx context.Context, dbModel FlowContextDB, expirySeconds int64) error {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "RedisFlowStore"))
-
-	dbModel, err := FromEngineContext(engineCtx)
-	if err != nil {
-		return fmt.Errorf("failed to convert engine context to db model: %w", err)
-	}
 
 	data, err := json.Marshal(dbModel)
 	if err != nil {
@@ -84,11 +79,11 @@ func (s *redisFlowStore) StoreFlowContext(ctx context.Context, engineCtx EngineC
 	}
 
 	ttl := time.Duration(expirySeconds) * time.Second
-	if err := s.client.Set(ctx, s.flowKey(engineCtx.ExecutionID), data, ttl).Err(); err != nil {
+	if err := s.client.Set(ctx, s.flowKey(dbModel.ExecutionID), data, ttl).Err(); err != nil {
 		return fmt.Errorf("failed to store flow context in Redis: %w", err)
 	}
 
-	logger.Debug("Stored flow context in Redis", log.String("executionID", engineCtx.ExecutionID))
+	logger.Debug("Stored flow context in Redis", log.String("executionID", dbModel.ExecutionID))
 	return nil
 }
 
@@ -111,13 +106,8 @@ func (s *redisFlowStore) GetFlowContext(ctx context.Context, executionID string)
 }
 
 // UpdateFlowContext updates the stored flow context, preserving the remaining TTL.
-func (s *redisFlowStore) UpdateFlowContext(ctx context.Context, engineCtx EngineContext) error {
-	key := s.flowKey(engineCtx.ExecutionID)
-
-	dbModel, err := FromEngineContext(engineCtx)
-	if err != nil {
-		return fmt.Errorf("failed to convert engine context to db model: %w", err)
-	}
+func (s *redisFlowStore) UpdateFlowContext(ctx context.Context, dbModel FlowContextDB) error {
+	key := s.flowKey(dbModel.ExecutionID)
 
 	data, err := json.Marshal(dbModel)
 	if err != nil {
@@ -129,7 +119,7 @@ func (s *redisFlowStore) UpdateFlowContext(ctx context.Context, engineCtx Engine
 		return fmt.Errorf("failed to update flow context in Redis: %w", err)
 	}
 	if n == 0 {
-		return fmt.Errorf("flow context not found for executionID: %s", engineCtx.ExecutionID)
+		return fmt.Errorf("flow context not found for executionID: %s", dbModel.ExecutionID)
 	}
 
 	return nil

@@ -26,8 +26,6 @@ import (
 )
 
 var (
-	// The table name "ROLE" is quoted to handle reserved keywords in SQL.
-	// Hence, all queries involving the "ROLE" table use quoted identifiers.
 	// queryCreateRole creates a new role.
 	queryCreateRole = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-01",
@@ -68,47 +66,47 @@ var (
 	// queryCreateRolePermission creates a new role permission.
 	queryCreateRolePermission = dbmodel.DBQuery{
 		ID: "RLQ-ROLE_MGT-07",
-		Query: `INSERT INTO ROLE_PERMISSION (ROLE_ID, RESOURCE_SERVER_ID, PERMISSION, ` +
+		Query: `INSERT INTO "ROLE_PERMISSION" (ROLE_ID, RESOURCE_SERVER_ID, PERMISSION, ` +
 			`DEPLOYMENT_ID) VALUES ($1, $2, $3, $4)`,
 	}
 
 	// queryGetRolePermissions retrieves all permissions for a role.
 	queryGetRolePermissions = dbmodel.DBQuery{
 		ID: "RLQ-ROLE_MGT-08",
-		Query: `SELECT RESOURCE_SERVER_ID, PERMISSION FROM ROLE_PERMISSION WHERE ` +
+		Query: `SELECT RESOURCE_SERVER_ID, PERMISSION FROM "ROLE_PERMISSION" WHERE ` +
 			`ROLE_ID = $1 AND DEPLOYMENT_ID = $2 ORDER BY CREATED_AT`,
 	}
 
 	// queryDeleteRolePermissions deletes all permissions for a role.
 	queryDeleteRolePermissions = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-09",
-		Query: `DELETE FROM ROLE_PERMISSION WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `DELETE FROM "ROLE_PERMISSION" WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryCreateRoleAssignment creates a new role assignment.
 	queryCreateRoleAssignment = dbmodel.DBQuery{
 		ID: "RLQ-ROLE_MGT-10",
-		Query: `INSERT INTO ROLE_ASSIGNMENT (ROLE_ID, ASSIGNEE_TYPE, ASSIGNEE_ID, DEPLOYMENT_ID) 
+		Query: `INSERT INTO "ROLE_ASSIGNMENT" (ROLE_ID, ASSIGNEE_TYPE, ASSIGNEE_ID, DEPLOYMENT_ID)
 			VALUES ($1, $2, $3, $4)`,
 	}
 
 	// queryGetRoleAssignments retrieves all assignments for a role with pagination.
 	queryGetRoleAssignments = dbmodel.DBQuery{
 		ID: "RLQ-ROLE_MGT-11",
-		Query: `SELECT ASSIGNEE_ID, ASSIGNEE_TYPE FROM ROLE_ASSIGNMENT
+		Query: `SELECT ASSIGNEE_ID, ASSIGNEE_TYPE FROM "ROLE_ASSIGNMENT"
 			WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY CREATED_AT LIMIT $2 OFFSET $3`,
 	}
 
 	// queryGetRoleAssignmentsCount retrieves the total count of assignments for a role.
 	queryGetRoleAssignmentsCount = dbmodel.DBQuery{
 		ID:    "RLQ-ROLE_MGT-12",
-		Query: `SELECT COUNT(*) as total FROM ROLE_ASSIGNMENT WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `SELECT COUNT(*) as total FROM "ROLE_ASSIGNMENT" WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryDeleteRoleAssignmentsByIDs deletes specific assignments for a role.
 	queryDeleteRoleAssignmentsByIDs = dbmodel.DBQuery{
 		ID: "RLQ-ROLE_MGT-13",
-		Query: `DELETE FROM ROLE_ASSIGNMENT ` +
+		Query: `DELETE FROM "ROLE_ASSIGNMENT" ` +
 			`WHERE ROLE_ID = $1 AND ASSIGNEE_TYPE = $2 AND ASSIGNEE_ID = $3 AND DEPLOYMENT_ID = $4`,
 	}
 
@@ -121,7 +119,7 @@ var (
 	// queryCheckRoleNameExistsExcludingID checks if a role name exists for an OU excluding a specific role ID.
 	queryCheckRoleNameExistsExcludingID = dbmodel.DBQuery{
 		ID: "RLQ-ROLE_MGT-15",
-		Query: `SELECT COUNT(*) as count FROM "ROLE" 
+		Query: `SELECT COUNT(*) as count FROM "ROLE"
 			WHERE OU_ID = $1 AND NAME = $2 AND ID != $3 AND DEPLOYMENT_ID = $4`,
 	}
 
@@ -134,14 +132,14 @@ var (
 	// queryGetRoleAssignmentsByType retrieves assignments for a role filtered by assignee type with pagination.
 	queryGetRoleAssignmentsByType = dbmodel.DBQuery{
 		ID: "RLQ-ROLE_MGT-17",
-		Query: `SELECT ASSIGNEE_ID, ASSIGNEE_TYPE FROM ROLE_ASSIGNMENT
+		Query: `SELECT ASSIGNEE_ID, ASSIGNEE_TYPE FROM "ROLE_ASSIGNMENT"
 			WHERE ROLE_ID = $1 AND ASSIGNEE_TYPE = $5 AND DEPLOYMENT_ID = $4 ORDER BY CREATED_AT LIMIT $2 OFFSET $3`,
 	}
 
 	// queryGetRoleAssignmentsCountByType retrieves the total count of assignments for a role filtered by type.
 	queryGetRoleAssignmentsCountByType = dbmodel.DBQuery{
 		ID: "RLQ-ROLE_MGT-18",
-		Query: `SELECT COUNT(*) as total FROM ROLE_ASSIGNMENT
+		Query: `SELECT COUNT(*) as total FROM "ROLE_ASSIGNMENT"
 			WHERE ROLE_ID = $1 AND ASSIGNEE_TYPE = $3 AND DEPLOYMENT_ID = $2`,
 	}
 )
@@ -157,8 +155,8 @@ func buildAuthorizedPermissionsQuery(
 ) (dbmodel.DBQuery, []interface{}) {
 	// Base query structure
 	baseQuery := `SELECT DISTINCT rp.PERMISSION
-		FROM ROLE_PERMISSION rp
-		INNER JOIN ROLE_ASSIGNMENT ra ON rp.ROLE_ID = ra.ROLE_ID AND rp.DEPLOYMENT_ID = $1 AND ra.DEPLOYMENT_ID = $1
+		FROM "ROLE_PERMISSION" rp
+		INNER JOIN "ROLE_ASSIGNMENT" ra ON rp.ROLE_ID = ra.ROLE_ID AND rp.DEPLOYMENT_ID = $1 AND ra.DEPLOYMENT_ID = $1
 		WHERE rp.DEPLOYMENT_ID = $1 AND `
 
 	var postgresWhere []string
@@ -244,7 +242,7 @@ func buildUserRolesQuery(
 ) (dbmodel.DBQuery, []interface{}) {
 	baseQuery := `SELECT DISTINCT r.NAME
 		FROM "ROLE" r
-		INNER JOIN ROLE_ASSIGNMENT ra ON r.ID = ra.ROLE_ID AND r.DEPLOYMENT_ID = $1 AND ra.DEPLOYMENT_ID = $1
+		INNER JOIN "ROLE_ASSIGNMENT" ra ON r.ID = ra.ROLE_ID AND r.DEPLOYMENT_ID = $1 AND ra.DEPLOYMENT_ID = $1
 		WHERE r.DEPLOYMENT_ID = $1 AND `
 
 	var postgresWhere []string

@@ -37,6 +37,7 @@ type IDPServiceInterface interface {
 	GetIdentityProviderList(ctx context.Context) ([]BasicIDPDTO, *serviceerror.ServiceError)
 	GetIdentityProvider(ctx context.Context, idpID string) (*IDPDTO, *serviceerror.ServiceError)
 	GetIdentityProviderByName(ctx context.Context, idpName string) (*IDPDTO, *serviceerror.ServiceError)
+	GetIdentityProviderByIssuer(ctx context.Context, issuer string) (*IDPDTO, *serviceerror.ServiceError)
 	UpdateIdentityProvider(ctx context.Context, idpID string, idp *IDPDTO) (*IDPDTO, *serviceerror.ServiceError)
 	DeleteIdentityProvider(ctx context.Context, idpID string) *serviceerror.ServiceError
 }
@@ -155,6 +156,26 @@ func (is *idpService) GetIdentityProviderByName(ctx context.Context,
 			return nil, &ErrorIDPNotFound
 		}
 		logger.Error("Failed to get identity provider by name", log.String("idpName", idpName), log.Error(err))
+		return nil, &serviceerror.InternalServerError
+	}
+
+	return idp, nil
+}
+
+// GetIdentityProviderByIssuer retrieves an identity provider by its issuer property.
+func (is *idpService) GetIdentityProviderByIssuer(ctx context.Context,
+	issuer string) (*IDPDTO, *serviceerror.ServiceError) {
+	logger := is.logger
+	if strings.TrimSpace(issuer) == "" {
+		return nil, &ErrorInvalidIDPID
+	}
+
+	idp, err := is.idpStore.GetIdentityProviderByIssuer(ctx, issuer)
+	if err != nil {
+		if errors.Is(err, ErrIDPNotFound) {
+			return nil, &ErrorIDPNotFound
+		}
+		logger.Error("Failed to get identity provider by issuer", log.String("issuer", issuer), log.Error(err))
 		return nil, &serviceerror.InternalServerError
 	}
 

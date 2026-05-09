@@ -97,7 +97,7 @@ PRODUCT_VERSION=${VERSION}
 if [[ $PRODUCT_VERSION == v* ]]; then
   PRODUCT_VERSION="${PRODUCT_VERSION#v}"
 fi
-PRODUCT_NAME="Thunder"
+PRODUCT_NAME="ThunderID"
 PRODUCT_NAME_LOWERCASE="$(echo "$PRODUCT_NAME" | tr '[:upper:]' '[:lower:]')"
 BINARY_NAME="${PRODUCT_NAME_LOWERCASE}"
 PRODUCT_FOLDER=${BINARY_NAME}-${PRODUCT_VERSION}-${GO_PACKAGE_OS}-${GO_PACKAGE_ARCH}
@@ -135,8 +135,8 @@ SECURITY_DIR=repository/resources/security
 FRONTEND_BASE_DIR=frontend
 GATE_APP_DIST_DIR=apps/gate
 CONSOLE_APP_DIST_DIR=apps/console
-FRONTEND_GATE_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/thunder-gate
-FRONTEND_CONSOLE_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/thunder-console
+FRONTEND_GATE_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/gate
+FRONTEND_CONSOLE_APP_SOURCE_DIR=$FRONTEND_BASE_DIR/apps/console
 SAMPLE_BASE_DIR=samples
 VANILLA_SAMPLE_APP_DIR=$SAMPLE_BASE_DIR/apps/react-vanilla-sample
 VANILLA_SAMPLE_APP_SERVER_DIR=$VANILLA_SAMPLE_APP_DIR/server
@@ -151,6 +151,9 @@ DOCS_DEFAULT_PORT=3000
 # Integration test filters (optional)
 TEST_RUN="${4:-}"
 TEST_PACKAGE="${5:-}"
+
+# PNPM version to use for frontend builds and docs build
+PNPM_VERSION="10.33.4"
 
 # ============================================================================
 # Read Configuration from deployment.yaml
@@ -201,6 +204,20 @@ read_config() {
             HOSTNAME=${HOSTNAME:-localhost}
             PORT=${PORT:-8090}
         fi
+
+        # Read system resource server config (nested under resource:)
+        if command -v yq >/dev/null 2>&1; then
+            SYSTEM_RS_HANDLE=$(yq eval '.resource.system_resource_server.handle // ""' "$config_file" 2>/dev/null)
+            SYSTEM_RS_IDENTIFIER=$(yq eval '.resource.system_resource_server.identifier // ""' "$config_file" 2>/dev/null)
+        else
+            SYSTEM_RS_HANDLE=$(grep -A5 'system_resource_server:' "$config_file" 2>/dev/null | grep -E '^\s*handle:' | awk -F':' '{gsub(/[[:space:]"'\'']/,""); s=""; for(i=2;i<=NF;i++) s=s (i>2?":":"") $i; print s}' | head -1)
+            SYSTEM_RS_IDENTIFIER=$(grep -A5 'system_resource_server:' "$config_file" 2>/dev/null | grep -E '^\s*identifier:' | grep -o '"[^"]*"' | tr -d '"' | head -1)
+            if [ -z "$SYSTEM_RS_IDENTIFIER" ]; then
+                SYSTEM_RS_IDENTIFIER=$(grep -A5 'system_resource_server:' "$config_file" 2>/dev/null | grep -E '^\s*identifier:' | awk -F':' '{gsub(/[[:space:]"'\'']/,""); s=""; for(i=2;i<=NF;i++) s=s (i>2?":":"") $i; print s}' | head -1)
+            fi
+        fi
+        SYSTEM_RS_HANDLE=${SYSTEM_RS_HANDLE:-}
+        SYSTEM_RS_IDENTIFIER=${SYSTEM_RS_IDENTIFIER:-}
     fi
 
     # Determine protocol
@@ -363,7 +380,7 @@ function build_frontend() {
     # Check if pnpm is installed, if not install it
     if ! command -v pnpm >/dev/null 2>&1; then
         echo "pnpm not found, installing..."
-        npm install -g pnpm
+        npm install -g pnpm@$PNPM_VERSION
     fi
     
     # Navigate to frontend directory and install dependencies
@@ -386,7 +403,7 @@ function build_docs() {
     # Check if pnpm is installed, if not install it
     if ! command -v pnpm >/dev/null 2>&1; then
         echo "pnpm not found, installing..."
-        npm install -g pnpm
+        npm install -g pnpm@$PNPM_VERSION
     fi
     
     # Navigate to frontend directory first to ensure build:docs script can run
@@ -1030,6 +1047,8 @@ function run() {
     
     # Run the bootstrap script directly with environment variable and arguments
     API_BASE="$BASE_URL" \
+        SYSTEM_RS_HANDLE="$SYSTEM_RS_HANDLE" \
+        SYSTEM_RS_IDENTIFIER="$SYSTEM_RS_IDENTIFIER" \
         "$BACKEND_BASE_DIR/cmd/server/bootstrap/01-default-resources.sh" \
         --console-redirect-uris "https://localhost:$CONSOLE_APP_DEFAULT_PORT/console"
 
@@ -1135,7 +1154,7 @@ function run_frontend() {
     # Check if pnpm is installed, if not install it
     if ! command -v pnpm >/dev/null 2>&1; then
         echo "pnpm not found, installing..."
-        npm install -g pnpm
+        npm install -g pnpm@$PNPM_VERSION
     fi
     
     # Navigate to frontend directory and install dependencies
@@ -1148,7 +1167,7 @@ function run_frontend() {
     
     echo "Starting frontend applications in the background..."
     # Start frontend processes in background
-    pnpm -r --parallel --filter "@thunder/console" --filter "@thunder/gate" dev &
+    pnpm -r --parallel --filter "@thunderid/console" --filter "@thunderid/gate" dev &
     FRONTEND_PID=$!
     
     # Return to script directory
@@ -1163,7 +1182,7 @@ function run_docs() {
     # Check if pnpm is installed, if not install it
     if ! command -v pnpm >/dev/null 2>&1; then
         echo "pnpm not found, installing..."
-        npm install -g pnpm
+        npm install -g pnpm@$PNPM_VERSION
     fi
     
     # Navigate to frontend directory first to install all dependencies

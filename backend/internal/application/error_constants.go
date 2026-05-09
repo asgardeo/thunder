@@ -448,4 +448,44 @@ var (
 			DefaultValue: "Cannot enable consent for the application as the consent service is not enabled",
 		},
 	}
+	// ErrorInvalidAcrValues is the error returned when an unrecognized ACR value is provided in acrValues.
+	ErrorInvalidAcrValues = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "APP-1033",
+		Error: core.I18nMessage{
+			Key:          "error.applicationservice.invalid_acr_values",
+			DefaultValue: "Invalid ACR value",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.applicationservice.invalid_acr_values_description",
+			DefaultValue: "One or more ACR values in acr_values are not recognized by the system",
+		},
+	}
+	// ErrorMultipleOAuthConfigs is returned when more than one OAuth inbound auth config is supplied.
+	ErrorMultipleOAuthConfigs = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "APP-1034",
+		Error: core.I18nMessage{
+			Key:          "error.applicationservice.multiple_oauth_configs",
+			DefaultValue: "Multiple OAuth inbound auth configs are not allowed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.applicationservice.multiple_oauth_configs_description",
+			DefaultValue: "An application may have at most one inbound auth config per protocol",
+		},
+	}
+	// ErrorInvalidUserAttribute is the error returned when a user attribute is not valid for any
+	// of the application's allowed user types.
+	ErrorInvalidUserAttribute = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "APP-1035",
+		Error: core.I18nMessage{
+			Key:          "error.applicationservice.invalid_user_attribute",
+			DefaultValue: "Invalid user attribute",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.applicationservice.invalid_user_attribute_description",
+			DefaultValue: "One or more user attributes are not valid for the configured allowed user types",
+		},
+	}
 )

@@ -212,8 +212,8 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_MFA_AddsMobileNu
 			userInputOTP: "123456",
 		},
 		RuntimeData: map[string]string{
-			runtimeKeySMSOTPMobileNumber: "+1234567890",
-			"otpSessionToken":            "test-session-token",
+			common.RuntimeKeySMSOTPMobileNumber: "+1234567890",
+			"otpSessionToken":                   "test-session-token",
 		},
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -263,8 +263,8 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_P
 			userInputOTP: "123456",
 		},
 		RuntimeData: map[string]string{
-			runtimeKeySMSOTPMobileNumber: "+1234567890",
-			"otpSessionToken":            "test-session-token",
+			common.RuntimeKeySMSOTPMobileNumber: "+1234567890",
+			"otpSessionToken":                   "test-session-token",
 		},
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: false,
@@ -430,8 +430,8 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_MFA_NilAttribute
 			userInputOTP: "123456",
 		},
 		RuntimeData: map[string]string{
-			runtimeKeySMSOTPMobileNumber: "+1234567890",
-			"otpSessionToken":            "test-session-token",
+			common.RuntimeKeySMSOTPMobileNumber: "+1234567890",
+			"otpSessionToken":                   "test-session-token",
 		},
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -540,8 +540,8 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_EmptyOTP_Returns
 			userInputOTP: "", // empty OTP
 		},
 		RuntimeData: map[string]string{
-			runtimeKeySMSOTPMobileNumber: "+1234567890",
-			"otpSessionToken":            "test-session-token",
+			common.RuntimeKeySMSOTPMobileNumber: "+1234567890",
+			"otpSessionToken":                   "test-session-token",
 		},
 		AuthenticatedUser: authncm.AuthenticatedUser{IsAuthenticated: false},
 	}
@@ -581,8 +581,8 @@ func (suite *SMSAuthExecutorTestSuite) TestGetAuthenticatedUser_FetchFromStore_N
 			userInputOTP: "123456",
 		},
 		RuntimeData: map[string]string{
-			runtimeKeySMSOTPMobileNumber: "+1234567890",
-			"otpSessionToken":            "test-session-token",
+			common.RuntimeKeySMSOTPMobileNumber: "+1234567890",
+			"otpSessionToken":                   "test-session-token",
 		},
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: false,

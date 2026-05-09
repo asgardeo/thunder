@@ -71,39 +71,6 @@ func (_c *CacheManagerInterfaceMock_Close_Call) RunAndReturn(run func()) *CacheM
 	return _c
 }
 
-// Init provides a mock function for the type CacheManagerInterfaceMock
-func (_mock *CacheManagerInterfaceMock) Init() {
-	_mock.Called()
-	return
-}
-
-// CacheManagerInterfaceMock_Init_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Init'
-type CacheManagerInterfaceMock_Init_Call struct {
-	*mock.Call
-}
-
-// Init is a helper method to define mock.On call
-func (_e *CacheManagerInterfaceMock_Expecter) Init() *CacheManagerInterfaceMock_Init_Call {
-	return &CacheManagerInterfaceMock_Init_Call{Call: _e.mock.On("Init")}
-}
-
-func (_c *CacheManagerInterfaceMock_Init_Call) Run(run func()) *CacheManagerInterfaceMock_Init_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		run()
-	})
-	return _c
-}
-
-func (_c *CacheManagerInterfaceMock_Init_Call) Return() *CacheManagerInterfaceMock_Init_Call {
-	_c.Call.Return()
-	return _c
-}
-
-func (_c *CacheManagerInterfaceMock_Init_Call) RunAndReturn(run func()) *CacheManagerInterfaceMock_Init_Call {
-	_c.Run(run)
-	return _c
-}
-
 // IsEnabled provides a mock function for the type CacheManagerInterfaceMock
 func (_mock *CacheManagerInterfaceMock) IsEnabled() bool {
 	ret := _mock.Called()

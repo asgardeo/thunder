@@ -90,7 +90,7 @@ Executors are backend operation nodes. Each Executor performs one specific opera
 | **Auth Assertion Generator** | Generates the final authentication assertion when login succeeds. |
 | **Email Executor** | Sends email for invitation and registration flows. Supports `skipDelivery` and falls back to the user entity when the recipient is missing from the flow context. |
 | **Provisioning** | Creates or updates the user record in the store. |
-| **Attribute Collector** | Collects additional user attributes defined in the user schema. |
+| **Attribute Collector** | Collects additional user attributes defined in the user type. |
 | **Authorization** | Evaluates authorization policies for the current user. |
 | **OU Creation** | Creates an organizational unit for the user. Supports an optional `parentOuId` property to control where the new organizational unit is placed in the hierarchy. |
 | **User Type Resolver** | Resolves the user type based on configured rules. |
@@ -109,7 +109,7 @@ Each View node (Step or Widget) collects user input that must be read by a speci
 | **Consent View** (Step) | User Consent | User must be authenticated | The executor reads the consent decisions submitted by the View. The user's ID must already be in the flow context. |
 | **Continue with Google** (Widget) | Google | — | Redirect-based. The executor handles the OAuth redirect and reads the authorization code returned by Google. |
 | **Continue with GitHub** (Widget) | GitHub | — | Redirect-based. The executor handles the OAuth redirect and reads the authorization code returned by GitHub. |
-| **Blank View** (with attribute fields) | Attribute Collector | User must be authenticated | Use when collecting profile attributes required by the user schema. The executor checks the user's existing attributes and prompts only for what is missing. |
+| **Blank View** (with attribute fields) | Attribute Collector | User must be authenticated | Use when collecting profile attributes required by the user type. The executor checks the user's existing attributes and prompts only for what is missing. |
 
 ### Executors That Do Not Require a View
 

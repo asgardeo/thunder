@@ -65,7 +65,7 @@ func protectLiteralTemplateExpressions(content string) (string, map[string]strin
 			return match
 		}
 
-		key := fmt.Sprintf("__THUNDER_LITERAL_TEMPLATE_EXPR_%s_%d__", randomSuffix, index)
+		key := fmt.Sprintf("__LITERAL_TEMPLATE_EXPR_%s_%d__", randomSuffix, index)
 		protectedExpressions[key] = match
 		index++
 		return key

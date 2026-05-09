@@ -59,7 +59,7 @@ func getConfiguredOrigins() []string {
 			}
 		}()
 
-		runtime := config.GetThunderRuntime()
+		runtime := config.GetServerRuntime()
 		if runtime != nil {
 			originList = runtime.Config.Passkey.AllowedOrigins
 		}

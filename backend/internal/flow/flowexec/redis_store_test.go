@@ -32,12 +32,11 @@ import (
 
 	authncm "github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 )
 
 const (
-	redisTestKeyPrefix    = "thunder"
+	redisTestKeyPrefix    = "thunderid"
 	redisTestDeploymentID = "test-redis-deployment"
 	redisTestFlowID       = "test-flow-id"
 )
@@ -51,22 +50,6 @@ type RedisFlowStoreTestSuite struct {
 }
 
 func TestRedisFlowStoreSuite(t *testing.T) {
-	testConfig := &config.Config{
-		Crypto: config.CryptoConfig{
-			Encryption: config.EncryptionConfig{
-				Key: "2729a7928c79371e5f312167269294a14bb0660fd166b02a408a20fa73271580",
-			},
-		},
-		Server: config.ServerConfig{
-			Identifier: redisTestDeploymentID,
-		},
-	}
-	config.ResetThunderRuntime()
-	if err := config.InitializeThunderRuntime("/test/thunder/home", testConfig); err != nil {
-		t.Fatalf("Failed to initialize Thunder runtime: %v", err)
-	}
-	t.Cleanup(config.ResetThunderRuntime)
-
 	suite.Run(t, new(RedisFlowStoreTestSuite))
 }
 
@@ -124,11 +107,14 @@ func (suite *RedisFlowStoreTestSuite) TestStoreFlowContext_Success() {
 	engineCtx := suite.buildEngineContext()
 	expirySeconds := int64(1800)
 
+	dbModel, err := FromEngineContext(engineCtx)
+	suite.Require().NoError(err)
+
 	statusCmd := redis.NewStatusCmd(suite.ctx)
 	suite.mockClient.On("Set", suite.ctx, suite.flowKey, mock.Anything,
 		time.Duration(expirySeconds)*time.Second).Return(statusCmd)
 
-	err := suite.store.StoreFlowContext(suite.ctx, engineCtx, expirySeconds)
+	err = suite.store.StoreFlowContext(suite.ctx, *dbModel, expirySeconds)
 	suite.NoError(err)
 }
 
@@ -136,12 +122,15 @@ func (suite *RedisFlowStoreTestSuite) TestStoreFlowContext_SetError() {
 	engineCtx := suite.buildEngineContext()
 	expirySeconds := int64(1800)
 
+	dbModel, err := FromEngineContext(engineCtx)
+	suite.Require().NoError(err)
+
 	statusCmd := redis.NewStatusCmd(suite.ctx)
 	statusCmd.SetErr(errors.New("connection refused"))
 	suite.mockClient.On("Set", suite.ctx, suite.flowKey, mock.Anything,
 		time.Duration(expirySeconds)*time.Second).Return(statusCmd)
 
-	err := suite.store.StoreFlowContext(suite.ctx, engineCtx, expirySeconds)
+	err = suite.store.StoreFlowContext(suite.ctx, *dbModel, expirySeconds)
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to store flow context in Redis")
 }
@@ -198,38 +187,44 @@ func (suite *RedisFlowStoreTestSuite) TestGetFlowContext_UnmarshalError() {
 
 func (suite *RedisFlowStoreTestSuite) TestUpdateFlowContext_Success() {
 	engineCtx := suite.buildEngineContext()
+	dbModel, err := FromEngineContext(engineCtx)
+	suite.Require().NoError(err)
 
 	cmd := redis.NewCmd(suite.ctx)
 	cmd.SetVal(int64(1))
 	suite.mockClient.On("EvalSha", suite.ctx, updateFlowScript.Hash(),
 		[]string{suite.flowKey}, mock.Anything).Return(cmd)
 
-	err := suite.store.UpdateFlowContext(suite.ctx, engineCtx)
+	err = suite.store.UpdateFlowContext(suite.ctx, *dbModel)
 	suite.NoError(err)
 }
 
 func (suite *RedisFlowStoreTestSuite) TestUpdateFlowContext_KeyNotFound() {
 	engineCtx := suite.buildEngineContext()
+	dbModel, err := FromEngineContext(engineCtx)
+	suite.Require().NoError(err)
 
 	cmd := redis.NewCmd(suite.ctx)
 	cmd.SetVal(int64(0))
 	suite.mockClient.On("EvalSha", suite.ctx, updateFlowScript.Hash(),
 		[]string{suite.flowKey}, mock.Anything).Return(cmd)
 
-	err := suite.store.UpdateFlowContext(suite.ctx, engineCtx)
+	err = suite.store.UpdateFlowContext(suite.ctx, *dbModel)
 	suite.Error(err)
 	suite.Contains(err.Error(), "flow context not found for executionID")
 }
 
 func (suite *RedisFlowStoreTestSuite) TestUpdateFlowContext_ScriptError() {
 	engineCtx := suite.buildEngineContext()
+	dbModel, err := FromEngineContext(engineCtx)
+	suite.Require().NoError(err)
 
 	cmd := redis.NewCmd(suite.ctx)
 	cmd.SetErr(errors.New("connection refused"))
 	suite.mockClient.On("EvalSha", suite.ctx, updateFlowScript.Hash(),
 		[]string{suite.flowKey}, mock.Anything).Return(cmd)
 
-	err := suite.store.UpdateFlowContext(suite.ctx, engineCtx)
+	err = suite.store.UpdateFlowContext(suite.ctx, *dbModel)
 	suite.Error(err)
 	suite.Contains(err.Error(), "failed to update flow context in Redis")
 }

@@ -16,13 +16,14 @@
  * under the License.
  */
 
+import {useLocation} from '@docusaurus/router';
+import {DefaultTheme} from '@thunderid/design';
+import {LoggerProvider, LogLevel} from '@thunderid/logger/react';
+import {OxygenUIThemeProvider} from '@wso2/oxygen-ui';
 import React, {PropsWithChildren, useEffect} from 'react';
-import {OxygenUIThemeProvider, AcrylicOrangeTheme} from '@wso2/oxygen-ui';
-import {LoggerProvider, LogLevel} from '@thunder/logger/react';
-import { useLocation } from '@docusaurus/router';
 import {applyPersona, PERSONAS, type Persona} from './NavbarItem/PersonaDropdown';
 
-const PERSONA_STORAGE_KEY = 'thunder-docs-persona';
+const PERSONA_STORAGE_KEY = 'product-docs-persona';
 
 export default function Root({children = null}: PropsWithChildren<Record<string, unknown>>) {
   const location = useLocation();
@@ -41,13 +42,13 @@ export default function Root({children = null}: PropsWithChildren<Record<string,
   // Restore persona selection from localStorage before first paint.
   useEffect(() => {
     const saved = localStorage.getItem(PERSONA_STORAGE_KEY) as Persona | null;
-    if (saved && PERSONAS.some(p => p.value === saved)) {
+    if (saved && PERSONAS.some((p) => p.value === saved)) {
       applyPersona(saved);
     }
   }, []);
 
   return (
-    <OxygenUIThemeProvider theme={AcrylicOrangeTheme}>
+    <OxygenUIThemeProvider theme={DefaultTheme}>
       <LoggerProvider
         logger={{
           level: LogLevel.DEBUG,

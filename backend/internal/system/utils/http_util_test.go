@@ -1034,6 +1034,79 @@ func (suite *HTTPUtilTestSuite) TestMatchURIPattern() {
 			incoming:  "https://example.com/app/%2e%2e/admin",
 			wantMatch: false,
 		},
+		// Host wildcard cases: * matches one or more alphanumeric chars within a single label.
+		{
+			name:      "HostWildcardLabelInternal",
+			pattern:   "https://tenant-app-*-*.gateway.example.com",
+			incoming:  "https://tenant-app-019dfc78-f19ab4f2.gateway.example.com",
+			wantMatch: true,
+		},
+		{
+			name:      "HostWildcardCaseInsensitive",
+			pattern:   "https://foo-*-bar.example.com",
+			incoming:  "https://FOO-AbCd-Bar.EXAMPLE.com",
+			wantMatch: true,
+		},
+		{
+			name:      "HostWildcardDoesNotCrossDot",
+			pattern:   "https://foo-*-bar.example.com",
+			incoming:  "https://foo-x.y-bar.example.com",
+			wantMatch: false,
+		},
+		{
+			name:      "HostWildcardDoesNotMatchHyphenInDynamic",
+			pattern:   "https://foo-*-bar.example.com",
+			incoming:  "https://foo-a-b-bar.example.com",
+			wantMatch: false,
+		},
+		{
+			name:      "HostWildcardLabelCountMismatch",
+			pattern:   "https://*-app.example.com",
+			incoming:  "https://x-app.dev.example.com",
+			wantMatch: false,
+		},
+		{
+			name:      "HostWildcardSingleStarRequiresAtLeastOneChar",
+			pattern:   "https://prefix-*.example.com",
+			incoming:  "https://prefix-.example.com",
+			wantMatch: false,
+		},
+		{
+			name:      "HostWildcardWithPath",
+			pattern:   "https://app-*.example.com/cb/*",
+			incoming:  "https://app-prod.example.com/cb/v1",
+			wantMatch: true,
+		},
+		{
+			name:      "HostWildcardAdjacentLiteralBacktrack",
+			pattern:   "https://*foo.example.com",
+			incoming:  "https://abcfoo.example.com",
+			wantMatch: true,
+		},
+		{
+			name:      "HostWildcardAdjacentLiteralNoMatch",
+			pattern:   "https://*foo.example.com",
+			incoming:  "https://abcbar.example.com",
+			wantMatch: false,
+		},
+		{
+			name:      "HostNoWildcardFastPath",
+			pattern:   "https://example.com/cb",
+			incoming:  "https://EXAMPLE.com/cb",
+			wantMatch: true,
+		},
+		{
+			name:      "HostWildcardWithMatchingPort",
+			pattern:   "https://app-*.example.com:8443/cb",
+			incoming:  "https://app-prod.example.com:8443/cb",
+			wantMatch: true,
+		},
+		{
+			name:      "HostWildcardWithMismatchedPort",
+			pattern:   "https://app-*.example.com:8443/cb",
+			incoming:  "https://app-prod.example.com:8080/cb",
+			wantMatch: false,
+		},
 	}
 
 	for _, tt := range tests {

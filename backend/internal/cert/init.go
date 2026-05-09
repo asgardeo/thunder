@@ -19,16 +19,20 @@
 package cert
 
 import (
+	"github.com/asgardeo/thunder/internal/system/cache"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 )
 
 // Initialize initializes and returns the certificate service.
-func Initialize(dbProvider provider.DBProviderInterface) (CertificateServiceInterface, error) {
+func Initialize(cacheManager cache.CacheManagerInterface, dbProvider provider.DBProviderInterface) (
+	CertificateServiceInterface, error) {
 	txn, err := dbProvider.GetConfigDBTransactioner()
 	if err != nil {
 		return nil, err
 	}
-	certStore := newCachedBackedCertificateStore()
+	certByIDCache := cache.GetCache[*Certificate](cacheManager, "CertificateByIDCache")
+	certByReferenceCache := cache.GetCache[*Certificate](cacheManager, "CertificateByReferenceCache")
+	certStore := newCachedBackedCertificateStore(certByIDCache, certByReferenceCache)
 	certService := newCertificateService(certStore, txn)
 	return certService, nil
 }

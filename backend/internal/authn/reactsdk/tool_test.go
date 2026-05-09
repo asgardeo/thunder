@@ -42,15 +42,15 @@ func (suite *ReactSDKToolsTestSuite) SetupTest() {
 
 func (suite *ReactSDKToolsTestSuite) TestIntegrateReactSDK() {
 	input := integrateReactSDKInput{
-		ThunderURL: "https://custom-thunder.com",
+		ServerURL: "https://thunder.example.com",
 	}
 
 	result, output, err := integrateReactSDK(context.Background(), nil, input)
 
 	assert.NoError(suite.T(), err)
 	assert.Nil(suite.T(), result)
-	assert.Contains(suite.T(), output.Instructions, "https://custom-thunder.com")
-	assert.Contains(suite.T(), output.CodeSnippets, "https://custom-thunder.com")
+	assert.Contains(suite.T(), output.Instructions, "https://thunder.example.com")
+	assert.Contains(suite.T(), output.CodeSnippets, "https://thunder.example.com")
 }
 
 func (suite *ReactSDKToolsTestSuite) TestIntegrateReactSDK_Defaults() {
@@ -88,10 +88,10 @@ func (suite *ReactSDKToolsTestSuite) TestRegisterTools() {
 	found := false
 	iter := featuresField.MapRange()
 	for iter.Next() {
-		if iter.Key().String() == "thunder_integrate_react_sdk" {
+		if iter.Key().String() == "thunderid_integrate_react_sdk" {
 			found = true
 			break
 		}
 	}
-	assert.True(suite.T(), found, "thunder_integrate_react_sdk tool should be registered")
+	assert.True(suite.T(), found, "thunderid_integrate_react_sdk tool should be registered")
 }

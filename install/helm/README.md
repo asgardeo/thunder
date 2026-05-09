@@ -1,10 +1,10 @@
-# Thunder Helm Chart
+# ThunderID Helm Chart
 
-This repository contains the Helm chart for Thunder, a lightweight user and identity management system designed for modern application development.
+This repository contains the Helm chart for ThunderID, a lightweight user and identity management system designed for modern application development.
 
 ## Configuration Value Types
 
-Thunder's configuration system supports multiple value formats for **any parameter** in the configuration:
+ThunderID's configuration system supports multiple value formats for **any parameter** in the configuration:
 
 1. **Direct Values** - Static values specified directly in YAML:
    ```yaml
@@ -32,7 +32,7 @@ Thunder's configuration system supports multiple value formats for **any paramet
    - `file://path/to/file` - Unquoted path (no spaces)
    - `file://"path/with spaces"` - Quoted path (with spaces allowed)
    - `file:///absolute/path` - Absolute paths
-   - `file://relative/path` - Relative paths (resolved from the Thunder installation directory)
+   - `file://relative/path` - Relative paths (resolved from the ThunderID installation directory)
 
 ## Prerequisites
 
@@ -48,40 +48,40 @@ Thunder's configuration system supports multiple value formats for **any paramet
 | Git           | [Install Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) | `git --version` |
 | Helm          | [Install Helm](https://helm.sh/docs/intro/install/) | `helm version` |
 | Docker        | [Install Docker](https://docs.docker.com/engine/install/) | `docker --version` |
-| kubectl       | [Install kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) | `kubectl version` |
+| `kubectl`     | [Install kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) | `kubectl version` |
 
 ## Quick Start Guide
 
-Follow these steps to deploy Thunder in your Kubernetes cluster:
+Follow these steps to deploy ThunderID in your Kubernetes cluster:
 
-### 1. Install the Thunder Helm chart
+### 1. Install the ThunderID Helm chart
 
 ```bash
 # Pull and install from GitHub Container Registry
-helm install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder
+helm install my-thunderid oci://ghcr.io/asgardeo/helm-charts/thunderid
 ```
 
 If you wish to install another version, use the command below to specify the desired version.
 
 ```bash
-helm install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder --version <VERSION>
+helm install my-thunderid oci://ghcr.io/asgardeo/helm-charts/thunderid --version <VERSION>
 ```
 
 > To see which chart versions are available, you can:
-> - Visit the [Thunder Helm Chart Registry](https://github.com/asgardeo/thunder/pkgs/container/helm-charts%2Fthunder) on GitHub Container Registry.
+> - Visit the [ThunderID Helm Chart Registry](https://github.com/asgardeo/thunder/pkgs/container/helm-charts%2Fthunderid) on GitHub Container Registry.
 
 If you want to customize the installation, create a `custom-values.yaml` file with your configurations and use:
 
 ```bash
-helm install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder -f custom-values.yaml
+helm install my-thunderid oci://ghcr.io/asgardeo/helm-charts/thunderid -f custom-values.yaml
 ```
 
-The command deploys Thunder on the Kubernetes cluster with the default configuration. The [Parameters](#parameters) section lists the available parameters that can be configured during installation.
+The command deploys ThunderID on the Kubernetes cluster with the default configuration. The [Parameters](#parameters) section lists the available parameters that can be configured during installation.
 
-If you want to install Thunder with SQLite databases, use the following command:
+If you want to install ThunderID with SQLite databases, use the following command:
 
 ```bash
-helm install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder \
+helm install my-thunderid oci://ghcr.io/asgardeo/helm-charts/thunderid \
   --set configuration.database.config.type=sqlite \
   --set configuration.database.runtime.type=sqlite \
   --set configuration.database.user.type=sqlite
@@ -92,53 +92,53 @@ helm install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder \
 - The setup job's init container will automatically copy SQLite databases from the image to a PVC
 - Database files will persist across pod restarts
 
-### 2. Obtain the External IP
+### 2. Get the External IP
 
-After deploying Thunder, you need to find its external IP address to access it outside the cluster. Run the following command to list the Ingress resources:
+After deploying ThunderID, you need to find its external IP address to access it outside the cluster. Run the following command to list the Ingress resources:
 
 ```bash
 kubectl get ingress
 ```
 **Output Fields:**
 
-- **HOSTS** – Hostname (e.g., `thunder.local`)
+- **HOSTS** – hostname (e.g., `thunderid.local`)
 - **ADDRESS** – External IP
-- **PORTS** – Exposed ports (usually 80, 443)
+- **PORTS** – Exposed ports (typically 80, 443)
 
-After the installation is complete, you can access Thunder via the Ingress hostname.
+After the installation is complete, you can access ThunderID via the Ingress hostname.
 
-By default, Thunder will be available at `http://thunder.local`. You may need to add this hostname to your local hosts file or configure your DNS accordingly.
+By default, ThunderID will be available at `http://thunderid.local`. You may need to add this hostname to your local hosts file or configure your DNS accordingly.
 
 ### Uninstalling the Chart
 
-To uninstall/delete the `my-thunder` deployment:
+To uninstall/delete the `my-thunderid` deployment:
 
 ```bash
-helm uninstall my-thunder
+helm uninstall my-thunderid
 ```
 
 This command removes all the Kubernetes components associated with the chart and deletes the release.
 
 ## Gateway API Setup (Alternative to Ingress)
 
-Thunder supports Kubernetes Gateway API as a modern alternative to Ingress. Enable it by setting `gateway.enabled=true` and `httproute.enabled=true` when installing the chart.
+ThunderID supports Kubernetes Gateway API as a modern alternative to Ingress. Enable it by setting `gateway.enabled=true` and `httproute.enabled=true` when installing the chart.
 
 ### Gateway API Prerequisites
-- A TLS certificate stored as a Kubernetes Secret named `thunder-tls` in your deployment namespace
+- A TLS certificate stored as a Kubernetes Secret named `thunderid-tls` in your deployment `namespace`
 
 ### Create a TLS Certificate
 
 Generate a self-signed certificate and create the Kubernetes Secret:
 
 ```bash
-# Generate a self-signed certificate for your hostname (e.g., thunder.local)
+# Generate a self-signed certificate for your hostname (e.g., thunderid.local)
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout tls.key -out tls.crt \
-  -subj "/CN=thunder.local" \
-  -addext "subjectAltName = DNS:thunder.local"
+  -subj "/CN=thunderid.local" \
+  -addext "subjectAltName = DNS:thunderid.local"
 
-# Create the TLS secret (must be named 'thunder-tls' in your deployment namespace)
-kubectl create secret tls thunder-tls \
+# Create the TLS secret (must be named 'thunderid-tls' in your deployment namespace)
+kubectl create secret tls thunderid-tls \
   --cert=tls.crt \
   --key=tls.key \
   -n <your-namespace>
@@ -147,7 +147,7 @@ kubectl create secret tls thunder-tls \
 
 ## Parameters
 
-The following table lists the configurable parameters of the Thunder chart and their default values.
+The following table lists the configurable parameters of the ThunderID chart and their default values.
 
 ### Global Parameters
 
@@ -160,20 +160,20 @@ The following table lists the configurable parameters of the Thunder chart and t
 
 | Name                                    | Description                                                                             | Default                        |
 | --------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------ |
-| `deployment.replicaCount`               | Number of Thunder replicas                                                              | `2`                            |
+| `deployment.replicaCount`               | Number of ThunderID replicas                                                              | `2`                            |
 | `deployment.strategy.rollingUpdate.maxSurge` | Maximum number of pods that can be created over the desired number during an update | `1`                           |
 | `deployment.strategy.rollingUpdate.maxUnavailable` | Maximum number of pods that can be unavailable during an update              | `0`                           |
-| `deployment.image.registry`             | Thunder image registry                                                                  | `ghcr.io/asgardeo`             |
-| `deployment.image.repository`           | Thunder image repository                                                                | `thunder`                      |
-| `deployment.image.tag`                  | Thunder image tag                                                                       | `latest`                       |
-| `deployment.image.digest`               | Thunder image digest (use either tag or digest)                                         | `""`                           |
-| `deployment.image.pullPolicy`           | Thunder image pull policy                                                               | `Always`                       |
+| `deployment.image.registry`             | ThunderID image registry                                                                  | `ghcr.io/asgardeo`             |
+| `deployment.image.repository`           | ThunderID image repository                                                                | `thunder`                      |
+| `deployment.image.tag`                  | ThunderID image tag                                                                       | `latest`                       |
+| `deployment.image.digest`               | ThunderID image digest (use either tag or digest)                                         | `""`                           |
+| `deployment.image.pullPolicy`           | ThunderID image pull policy                                                               | `Always`                       |
 | `deployment.terminationGracePeriodSeconds` | Pod termination grace period in seconds                                              | `10`                           |
-| `deployment.container.port`             | Thunder container port                                                                  | `8090`                         |
+| `deployment.container.port`             | ThunderID container port                                                                  | `8090`                         |
 | `deployment.startupProbe.initialDelaySeconds` | Startup probe initial delay seconds                                               | `1`                            |
 | `deployment.startupProbe.periodSeconds` | Startup probe period seconds                                                            | `2`                            |
 | `deployment.startupProbe.failureThreshold` | Startup probe failure threshold                                                      | `30`                           |
-| `deployment.livenessProbe.periodSeconds` | Liveness probe period seconds                                                          | `10`                           |
+| `deployment.livenessProbe.periodSeconds` | `Liveness` probe period seconds                                                        | `10`                           |
 | `deployment.readinessProbe.initialDelaySeconds` | Readiness probe initial delay seconds                                           | `1`                            |
 | `deployment.readinessProbe.periodSeconds` | Readiness probe period seconds                                                        | `10`                           |
 | `deployment.resources.limits.cpu`       | CPU resource limits                                                                     | `200m`                         |
@@ -185,10 +185,10 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `deployment.securityContext.runAsUser`  | User ID to run the container                                                            | `10001`                        |
 | `deployment.securityContext.enableRunAsGroup` | Enable setting group ID for the container process                                 | `true`                         |
 | `deployment.securityContext.runAsGroup` | Group ID to run the container                                                           | `10001`                        |
-| `deployment.securityContext.enableFsGroup` | Enable setting fsGroup for volume ownership                                          | `true`                         |
+| `deployment.securityContext.enableFsGroup` | Enable setting `fsGroup` for volume ownership                                        | `true`                         |
 | `deployment.securityContext.fsGroup`    | Group ID for mounted volumes (fixes SQLite permission issues on cloud platforms)        | `10001`                        |
-| `deployment.securityContext.seccompProfile.enabled` | Enable seccomp profile                                                      | `false`                        |
-| `deployment.securityContext.seccompProfile.type` | Seccomp profile type                                                           | `RuntimeDefault`               |
+| `deployment.securityContext.seccompProfile.enabled` | Enable `seccomp` profile                                                    | `false`                        |
+| `deployment.securityContext.seccompProfile.type` | `Seccomp` profile type                                                         | `RuntimeDefault`               |
 | `deployment.env`                        | Additional environment variables with plain values                                     | `[]`                           |
 | `deployment.secretEnv`                  | Additional environment variables sourced from Kubernetes Secrets                         | `[]`                           |
 
@@ -196,23 +196,23 @@ The following table lists the configurable parameters of the Thunder chart and t
 
 | Name                              | Description                                                      | Default                       |
 | --------------------------------- | ---------------------------------------------------------------- | ----------------------------- |
-| `hpa.enabled`                     | Enable Horizontal Pod Autoscaler                                 | `true`                        |
+| `hpa.enabled`                     | Enable Horizontal Pod `Autoscaler`                               | `true`                        |
 | `hpa.maxReplicas`                 | Maximum number of replicas                                       | `10`                          |
-| `hpa.averageUtilizationCPU`       | Target CPU utilization percentage                                | `65`                          |
-| `hpa.averageUtilizationMemory`    | Target Memory utilization percentage                             | `75`                          |
+| `hpa.averageUtilizationCPU`       | Target CPU usage percentage                                      | `65`                          |
+| `hpa.averageUtilizationMemory`    | Target Memory usage percentage                                   | `75`                          |
 
 ### Service Parameters
 
 | Name                             | Description                                                       | Default                      |
 | -------------------------------- | ----------------------------------------------------------------- | ---------------------------- |
-| `service.port`                   | Thunder service port                                              | `8090`                       |
+| `service.port`                   | ThunderID service port                                              | `8090`                       |
 
 ### Service Account Parameters
 
 | Name                         | Description                                                | Default                       |
 | ---------------------------- | ---------------------------------------------------------- | ----------------------------- |
 | `serviceAccount.create`      | Enable creation of ServiceAccount                          | `true`                        |
-| `serviceAccount.name`        | Name of the service account to use                         | `thunder-service-account`     |
+| `serviceAccount.name`        | Name of the service account to use                         | `thunderid-service-account`     |
 
 ### PDB Parameters
 
@@ -226,21 +226,21 @@ The following table lists the configurable parameters of the Thunder chart and t
 | ------------------------------------- | --------------------------------------------------------------- | ---------------------------- |
 | `ingress.enabled`                     | Enable Ingress resource                                         | `true`                       |
 | `ingress.className`                   | Ingress controller class                                        | `nginx`                      |
-| `ingress.hostname`                    | Default host for the ingress resource                           | `thunder.local`              |
+| `ingress.hostname`                    | Default host for the ingress resource                           | `thunderid.local`              |
 | `ingress.paths[0].path`               | Path for the ingress resource                                   | `/`                          |
 | `ingress.paths[0].pathType`           | Path type for the ingress resource                              | `Prefix`                     |
-| `ingress.tlsSecretsName`              | TLS secret name for HTTPS                                       | `thunder-tls`                |
+| `ingress.tlsSecretsName`              | TLS secret name for HTTPS                                       | `thunderid-tls`                |
 | `ingress.commonAnnotations`           | Common annotations for ingress                                  | See values.yaml              |
 | `ingress.customAnnotations`           | Custom annotations for ingress                                  | `{}`                         |
 
-### HTTPRoute Parameters
+### `HTTPRoute` Parameters
 
 | Name                                  | Description                                                                  | Default                      |
 | ------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------- |
-| `httproute.enabled`                   | Enable Gateway API HTTPRoute resource (alternative to Ingress)               | `false`                      |
-| `httproute.annotations`               | Annotations for the HTTPRoute resource                                       | `{}`                         |
+| `httproute.enabled`                   | Enable Gateway API `HTTPRoute` resource (alternative to Ingress)             | `false`                      |
+| `httproute.annotations`               | Annotations for the `HTTPRoute` resource                                     | `{}`                         |
 | `httproute.parentRefs`                | Gateway references this route attaches to (required when enabled)            | `[]`                         |
-| `httproute.hostnames`                 | Hostnames this route responds to                                             | `[]`                         |
+| `httproute.hostnames`                 | `Hostnames` this route responds to                                           | `[]`                         |
 
 ### Gateway Parameters
 
@@ -250,12 +250,12 @@ The following table lists the configurable parameters of the Thunder chart and t
 | `gateway.name`                        | Override the name of the Gateway resource                                    | `""`                         |
 | `gateway.className`                   | Gateway class name                                                           | `eg` (Envoy default name)    |
 | `gateway.tls.enabled`                 | Enable TLS listener on the Gateway                                           | `true`                       |
-| `gateway.tls.secretName`              | TLS secret name for HTTPS listener                                           | `thunder-tls`                |
+| `gateway.tls.secretName`              | TLS secret name for HTTPS listener                                           | `thunderid-tls`                |
 | `gateway.tls.mode`                    | TLS reference mode                                                           | `Terminate`                  |
 
 ### Database Password Management
 
-Thunder provides flexible password management for database connections with automatic Kubernetes Secret integration.
+ThunderID provides flexible password management for database connections with automatic Kubernetes Secret integration.
 
 #### Security Warning
 
@@ -263,10 +263,10 @@ Thunder provides flexible password management for database connections with auto
 
 #### How Password Management Works
 
-Thunder uses intelligent password detection based on the `password` and `passwordRef` fields:
+ThunderID uses intelligent password detection based on the `password` and `passwordRef` fields:
 
 1. **If `passwordRef.key` is set** → Uses external Secret (production pattern)
-2. **If `password` has a value but `passwordRef.key` is empty** → Auto-converts to Helm-managed Secret (dev/test pattern)
+2. **If `password` has a value but `passwordRef.key` is empty** → Auto-converts to Helm-managed Secret (development/test pattern)
 3. **If both are empty** → No password (SQLite-only deployments)
 
 The auto-created Secret is created as a Helm pre-install/pre-upgrade hook to ensure it exists before the main deployment and setup job run.
@@ -293,7 +293,7 @@ configuration:
 
 **Best Practice:** Use `--set` flags to avoid committing passwords:
 ```bash
-helm install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder \
+helm install my-thunderid oci://ghcr.io/asgardeo/helm-charts/thunderid \
   --set configuration.database.config.postgres.password=mypass1 \
   --set configuration.database.runtime.postgres.password=mypass2 \
   --set configuration.database.runtime.redis.password=myredispass \
@@ -344,32 +344,32 @@ configuration:
 
 When `passwordRef.key` is set, the `password` field is ignored and Helm uses your external Secret.
 
-**Important:** The checksum annotation used to trigger pod rollouts is only computed for auto-generated Secrets. When you use an external Secret via `passwordRef` (Pattern 2), changes to that Secret will **not** automatically restart pods. You must either manually restart the pods or use a tool to watch for Secret changes and trigger rollouts.
+**Important:** The checksum annotation used to trigger pod `rollouts` is only computed for auto-generated Secrets. When you use an external Secret via `passwordRef` (Pattern 2), changes to that Secret will **not** automatically restart pods. You must either manually restart the pods or use a tool to watch for Secret changes and trigger pod `rollouts`.
 
 **Important:** When you *do not* use `passwordRef.key` (i.e., you rely on the auto-generated Secret), the Helm chart will
 base64-encode the `password` value directly into a Kubernetes Secret. In this mode, values like `"{{.DB_PASSWORD}}"` or
 `"file:///secrets/pass"` are stored as literal strings in the Secret and **are not** resolved as environment variables or
-file references by Helm. Environment variable placeholders (`{{.VAR}}`) and `file://` references are only resolved when
-Thunder reads configuration directly via its application config loader (e.g., from a ConfigMap or file), not when the
-value is first converted into a Kubernetes Secret by this chart.
+file references by Helm. Environment variable placeholders (`{{.VAR}}`) and `file://` references are only resolved
+when ThunderID reads configuration directly via its application config loader (e.g., from a ConfigMap or file).
+They are not resolved when the value is first converted into a Kubernetes Secret by this chart.
 
 #### Password Field Options
 Password fields are available in `configuration.database.config.postgres`, `configuration.database.runtime.postgres`, `configuration.database.runtime.redis`, and `configuration.database.user.postgres`:
 
 | Field                  | Description                                                                                                                                    | Example                      |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| `password`             | Direct password value. When Thunder reads config directly, this may also be an env var placeholder (`{{.VAR}}`) or file reference (`file://path`). When using the auto-generated Secret, the value is stored **as-is** in the Secret and such placeholders are **not** resolved. | `"mypassword"` or `"{{.DB_PASSWORD}}"` or `"file:///secrets/pass"` |
+| `password`             | Direct password value. When ThunderID reads config directly, this may also be an environment variable placeholder (`{{.VAR}}`) or file reference (`file://path`). When using the auto-generated Secret, the value is stored **as-is** in the Secret and such placeholders are **not** resolved. | `"mypassword"` or `"{{.DB_PASSWORD}}"` or `"file:///secrets/pass"` |
 | `passwordRef.name`     | Kubernetes Secret name (optional, defaults to `<release-name>-db-credentials` for auto-convert)                                               | `"my-db-secrets"`            |
 | `passwordRef.key`      | Secret key name. When set, `password` field is ignored and external Secret is used                                                            | `"config-password"`          |
 
-### Thunder Configuration Parameters
+### ThunderID Configuration Parameters
 
 | Name                                              | Description                                                                                                                                             | Default                      |
 |---------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------| ---------------------------- |
-| `configuration.server.port`                       | Thunder server port                                                                                                                                     | `8090`                       |
+| `configuration.server.port`                       | ThunderID server port                                                                                                                                     | `8090`                       |
 | `configuration.server.httpOnly`                   | Whether the server should run in HTTP-only mode                                                                                                         | `false`                      |
-| `configuration.server.publicURL`                  | Public URL of the Thunder server                                                                                                                        | `https://thunder.local`      |
-| `configuration.gateClient.hostname`               | Gate client hostname                                                                                                                                    | `thunder.local`              |
+| `configuration.server.publicURL`                  | Public URL of the ThunderID server                                                                                                                        | `https://thunderid.local`      |
+| `configuration.gateClient.hostname`               | Gate client hostname                                                                                                                                    | `thunderid.local`              |
 | `configuration.gateClient.port`                   | Gate client port                                                                                                                                        | `443`                       |
 | `configuration.gateClient.scheme`                 | Gate client scheme                                                                                                                                      | `https`                      |
 | `configuration.gateClient.path`                   | Gate client base path                                                                                                                                   | `/gate`                      |
@@ -433,7 +433,7 @@ Password fields are available in `configuration.database.config.postgres`, `conf
 | `configuration.database.runtime.redis.passwordRef.name` | Kubernetes Secret name for runtime Redis password                                                                                                      | `""`                         |
 | `configuration.database.runtime.redis.passwordRef.key` | Kubernetes Secret key for runtime Redis password                                                                                                      | `""`                         |
 | `configuration.database.runtime.redis.db`          | Redis logical database index (0–15) (for Redis only)                                                                                                   | `0`                          |
-| `configuration.database.runtime.redis.key_prefix`   | Prefix applied to all Redis keys written by Thunder (for Redis only)                                                                                   | `""`                         |
+| `configuration.database.runtime.redis.key_prefix`   | Prefix applied to all Redis keys written by ThunderID (for Redis only)                                                                                   | `""`                         |
 | `configuration.database.user.type`                | User database type (postgres or sqlite)                                                                                                                 | `postgres`                   |
 | `configuration.database.user.sqlite.path`          | SQLite database path (for SQLite only)                                                                                                                  | `repository/database/userdb.db` |
 | `configuration.database.user.sqlite.options`       | SQLite options (for SQLite only)                                                                                                                        | `_journal_mode=WAL&_busy_timeout=5000&_pragma=foreign_keys(1)` |
@@ -463,7 +463,7 @@ Password fields are available in `configuration.database.config.postgres`, `conf
 | `configuration.cache.redis.passwordRef.name`      | Kubernetes Secret name for Redis password. Leave empty to use auto-created `<release-name>-db-credentials` Secret when password field is set          | `""`                        |
 | `configuration.cache.redis.passwordRef.key`       | Kubernetes Secret key for Redis password. When set, overrides `password` field and uses external Secret                                                | `""`                        |
 | `configuration.cache.redis.db`                    | Redis database number                                                                                                                                   | `0`                          |
-| `configuration.cache.redis.keyPrefix`             | Prefix for all Redis cache keys                                                                                                                         | `thunder`                    |
+| `configuration.cache.redis.keyPrefix`             | Prefix for all Redis cache keys                                                                                                                         | `thunderid`                  |
 | `configuration.jwt.issuer`                        | JWT issuer (derived from server.publicUrl if not set)                                                                                                   | derived                      |
 | `configuration.jwt.validityPeriod`                | JWT validity period in seconds                                                                                                                          | `3600`                       |
 | `configuration.jwt.audience`                      | Default audience for auth assertions                                                                                                                    | `application`                |
@@ -494,17 +494,17 @@ Persistence is **automatically enabled** when using SQLite as the database type 
 
 **Note:** 
 - When any database is configured to use SQLite, a PersistentVolumeClaim (PVC) is **always created** to store the database files, regardless of the `persistence.enabled` or `setup.enabled` settings.
-- The PVC is mounted by the setup job's init container (if `setup.enabled` is true) to initialize the database, and by the main Thunder deployment for ongoing operation.
+- The PVC is mounted by the setup job's init container (if `setup.enabled` is true) to initialize the database, and by the main ThunderID deployment for ongoing operation.
 - You can customize the storage size and storage class for the PVC using the `persistence.size` and `persistence.storageClass` values.
 
 ### Declarative Resources Parameters
 
-Declarative resources can be mounted into Thunder's `repository/resources` directory from either a ConfigMap or Secret.
+Declarative resources can be mounted into ThunderID's `repository/resources` directory from either a ConfigMap or Secret.
 
 | Name                                   | Description                                                     | Default                      |
 | -------------------------------------- | --------------------------------------------------------------- | ---------------------------- |
 | `declarativeResources.enabled`         | Enable declarative resources mount                              | `false`                      |
-| `declarativeResources.mountPath`       | Mount path inside container                                     | `/opt/thunder/repository/resources` |
+| `declarativeResources.mountPath`       | Mount path inside container                                     | `/opt/thunderid/repository/resources` |
 | `declarativeResources.readOnly`        | Mount declarative resources as read-only                        | `true`                       |
 | `declarativeResources.configMap.name`  | Existing ConfigMap name containing declarative resources        | `""`                        |
 | `declarativeResources.configMap.items` | ConfigMap items to mount (string or `{key,path}`; empty = all keys) | `[]`                    |
@@ -515,7 +515,7 @@ Declarative resources can be mounted into Thunder's `repository/resources` direc
 - When `declarativeResources.enabled=true`, set exactly one source: `declarativeResources.configMap.name` or `declarativeResources.secret.name`.
 - Setting both sources at once fails template rendering.
 
-When `declarativeResources.enabled` is set to `true`, the generated Thunder `deployment.yaml` also sets:
+When `declarativeResources.enabled` is set to `true`, the generated ThunderID `deployment.yaml` also sets:
 
 ```yaml
 declarative_resources:
@@ -527,9 +527,9 @@ Example using a ConfigMap:
 ```yaml
 declarativeResources:
   enabled: true
-  mountPath: /opt/thunder/repository/resources
+  mountPath: /opt/thunderid/repository/resources
   configMap:
-    name: thunder-declarative-resources
+    name: thunderid-declarative-resources
     items:
       - organizations/default/organization.yaml
       - identity-providers/google.yaml
@@ -538,7 +538,7 @@ declarativeResources:
 ### Declarative Resources Mounting Guide
 
 When declarative resources are enabled, the chart mounts the same volume into both:
-- Thunder deployment container
+- ThunderID deployment container
 - Setup job container
 
 This ensures resources are available during initialization and at runtime.
@@ -554,17 +554,17 @@ Each entry in `declarativeResources.configMap.items` (or `declarativeResources.s
 
 Use object format when you need to mount a source key to a different directory/file path under `declarativeResources.mountPath`.
 
-When `items` are provided, the chart mounts declarative resources file-by-file using `subPath`. This preserves existing files already present in Thunder's `repository/resources` directory.
+When `items` are provided, the chart mounts declarative resources file-by-file using `subPath`. This preserves existing files already present in ThunderID's `repository/resources` directory.
 
 Resulting file path example:
-- With `path: applications/application1.yaml`, file is mounted at `/opt/thunder/repository/resources/applications/application1.yaml`
+- With `path: applications/application1.yaml`, file is mounted at `/opt/thunderid/repository/resources/applications/application1.yaml`
 
 #### End-to-end example with ConfigMap
 
 Create a ConfigMap where keys represent the target directory structure:
 
 ```bash
-kubectl create configmap thunder-declarative-resources \
+kubectl create configmap thunderid-declarative-resources \
   --from-file=applications/application1.yaml=./declarative-resources/applications/application1.yaml \
   --from-file=organizations/default/organization.yaml=./declarative-resources/organizations/default/organization.yaml \
   --from-file=identity-providers/google.yaml=./declarative-resources/identity-providers/google.yaml
@@ -575,10 +575,10 @@ Configure Helm values:
 ```yaml
 declarativeResources:
   enabled: true
-  mountPath: /opt/thunder/repository/resources
+  mountPath: /opt/thunderid/repository/resources
   readOnly: true
   configMap:
-    name: thunder-declarative-resources
+    name: thunderid-declarative-resources
     items:
       - key: applications/application1.yaml
         path: applications/application1.yaml
@@ -591,7 +591,7 @@ declarativeResources:
 declarativeResources:
   enabled: true
   configMap:
-    name: thunder-declarative-resources
+    name: thunderid-declarative-resources
     items:
       - key: app1
         path: applications/application1.yaml
@@ -602,7 +602,7 @@ declarativeResources:
 Install or upgrade:
 
 ```bash
-helm upgrade --install my-thunder oci://ghcr.io/asgardeo/helm-charts/thunder -f custom-values.yaml
+helm upgrade --install my-thunderid oci://ghcr.io/asgardeo/helm-charts/thunderid -f custom-values.yaml
 ```
 
 #### Example with Secret Source
@@ -613,7 +613,7 @@ Use this when resource files contain sensitive values.
 declarativeResources:
   enabled: true
   secret:
-    name: thunder-declarative-resources-secret
+    name: thunderid-declarative-resources-secret
     items:
       - key: app1
         path: applications/application1.yaml
@@ -629,7 +629,7 @@ If `items` is empty, all keys from the ConfigMap/Secret are mounted:
 declarativeResources:
   enabled: true
   configMap:
-    name: thunder-declarative-resources
+    name: thunderid-declarative-resources
     items: []
 ```
 
@@ -637,7 +637,7 @@ declarativeResources:
 
 #### Runtime Configuration Sync
 
-Setting `declarativeResources.enabled: true` also updates generated Thunder config:
+Setting `declarativeResources.enabled: true` also updates generated ThunderID config:
 
 ```yaml
 declarative_resources:
@@ -647,11 +647,11 @@ declarative_resources:
 #### Verify Mounted Files and Config
 
 ```bash
-# Check mounted files inside Thunder pod
-kubectl exec -it deploy/my-thunder -- ls -R /opt/thunder/repository/resources
+# Check mounted files inside ThunderID pod
+kubectl exec -it deploy/my-thunderid -- ls -R /opt/thunderid/repository/resources
 
 # Confirm declarative_resources.enabled in generated deployment config
-kubectl exec -it deploy/my-thunder -- grep -n "declarative_resources\|enabled" /opt/thunder/conf/deployment.yaml
+kubectl exec -it deploy/my-thunderid -- grep -n "declarative_resources\|enabled" /opt/thunderid/conf/deployment.yaml
 ```
 
 #### Common configuration errors
@@ -666,7 +666,7 @@ kubectl exec -it deploy/my-thunder -- grep -n "declarative_resources\|enabled" /
 
 ### Setup Job Parameters
 
-The setup job runs `setup.sh` as a one-time Helm pre-install hook to initialize Thunder with default resources (admin user, organization, etc.).
+The setup job runs `setup.sh` as a one-time Helm pre-install hook to initialize ThunderID with default resources (admin user, organization, etc.).
 
 | Name                                   | Description                                                     | Default                      |
 | -------------------------------------- | --------------------------------------------------------------- | ---------------------------- |
@@ -706,7 +706,7 @@ Environment variable item structure for secret-backed environment variables in `
 - `name`: Environment variable name in the container.
 - `secretName`: Kubernetes Secret resource name.
 - `secretKey`: Key in the Secret data map.
-- `optional`: Optional boolean passed to `secretKeyRef.optional`.
+- `optional`: Optional `boolean` passed to `secretKeyRef.optional`.
 
 **Job Retention Behavior:**
 - When `preserveJob=false` (default): Successful jobs are deleted immediately. Failed jobs are kept for `ttlSecondsAfterFinished` (24 hours) to allow debugging.
@@ -714,13 +714,13 @@ Environment variable item structure for secret-backed environment variables in `
 
 ### Bootstrap Script Parameters
 
-Bootstrap scripts extend Thunder's setup process by adding your own initialization logic. These scripts run as part of the setup job.
+Bootstrap scripts extend ThunderID's setup process by adding your own initialization logic. These scripts run as part of the setup job.
 
 #### Understanding Default Bootstrap Scripts
 
-Thunder provides these default bootstrap scripts in `/opt/thunder/bootstrap/`:
-- **`common.sh`** - Helper functions for logging (`log_info`, `log_success`, `log_warning`, `log_error`) and API calls (`thunder_api_call`)
-- **`01-default-resources.sh`** - Creates admin user, default organization, and Person user schema
+ThunderID provides these default bootstrap scripts in `/opt/thunderid/bootstrap/`:
+- **`common.sh`** - Helper functions for logging (`log_info`, `log_success`, `log_warning`, `log_error`) and API calls (`thunderid_api_call`)
+- **`01-default-resources.sh`** - Creates admin user, default organization, and Person user type
 - **`02-sample-resources.sh`** - Creates sample resources for testing
 
 #### Configuration Parameters
@@ -747,11 +747,11 @@ bootstrap:
       source "${SCRIPT_DIR}/common.sh"
 
       log_info "Creating custom user..."
-      thunder_api_call POST "/users" '{"type":"person","attributes":{"username":"alice","password":"alice123","sub":"alice","email":"alice@example.com"}}'
+      thunderid_api_call POST "/users" '{"type":"person","attributes":{"username":"alice","password":"alice123","sub":"alice","email":"alice@example.com"}}'
       log_success "User created"
 ```
 
-- ✅ Preserves Thunder's default scripts (`common.sh`, `01-*`, `02-*`)
+- ✅ Preserves ThunderID's default scripts (`common.sh`, `01-*`, `02-*`)
 - ✅ Can use helper functions from `common.sh`
 - ✅ No additional configuration needed
 
@@ -778,7 +778,7 @@ bootstrap:
       - 40-apps.sh
 ```
 
-- ✅ Preserves Thunder's default scripts
+- ✅ Preserves ThunderID's default scripts
 - ✅ Can use helper functions from `common.sh`
 - ✅ Scripts managed separately from Helm chart
 
@@ -786,7 +786,7 @@ bootstrap:
 
 **Pattern 3: Replace All Scripts with ConfigMap** (Complete Replacement)
 
-⚠️ **WARNING**: This completely replaces Thunder's default bootstrap scripts. Use only if you need complete control.
+⚠️ **WARNING**: This entirely replaces ThunderID's default bootstrap scripts. Use only if you need complete control.
 
 Use `bootstrap.configMap` **without** specifying `files` to mount the entire ConfigMap and replace all defaults.
 
@@ -814,13 +814,13 @@ bootstrap:
 
 ### Custom Configuration
 
-The Thunder configuration file (deployment.yaml) can be customized by overriding the default values in the values.yaml file.
-Alternatively, you can directly update the values in conf/deployment.yaml before deploying the Helm chart.
+The ThunderID configuration file (deployment.yaml) can be customized by overriding the default values in the values.yaml file.
+Or you can directly update the values in conf/deployment.yaml before deploying the Helm chart.
 
 ### Database Configuration
 
-Thunder supports both sqlite and postgres databases. By default, postgres is configured.
+ThunderID supports both sqlite and postgres databases. By default, postgres is configured.
 
-Make sure to create the necessary databases and users in your Postgres instance before deploying Thunder. The values.yaml should be overridden with the required database configurations for the DB created.
+Make sure to create the necessary databases and users in your Postgres instance before deploying ThunderID. The values.yaml should be overridden with the required database configurations for the DB created.
 
 Note: Use sqlite only if you are running a single pod.

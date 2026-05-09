@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import thunderPlugin, {createParserOptions} from '@thunder/eslint-plugin-thunder';
+import thunderIdPlugin, {createParserOptions} from '@thunderid/eslint-plugin';
 import {fileURLToPath} from 'url';
 import {dirname} from 'path';
 
@@ -29,7 +29,7 @@ export default [
   {
     ignores: ['dist/**', 'build/**', 'node_modules/**', 'coverage/**', '.docusaurus/**'],
   },
-  ...thunderPlugin.configs.react,
+  ...thunderIdPlugin.configs.react,
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     languageOptions: {

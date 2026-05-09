@@ -1,19 +1,19 @@
 ---
 title: AGENTS
-description: AI agents should use this file when creating and reviewing documentation content for Thunder. It contains the standards, guidelines, and requirements that must be followed to ensure high-quality documentation.
+description: AI agents should use this file when creating and reviewing documentation content for ThunderID. It contains the standards, guidelines, and requirements that must be followed to ensure high-quality documentation.
 ---
 
-# Thunder Documentation Creation Instructions
+# ThunderID Documentation Creation Instructions
 
-Follow these instructions when creating new documentation content for Thunder. Adhere to all guidelines to ensure consistency, clarity, and quality.
+Follow these instructions when creating new documentation content for ThunderID. Adhere to all guidelines to ensure consistency, clarity, and quality.
 
 ## Scope and Boundaries
 
 
 ### Audience
 
-- Your primary audience is Thunder users, including system administrators, developers, and IT professionals.
-- Assume the audience has a basic understanding of IT concepts but may be unfamiliar with Thunder specifics.
+- Your primary audience is ThunderID users, including system administrators, developers, and IT professionals.
+- Assume the audience has a basic understanding of IT concepts but may be unfamiliar with ThunderID specifics.
 - Avoid jargon and explain concepts clearly.
 
 ### What You Must Do
@@ -26,7 +26,7 @@ Follow these instructions when creating new documentation content for Thunder. A
 
 ## Authoring Standards
 
-You must follow these standards when creating documentation content for Thunder.
+You must follow these standards when creating documentation content for ThunderID.
 
 ### Voice and Tone
 
@@ -46,11 +46,11 @@ You must follow these standards when creating documentation content for Thunder.
 - Do not alternate between long and short forms unless formally introduced.
 
 **Correct:**
-- Thunder Console  
+- ThunderID Console  
 - Passkey Authentication  
 
 **Incorrect:**
-- Thunder console  
+- ThunderID console  
 - Console  
 - Passkey auth  
 
@@ -313,7 +313,7 @@ When Vale feedback is provided through CI checks:
 
 ## Vocabulary Guidelines
 
-Strictly follow these vocabulary guidelines when writing Thunder documentation.
+Strictly follow these vocabulary guidelines when writing ThunderID documentation.
 
 ### Use of "Multiple"
 

@@ -44,7 +44,7 @@ func Initialize() ObservabilityServiceInterface {
 	logger.Debug("Initializing observability service")
 
 	// Get configuration
-	cfg := config.GetThunderRuntime().Config.Observability
+	cfg := config.GetServerRuntime().Config.Observability
 
 	if !cfg.Enabled {
 		logger.Debug("Observability is disabled in configuration")

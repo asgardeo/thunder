@@ -57,7 +57,7 @@ $TestPackage = $positionalArgs[4]
 
 $skipConsent = $WithoutConsent.IsPresent -or $withoutConsentFromArgs -or ($env:WITHOUT_CONSENT -eq "true")
 
-$PRODUCT_NAME = "Thunder"
+$PRODUCT_NAME = "ThunderID"
 $PRODUCT_NAME_LOWERCASE = $PRODUCT_NAME.ToLower()
 
 # Check for PowerShell Version Compatibility
@@ -199,8 +199,8 @@ $SECURITY_DIR = "repository/resources/security"
 $FRONTEND_BASE_DIR = "frontend"
 $GATE_APP_DIST_DIR = "apps/gate"
 $CONSOLE_APP_DIST_DIR = "apps/console"
-$FRONTEND_GATE_APP_SOURCE_DIR = Join-Path $FRONTEND_BASE_DIR "apps/thunder-gate"
-$FRONTEND_CONSOLE_APP_SOURCE_DIR = Join-Path $FRONTEND_BASE_DIR "apps/thunder-console"
+$FRONTEND_GATE_APP_SOURCE_DIR = Join-Path $FRONTEND_BASE_DIR "apps/gate"
+$FRONTEND_CONSOLE_APP_SOURCE_DIR = Join-Path $FRONTEND_BASE_DIR "apps/console"
 $SAMPLE_BASE_DIR = "samples"
 $VANILLA_SAMPLE_APP_DIR = Join-Path $SAMPLE_BASE_DIR "apps/react-vanilla-sample"
 $VANILLA_SAMPLE_APP_SERVER_DIR = Join-Path $VANILLA_SAMPLE_APP_DIR "server"
@@ -237,6 +237,8 @@ function Read-Config {
             $script:PUBLIC_HOSTNAME = & yq eval '.server.public_hostname // ""' $CONFIG_FILE 2>$null
             $consentEnabled = & yq eval '.consent.enabled // true' $CONFIG_FILE 2>$null
             $script:CONSENT_ENABLED = ($consentEnabled -eq "true")
+            $script:SYSTEM_RS_HANDLE = & yq eval '.resource.system_resource_server.handle // ""' $CONFIG_FILE 2>$null
+            $script:SYSTEM_RS_IDENTIFIER = & yq eval '.resource.system_resource_server.identifier // ""' $CONFIG_FILE 2>$null
         }
         else {
             # Fallback: basic parsing with regex
@@ -280,6 +282,29 @@ function Read-Config {
             }
             else {
                 $script:CONSENT_ENABLED = $true
+            }
+
+            $uncommentedContent = ($content -split "`n" | Where-Object { $_ -notmatch '^\s*#' }) -join "`n"
+            # Try to extract system resource server handle
+            if ($uncommentedContent -match '(?ms)system_resource_server:.*?handle:\s*[''"]([^''"]*)[''"]') {
+                $script:SYSTEM_RS_HANDLE = $matches[1]
+            }
+            elseif ($uncommentedContent -match '(?ms)system_resource_server:.*?handle:\s*([^\s#]+)') {
+                $script:SYSTEM_RS_HANDLE = $matches[1]
+            }
+            else {
+                $script:SYSTEM_RS_HANDLE = ""
+            }
+
+            # Try to extract system resource server identifier
+            if ($uncommentedContent -match '(?ms)system_resource_server:.*?identifier:\s*[''"]([^''"]*)[''"]') {
+                $script:SYSTEM_RS_IDENTIFIER = $matches[1]
+            }
+            elseif ($uncommentedContent -match '(?ms)system_resource_server:.*?identifier:\s*([^\s#]+)') {
+                $script:SYSTEM_RS_IDENTIFIER = $matches[1]
+            }
+            else {
+                $script:SYSTEM_RS_IDENTIFIER = ""
             }
         }
     }
@@ -1621,6 +1646,8 @@ function Run {
     
     # Run the bootstrap script directly with environment variable and arguments
     $env:API_BASE = $BASE_URL
+    $env:SYSTEM_RS_HANDLE = if ($script:SYSTEM_RS_HANDLE) { $script:SYSTEM_RS_HANDLE } else { "" }
+    $env:SYSTEM_RS_IDENTIFIER = if ($script:SYSTEM_RS_IDENTIFIER) { $script:SYSTEM_RS_IDENTIFIER } else { "" }
     $bootstrapScript = Join-Path $BACKEND_BASE_DIR "cmd/server/bootstrap/01-default-resources.ps1"
     & $bootstrapScript -ConsoleRedirectUris "https://localhost:${CONSOLE_APP_DEFAULT_PORT}/console"
 
@@ -1771,7 +1798,7 @@ function Run-Frontend {
         
         Write-Host "Starting frontend applications in the background..."
         # Start frontend processes in background
-        $frontendProcess = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "pnpm", "-r", "--parallel", "--filter", "@thunder/console", "--filter", "@thunder/gate", "dev" -PassThru -NoNewWindow
+        $frontendProcess = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "pnpm", "-r", "--parallel", "--filter", "@thunderid/console", "--filter", "@thunderid/gate", "dev" -PassThru -NoNewWindow
         $script:FRONTEND_PID = $frontendProcess.Id
     }
     finally {

@@ -21,7 +21,7 @@ metadata:
   name: {{ .Values.gateway.name }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "thunder.labels" . | nindent 4 }}
+    {{- include "thunderid.labels" . | nindent 4 }}
 spec:
   gatewayClassName: {{ .Values.gateway.className | default "eg" | quote }}
   listeners:

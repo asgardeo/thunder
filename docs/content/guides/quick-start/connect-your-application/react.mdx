@@ -64,7 +64,7 @@ The authorized redirect URL determines where <ProductName /> should send users a
 
 ### Using the <ProductName /> API
 
-Alternatively, you can create an application using the <ProductName /> API. First, [obtain a system API token](/docs/next/guides/getting-started/get-thunder#obtain-system-api-token), then:
+Alternatively, you can create an application using the <ProductName /> API. First, [obtain a system API token](/docs/next/guides/getting-started/get-thunderid#obtain-system-api-token), then:
 
 ```bash
 curl -kL -X POST https://localhost:8090/applications \
@@ -198,7 +198,7 @@ function App() {
       </Loading>
 
       <header>
-        <h1>Thunder Auth Demo</h1>
+        <h1>{{ProductName}} Auth Demo</h1>
         <SignedIn>
           <SignOutButton>Sign Out</SignOutButton>
         </SignedIn>
@@ -236,7 +236,7 @@ function App() {
       </Loading>
 
       <header>
-        <h1>Thunder Auth Demo</h1>
+        <h1>{{ProductName}} Auth Demo</h1>
         <SignedIn>
           <SignOutButton>Sign Out</SignOutButton>
         </SignedIn>

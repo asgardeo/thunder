@@ -36,7 +36,7 @@ type consentService struct {
 
 // newConsentService creates a new instance of consentService with the given client.
 func newConsentService(client consentClientInterface) ConsentServiceInterface {
-	isEnabled := config.GetThunderRuntime().Config.Consent.Enabled
+	isEnabled := config.GetServerRuntime().Config.Consent.Enabled
 	if !isEnabled {
 		log.GetLogger().Debug("Consent service is disabled in the configuration")
 	}

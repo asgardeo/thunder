@@ -282,8 +282,8 @@ func (b *basicAuthExecutor) buildAuthnMetadata(ctx *core.NodeContext) *authnprov
 	// Extract client IDs from InboundAuthConfig
 	var clientIDs []string
 	for _, inboundConfig := range ctx.Application.InboundAuthConfig {
-		if inboundConfig.OAuthAppConfig != nil && inboundConfig.OAuthAppConfig.ClientID != "" {
-			clientIDs = append(clientIDs, inboundConfig.OAuthAppConfig.ClientID)
+		if inboundConfig.OAuthConfig != nil && inboundConfig.OAuthConfig.ClientID != "" {
+			clientIDs = append(clientIDs, inboundConfig.OAuthConfig.ClientID)
 		}
 	}
 

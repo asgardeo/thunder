@@ -71,7 +71,7 @@ func TestInitialize_FactoriesCreateInstances(t *testing.T) {
 		// Verify instance has required interface methods (they may return zero values until Initialize is called)
 		_ = instance.GetID()         // Should not panic
 		_ = instance.GetCategories() // Should not panic
-		// Note: Can't call IsEnabled() without ThunderRuntime being initialized
+		// Note: Can't call IsEnabled() without server runtime being initialized
 
 		// Verify the instance has the SubscriberInterface
 		var _ SubscriberInterface = instance

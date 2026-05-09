@@ -61,7 +61,7 @@ func (suite *AuthorizationCodeStoreTestSuite) SetupTest() {
 			},
 		},
 	}
-	_ = config.InitializeThunderRuntime("test", testConfig)
+	_ = config.InitializeServerRuntime("test", testConfig)
 
 	suite.mockdbProvider = providermock.NewDBProviderInterfaceMock(suite.T())
 	suite.mockDBClient = providermock.NewDBClientInterfaceMock(suite.T())
@@ -86,7 +86,7 @@ func (suite *AuthorizationCodeStoreTestSuite) SetupTest() {
 }
 
 func (suite *AuthorizationCodeStoreTestSuite) TearDownTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 func (suite *AuthorizationCodeStoreTestSuite) TestnewAuthorizationCodeStore() {

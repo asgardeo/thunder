@@ -31,9 +31,9 @@ import (
 
 // flowStoreInterface defines the methods for flow context storage operations.
 type flowStoreInterface interface {
-	StoreFlowContext(ctx context.Context, engineCtx EngineContext, expirySeconds int64) error
+	StoreFlowContext(ctx context.Context, dbModel FlowContextDB, expirySeconds int64) error
 	GetFlowContext(ctx context.Context, executionID string) (*FlowContextDB, error)
-	UpdateFlowContext(ctx context.Context, engineCtx EngineContext) error
+	UpdateFlowContext(ctx context.Context, dbModel FlowContextDB) error
 	DeleteFlowContext(ctx context.Context, executionID string) error
 }
 
@@ -47,17 +47,12 @@ type flowStore struct {
 func newFlowStore(dbProvider provider.DBProviderInterface) flowStoreInterface {
 	return &flowStore{
 		dbProvider:   dbProvider,
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
 	}
 }
 
 // StoreFlowContext stores the complete flow context in the database.
-func (s *flowStore) StoreFlowContext(ctx context.Context, engineCtx EngineContext, expirySeconds int64) error {
-	dbModel, err := FromEngineContext(engineCtx)
-	if err != nil {
-		return fmt.Errorf("failed to convert engine context to database model: %w", err)
-	}
-
+func (s *flowStore) StoreFlowContext(ctx context.Context, dbModel FlowContextDB, expirySeconds int64) error {
 	expiryTime := time.Now().UTC().Add(time.Duration(expirySeconds) * time.Second)
 
 	return withRuntimeDBClientContext(ctx, s.dbProvider, func(dbClient provider.DBClientInterface) error {
@@ -99,12 +94,7 @@ func (s *flowStore) GetFlowContext(ctx context.Context, executionID string) (*Fl
 }
 
 // UpdateFlowContext updates the flow context in the database.
-func (s *flowStore) UpdateFlowContext(ctx context.Context, engineCtx EngineContext) error {
-	dbModel, err := FromEngineContext(engineCtx)
-	if err != nil {
-		return fmt.Errorf("failed to convert engine context to database model: %w", err)
-	}
-
+func (s *flowStore) UpdateFlowContext(ctx context.Context, dbModel FlowContextDB) error {
 	return withRuntimeDBClientContext(ctx, s.dbProvider, func(dbClient provider.DBClientInterface) error {
 		_, err := dbClient.ExecuteContext(ctx, QueryUpdateFlowContext,
 			dbModel.ExecutionID, dbModel.Context, s.deploymentID)

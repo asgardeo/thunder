@@ -225,7 +225,7 @@ func (suite *RoleExporterTestSuite) TestGetResourceByID_Success() {
 	assert.Equal(suite.T(), "Admin", name)
 	assert.NotNil(suite.T(), resource)
 
-	role, ok := resource.(*RoleWithPermissionsAndAssignments)
+	role, ok := resource.(*roleDeclarativeResource)
 	assert.True(suite.T(), ok)
 	assert.Equal(suite.T(), "role1", role.ID)
 	assert.Len(suite.T(), role.Assignments, 2)
@@ -246,7 +246,7 @@ func (suite *RoleExporterTestSuite) TestGetResourceByID_ErrorOnGetRoleWithPermis
 
 // Test ValidateResource - success
 func (suite *RoleExporterTestSuite) TestValidateResource_Success() {
-	resource := &RoleWithPermissionsAndAssignments{
+	resource := &roleDeclarativeResource{
 		ID:   "role1",
 		Name: "Admin",
 		OUID: "ou1",

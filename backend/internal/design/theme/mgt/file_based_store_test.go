@@ -45,20 +45,20 @@ func (suite *ThemeFileBasedStoreTestSuite) SetupSuite() {
 	// Create temporary directory for tests
 	tempDir := suite.T().TempDir()
 
-	// Initialize ThunderRuntime once for all tests
+	// Initialize server runtime once for all tests
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime(tempDir, testConfig)
-	suite.Require().NoError(err, "Failed to initialize ThunderRuntime")
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime(tempDir, testConfig)
+	suite.Require().NoError(err, "Failed to initialize server runtime")
 }
 
 func (suite *ThemeFileBasedStoreTestSuite) TearDownSuite() {
-	// Clean up ThunderRuntime after all tests
-	config.ResetThunderRuntime()
+	// Clean up server runtime after all tests
+	config.ResetServerRuntime()
 }
 
 func (suite *ThemeFileBasedStoreTestSuite) SetupTest() {

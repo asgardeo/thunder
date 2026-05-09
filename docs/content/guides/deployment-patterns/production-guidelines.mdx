@@ -1,0 +1,259 @@
+---
+title: Production Deployment Guidelines
+sidebar_position: 4
+persona: iam
+description: Security and reliability guidelines for deploying in production environments.
+---
+
+# Production Deployment Guidelines
+
+This guide covers the critical configuration changes you must make before deploying <ProductName /> in a production environment. The default configuration is designed for local development and evaluation only. Do not use it in production without applying the changes below.
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+- A running <ProductName /> instance configured for your deployment target (see [Choose Your Deployment](./)).
+- Access to a supported production database (PostgreSQL 13 or later recommended).
+- Valid TLS certificates issued by a trusted Certificate Authority (CA).
+- The `openssl` command-line tool installed on your system.
+
+## Configure a Production Database
+
+The default configuration uses SQLite, which stores data in local files. SQLite does not support concurrent writes from multiple processes and is not suitable for production use. Use PostgreSQL for production deployments.
+
+<ProductName /> uses three separate databases:
+
+| Database | Purpose |
+|----------|---------|
+| `config` | Application configuration, flows, and identity providers |
+| `runtime` | Active sessions, tokens, and OAuth state |
+| `user` | User accounts and credentials |
+
+Configure each database in `deployment.yaml`:
+
+```yaml
+database:
+  config:
+    type: "postgres"
+    postgres:
+      hostname: "your-db-host"
+      port: "5432"
+      name: "configdb"
+      username: "dbuser"
+      password: "dbpassword"
+      sslmode: "require"
+      max_open_conns: 500
+      max_idle_conns: 100
+      conn_max_lifetime: 3600
+
+  runtime:
+    type: "postgres"
+    postgres:
+      hostname: "your-db-host"
+      port: "5432"
+      name: "runtimedb"
+      username: "dbuser"
+      password: "dbpassword"
+      sslmode: "require"
+      max_open_conns: 500
+      max_idle_conns: 100
+      conn_max_lifetime: 3600
+
+  user:
+    type: "postgres"
+    postgres:
+      hostname: "your-db-host"
+      port: "5432"
+      name: "userdb"
+      username: "dbuser"
+      password: "dbpassword"
+      sslmode: "require"
+      max_open_conns: 500
+      max_idle_conns: 100
+      conn_max_lifetime: 3600
+```
+
+**Key settings:**
+
+- Set `sslmode` to `"require"` to enforce encrypted connections to the database.
+- Adjust `max_open_conns`, `max_idle_conns`, and `conn_max_lifetime` based on your expected traffic and database capacity.
+- Never store database credentials in `deployment.yaml` directly. Use environment variables, Kubernetes secrets, or a secrets manager.
+
+## Replace TLS Certificates
+
+<ProductName /> ships with a self-signed TLS certificate for local development. Self-signed certificates trigger browser warnings and are not trusted by clients in production. Replace them with certificates issued by a trusted CA.
+
+### Step 1: Get a TLS Certificate
+
+Get a certificate and private key for your production domain from a trusted CA. You can use:
+
+- [Let's Encrypt](https://letsencrypt.org/) for free, automated certificates.
+- Your organization's internal CA.
+- A commercial CA.
+
+### Step 2: Replace the Default Certificates
+
+Copy your certificate and private key to the <ProductName /> security directory:
+
+```bash
+cp your-domain.cert repository/resources/security/server.cert
+cp your-domain.key repository/resources/security/server.key
+```
+
+### Step 3: Update the Configuration
+
+Verify the paths in `deployment.yaml` point to the correct files:
+
+```yaml
+tls:
+  min_version: "1.3"
+  cert_file: "repository/resources/security/server.cert"
+  key_file: "repository/resources/security/server.key"
+```
+
+If you store certificates in a different location, update `cert_file` and `key_file` accordingly.
+
+When deploying with Docker, mount the certificates as volumes:
+
+```bash
+docker run --rm \
+  -p 8090:8090 \
+  -v $(pwd)/deployment.yaml:/opt/thunder/repository/conf/deployment.yaml \
+  -v $(pwd)/certs/server.cert:/opt/thunder/repository/resources/security/server.cert \
+  -v $(pwd)/certs/server.key:/opt/thunder/repository/resources/security/server.key \
+  ghcr.io/asgardeo/thunder:latest
+```
+
+## Generate a Unique Encryption Key
+
+<ProductName /> uses a symmetric encryption key to protect sensitive data at rest, including credentials and tokens. The default key in the repository is a well-known value that anyone can find. You must replace it before going to production.
+
+### Step 1: Generate a New Key
+
+Generate a cryptographically secure 32-byte key:
+
+```bash
+openssl rand -hex 32
+```
+
+This command outputs a 64-character hexadecimal string. Copy the output.
+
+### Step 2: Store the Key
+
+Write the generated value to the key file:
+
+```bash
+printf '%s' "<generated-key>" > repository/resources/security/crypto.key
+```
+
+Replace `<generated-key>` with the output from the previous command. Do not include whitespace or newline characters.
+
+### Step 3: Verify the Configuration
+
+Confirm `deployment.yaml` references the key file:
+
+```yaml
+crypto:
+  encryption:
+    key: "file://repository/resources/security/crypto.key"
+```
+
+You can also supply the key directly as an inline value, but this is not recommended for production. Prefer the `file://` path form, an environment variable, or a secrets manager to avoid storing the key in `deployment.yaml`:
+
+```yaml
+crypto:
+  encryption:
+    key: "<generated-key>"
+```
+
+:::warning
+
+Protect the encryption key with the same level of care as a database password. If the key is lost, encrypted data becomes unrecoverable. If the key is compromised, all protected data is exposed.
+
+:::
+
+## Configure a CORS Allowlist
+
+Cross-Origin Resource Sharing (CORS) controls which origins can make requests to <ProductName /> from a browser. The default configuration allows only `https://localhost:3000`. In production, you must explicitly list every origin that legitimately needs access.
+
+Update `deployment.yaml` with your allowed origins:
+
+```yaml
+cors:
+  allowed_origins:
+    - "https://app.example.com"
+    - "https://admin.example.com"
+```
+
+**Guidelines:**
+
+- List only origins that your applications actively use. Do not use wildcards (`*`).
+- Use the full origin format: scheme, hostname, and port if non-standard (for example, `https://app.example.com:8443`).
+- If your domain follows a consistent pattern, you can use a regular expression:
+
+  ```yaml
+  cors:
+    allowed_origins:
+      - "https://app.example.com"
+      - regex: '^https://[a-z0-9-]+\.example\.com$'
+  ```
+
+  Regex patterns must be fully anchored — start with `^` and end with `$`. ThunderID logs a warning at startup for any pattern that is not fully anchored, because unanchored patterns match more origins than intended.
+
+## Configure Caching
+
+<ProductName /> supports two cache backends: in-memory and Redis.
+
+| Cache Type | Suitable For |
+|------------|-------------|
+| In-memory | Single-pod deployments only |
+| Redis | Multi-pod (replicated) deployments |
+
+**Do not use in-memory caching when running multiple replicas.** Each pod maintains a separate cache, which causes cache inconsistency across the deployment. Cached entries written in one pod are invisible to other pods, leading to incorrect authentication or authorization decisions.
+
+### Single-Pod Deployments
+
+For a single-pod deployment, in-memory caching is acceptable:
+
+```yaml
+cache:
+  disabled: false
+  type: "inmemory"
+  size: 1000
+  ttl: 3600
+  evictionPolicy: "LRU"
+  cleanupInterval: 300
+```
+
+### Multi-Pod Deployments
+
+Use Redis when running more than one replica:
+
+```yaml
+cache:
+  disabled: false
+  type: "redis"
+  ttl: 3600
+  redis:
+    address: "your-redis-host:6379"
+    username: ""
+    password: "your-redis-password"
+    db: 0
+    keyPrefix: "thunderid:"
+```
+
+**Key settings:**
+
+- Set a `keyPrefix` when multiple services share the same Redis instance. This avoids key collisions.
+- Secure Redis with authentication and network-level access controls. Do not expose Redis publicly.
+- Use a managed Redis service (such as Amazon ElastiCache or Google Memorystore) for high availability.
+
+## Next Steps
+
+After applying the production configuration:
+
+- Restrict access to `deployment.yaml` and the `repository/resources/security/` directory. These files contain sensitive credentials and keys.
+- Enable database backups on a regular schedule.
+- Set up monitoring and alerting for <ProductName /> and its dependent services.
+- Review the [Kubernetes deployment guide](./kubernetes) for Helm-based configuration of the settings covered here.

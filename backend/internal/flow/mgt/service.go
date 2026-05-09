@@ -579,7 +579,7 @@ func isValidHandleFormat(handle string) bool {
 func (s *flowMgtService) tryInferRegistrationFlow(ctx context.Context, authFlowID string, authFlowDef *FlowDefinition) {
 	logger := s.logger.With(log.String("authFlowID", authFlowID))
 
-	if !config.GetThunderRuntime().Config.Flow.AutoInferRegistration {
+	if !config.GetServerRuntime().Config.Flow.AutoInferRegistration {
 		logger.Debug("Automatic registration flow inference is disabled")
 		return
 	}

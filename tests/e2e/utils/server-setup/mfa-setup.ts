@@ -411,8 +411,8 @@ export class MFASetup {
    * Create or get existing test user with mobile number
    */
   private async createOrGetTestUser(adminToken: string): Promise<string> {
-    // Get organization unit from Person user schema
-    const schemasResponse = await this.request.get(`${this.config.serverUrl}/user-schemas`, {
+    // Get organization unit from Person user type
+    const schemasResponse = await this.request.get(`${this.config.serverUrl}/user-types`, {
       headers: {
         Authorization: `Bearer ${adminToken}`,
       },
@@ -420,14 +420,14 @@ export class MFASetup {
     });
 
     if (!schemasResponse.ok()) {
-      throw new Error(`Failed to fetch user schemas: ${await schemasResponse.text()}`);
+      throw new Error(`Failed to fetch user types: ${await schemasResponse.text()}`);
     }
 
     const schemasData = await schemasResponse.json();
     const personSchema = schemasData.schemas?.find((s: any) => s.name === "Person");
 
     if (!personSchema || !personSchema.ouId) {
-      throw new Error("Person user schema not found or missing organization unit");
+      throw new Error("Person user type not found or missing organization unit");
     }
 
     const defaultOuId = personSchema.ouId;

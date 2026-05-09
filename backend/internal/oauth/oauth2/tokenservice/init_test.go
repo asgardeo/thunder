@@ -41,7 +41,7 @@ func (suite *InitTestSuite) SetupTest() {
 }
 
 func (suite *InitTestSuite) TestInitialize() {
-	tokenBuilder, tokenValidator := Initialize(suite.mockJWTService)
+	tokenBuilder, tokenValidator := Initialize(suite.mockJWTService, nil, nil, nil)
 
 	assert.NotNil(suite.T(), tokenBuilder)
 	assert.Implements(suite.T(), (*TokenBuilderInterface)(nil), tokenBuilder)

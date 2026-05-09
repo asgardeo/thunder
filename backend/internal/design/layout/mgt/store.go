@@ -54,7 +54,7 @@ type layoutMgtStore struct {
 func newLayoutMgtStore() layoutMgtStoreInterface {
 	return &layoutMgtStore{
 		dbProvider:   provider.GetDBProvider(),
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
 	}
 }
 

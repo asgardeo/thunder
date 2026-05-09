@@ -66,7 +66,7 @@ func newNotificationStore() (notificationStoreInterface, transaction.Transaction
 	}
 	store := &notificationStore{
 		dbProvider:   dbProvider,
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
 	}
 	return store, tx, nil
 }

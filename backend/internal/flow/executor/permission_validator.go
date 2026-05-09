@@ -28,9 +28,12 @@ import (
 	"github.com/asgardeo/thunder/internal/system/security"
 )
 
-const (
-	defaultRequiredScope = "system"
-)
+func getDefaultRequiredScope() string {
+	if p := security.GetSystemPermissions(); p != nil {
+		return p.Root
+	}
+	return security.UninitializedPermissionSentinel
+}
 
 // permissionValidator validates that the request has the required permission/scope to access the next node.
 type permissionValidator struct {
@@ -99,7 +102,7 @@ func (e *permissionValidator) Execute(ctx *core.NodeContext) (*common.ExecutorRe
 
 // getRequiredScopes retrieves the required scopes from the node context properties.
 func (e *permissionValidator) getRequiredScopes(ctx *core.NodeContext) []string {
-	requiredScopes := []string{defaultRequiredScope}
+	requiredScopes := []string{getDefaultRequiredScope()}
 
 	if ctx.NodeProperties != nil {
 		if val, exists := ctx.NodeProperties[propertyKeyRequiredScopes]; exists {

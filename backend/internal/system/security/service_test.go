@@ -461,7 +461,7 @@ func (suite *SecurityServiceTestSuite) TestNewSecurityService_Error() {
 		{
 			name:        "invalid API permission entry pattern",
 			publicPaths: []string{},
-			apiPerms:    []apiPermissionEntry{{"GET /invalid/**/middle/**", PermissionUser}},
+			apiPerms:    []apiPermissionEntry{{"GET /invalid/**/middle/**", "system:user"}},
 			errContains: "invalid pattern",
 		},
 	}

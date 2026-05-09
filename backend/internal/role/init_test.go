@@ -50,7 +50,7 @@ func TestInitTestSuite(t *testing.T) {
 // SetupSuite initializes the test suite once.
 func (suite *InitTestSuite) SetupSuite() {
 	testConfig := &config.Config{}
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	err := config.InitializeServerRuntime("/tmp/test", testConfig)
 	if err != nil {
 		suite.Fail("Failed to initialize runtime", err)
 	}
@@ -58,14 +58,14 @@ func (suite *InitTestSuite) SetupSuite() {
 
 // SetupTest resets configuration before each test.
 func (suite *InitTestSuite) SetupTest() {
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Role.Store = ""
 	runtime.Config.DeclarativeResources.Enabled = false
 }
 
 // TestInitializeStoreMutableMode tests store initialization in mutable mode.
 func (suite *InitTestSuite) TestInitializeStoreMutableMode() {
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Role.Store = ""
 	runtime.Config.DeclarativeResources.Enabled = false
 
@@ -90,7 +90,7 @@ func (suite *InitTestSuite) TestInitializeStoreMutableMode() {
 
 // TestInitializeStoreDeclarativeMode tests store initialization in declarative mode.
 func (suite *InitTestSuite) TestInitializeStoreDeclarativeMode() {
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Role.Store = string(serverconst.StoreModeDeclarative)
 	runtime.Config.DeclarativeResources.Enabled = true
 
@@ -106,7 +106,7 @@ func (suite *InitTestSuite) TestInitializeStoreDeclarativeMode() {
 
 // TestInitializeStoreCompositeMode tests store initialization in composite mode.
 func (suite *InitTestSuite) TestInitializeStoreCompositeMode() {
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Role.Store = string(serverconst.StoreModeComposite)
 
 	mockClient := &providermock.DBClientInterfaceMock{}
@@ -132,7 +132,7 @@ func (suite *InitTestSuite) TestInitializeStoreCompositeMode() {
 
 // TestInitializeStoreDeclarativeFallback tests fall back to declarative mode when enabled globally.
 func (suite *InitTestSuite) TestInitializeStoreDeclarativeFallback() {
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Role.Store = ""
 	runtime.Config.DeclarativeResources.Enabled = true
 
@@ -148,7 +148,7 @@ func (suite *InitTestSuite) TestInitializeStoreDeclarativeFallback() {
 
 // TestInitializeStoreMutableModeFallback tests fall back to mutable mode when declarative is disabled.
 func (suite *InitTestSuite) TestInitializeStoreMutableModeFallback() {
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Role.Store = ""
 	runtime.Config.DeclarativeResources.Enabled = false
 
@@ -173,7 +173,7 @@ func (suite *InitTestSuite) TestInitializeStoreMutableModeFallback() {
 
 // TestInitializeStoreNormalizeCaseSensitivity tests store mode is case-insensitive.
 func (suite *InitTestSuite) TestInitializeStoreNormalizeCaseSensitivity() {
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Role.Store = "DECLARATIVE"
 
 	store, _, err := initializeStore()
@@ -188,7 +188,7 @@ func (suite *InitTestSuite) TestInitializeStoreNormalizeCaseSensitivity() {
 
 // TestInitializeStoreTrimsWhitespace tests store mode trims whitespace.
 func (suite *InitTestSuite) TestInitializeStoreTrimsWhitespace() {
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Role.Store = "  composite  "
 
 	mockClient := &providermock.DBClientInterfaceMock{}
@@ -221,7 +221,7 @@ func TestLoadDeclarativeResourcesTestSuite(t *testing.T) {
 // SetupSuite initializes the test suite once.
 func (suite *LoadDeclarativeResourcesTestSuite) SetupSuite() {
 	testConfig := &config.Config{}
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	err := config.InitializeServerRuntime("/tmp/test", testConfig)
 	if err != nil {
 		suite.Fail("Failed to initialize runtime", err)
 	}
@@ -229,7 +229,7 @@ func (suite *LoadDeclarativeResourcesTestSuite) SetupSuite() {
 
 // SetupTest resets configuration before each test.
 func (suite *LoadDeclarativeResourcesTestSuite) SetupTest() {
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Role.Store = ""
 	runtime.Config.DeclarativeResources.Enabled = false
 }
@@ -723,7 +723,7 @@ func (suite *InitTestSuite) TestInitialize_Success() {
 
 // TestInitialize_StoreInitError tests Initialize when store initialization fails
 func (suite *InitTestSuite) TestInitialize_StoreInitError() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testDir := suite.T().TempDir()
 
 	// Create invalid roles yaml
@@ -741,9 +741,9 @@ func (suite *InitTestSuite) TestInitialize_StoreInitError() {
 			Enabled: true,
 		},
 	}
-	_ = config.InitializeThunderRuntime(testDir, testConfig)
+	_ = config.InitializeServerRuntime(testDir, testConfig)
 	defer func() {
-		config.ResetThunderRuntime()
+		config.ResetServerRuntime()
 		suite.SetupSuite()
 	}()
 

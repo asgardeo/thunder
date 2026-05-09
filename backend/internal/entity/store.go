@@ -90,7 +90,7 @@ type entityDBStore struct {
 // newEntityDBStore creates a new instance of entityDBStore.
 // Indexed attributes start empty; consumers must call LoadIndexedAttributes after init.
 func newEntityDBStore() (entityStoreInterface, transaction.Transactioner, error) {
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 
 	dbProvider := getDBProvider()
 	client, err := dbProvider.GetUserDBClient()

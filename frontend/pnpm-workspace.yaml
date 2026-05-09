@@ -3,8 +3,18 @@ packages:
   - packages/*
   - ../docs
 
+allowBuilds:
+  '@parcel/watcher': set this to true or false
+  '@swc/core': set this to true or false
+  core-js: set this to true or false
+  core-js-pure: set this to true or false
+  nx: set this to true or false
+  protobufjs: set this to true or false
+  unrs-resolver: set this to true or false
+  vue-demi: set this to true or false
+
 catalog:
-  '@asgardeo/react': 0.23.1
+  '@asgardeo/react': 0.23.6
   '@asgardeo/react-router': 2.0.0
   '@hookform/resolvers': 5.2.2
   '@monaco-editor/react': 4.7.0

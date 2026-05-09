@@ -24,13 +24,13 @@ import "slices"
 type CredentialType string
 
 // Credential type constants for system-managed credential types.
-// System-managed credentials are not defined in user schemas.
+// System-managed credentials are not defined in user types.
 const (
 	CredentialTypePasskey CredentialType = "passkey"
 )
 
 // systemManagedCredentialTypes defines credential types that are managed by the system,
-// not through user schemas. These may support multiple values per user.
+// not through user types. These may support multiple values per user.
 var systemManagedCredentialTypes = []CredentialType{
 	CredentialTypePasskey,
 }

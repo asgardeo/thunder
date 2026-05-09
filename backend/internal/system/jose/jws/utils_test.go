@@ -33,7 +33,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/internal/system/crypto/sign"
+	"github.com/asgardeo/thunder/internal/system/cryptolab"
 )
 
 type JWSUtilsTestSuite struct {
@@ -131,15 +131,15 @@ func (suite *JWSUtilsTestSuite) TestMapAlgorithmToSignAlgAllSupported() {
 	testCases := []struct {
 		name        string
 		alg         Algorithm
-		expectedAlg sign.SignAlgorithm
+		expectedAlg cryptolab.SignAlgorithm
 	}{
-		{"RS256", RS256, sign.RSASHA256},
-		{"RS512", RS512, sign.RSASHA512},
-		{"PS256", PS256, sign.RSAPSSSHA256},
-		{"ES256", ES256, sign.ECDSASHA256},
-		{"ES384", ES384, sign.ECDSASHA384},
-		{"ES512", ES512, sign.ECDSASHA512},
-		{"EdDSA", EdDSA, sign.ED25519},
+		{"RS256", RS256, cryptolab.RSASHA256},
+		{"RS512", RS512, cryptolab.RSASHA512},
+		{"PS256", PS256, cryptolab.RSAPSSSHA256},
+		{"ES256", ES256, cryptolab.ECDSASHA256},
+		{"ES384", ES384, cryptolab.ECDSASHA384},
+		{"ES512", ES512, cryptolab.ECDSASHA512},
+		{"EdDSA", EdDSA, cryptolab.ED25519},
 	}
 
 	for _, tc := range testCases {
@@ -168,7 +168,7 @@ func (suite *JWSUtilsTestSuite) TestMapAlgorithmToSignAlgUnsupported() {
 			alg, err := MapAlgorithmToSignAlg(tc.alg)
 
 			assert.Error(t, err)
-			assert.Equal(t, sign.SignAlgorithm(""), alg)
+			assert.Equal(t, cryptolab.SignAlgorithm(""), alg)
 			assert.Contains(t, err.Error(), "unsupported JWS alg")
 		})
 	}

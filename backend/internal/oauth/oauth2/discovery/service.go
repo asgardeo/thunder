@@ -20,17 +20,13 @@ package discovery
 
 import (
 	"context"
+	"sort"
 
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/pkce"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/crypto/pki"
-	"github.com/asgardeo/thunder/internal/system/jose/jwe"
-)
-
-var (
-	supportedUserInfoEncryptionAlgs = []string{string(jwe.RSAOAEP), string(jwe.RSAOAEP256)}
-	supportedUserInfoEncryptionEncs = []string{string(jwe.A128CBCHS256), string(jwe.A256GCM)}
+	"github.com/asgardeo/thunder/internal/system/kmprovider/defaultkm/pkiservice"
 )
 
 // DiscoveryServiceInterface defines the interface for discovery services
@@ -42,12 +38,12 @@ type DiscoveryServiceInterface interface {
 // discoveryService implements DiscoveryServiceInterface
 type discoveryService struct {
 	baseURL    string
-	pkiService pki.PKIServiceInterface
+	pkiService pkiservice.PKIServiceInterface
 }
 
 // newDiscoveryService creates a new discovery service instance
-func newDiscoveryService(pkiService pki.PKIServiceInterface) DiscoveryServiceInterface {
-	runtime := config.GetThunderRuntime()
+func newDiscoveryService(pkiService pkiservice.PKIServiceInterface) DiscoveryServiceInterface {
+	runtime := config.GetServerRuntime()
 	ds := &discoveryService{pkiService: pkiService}
 	ds.baseURL = config.GetServerURL(&runtime.Config.Server)
 	return ds
@@ -87,15 +83,18 @@ func (ds *discoveryService) GetOIDCMetadata(ctx context.Context) *OIDCProviderMe
 		SubjectTypesSupported:                ds.getSupportedSubjectTypes(),
 		IDTokenSigningAlgValuesSupported:     ds.pkiService.GetSupportedSigningAlgorithms(),
 		UserInfoSigningAlgValuesSupported:    ds.pkiService.GetSupportedSigningAlgorithms(),
-		UserInfoEncryptionAlgValuesSupported: supportedUserInfoEncryptionAlgs,
-		UserInfoEncryptionEncValuesSupported: supportedUserInfoEncryptionEncs,
+		UserInfoEncryptionAlgValuesSupported: inboundmodel.SupportedUserInfoEncryptionAlgs,
+		UserInfoEncryptionEncValuesSupported: inboundmodel.SupportedUserInfoEncryptionEncs,
+		IDTokenEncryptionAlgValuesSupported:  inboundmodel.SupportedIDTokenEncryptionAlgs,
+		IDTokenEncryptionEncValuesSupported:  inboundmodel.SupportedIDTokenEncryptionEncs,
 		ClaimsSupported:                      ds.getSupportedClaims(),
 		ClaimsParameterSupported:             true,
+		AcrValuesSupported:                   ds.getSupportedAcrValues(),
 	}
 }
 
 func (ds *discoveryService) getIssuer() string {
-	return config.GetThunderRuntime().Config.JWT.Issuer
+	return config.GetServerRuntime().Config.JWT.Issuer
 }
 
 func (ds *discoveryService) getAuthorizationEndpoint() string {
@@ -151,11 +150,22 @@ func (ds *discoveryService) getPAREndpoint() string {
 }
 
 func (ds *discoveryService) isGlobalPARRequired() bool {
-	return config.GetThunderRuntime().Config.OAuth.PAR.RequirePAR
+	return config.GetServerRuntime().Config.OAuth.PAR.RequirePAR
 }
 
 func (ds *discoveryService) getSupportedSubjectTypes() []string {
 	return constants.GetSupportedSubjectTypes()
+}
+
+// getSupportedAcrValues returns the sorted ACR values from the auth_class.acr_amr mapping.
+func (ds *discoveryService) getSupportedAcrValues() []string {
+	acrAMR := config.GetServerRuntime().Config.OAuth.AuthClass.AcrAMR
+	acrs := make([]string, 0, len(acrAMR))
+	for acr := range acrAMR {
+		acrs = append(acrs, acr)
+	}
+	sort.Strings(acrs)
+	return acrs
 }
 
 func (ds *discoveryService) getSupportedClaims() []string {

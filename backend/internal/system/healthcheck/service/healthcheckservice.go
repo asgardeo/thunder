@@ -90,7 +90,7 @@ func (hcs *HealthCheckService) checkConfigDatabaseStatus(query dbmodel.DBQuery) 
 
 // checkRuntimeDatabaseStatus checks the status of the runtime database with the specified query.
 func (hcs *HealthCheckService) checkRuntimeDatabaseStatus(query dbmodel.DBQuery) model.Status {
-	if config.GetThunderRuntime().Config.Database.Runtime.Type == provider.DataSourceTypeRedis {
+	if config.GetServerRuntime().Config.Database.Runtime.Type == provider.DataSourceTypeRedis {
 		return hcs.checkRedisRuntimeStatus()
 	}
 	dbClient, err := hcs.DBProvider.GetRuntimeDBClient()

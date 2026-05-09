@@ -98,7 +98,7 @@ func newResourceStore() (resourceStoreInterface, transaction.Transactioner, erro
 	}
 	return &resourceStore{
 		dbProvider:   dbProvider,
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
 	}, transactioner, nil
 }
 

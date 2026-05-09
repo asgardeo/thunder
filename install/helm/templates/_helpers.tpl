@@ -20,7 +20,7 @@ under the License.
 Expand the name of the chart.
 */}}
 
-{{- define "thunder.name" -}}
+{{- define "thunderid.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -29,7 +29,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "thunder.fullname" -}}
+{{- define "thunderid.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -45,16 +45,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "thunder.chart" -}}
+{{- define "thunderid.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "thunder.labels" -}}
-helm.sh/chart: {{ include "thunder.chart" . }}
-{{ include "thunder.selectorLabels" . }}
+{{- define "thunderid.labels" -}}
+helm.sh/chart: {{ include "thunderid.chart" . }}
+{{ include "thunderid.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -64,17 +64,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "thunder.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "thunder.name" . }}
+{{- define "thunderid.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "thunderid.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "thunder.serviceAccountName" -}}
+{{- define "thunderid.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "thunder.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "thunderid.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
@@ -85,7 +85,7 @@ Check if auto-generated database credentials Secret should be included in checks
 Returns true if any database password is set without a passwordRef.key.
 This is used to trigger pod restarts when auto-generated Secrets change.
 */}}
-{{- define "thunder.shouldIncludeSecretChecksum" -}}
+{{- define "thunderid.shouldIncludeSecretChecksum" -}}
 {{- $configuration := default dict .Values.configuration -}}
 {{- $database := default dict $configuration.database -}}
 {{- $config := default dict $database.config -}}
@@ -106,8 +106,8 @@ This is used to trigger pod restarts when auto-generated Secrets change.
 Generate database password environment variable definitions for both deployment and setup job.
 Injects DB_CONFIG_PASSWORD, DB_RUNTIME_PASSWORD, and DB_USER_PASSWORD from either auto-generated or external Secrets.
 */}}
-{{- define "thunder.databasePasswordEnvVars" -}}
-{{- $defaultDbSecretName := printf "%s-db-credentials" (include "thunder.fullname" .) -}}
+{{- define "thunderid.databasePasswordEnvVars" -}}
+{{- $defaultDbSecretName := printf "%s-db-credentials" (include "thunderid.fullname" .) -}}
 {{- $configuration := default dict .Values.configuration -}}
 {{- $database := default dict $configuration.database -}}
 {{- $config := default dict $database.config -}}
@@ -165,8 +165,8 @@ Injects DB_CONFIG_PASSWORD, DB_RUNTIME_PASSWORD, and DB_USER_PASSWORD from eithe
 Generate Redis password environment variable definitions for both deployment and setup job.
 Injects CACHE_REDIS_PASSWORD from auto-generated database credentials Secret when Redis cache is enabled.
 */}}
-{{- define "thunder.cacheRedisPasswordEnvVars" -}}
-{{- $defaultDbSecretName := printf "%s-db-credentials" (include "thunder.fullname" .) -}}
+{{- define "thunderid.cacheRedisPasswordEnvVars" -}}
+{{- $defaultDbSecretName := printf "%s-db-credentials" (include "thunderid.fullname" .) -}}
 {{- $configuration := default dict .Values.configuration -}}
 {{- $cache := default dict $configuration.cache -}}
 {{- $redis := default dict $cache.redis -}}
@@ -185,7 +185,7 @@ Generate generic secret-backed environment variable definitions.
 Expected input:
   - secretEnv: list of objects with fields {name, secretName, secretKey, optional}
 */}}
-{{- define "thunder.secretEnvVars" -}}
+{{- define "thunderid.secretEnvVars" -}}
 {{- $secretEnv := default (list) .secretEnv -}}
 {{- range $index, $item := $secretEnv }}
 {{- if not $item.name }}
@@ -214,7 +214,7 @@ Supports both formats:
   - string item: "path/to/file.yaml" (used as key and path)
   - object item: { key: "source-key", path: "target/path.yaml" }
 */}}
-{{- define "thunder.declarativeResourceItems" -}}
+{{- define "thunderid.declarativeResourceItems" -}}
 {{- $items := default (list) .items -}}
 {{- $field := default "declarativeResources.*.items" .field -}}
 {{- range $index, $item := $items }}
@@ -239,7 +239,7 @@ When items are provided, mounting file-by-file with subPath preserves existing
 files already present in repository/resources.
 Each item may optionally specify a mountPath to override the global base path.
 */}}
-{{- define "thunder.declarativeResourceVolumeMounts" -}}
+{{- define "thunderid.declarativeResourceVolumeMounts" -}}
 {{- $items := default (list) .items -}}
 {{- $field := default "declarativeResources.*.items" .field -}}
 {{- $globalMountPath := .mountPath -}}

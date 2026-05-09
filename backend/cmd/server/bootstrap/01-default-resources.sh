@@ -18,7 +18,7 @@
 # ----------------------------------------------------------------------------
 
 # Bootstrap Script: Default Resources Setup
-# Creates default organization unit, user schema, admin user, system resource server, system action, admin role, and CONSOLE application
+# Creates default organization unit, user type, admin user, system resource server, system action, admin role, and CONSOLE application
 
 set -e
 
@@ -42,6 +42,17 @@ source "${SCRIPT_DIR}/common.sh"
 
 log_info "Creating default ${PRODUCT_NAME} resources..."
 echo ""
+
+# System resource server configuration from environment variables.
+SYSTEM_RS_HANDLE="${SYSTEM_RS_HANDLE:-}"
+SYSTEM_RS_IDENTIFIER="${SYSTEM_RS_IDENTIFIER:-system}"
+
+# Derive the system permission root based on the configured handle.
+if [[ -n "$SYSTEM_RS_HANDLE" ]]; then
+    SYSTEM_PERMISSION="${SYSTEM_RS_HANDLE}:system"
+else
+    SYSTEM_PERMISSION="system"
+fi
 
 # ============================================================================
 # Create Default Organization Unit
@@ -96,12 +107,12 @@ fi
 echo ""
 
 # ============================================================================
-# Create Default User Schema
+# Create Default User Type
 # ============================================================================
 
-log_info "Creating default user schema (person)..."
+log_info "Creating default user type (person)..."
 
-RESPONSE=$(api_call POST "/user-schemas" '{
+RESPONSE=$(api_call POST "/user-types" '{
   "name": "Person",
   "ouId": "'${DEFAULT_OU_ID}'",
   "schema": {
@@ -168,11 +179,53 @@ RESPONSE=$(api_call POST "/user-schemas" '{
 HTTP_CODE="${RESPONSE: -3}"
 
 if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
-    log_success "User schema created successfully"
+    log_success "User type created successfully"
 elif [[ "$HTTP_CODE" == "409" ]]; then
-    log_warning "User schema already exists, skipping"
+    log_warning "User type already exists, skipping"
 else
-    log_error "Failed to create user schema (HTTP $HTTP_CODE)"
+    log_error "Failed to create user type (HTTP $HTTP_CODE)"
+    exit 1
+fi
+
+echo ""
+
+# ============================================================================
+# Create Default Agent Type
+# ============================================================================
+
+log_info "Creating default agent type..."
+
+RESPONSE=$(api_call POST "/agent-types" '{
+  "name": "default",
+  "ouId": "'${DEFAULT_OU_ID}'",
+  "schema": {
+    "model": {
+      "type": "string",
+      "displayName": "Model",
+      "required": false,
+      "enum": ["GPT-5", "Claude", "Gemini", "Llama", "Mistral", "Other"]
+    },
+    "department": {
+      "type": "string",
+      "displayName": "Department",
+      "required": false
+    },
+    "purpose": {
+      "type": "string",
+      "displayName": "Purpose",
+      "required": false
+    }
+  }
+}')
+
+HTTP_CODE="${RESPONSE: -3}"
+
+if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
+    log_success "Agent type created successfully"
+elif [[ "$HTTP_CODE" == "409" ]]; then
+    log_warning "Agent type already exists, skipping"
+else
+    log_error "Failed to create agent type (HTTP $HTTP_CODE)"
     exit 1
 fi
 
@@ -264,7 +317,8 @@ fi
 RESPONSE=$(api_call POST "/resource-servers" "{
   \"name\": \"System\",
   \"description\": \"System resource server\",
-  \"identifier\": \"system\",
+  \"handle\": \"${SYSTEM_RS_HANDLE}\",
+  \"identifier\": \"${SYSTEM_RS_IDENTIFIER}\",
   \"ouId\": \"${DEFAULT_OU_ID}\"
 }")
 
@@ -290,13 +344,20 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
     if [[ "$HTTP_CODE" == "200" ]]; then
         SYSTEM_RS_ID=$(echo "$BODY" | grep -o '"id":"[^"]*","[^"]*":"System"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
 
-        # Fallback parsing
+        # Fallback parsing by name
         if [[ -z "$SYSTEM_RS_ID" ]]; then
-            SYSTEM_RS_ID=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"identifier":"system"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+            SYSTEM_RS_ID=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"name":"System"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
         fi
 
         if [[ -n "$SYSTEM_RS_ID" ]]; then
             log_success "Found resource server ID: $SYSTEM_RS_ID"
+            SYSTEM_LINE=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"name":"System"')
+            EXISTING_HANDLE=$(echo "$SYSTEM_LINE" | grep -o '"handle":"[^"]*"' | head -1 | cut -d'"' -f4)
+            EXISTING_IDENTIFIER=$(echo "$SYSTEM_LINE" | grep -o '"identifier":"[^"]*"' | head -1 | cut -d'"' -f4)
+            if [[ "$EXISTING_HANDLE" != "$SYSTEM_RS_HANDLE" ]] || [[ "$EXISTING_IDENTIFIER" != "$SYSTEM_RS_IDENTIFIER" ]]; then
+                log_error "Existing system resource server has mismatched configuration. Expected handle='${SYSTEM_RS_HANDLE}', identifier='${SYSTEM_RS_IDENTIFIER}' but found handle='${EXISTING_HANDLE}', identifier='${EXISTING_IDENTIFIER}'. Manual migration required."
+                exit 1
+            fi
         else
             log_error "Could not find resource server ID in response"
             exit 1
@@ -326,8 +387,8 @@ echo ""
 #           └── Action handle "view"       → permission "system:user:view"
 #       └── Resource handle "group"        → permission "system:group"
 #           └── Action handle "view"       → permission "system:group:view"
-#       └── Resource handle "userschema"   → permission "system:userschema"
-#           └── Action handle "view"       → permission "system:userschema:view"
+#       └── Resource handle "usertype"      → permission "system:usertype"
+#           └── Action handle "view"       → permission "system:usertype:view"
 # ============================================================================
 
 log_info "Creating 'system' resource under the system resource server..."
@@ -511,12 +572,12 @@ else
     exit 1
 fi
 
-log_info "Creating 'userschema' sub-resource under the 'system' resource..."
+log_info "Creating 'usertype' sub-resource under the 'system' resource..."
 
 RESPONSE=$(api_call POST "/resource-servers/${SYSTEM_RS_ID}/resources" "{
-  \"name\": \"User Schema\",
-  \"description\": \"User schema resource\",
-  \"handle\": \"userschema\",
+  \"name\": \"User Type\",
+  \"description\": \"User type resource\",
+  \"handle\": \"usertype\",
   \"parent\": \"${SYSTEM_RESOURCE_ID}\"
 }")
 
@@ -524,26 +585,26 @@ HTTP_CODE="${RESPONSE: -3}"
 BODY="${RESPONSE%???}"
 
 if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
-    log_success "User schema resource created successfully (permission: system:userschema)"
-    USER_SCHEMA_RESOURCE_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
-    if [[ -n "$USER_SCHEMA_RESOURCE_ID" ]]; then
-        log_info "User schema resource ID: $USER_SCHEMA_RESOURCE_ID"
+    log_success "User type resource created successfully (permission: system:usertype)"
+    USER_TYPE_RESOURCE_ID=$(echo "$BODY" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    if [[ -n "$USER_TYPE_RESOURCE_ID" ]]; then
+        log_info "User type resource ID: $USER_TYPE_RESOURCE_ID"
     else
-        log_error "Could not extract user schema resource ID from response"
+        log_error "Could not extract user type resource ID from response"
         exit 1
     fi
 elif [[ "$HTTP_CODE" == "409" ]]; then
-    log_warning "User schema resource already exists, retrieving ID..."
+    log_warning "User type resource already exists, retrieving ID..."
     RESPONSE=$(api_call GET "/resource-servers/${SYSTEM_RS_ID}/resources?parentId=${SYSTEM_RESOURCE_ID}")
     HTTP_CODE="${RESPONSE: -3}"
     BODY="${RESPONSE%???}"
 
     if [[ "$HTTP_CODE" == "200" ]]; then
-        USER_SCHEMA_RESOURCE_ID=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"handle":"userschema"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
-        if [[ -n "$USER_SCHEMA_RESOURCE_ID" ]]; then
-            log_success "Found user schema resource ID: $USER_SCHEMA_RESOURCE_ID"
+        USER_TYPE_RESOURCE_ID=$(echo "$BODY" | sed 's/},{/}\n{/g' | grep '"handle":"usertype"' | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+        if [[ -n "$USER_TYPE_RESOURCE_ID" ]]; then
+            log_success "Found user type resource ID: $USER_TYPE_RESOURCE_ID"
         else
-            log_error "Could not find user schema resource in response"
+            log_error "Could not find user type resource in response"
             exit 1
         fi
     else
@@ -551,16 +612,16 @@ elif [[ "$HTTP_CODE" == "409" ]]; then
         exit 1
     fi
 else
-    log_error "Failed to create user schema resource (HTTP $HTTP_CODE)"
+    log_error "Failed to create user type resource (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
     exit 1
 fi
 
-log_info "Creating 'view' action under the 'userschema' resource..."
+log_info "Creating 'view' action under the 'usertype' resource..."
 
-RESPONSE=$(api_call POST "/resource-servers/${SYSTEM_RS_ID}/resources/${USER_SCHEMA_RESOURCE_ID}/actions" '{
+RESPONSE=$(api_call POST "/resource-servers/${SYSTEM_RS_ID}/resources/${USER_TYPE_RESOURCE_ID}/actions" '{
   "name": "View",
-  "description": "Read-only access to user schemas",
+  "description": "Read-only access to user types",
   "handle": "view"
 }')
 
@@ -568,11 +629,11 @@ HTTP_CODE="${RESPONSE: -3}"
 BODY="${RESPONSE%???}"
 
 if [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "200" ]]; then
-    log_success "User schema view action created successfully (permission: system:userschema:view)"
+    log_success "User type view action created successfully (permission: system:usertype:view)"
 elif [[ "$HTTP_CODE" == "409" ]]; then
-    log_warning "User schema view action already exists, skipping"
+    log_warning "User type view action already exists, skipping"
 else
-    log_error "Failed to create user schema view action (HTTP $HTTP_CODE)"
+    log_error "Failed to create user type view action (HTTP $HTTP_CODE)"
     echo "Response: $BODY"
     exit 1
 fi
@@ -717,7 +778,7 @@ echo ""
 # Create Admin Role
 # ============================================================================
 
-log_info "Creating admin role with 'system' permission..."
+log_info "Creating admin role with '${SYSTEM_PERMISSION}' permission..."
 
 if [[ -z "$ADMIN_GROUP_ID" ]]; then
     log_error "Administrator group ID is not available. Cannot create role."
@@ -741,7 +802,7 @@ RESPONSE=$(api_call POST "/roles" "{
   \"permissions\": [
     {
       \"resourceServerId\": \"${SYSTEM_RS_ID}\",
-      \"permissions\": [\"system\"]
+      \"permissions\": [\"${SYSTEM_PERMISSION}\"]
     }
   ],
   \"assignments\": [
@@ -910,6 +971,16 @@ else
         else
             log_warning "No registration flow files found"
         fi
+    fi
+
+    # Template user onboarding flow files with the dynamic system permission.
+    if [[ -d "$USER_ONBOARDING_FLOWS_DIR" ]] && [[ "$SYSTEM_PERMISSION" != "system" ]]; then
+        TEMPLATED_ONBOARDING_DIR=$(mktemp -d)
+        for f in "$USER_ONBOARDING_FLOWS_DIR"/*.json; do
+            [[ ! -f "$f" ]] && continue
+            sed "s/\[\"system\"\]/[\"${SYSTEM_PERMISSION}\"]/g" "$f" > "$TEMPLATED_ONBOARDING_DIR/$(basename "$f")"
+        done
+        USER_ONBOARDING_FLOWS_DIR="$TEMPLATED_ONBOARDING_DIR"
     fi
 
     # Process user onboarding flows
@@ -1354,5 +1425,5 @@ echo ""
 log_info "👤 Admin credentials:"
 log_info "   Username: admin"
 log_info "   Password: admin"
-log_info "   Role: Administrator (system permission via Administrators group)"
+log_info "   Role: Administrator (${SYSTEM_PERMISSION} permission via Administrators group)"
 echo ""

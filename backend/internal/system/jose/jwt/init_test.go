@@ -89,15 +89,15 @@ func (suite *InitTestSuite) TearDownSuite() {
 }
 
 func (suite *InitTestSuite) SetupTest() {
-	// Reset ThunderRuntime before each test
-	config.ResetThunderRuntime()
+	// Reset server runtime before each test
+	config.ResetServerRuntime()
 }
 
 func (suite *InitTestSuite) TestInitialize_Success() {
 	// Setup test configuration
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://test.thunder.io",
+			Issuer:         "https://auth.example.com",
 			ValidityPeriod: 3600,
 			PreferredKeyID: "test-kid",
 		},
@@ -111,7 +111,7 @@ func (suite *InitTestSuite) TestInitialize_Success() {
 			},
 		},
 	}
-	err := config.InitializeThunderRuntime("", testConfig)
+	err := config.InitializeServerRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
 	// Create mock PKI service
@@ -130,7 +130,7 @@ func (suite *InitTestSuite) TestInitialize_PrivateKeyRetrievalError() {
 	// Setup test configuration
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://test.thunder.io",
+			Issuer:         "https://auth.example.com",
 			ValidityPeriod: 3600,
 			PreferredKeyID: "test-kid",
 		},
@@ -144,10 +144,9 @@ func (suite *InitTestSuite) TestInitialize_PrivateKeyRetrievalError() {
 			},
 		},
 	}
-	err := config.InitializeThunderRuntime("", testConfig)
+	err := config.InitializeServerRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
-	// Create mock PKI service that returns error
 	pkiMock := pkimock.NewPKIServiceInterfaceMock(suite.T())
 	testErr := serviceerror.CustomServiceError(serviceerror.InternalServerError, core.I18nMessage{
 		Key:          "error.test.jwt_init",
@@ -165,7 +164,7 @@ func (suite *InitTestSuite) TestInitialize_WithoutPreferredKeyID() {
 	// Setup test configuration without PreferredKeyID
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://test.thunder.io",
+			Issuer:         "https://auth.example.com",
 			ValidityPeriod: 3600,
 			// PreferredKeyID is empty
 		},
@@ -179,7 +178,7 @@ func (suite *InitTestSuite) TestInitialize_WithoutPreferredKeyID() {
 			},
 		},
 	}
-	err := config.InitializeThunderRuntime("", testConfig)
+	err := config.InitializeServerRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
 	// Create mock PKI service

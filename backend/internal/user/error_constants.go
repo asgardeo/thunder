@@ -235,17 +235,17 @@ var (
 			DefaultValue: "The filter format is invalid",
 		},
 	}
-	// ErrorUserSchemaNotFound is the error returned when the specified user schema is not found.
-	ErrorUserSchemaNotFound = serviceerror.ServiceError{
+	// ErrorEntityTypeNotFound is the error returned when the specified user type is not found.
+	ErrorEntityTypeNotFound = serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,
 		Code: "USR-1021",
 		Error: core.I18nMessage{
-			Key:          "error.userservice.user_schema_not_found",
-			DefaultValue: "User schema not found",
+			Key:          "error.userservice.user_type_not_found",
+			DefaultValue: "User type not found",
 		},
 		ErrorDescription: core.I18nMessage{
-			Key:          "error.userservice.user_schema_not_found_description",
-			DefaultValue: "The specified user schema does not exist",
+			Key:          "error.userservice.user_type_not_found_description",
+			DefaultValue: "The specified user type does not exist",
 		},
 	}
 	// ErrorInvalidOUID is returned when the organization unit ID is missing or malformed.

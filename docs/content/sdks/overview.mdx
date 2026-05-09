@@ -9,10 +9,10 @@ hide_title: true
 import {Grid, TextField, InputAdornment, Box} from '@wso2/oxygen-ui';
 import {Search} from '@wso2/oxygen-ui-icons-react';
 import {useState} from 'react';
-import thunderConfig from '@site/docusaurus.thunder.config';
+import productConfig from '@site/docusaurus.product.config';
 
 export const SDKsContent = () => {
-  const productName = thunderConfig.project.name;
+  const productName = productConfig.project.name;
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
 

@@ -1,0 +1,225 @@
+# Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+#
+# WSO2 LLC. licenses this file to you under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+{{- $usingSqlite := or (eq .Values.configuration.database.config.type "sqlite") (eq .Values.configuration.database.runtime.type "sqlite") (eq .Values.configuration.database.user.type "sqlite") (and .Values.configuration.consent.enabled (eq .Values.configuration.consent.database.type "sqlite")) }}
+{{- if and .Values.declarativeResources.enabled .Values.declarativeResources.configMap.name .Values.declarativeResources.secret.name }}
+{{- fail "Invalid declarativeResources configuration: set only one source, declarativeResources.configMap.name or declarativeResources.secret.name." }}
+{{- end }}
+{{- if and .Values.declarativeResources.enabled (not .Values.declarativeResources.configMap.name) (not .Values.declarativeResources.secret.name) }}
+{{- fail "Invalid declarativeResources configuration: set declarativeResources.configMap.name or declarativeResources.secret.name when declarativeResources.enabled=true." }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "thunderid.fullname" . }}-deployment
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "thunderid.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.deployment.replicaCount }}
+  strategy:
+    rollingUpdate:
+      maxSurge: {{ .Values.deployment.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.deployment.strategy.rollingUpdate.maxUnavailable }}
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "thunderid.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "thunderid.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum.deployment.yaml: {{ include (print $.Template.BasePath "/config-map.yaml") . | sha256sum }}
+        {{- if include "thunderid.shouldIncludeSecretChecksum" . }}
+        checksum.secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "thunderid.serviceAccountName" . }}
+      securityContext:
+        {{- if .Values.deployment.securityContext.enableRunAsUser }}
+        runAsUser: {{ .Values.deployment.securityContext.runAsUser }}
+        {{- end }}
+        {{- if .Values.deployment.securityContext.enableRunAsGroup }}
+        runAsGroup: {{ .Values.deployment.securityContext.runAsGroup }}
+        {{- end }}
+        {{- if .Values.deployment.securityContext.enableFsGroup }}
+        fsGroup: {{ .Values.deployment.securityContext.fsGroup }}
+        {{- end }}
+        {{- if .Values.deployment.securityContext.seccompProfile.enabled }}
+        seccompProfile:
+          type: {{ .Values.deployment.securityContext.seccompProfile.type }}
+        {{- end }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/name
+                      operator: In
+                      values:
+                        - {{ include "thunderid.name" . }}
+                    - key: app.kubernetes.io/instance
+                      operator: In
+                      values:
+                        - {{ .Release.Name }}
+                topologyKey: topology.kubernetes.io/zone
+      {{- if .Values.deployment.image.imagePullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.deployment.image.imagePullSecret }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.deployment.terminationGracePeriodSeconds }}
+      containers:
+        - name: thunderid
+          {{- if .Values.deployment.image.digest }}
+          image: {{ .Values.deployment.image.registry }}/{{ .Values.deployment.image.repository }}@{{ .Values.deployment.image.digest }}
+          {{- else }}
+          image: {{ .Values.deployment.image.registry }}/{{ .Values.deployment.image.repository }}:{{ default "latest" .Values.deployment.image.tag }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.deployment.image.pullPolicy }}
+          env:
+            - name: SKIP_SECURITY
+              value: {{ .Values.deployment.skipSecurity | quote }}
+            {{- if .Values.configuration.consent.enabled }}
+            - name: WITH_CONSENT
+              value: "true"
+            {{- else }}
+            - name: WITH_CONSENT
+              value: "false"
+            {{- end }}
+            {{- include "thunderid.databasePasswordEnvVars" . | nindent 12 }}
+            {{- include "thunderid.secretEnvVars" (dict "secretEnv" .Values.deployment.secretEnv) | nindent 12 }}
+            {{- if .Values.deployment.env }}
+            {{- toYaml .Values.deployment.env | nindent 12 }}
+            {{- end }}
+            {{- include "thunderid.cacheRedisPasswordEnvVars" . | nindent 12 }}
+          startupProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - nc -z localhost {{ .Values.deployment.container.port }}
+            initialDelaySeconds: {{ .Values.deployment.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.deployment.startupProbe.periodSeconds }}
+            failureThreshold: {{ .Values.deployment.startupProbe.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: /health/liveness
+              port: {{ .Values.deployment.container.port }}
+              scheme: {{ if .Values.configuration.server.httpOnly }}HTTP{{ else }}HTTPS{{ end }}
+            periodSeconds: {{ .Values.deployment.livenessProbe.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              port: {{ .Values.deployment.container.port }}
+              scheme: {{ if .Values.configuration.server.httpOnly }}HTTP{{ else }}HTTPS{{ end }}
+            initialDelaySeconds: {{ .Values.deployment.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.deployment.readinessProbe.periodSeconds }}
+          resources:
+            requests:
+              memory: {{ .Values.deployment.resources.requests.memory }}
+              cpu: {{ .Values.deployment.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.deployment.resources.limits.memory }}
+              cpu: {{ .Values.deployment.resources.limits.cpu }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: {{ .Values.deployment.securityContext.readOnlyRootFilesystem }}
+            runAsNonRoot: true
+            {{- if .Values.deployment.securityContext.enableRunAsUser }}
+            runAsUser: {{ .Values.deployment.securityContext.runAsUser }}
+            {{- end }}
+            capabilities:
+              drop:
+                - all
+          ports:
+            - containerPort: {{ .Values.deployment.container.port }}
+              protocol: TCP
+          volumeMounts:
+            {{- if or .Values.persistence.enabled $usingSqlite }}
+            - name: database-storage
+              mountPath: /opt/thunderid/repository/database
+            {{- end }}
+            {{- if and .Values.configuration.consent.enabled (eq .Values.configuration.consent.database.type "sqlite") }}
+            - name: database-storage
+              mountPath: /opt/thunderid/consent/repository/database
+              subPath: consent
+            {{- end }}
+            - name: deployment-yaml-volume
+              mountPath: /opt/thunderid/repository/conf/deployment.yaml
+              subPath: deployment.yaml
+            - name: gate-config-volume
+              mountPath: /opt/thunderid/apps/gate/config.js
+              subPath: gate-config.js
+            - name: console-config-volume
+              mountPath: /opt/thunderid/apps/console/config.js
+              subPath: console-config.js
+            {{- if .Values.declarativeResources.enabled }}
+            {{- if and .Values.declarativeResources.configMap.name .Values.declarativeResources.configMap.items }}
+{{ include "thunderid.declarativeResourceVolumeMounts" (dict "items" .Values.declarativeResources.configMap.items "field" "declarativeResources.configMap.items" "mountPath" .Values.declarativeResources.mountPath "readOnly" .Values.declarativeResources.readOnly) | nindent 12 }}
+            {{- else if and .Values.declarativeResources.secret.name .Values.declarativeResources.secret.items }}
+{{ include "thunderid.declarativeResourceVolumeMounts" (dict "items" .Values.declarativeResources.secret.items "field" "declarativeResources.secret.items" "mountPath" .Values.declarativeResources.mountPath "readOnly" .Values.declarativeResources.readOnly) | nindent 12 }}
+            {{- else }}
+            - name: declarative-resources
+              mountPath: {{ .Values.declarativeResources.mountPath }}
+              readOnly: {{ .Values.declarativeResources.readOnly }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.configuration.consent.enabled }}
+            - name: consent-deployment-yaml-volume
+              mountPath: /opt/thunderid/consent/repository/conf/deployment.yaml
+              subPath: consent-deployment.yaml
+            {{- end }}
+      volumes:
+        {{- if or .Values.persistence.enabled $usingSqlite }}
+        - name: database-storage
+          persistentVolumeClaim:
+            claimName: {{ include "thunderid.fullname" . }}-database-pvc
+        {{- end }}
+        - name: deployment-yaml-volume
+          configMap:
+            name: {{ include "thunderid.fullname" . }}-config-map
+        - name: gate-config-volume
+          configMap:
+            name: {{ include "thunderid.fullname" . }}-config-map
+        - name: console-config-volume
+          configMap:
+            name: {{ include "thunderid.fullname" . }}-config-map
+        {{- if .Values.declarativeResources.enabled }}
+        - name: declarative-resources
+          {{- if .Values.declarativeResources.configMap.name }}
+          configMap:
+            name: {{ .Values.declarativeResources.configMap.name }}
+            {{- if .Values.declarativeResources.configMap.items }}
+            items:
+{{ include "thunderid.declarativeResourceItems" (dict "items" .Values.declarativeResources.configMap.items "field" "declarativeResources.configMap.items") | nindent 14 }}
+            {{- end }}
+          {{- else }}
+          secret:
+            secretName: {{ .Values.declarativeResources.secret.name }}
+            {{- if .Values.declarativeResources.secret.items }}
+            items:
+{{ include "thunderid.declarativeResourceItems" (dict "items" .Values.declarativeResources.secret.items "field" "declarativeResources.secret.items") | nindent 14 }}
+            {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.configuration.consent.enabled }}
+        - name: consent-deployment-yaml-volume
+          configMap:
+            name: {{ include "thunderid.fullname" . }}-config-map
+        {{- end }}

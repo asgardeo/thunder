@@ -19,9 +19,9 @@
 // Package jwe provides functionalities for handling JSON Web Encryption (JWE).
 package jwe
 
-import "github.com/asgardeo/thunder/internal/system/crypto/pki"
+import "github.com/asgardeo/thunder/internal/system/kmprovider/defaultkm/pkiservice"
 
 // Initialize initializes the JWE service.
-func Initialize(pkiService pki.PKIServiceInterface) (JWEServiceInterface, error) {
+func Initialize(pkiService pkiservice.PKIServiceInterface) (JWEServiceInterface, error) {
 	return newJWEService(pkiService)
 }

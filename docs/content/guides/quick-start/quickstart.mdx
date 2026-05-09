@@ -11,7 +11,7 @@ You can get started with <ProductName /> in minutes. This guide walks you throug
 
 ## Prerequisites
 
-- <ProductName /> is up and running. See [Get <ProductName />](../getting-started/get-thunder) to get started.
+- <ProductName /> is up and running. See [Get <ProductName />](../getting-started/get-thunderid) to get started.
 - You have access to the <ProductName /> Console.
 
 <Stepper>
@@ -84,9 +84,13 @@ Now that you have an application and a user, choose your framework to add sign-i
 
   <a href="../quick-start/connect-your-application/react" style={{textDecoration: 'none', color: 'inherit'}}>
     <div style={{border: '1px solid var(--ifm-color-emphasis-300)', borderRadius: '8px', padding: '1.5rem', height: '100%', cursor: 'pointer'}}>
-      <div style={{display: 'inline-flex', padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255, 143, 51, 0.15)', marginBottom: '1rem'}}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fa7b3f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z"/><path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z"/></svg>
-      </div>
+      <Box sx={{display: 'inline-flex', padding: '8px', borderRadius: 'var(--oxygen-shape-borderRadius)', backgroundColor: 'background.paper', marginBottom: '1rem'}}>
+        <ColorSchemeSVG width={32} height={32} viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="1" stroke="primary" fill="none"/>
+          <path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z" stroke="primary" fill="none"/>
+          <path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z" stroke="primary" fill="none"/>
+        </ColorSchemeSVG>
+      </Box>
       <div style={{fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem'}}>React</div>
       <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-700)', marginBottom: '0.75rem'}}>Add sign-in to a React app using the Asgardeo React SDK. Includes Authorization Code flow with PKCE.</div>
       <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-primary)'}}>Get started →</div>
@@ -94,18 +98,24 @@ Now that you have an application and a user, choose your framework to add sign-i
   </a>
 
   <div style={{border: '1px solid var(--ifm-color-emphasis-300)', borderRadius: '8px', padding: '1.5rem'}}>
-    <div style={{display: 'inline-flex', padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255, 143, 51, 0.15)', marginBottom: '1rem'}}>
-      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fa7b3f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-    </div>
+    <Box sx={{display: 'inline-flex', padding: '8px', borderRadius: 'var(--oxygen-shape-borderRadius)', backgroundColor: 'background.paper', marginBottom: '1rem'}}>
+      <ColorSchemeSVG width={32} height={32} viewBox="0 0 24 24">
+        <polyline points="16 18 22 12 16 6" stroke="primary" fill="none"/>
+        <polyline points="8 6 2 12 8 18" stroke="primary" fill="none"/>
+      </ColorSchemeSVG>
+    </Box>
     <div style={{fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem'}}>Other Frameworks</div>
     <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-700)', marginBottom: '0.75rem'}}>Vue, Angular, Next.js, SvelteKit, and more.</div>
     <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-500)'}}>Coming soon</div>
   </div>
 
   <div style={{border: '1px solid var(--ifm-color-emphasis-300)', borderRadius: '8px', padding: '1.5rem'}}>
-    <div style={{display: 'inline-flex', padding: '12px', borderRadius: '12px', backgroundColor: 'rgba(255, 143, 51, 0.15)', marginBottom: '1rem'}}>
-      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fa7b3f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
-    </div>
+    <Box sx={{display: 'inline-flex', padding: '8px', borderRadius: 'var(--oxygen-shape-borderRadius)', backgroundColor: 'background.paper', marginBottom: '1rem'}}>
+      <ColorSchemeSVG width={32} height={32} viewBox="0 0 24 24">
+        <rect width="14" height="20" x="5" y="2" rx="2" ry="2" stroke="primary" fill="none"/>
+        <path d="M12 18h.01" stroke="primary" fill="none"/>
+      </ColorSchemeSVG>
+    </Box>
     <div style={{fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem'}}>Mobile</div>
     <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-700)', marginBottom: '0.75rem'}}>React Native, Flutter, Swift, and Kotlin.</div>
     <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-500)'}}>Coming soon</div>

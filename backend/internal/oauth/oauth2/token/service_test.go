@@ -78,7 +78,7 @@ func (suite *TokenServiceTestSuite) newService() TokenServiceInterface {
 	return newTokenService(suite.mockGrantProvider, suite.mockScopeValidator, suite.mockObsSvc, suite.mockTransactioner)
 }
 
-// defaultApp returns an OAuthAppConfigProcessedDTO that allows the authorization_code grant.
+// defaultApp returns an OAuthClient that allows the authorization_code grant.
 func (suite *TokenServiceTestSuite) defaultApp() *inboundmodel.OAuthClient {
 	return &inboundmodel.OAuthClient{
 		ClientID:   "test-client-id",

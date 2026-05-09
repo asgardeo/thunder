@@ -34,11 +34,11 @@ type ConfigTestSuite struct {
 
 // SetupSuite sets up the test suite once.
 func (suite *ConfigTestSuite) SetupSuite() {
-	// Reset thunder runtime to ensure clean state
-	config.ResetThunderRuntime()
+	// Reset server runtime to ensure clean state
+	config.ResetServerRuntime()
 	// Initialize runtime once for all tests in the suite
 	testConfig := &config.Config{}
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	err := config.InitializeServerRuntime("/tmp/test", testConfig)
 	if err != nil {
 		suite.Fail("Failed to initialize runtime", err)
 	}
@@ -46,14 +46,14 @@ func (suite *ConfigTestSuite) SetupSuite() {
 
 // TearDownSuite cleans up after the test suite.
 func (suite *ConfigTestSuite) TearDownSuite() {
-	// Reset thunder runtime to avoid state leakage to other test suites
-	config.ResetThunderRuntime()
+	// Reset server runtime to avoid state leakage to other test suites
+	config.ResetServerRuntime()
 }
 
 // SetupTest sets up the test environment before each test.
 func (suite *ConfigTestSuite) SetupTest() {
 	// Reset config before each test
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Theme.Store = ""
 	runtime.Config.DeclarativeResources.Enabled = false
 }
@@ -163,7 +163,7 @@ func (suite *ConfigTestSuite) TestGetThemeStoreMode() {
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
 			// Setup
-			runtime := config.GetThunderRuntime()
+			runtime := config.GetServerRuntime()
 			runtime.Config.Theme.Store = tc.themeStore
 			runtime.Config.DeclarativeResources.Enabled = tc.declEnabled
 
@@ -225,7 +225,7 @@ func (suite *ConfigTestSuite) TestIsDeclarativeModeEnabled() {
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
 			// Setup
-			runtime := config.GetThunderRuntime()
+			runtime := config.GetServerRuntime()
 			runtime.Config.Theme.Store = tc.themeStore
 			runtime.Config.DeclarativeResources.Enabled = tc.declEnabled
 

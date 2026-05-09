@@ -22,7 +22,7 @@ package entity
 import (
 	"encoding/json"
 
-	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/cryptolab/hash"
 )
 
 // EntityCategory represents the category of an entity (e.g., user, application, agent).

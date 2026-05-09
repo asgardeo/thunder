@@ -39,8 +39,8 @@ func TestFileBasedStoreTestSuite(t *testing.T) {
 }
 
 func (suite *FileBasedStoreTestSuite) SetupTest() {
-	sysconfig.ResetThunderRuntime()
-	suite.Require().NoError(sysconfig.InitializeThunderRuntime("/tmp/test", &sysconfig.Config{}))
+	sysconfig.ResetServerRuntime()
+	suite.Require().NoError(sysconfig.InitializeServerRuntime("/tmp/test", &sysconfig.Config{}))
 }
 
 func newFileBasedStoreForTest() *fileBasedStore {
@@ -82,7 +82,7 @@ func (suite *FileBasedStoreTestSuite) TestCreateOAuthProfile_NotSupported() {
 	store := newFileBasedStoreForTest()
 	ctx := context.Background()
 
-	err := store.CreateOAuthProfile(ctx, "app-1", &inboundmodel.OAuthProfileData{})
+	err := store.CreateOAuthProfile(ctx, "app-1", &inboundmodel.OAuthProfile{})
 	suite.Error(err)
 }
 
@@ -99,7 +99,7 @@ func (suite *FileBasedStoreTestSuite) TestGetOAuthProfileByEntityID_EmbeddedValu
 	store := newFileBasedStoreForTest()
 	ctx := context.Background()
 
-	profileData := inboundmodel.OAuthProfileData{
+	profileData := inboundmodel.OAuthProfile{
 		GrantTypes: []string{"authorization_code"},
 	}
 	client := inboundmodel.InboundClient{
@@ -113,15 +113,14 @@ func (suite *FileBasedStoreTestSuite) TestGetOAuthProfileByEntityID_EmbeddedValu
 	profile, err := store.GetOAuthProfileByEntityID(ctx, "app-2")
 	suite.NoError(err)
 	suite.NotNil(profile)
-	suite.Equal("app-2", profile.AppID)
-	suite.NotNil(profile.OAuthProfile)
+	suite.Equal([]string{"authorization_code"}, profile.GrantTypes)
 }
 
 func (suite *FileBasedStoreTestSuite) TestGetOAuthProfileByEntityID_EmbeddedPointerType() {
 	store := newFileBasedStoreForTest()
 	ctx := context.Background()
 
-	profileData := &inboundmodel.OAuthProfileData{
+	profileData := &inboundmodel.OAuthProfile{
 		GrantTypes: []string{"client_credentials"},
 	}
 	client := inboundmodel.InboundClient{
@@ -135,14 +134,14 @@ func (suite *FileBasedStoreTestSuite) TestGetOAuthProfileByEntityID_EmbeddedPoin
 	profile, err := store.GetOAuthProfileByEntityID(ctx, "app-3")
 	suite.NoError(err)
 	suite.NotNil(profile)
-	suite.Equal("app-3", profile.AppID)
+	suite.Equal([]string{"client_credentials"}, profile.GrantTypes)
 }
 
 func (suite *FileBasedStoreTestSuite) TestGetOAuthProfileByEntityID_NilPointer() {
 	store := newFileBasedStoreForTest()
 	ctx := context.Background()
 
-	var nilProfile *inboundmodel.OAuthProfileData
+	var nilProfile *inboundmodel.OAuthProfile
 	client := inboundmodel.InboundClient{
 		ID: "app-nil",
 		Properties: map[string]interface{}{
@@ -274,7 +273,7 @@ func (suite *FileBasedStoreTestSuite) TestUpdateOAuthProfile_NotSupported() {
 	store := newFileBasedStoreForTest()
 	ctx := context.Background()
 
-	err := store.UpdateOAuthProfile(ctx, "c1", &inboundmodel.OAuthProfileData{})
+	err := store.UpdateOAuthProfile(ctx, "c1", &inboundmodel.OAuthProfile{})
 	suite.Error(err)
 }
 

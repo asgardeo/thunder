@@ -20,7 +20,7 @@
 
 export default function () {
   return {
-    name: 'thunder-docs-webpack-plugin',
+    name: 'product-docs-webpack-plugin',
     configureWebpack(config: any) {
       // url-loader@4.x is incompatible with webpack@5.100+, causing:
       // "TypeError: Cannot read properties of undefined (reading 'date')"

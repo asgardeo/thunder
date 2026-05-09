@@ -42,81 +42,81 @@ var (
 	// QueryGetEntityCount is the query to get total count of entities by category.
 	QueryGetEntityCount = model.DBQuery{
 		ID:    "ASQ-ENTITY_MGT-01",
-		Query: "SELECT COUNT(*) as total FROM ENTITY WHERE CATEGORY = $1 AND DEPLOYMENT_ID = $2",
+		Query: `SELECT COUNT(*) as total FROM "ENTITY" WHERE CATEGORY = $1 AND DEPLOYMENT_ID = $2`,
 	}
 	// QueryGetEntityList is the query to get a list of entities by category.
 	QueryGetEntityList = model.DBQuery{
 		ID: "ASQ-ENTITY_MGT-02",
-		Query: "SELECT ID, OU_ID, CATEGORY, TYPE, STATE, ATTRIBUTES, SYSTEM_ATTRIBUTES FROM ENTITY " +
-			"WHERE CATEGORY = $4 AND DEPLOYMENT_ID = $3 ORDER BY ID LIMIT $1 OFFSET $2",
+		Query: `SELECT ID, OU_ID, CATEGORY, TYPE, STATE, ATTRIBUTES, SYSTEM_ATTRIBUTES FROM "ENTITY" ` +
+			`WHERE CATEGORY = $4 AND DEPLOYMENT_ID = $3 ORDER BY ID LIMIT $1 OFFSET $2`,
 	}
 	// QuerySearchEntityList is the query to search entities across all categories.
 	QuerySearchEntityList = model.DBQuery{
 		ID: "ASQ-ENTITY_MGT-03",
-		Query: "SELECT ID, OU_ID, CATEGORY, TYPE, STATE, ATTRIBUTES, SYSTEM_ATTRIBUTES FROM ENTITY " +
-			"WHERE DEPLOYMENT_ID = $3 ORDER BY ID LIMIT $1 OFFSET $2",
+		Query: `SELECT ID, OU_ID, CATEGORY, TYPE, STATE, ATTRIBUTES, SYSTEM_ATTRIBUTES FROM "ENTITY" ` +
+			`WHERE DEPLOYMENT_ID = $3 ORDER BY ID LIMIT $1 OFFSET $2`,
 	}
 	// QueryCreateEntity is the query to create a new entity.
 	QueryCreateEntity = model.DBQuery{
 		ID: "ASQ-ENTITY_MGT-04",
-		Query: "INSERT INTO ENTITY " +
-			"(ID, DEPLOYMENT_ID, CATEGORY, TYPE, STATE, OU_ID, " +
-			"ATTRIBUTES, SYSTEM_ATTRIBUTES, CREDENTIALS, SYSTEM_CREDENTIALS) " +
-			"VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+		Query: `INSERT INTO "ENTITY" ` +
+			`(ID, DEPLOYMENT_ID, CATEGORY, TYPE, STATE, OU_ID, ` +
+			`ATTRIBUTES, SYSTEM_ATTRIBUTES, CREDENTIALS, SYSTEM_CREDENTIALS) ` +
+			`VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
 	}
 	// QueryGetEntityByID is the query to get an entity by ID.
 	QueryGetEntityByID = model.DBQuery{
 		ID: "ASQ-ENTITY_MGT-05",
-		Query: "SELECT ID, OU_ID, CATEGORY, TYPE, STATE, ATTRIBUTES, SYSTEM_ATTRIBUTES " +
-			"FROM ENTITY WHERE ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: `SELECT ID, OU_ID, CATEGORY, TYPE, STATE, ATTRIBUTES, SYSTEM_ATTRIBUTES ` +
+			`FROM "ENTITY" WHERE ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 	// QueryUpdateEntity is the query to fully update an entity including system attributes.
 	QueryUpdateEntity = model.DBQuery{
 		ID: "ASQ-ENTITY_MGT-06",
-		Query: "UPDATE ENTITY SET OU_ID = $2, TYPE = $3, STATE = $4, ATTRIBUTES = $5, SYSTEM_ATTRIBUTES = $6 " +
-			"WHERE ID = $1 AND DEPLOYMENT_ID = $7",
+		Query: `UPDATE "ENTITY" SET OU_ID = $2, TYPE = $3, STATE = $4, ATTRIBUTES = $5, SYSTEM_ATTRIBUTES = $6 ` +
+			`WHERE ID = $1 AND DEPLOYMENT_ID = $7`,
 	}
 	// QueryUpdateAttributes is the query to update only the schema attributes of an entity.
 	QueryUpdateAttributes = model.DBQuery{
 		ID:    "ASQ-ENTITY_MGT-07",
-		Query: "UPDATE ENTITY SET ATTRIBUTES = $2 WHERE ID = $1 AND DEPLOYMENT_ID = $3",
+		Query: `UPDATE "ENTITY" SET ATTRIBUTES = $2 WHERE ID = $1 AND DEPLOYMENT_ID = $3`,
 	}
 	// QueryUpdateSystemAttributes is the query to update system attributes.
 	QueryUpdateSystemAttributes = model.DBQuery{
 		ID:    "ASQ-ENTITY_MGT-08",
-		Query: "UPDATE ENTITY SET SYSTEM_ATTRIBUTES = $2 WHERE ID = $1 AND DEPLOYMENT_ID = $3",
+		Query: `UPDATE "ENTITY" SET SYSTEM_ATTRIBUTES = $2 WHERE ID = $1 AND DEPLOYMENT_ID = $3`,
 	}
 	// QueryUpdateCredentials is the query to update credentials.
 	QueryUpdateCredentials = model.DBQuery{
 		ID:    "ASQ-ENTITY_MGT-09",
-		Query: "UPDATE ENTITY SET CREDENTIALS = $2 WHERE ID = $1 AND DEPLOYMENT_ID = $3",
+		Query: `UPDATE "ENTITY" SET CREDENTIALS = $2 WHERE ID = $1 AND DEPLOYMENT_ID = $3`,
 	}
 	// QueryUpdateSystemCredentials is the query to update system credentials.
 	QueryUpdateSystemCredentials = model.DBQuery{
 		ID:    "ASQ-ENTITY_MGT-10",
-		Query: "UPDATE ENTITY SET SYSTEM_CREDENTIALS = $2 WHERE ID = $1 AND DEPLOYMENT_ID = $3",
+		Query: `UPDATE "ENTITY" SET SYSTEM_CREDENTIALS = $2 WHERE ID = $1 AND DEPLOYMENT_ID = $3`,
 	}
 	// QueryDeleteEntity is the query to delete an entity.
 	QueryDeleteEntity = model.DBQuery{
 		ID:    "ASQ-ENTITY_MGT-11",
-		Query: "DELETE FROM ENTITY WHERE ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: `DELETE FROM "ENTITY" WHERE ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 	// QueryGetEntityWithCredentials is the query to get an entity with all credential columns.
 	QueryGetEntityWithCredentials = model.DBQuery{
 		ID: "ASQ-ENTITY_MGT-12",
-		Query: "SELECT ID, OU_ID, CATEGORY, TYPE, STATE, ATTRIBUTES, " +
-			"SYSTEM_ATTRIBUTES, CREDENTIALS, SYSTEM_CREDENTIALS " +
-			"FROM ENTITY WHERE ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: `SELECT ID, OU_ID, CATEGORY, TYPE, STATE, ATTRIBUTES, ` +
+			`SYSTEM_ATTRIBUTES, CREDENTIALS, SYSTEM_CREDENTIALS ` +
+			`FROM "ENTITY" WHERE ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 	// QueryGetGroupCountForEntity is the query to get the count of groups for a given entity.
 	QueryGetGroupCountForEntity = model.DBQuery{
 		ID:    "ASQ-ENTITY_MGT-13",
-		Query: `SELECT COUNT(*) AS total FROM GROUP_MEMBER_REFERENCE WHERE MEMBER_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `SELECT COUNT(*) AS total FROM "GROUP_MEMBER_REFERENCE" WHERE MEMBER_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 	// QueryGetGroupsForEntity is the query to get groups for a given entity with pagination.
 	QueryGetGroupsForEntity = model.DBQuery{
 		ID: "ASQ-ENTITY_MGT-14",
-		Query: `SELECT G.ID, G.OU_ID, G.NAME FROM GROUP_MEMBER_REFERENCE GMR ` +
+		Query: `SELECT G.ID, G.OU_ID, G.NAME FROM "GROUP_MEMBER_REFERENCE" GMR ` +
 			`INNER JOIN "GROUP" G ON GMR.GROUP_ID = G.ID AND GMR.DEPLOYMENT_ID = $4 AND G.DEPLOYMENT_ID = $4 ` +
 			`WHERE GMR.MEMBER_ID = $1 AND GMR.DEPLOYMENT_ID = $4 ` +
 			`ORDER BY G.NAME LIMIT $2 OFFSET $3`,
@@ -127,11 +127,11 @@ var (
 		ID: "ASQ-ENTITY_MGT-15",
 		Query: `WITH RECURSIVE transitive_groups AS (
 			SELECT GMR.GROUP_ID
-			FROM GROUP_MEMBER_REFERENCE GMR
+			FROM "GROUP_MEMBER_REFERENCE" GMR
 			WHERE GMR.MEMBER_ID = $1 AND GMR.DEPLOYMENT_ID = $2
 			UNION
 			SELECT GMR.GROUP_ID
-			FROM GROUP_MEMBER_REFERENCE GMR
+			FROM "GROUP_MEMBER_REFERENCE" GMR
 			INNER JOIN transitive_groups tg ON GMR.MEMBER_ID = tg.GROUP_ID
 			WHERE GMR.MEMBER_TYPE = 'group' AND GMR.DEPLOYMENT_ID = $2
 		)
@@ -143,23 +143,23 @@ var (
 	// QueryBatchInsertIdentifiers is the base query for batch inserting entity identifiers.
 	QueryBatchInsertIdentifiers = model.DBQuery{
 		ID: "ASQ-ENTITY_MGT-16",
-		Query: "INSERT INTO ENTITY_IDENTIFIER " +
-			"(ENTITY_ID, NAME, VALUE, SOURCE, DEPLOYMENT_ID) VALUES ",
+		Query: `INSERT INTO "ENTITY_IDENTIFIER" ` +
+			`(ENTITY_ID, NAME, VALUE, SOURCE, DEPLOYMENT_ID) VALUES `,
 	}
 	// QueryDeleteIdentifiersByEntity is the query to delete all identifiers for an entity.
 	QueryDeleteIdentifiersByEntity = model.DBQuery{
 		ID:    "ASQ-ENTITY_MGT-17",
-		Query: "DELETE FROM ENTITY_IDENTIFIER WHERE ENTITY_ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: `DELETE FROM "ENTITY_IDENTIFIER" WHERE ENTITY_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 	// QueryDeleteAttributeIdentifiersByEntity is the query to delete only attribute-sourced identifiers for an entity.
 	QueryDeleteAttributeIdentifiersByEntity = model.DBQuery{
 		ID:    "ASQ-ENTITY_MGT-18",
-		Query: "DELETE FROM ENTITY_IDENTIFIER WHERE ENTITY_ID = $1 AND DEPLOYMENT_ID = $2 AND SOURCE = 'attribute'",
+		Query: `DELETE FROM "ENTITY_IDENTIFIER" WHERE ENTITY_ID = $1 AND DEPLOYMENT_ID = $2 AND SOURCE = 'attribute'`,
 	}
 	// QueryDeleteSystemIdentifiersByEntity is the query to delete only system-sourced identifiers for an entity.
 	QueryDeleteSystemIdentifiersByEntity = model.DBQuery{
 		ID:    "ASQ-ENTITY_MGT-19",
-		Query: "DELETE FROM ENTITY_IDENTIFIER WHERE ENTITY_ID = $1 AND DEPLOYMENT_ID = $2 AND SOURCE = 'system'",
+		Query: `DELETE FROM "ENTITY_IDENTIFIER" WHERE ENTITY_ID = $1 AND DEPLOYMENT_ID = $2 AND SOURCE = 'system'`,
 	}
 )
 
@@ -207,7 +207,7 @@ func buildEntityCountQueryByOUIDs(
 	category string, ouIDs []string, filters map[string]interface{}, deploymentID string,
 ) (model.DBQuery, []interface{}, error) {
 	queryID := "ASQ-ENTITY_MGT-20"
-	baseQuery := `SELECT COUNT(*) as total FROM ENTITY WHERE CATEGORY = $1`
+	baseQuery := `SELECT COUNT(*) as total FROM "ENTITY" WHERE CATEGORY = $1`
 	args := []interface{}{category}
 
 	if len(filters) > 0 {
@@ -239,7 +239,7 @@ func buildEntityListQueryByOUIDs(
 ) (model.DBQuery, []interface{}, error) {
 	queryID := "ASQ-ENTITY_MGT-21"
 	baseQuery := `SELECT ID, OU_ID, CATEGORY, TYPE, STATE, ATTRIBUTES, SYSTEM_ATTRIBUTES ` +
-		`FROM ENTITY WHERE CATEGORY = $1`
+		`FROM "ENTITY" WHERE CATEGORY = $1`
 	args := []interface{}{category}
 	var query model.DBQuery
 
@@ -299,8 +299,8 @@ func buildIdentifyQuery(filters map[string]interface{}, deploymentID string) (mo
 	}
 	sort.Strings(keys)
 
-	pgQuery := "SELECT ID FROM ENTITY WHERE 1=1"
-	sqQuery := "SELECT ID FROM ENTITY WHERE 1=1"
+	pgQuery := `SELECT ID FROM "ENTITY" WHERE 1=1`
+	sqQuery := `SELECT ID FROM "ENTITY" WHERE 1=1`
 	args := make([]interface{}, 0, len(keys)+1)
 
 	for i, key := range keys {
@@ -360,7 +360,7 @@ func buildEntityINClauseQuery(
 func buildBulkEntityExistsQuery(entityIDs []string, deploymentID string) (model.DBQuery, []interface{}, error) {
 	return buildEntityINClauseQuery(
 		"ASQ-ENTITY_MGT-23",
-		"SELECT ID FROM ENTITY WHERE ID IN (%s) AND DEPLOYMENT_ID = %s",
+		`SELECT ID FROM "ENTITY" WHERE ID IN (%s) AND DEPLOYMENT_ID = %s`,
 		entityIDs, deploymentID,
 	)
 }
@@ -397,7 +397,7 @@ func buildBulkEntityExistsQueryInOUs(
 		args = append(args, entityID)
 	}
 
-	baseQueryTpl := "SELECT ID FROM ENTITY WHERE DEPLOYMENT_ID = %s AND OU_ID IN (%s) AND ID IN (%s)"
+	baseQueryTpl := `SELECT ID FROM "ENTITY" WHERE DEPLOYMENT_ID = %s AND OU_ID IN (%s) AND ID IN (%s)`
 	postgresQuery := fmt.Sprintf(baseQueryTpl, "$1",
 		strings.Join(postgresOUPlaceholders, ","), strings.Join(postgresIDPlaceholders, ","))
 	sqliteQuery := fmt.Sprintf(baseQueryTpl, "?",
@@ -417,7 +417,7 @@ func buildBulkEntityExistsQueryInOUs(
 func buildEntityListQuery(
 	category string, filters map[string]interface{}, limit, offset int, deploymentID string,
 ) (model.DBQuery, []interface{}, error) {
-	baseQuery := "SELECT ID, OU_ID, CATEGORY, TYPE, STATE, ATTRIBUTES, SYSTEM_ATTRIBUTES FROM ENTITY"
+	baseQuery := `SELECT ID, OU_ID, CATEGORY, TYPE, STATE, ATTRIBUTES, SYSTEM_ATTRIBUTES FROM "ENTITY"`
 	queryID := "ASQ-ENTITY_MGT-25"
 
 	if len(filters) > 0 {
@@ -468,7 +468,7 @@ func buildEntityListQuery(
 func buildEntityCountQuery(
 	category string, filters map[string]interface{}, deploymentID string,
 ) (model.DBQuery, []interface{}, error) {
-	baseQuery := "SELECT COUNT(*) as total FROM ENTITY"
+	baseQuery := `SELECT COUNT(*) as total FROM "ENTITY"`
 	queryID := "ASQ-ENTITY_MGT-26"
 
 	if len(filters) > 0 {
@@ -501,7 +501,7 @@ func buildIdentifyQueryFromIdentifiers(
 	}
 	sort.Strings(keys)
 
-	pgBase := `SELECT DISTINCT ia1.ENTITY_ID AS id FROM ENTITY_IDENTIFIER ia1`
+	pgBase := `SELECT DISTINCT ia1.ENTITY_ID AS id FROM "ENTITY_IDENTIFIER" ia1`
 	sqBase := pgBase
 	pgConditions := []string{}
 	sqConditions := []string{}
@@ -517,8 +517,8 @@ func buildIdentifyQueryFromIdentifiers(
 	for i := 1; i < len(keys); i++ {
 		alias := fmt.Sprintf("ia%d", i+1)
 		joinClause := fmt.Sprintf(
-			" INNER JOIN ENTITY_IDENTIFIER %s ON ia1.ENTITY_ID = %s.ENTITY_ID "+
-				"AND ia1.DEPLOYMENT_ID = %s.DEPLOYMENT_ID",
+			` INNER JOIN "ENTITY_IDENTIFIER" %s ON ia1.ENTITY_ID = %s.ENTITY_ID `+
+				`AND ia1.DEPLOYMENT_ID = %s.DEPLOYMENT_ID`,
 			alias, alias, alias)
 		pgBase += joinClause
 		sqBase += joinClause
@@ -553,12 +553,12 @@ func buildIdentifyQueryHybrid(
 		return model.DBQuery{}, nil, fmt.Errorf("indexed filters cannot be empty for hybrid query")
 	}
 
-	postgresQuery := `SELECT DISTINCT e.ID FROM ENTITY e`
-	postgresQuery += ` INNER JOIN ENTITY_IDENTIFIER ia1 ON e.ID = ia1.ENTITY_ID ` +
+	postgresQuery := `SELECT DISTINCT e.ID FROM "ENTITY" e`
+	postgresQuery += ` INNER JOIN "ENTITY_IDENTIFIER" ia1 ON e.ID = ia1.ENTITY_ID ` +
 		`AND e.DEPLOYMENT_ID = ia1.DEPLOYMENT_ID`
 
-	sqliteQuery := `SELECT DISTINCT e.ID FROM ENTITY e`
-	sqliteQuery += ` INNER JOIN ENTITY_IDENTIFIER ia1 ON e.ID = ia1.ENTITY_ID ` +
+	sqliteQuery := `SELECT DISTINCT e.ID FROM "ENTITY" e`
+	sqliteQuery += ` INNER JOIN "ENTITY_IDENTIFIER" ia1 ON e.ID = ia1.ENTITY_ID ` +
 		`AND e.DEPLOYMENT_ID = ia1.DEPLOYMENT_ID`
 
 	indexedKeys := make([]string, 0, len(indexedFilters))
@@ -579,8 +579,8 @@ func buildIdentifyQueryHybrid(
 	for i := 1; i < len(indexedKeys); i++ {
 		alias := fmt.Sprintf("ia%d", i+1)
 		joinClause := fmt.Sprintf(
-			" INNER JOIN ENTITY_IDENTIFIER %s ON e.ID = %s.ENTITY_ID "+
-				"AND e.DEPLOYMENT_ID = %s.DEPLOYMENT_ID",
+			` INNER JOIN "ENTITY_IDENTIFIER" %s ON e.ID = %s.ENTITY_ID `+
+				`AND e.DEPLOYMENT_ID = %s.DEPLOYMENT_ID`,
 			alias, alias, alias)
 		postgresQuery += joinClause
 		sqliteQuery += joinClause
@@ -628,8 +628,8 @@ func buildIdentifyQueryHybrid(
 func buildGetEntitiesByIDsQuery(entityIDs []string, deploymentID string) (model.DBQuery, []interface{}, error) {
 	return buildEntityINClauseQuery(
 		"ASQ-ENTITY_MGT-29",
-		"SELECT ID, OU_ID, CATEGORY, TYPE, STATE, ATTRIBUTES, SYSTEM_ATTRIBUTES "+
-			"FROM ENTITY WHERE ID IN (%s) AND DEPLOYMENT_ID = %s",
+		`SELECT ID, OU_ID, CATEGORY, TYPE, STATE, ATTRIBUTES, SYSTEM_ATTRIBUTES `+
+			`FROM "ENTITY" WHERE ID IN (%s) AND DEPLOYMENT_ID = %s`,
 		entityIDs, deploymentID,
 	)
 }

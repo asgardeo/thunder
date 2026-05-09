@@ -37,7 +37,7 @@ const (
 	passkeyAuthStartEndpoint      = "/auth/passkey/start"
 	passkeyAuthFinishEndpoint     = "/auth/passkey/finish"
 	testRelyingPartyID            = "localhost"
-	testRelyingPartyName          = "Thunder Test"
+	testRelyingPartyName          = "ThunderID Test"
 )
 
 var (
@@ -48,7 +48,7 @@ var (
 		Parent:      nil,
 	}
 
-	passkeyUserSchema = testutils.UserSchema{
+	passkeyEntityType = testutils.UserType{
 		Name: "passkey_user",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -196,7 +196,7 @@ type PasskeyAuthTestSuite struct {
 	suite.Suite
 	client       *http.Client
 	testUserID   string
-	userSchemaID string
+	entityTypeID string
 	ouID         string
 }
 
@@ -214,13 +214,13 @@ func (suite *PasskeyAuthTestSuite) SetupSuite() {
 	}
 	suite.ouID = ouID
 
-	// Create user schema
-	passkeyUserSchema.OUID = suite.ouID
-	schemaID, err := testutils.CreateUserType(passkeyUserSchema)
+	// Create user type
+	passkeyEntityType.OUID = suite.ouID
+	schemaID, err := testutils.CreateUserType(passkeyEntityType)
 	if err != nil {
-		suite.T().Fatalf("Failed to create user schema during setup: %v", err)
+		suite.T().Fatalf("Failed to create user type during setup: %v", err)
 	}
-	suite.userSchemaID = schemaID
+	suite.entityTypeID = schemaID
 
 	// Create test user
 	attributes := map[string]interface{}{
@@ -232,9 +232,9 @@ func (suite *PasskeyAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err, "Failed to marshal user attributes")
 
 	user := testutils.User{
-		Type:             "passkey_user",
-		OUID:             suite.ouID,
-		Attributes:       json.RawMessage(attributesJSON),
+		Type:       "passkey_user",
+		OUID:       suite.ouID,
+		Attributes: json.RawMessage(attributesJSON),
 	}
 
 	userID, err := testutils.CreateUser(user)
@@ -251,11 +251,11 @@ func (suite *PasskeyAuthTestSuite) TearDownSuite() {
 		}
 	}
 
-	// Delete user schema
-	if suite.userSchemaID != "" {
-		err := testutils.DeleteUserType(suite.userSchemaID)
+	// Delete user type
+	if suite.entityTypeID != "" {
+		err := testutils.DeleteUserType(suite.entityTypeID)
 		if err != nil {
-			suite.T().Errorf("Failed to delete user schema during teardown: %v", err)
+			suite.T().Errorf("Failed to delete user type during teardown: %v", err)
 		}
 	}
 

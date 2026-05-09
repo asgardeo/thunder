@@ -53,7 +53,7 @@ RUN if [ -n "$CERT_FILE" ] && [ -n "$KEY_FILE" ] && [ -f "$CERT_FILE" ] && [ -f 
         openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
             -keyout target/out/.cert/server.key \
             -out target/out/.cert/server.cert \
-            -subj "/O=WSO2/OU=Thunder/CN=localhost"; \
+            -subj "/O=WSO2/OU=ThunderID/CN=localhost"; \
         echo "✅ New certificates generated"; \
     fi
 
@@ -84,10 +84,10 @@ RUN apk add --no-cache \
     unzip
 
 # Create user and group
-RUN addgroup -S thunder -g 10001 && adduser -S thunder -u 10001 -G thunder
+RUN addgroup -S thunderid -g 10001 && adduser -S thunderid -u 10001 -G thunderid
 
 # Create application directory
-WORKDIR /opt/thunder
+WORKDIR /opt/thunderid
 
 # Copy and extract the package from builder stage
 # TARGETARCH is automatically set by Docker during multi-arch builds
@@ -95,18 +95,18 @@ ARG TARGETARCH
 COPY --from=builder /app/target/dist/ /tmp/dist/
 RUN cd /tmp/dist && \
     if [ "$TARGETARCH" = "amd64" ]; then \
-        find . -name "thunder-*-linux-x64.zip" | grep -E '^.*/thunder-v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(-[A-Z]+)?)?-linux-x64\.zip$' | xargs -I{} cp {} /tmp/ ; \
+        find . -name "thunderid-*-linux-x64.zip" | grep -E '^.*/thunderid-v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(-[A-Z]+)?)?-linux-x64\.zip$' | xargs -I{} cp {} /tmp/ ; \
     else \
-        find . -name "thunder-*-linux-arm64.zip" | grep -E '^.*/thunder-v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(-[A-Z]+)?)?-linux-arm64\.zip$' | xargs -I{} cp {} /tmp/ ; \
+        find . -name "thunderid-*-linux-arm64.zip" | grep -E '^.*/thunderid-v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(-[A-Z]+)?)?-linux-arm64\.zip$' | xargs -I{} cp {} /tmp/ ; \
     fi && \
     cd /tmp && \
-    unzip thunder-*.zip && \
-    cp -r thunder-*/* /opt/thunder/ && \
-    rm -rf /tmp/thunder-* /tmp/dist
+    unzip thunderid-*.zip && \
+    cp -r thunderid-*/* /opt/thunderid/ && \
+    rm -rf /tmp/thunderid-* /tmp/dist
 
 # Set ownership and permissions
-RUN chown -R thunder:thunder /opt/thunder && \
-    chmod +x thunder start.sh setup.sh scripts/init_script.sh && \
+RUN chown -R thunderid:thunderid /opt/thunderid && \
+    chmod +x thunderid start.sh setup.sh scripts/init_script.sh && \
     (find consent -name "consent-server" -o -name "start.sh" 2>/dev/null | xargs -r chmod +x) && \
     (find bootstrap -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true)
 
@@ -114,7 +114,7 @@ RUN chown -R thunder:thunder /opt/thunder && \
 EXPOSE 8090
 
 # Switch to user
-USER thunder
+USER thunderid
 
 # Set environment variables
 ENV BACKEND_PORT=8090

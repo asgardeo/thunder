@@ -79,7 +79,7 @@ func NewHTTPClientWithTimeout(timeout time.Duration) HTTPClientInterface {
 			Transport: &http.Transport{
 				// #nosec G402 -- Min TLS version is TLS 1.2 or higher based on config
 				TLSClientConfig: &tls.Config{
-					MinVersion: GetTLSVersion(config.GetThunderRuntime().Config),
+					MinVersion: GetTLSVersion(config.GetServerRuntime().Config),
 				},
 			},
 		},
@@ -88,7 +88,7 @@ func NewHTTPClientWithTimeout(timeout time.Duration) HTTPClientInterface {
 
 // NewHTTPClientWithCheckRedirect creates an HTTPClient with a custom redirect policy.
 // Use this when redirect behavior must be controlled, e.g. to prevent HTTPS→HTTP downgrades.
-// Requires ThunderRuntime to be initialized before calling (reads TLS config at construction time).
+// Requires server runtime to be initialized before calling (reads TLS config at construction time).
 // ssrfSafeDialContext is wired in to block hostnames that DNS-resolve to private/loopback addresses
 // and to pin the TCP connection to the first validated IP (prevents DNS rebinding).
 func NewHTTPClientWithCheckRedirect(checkRedirect func(*http.Request, []*http.Request) error) HTTPClientInterface {
@@ -99,7 +99,7 @@ func NewHTTPClientWithCheckRedirect(checkRedirect func(*http.Request, []*http.Re
 				DialContext: ssrfSafeDialContext,
 				// #nosec G402 -- Min TLS version is TLS 1.2 or higher based on config
 				TLSClientConfig: &tls.Config{
-					MinVersion: GetTLSVersion(config.GetThunderRuntime().Config),
+					MinVersion: GetTLSVersion(config.GetServerRuntime().Config),
 				},
 			},
 			CheckRedirect: checkRedirect,

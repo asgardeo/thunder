@@ -26,7 +26,7 @@ import (
 // Initialize initializes the attribute cache service and returns an instance of AttributeCacheServiceInterface.
 func Initialize() AttributeCacheServiceInterface {
 	var store attributeCacheStoreInterface
-	if config.GetThunderRuntime().Config.Database.Runtime.Type == provider.DataSourceTypeRedis {
+	if config.GetServerRuntime().Config.Database.Runtime.Type == provider.DataSourceTypeRedis {
 		store = newRedisAttributeCacheStore(provider.GetRedisProvider())
 	} else {
 		store = newAttributeCacheStore()

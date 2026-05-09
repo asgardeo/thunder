@@ -84,11 +84,11 @@ SKIP_SECURITY=true make run_backend
 In a **new terminal**, seed data (one-time only):
 
 ```bash
-THUNDER_API_BASE="https://localhost:8090" \
+API_BASE="https://localhost:8090" \
   backend/cmd/server/bootstrap/01-default-resources.sh \
   --console-redirect-uris "https://localhost:5191/console"
 
-THUNDER_API_BASE="https://localhost:8090" \
+API_BASE="https://localhost:8090" \
   backend/cmd/server/bootstrap/02-sample-resources.sh
 ```
 
@@ -121,7 +121,7 @@ Generate TLS certificates:
 ```bash
 openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 365 \
   -keyout server.key -out server.cert \
-  -subj "/O=WSO2/OU=Thunder/CN=localhost"
+  -subj "/O=WSO2/OU={{ProductName}}/CN=localhost"
 ```
 
 Run the sample app:

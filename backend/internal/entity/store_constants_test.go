@@ -89,13 +89,13 @@ func (s *StoreConstantsTestSuite) TestBuildIdentifyQuery_WithFilters() {
 }
 
 func (s *StoreConstantsTestSuite) TestBuildEntityINClauseQuery_EmptyIDs() {
-	baseQuery := "SELECT ID FROM ENTITY WHERE ID IN (%s) AND DEPLOYMENT_ID = %s"
+	baseQuery := `SELECT ID FROM "ENTITY" WHERE ID IN (%s) AND DEPLOYMENT_ID = %s`
 	_, _, err := buildEntityINClauseQuery("qid", baseQuery, []string{}, testDeploymentID)
 	s.Error(err)
 }
 
 func (s *StoreConstantsTestSuite) TestBuildEntityINClauseQuery_WithIDs() {
-	baseQuery := "SELECT ID FROM ENTITY WHERE ID IN (%s) AND DEPLOYMENT_ID = %s"
+	baseQuery := `SELECT ID FROM "ENTITY" WHERE ID IN (%s) AND DEPLOYMENT_ID = %s`
 	q, args, err := buildEntityINClauseQuery("qid", baseQuery, []string{"id1", "id2"}, testDeploymentID)
 	s.NoError(err)
 	s.NotEmpty(q.Query)
@@ -208,7 +208,7 @@ func (s *StoreConstantsTestSuite) TestBuildGetEntitiesByIDsQuery_Success() {
 }
 
 func (s *StoreConstantsTestSuite) TestBuildPaginatedQuery_Success() {
-	base := "SELECT * FROM ENTITY WHERE DEPLOYMENT_ID = $1"
+	base := `SELECT * FROM "ENTITY" WHERE DEPLOYMENT_ID = $1`
 	result, err := buildPaginatedQuery(base, 1, "$")
 	s.NoError(err)
 	s.Contains(result, "LIMIT")
@@ -216,7 +216,7 @@ func (s *StoreConstantsTestSuite) TestBuildPaginatedQuery_Success() {
 }
 
 func (s *StoreConstantsTestSuite) TestBuildFilterQueryWithOffset_Success() {
-	base := "SELECT * FROM ENTITY WHERE CATEGORY = $1"
+	base := `SELECT * FROM "ENTITY" WHERE CATEGORY = $1`
 	filters := map[string]interface{}{"email": "a@b.com"}
 	q, args, err := buildFilterQueryWithOffset("test-qid", base, filters, 1)
 	s.NoError(err)
@@ -225,7 +225,7 @@ func (s *StoreConstantsTestSuite) TestBuildFilterQueryWithOffset_Success() {
 }
 
 func (s *StoreConstantsTestSuite) TestBuildFilterQueryWithOffset_NoFilters() {
-	base := "SELECT * FROM ENTITY WHERE CATEGORY = $1"
+	base := `SELECT * FROM "ENTITY" WHERE CATEGORY = $1`
 	q, args, err := buildFilterQueryWithOffset("test-qid", base, nil, 1)
 	s.NoError(err)
 	s.NotEmpty(q.Query)

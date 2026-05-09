@@ -152,7 +152,7 @@ func (s *securityService) authorize(r *http.Request) error {
 
 // getRequiredPermissionForAPI returns the minimum permission required to access the
 // given HTTP method + path combination. Returns an empty string for self-service paths
-// that any authenticated user may access. Falls back to SystemPermission for paths not
+// that any authenticated user may access. Falls back to the root system permission for paths not
 // covered by any entry in compiledAPIPermissions.
 //
 // Matching uses pre-compiled regular expressions evaluated in declaration order;
@@ -166,7 +166,10 @@ func (s *securityService) getRequiredPermissionForAPI(method, path string) strin
 			return entry.permission
 		}
 	}
-	return SystemPermission
+	if sysPerms != nil {
+		return sysPerms.Root
+	}
+	return UninitializedPermissionSentinel
 }
 
 // isPublicPath checks if the given request path matches any of the configured public path patterns.

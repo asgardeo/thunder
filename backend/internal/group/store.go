@@ -63,7 +63,7 @@ type groupStore struct {
 // newGroupStore creates a new instance of groupStore.
 func newGroupStore() groupStoreInterface {
 	return &groupStore{
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
 		dbProvider:   provider.GetDBProvider(),
 	}
 }

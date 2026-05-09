@@ -54,13 +54,35 @@ reviews:
 
     - path: "docs/**"
       instructions: |
-        Scan for hardcoded occurrences of the string literals `Thunder` or `ThunderID` in prose, headings,
-        code callouts, or link text.
-        For each occurrence, flag it and ask: **"Is this hardcoded brand name intentional?"**
-        If it refers to the product name, suggest replacing it with the `<ProductName />` MDX component.
-        If it appears in a repository URL or link, suggest replacing it with the `<RepoLink />` MDX component.
-        Do not flag occurrences inside fenced code blocks that demonstrate real command-line output or
-        literal configuration values where the exact string is required.
+        Scan for hardcoded occurrences of the string literals `Thunder` or `ThunderID`.
+        Flag every occurrence as a **major issue** and require it to be replaced using the
+        correct templating mechanism for the file type (described below).
+        Do not flag occurrences inside fenced code blocks that demonstrate real terminal output
+        or literal configuration values where the exact string is semantically required.
+
+        **Correct approach by file type:**
+
+        `.mdx` files — prose, headings, and JSX string content:
+        - Product name → `<ProductName />` (globally registered MDX component, no import needed).
+        - Repository URLs and GitHub links → `<RepoLink path="/issues">link text</RepoLink>`.
+
+        `.mdx` files — frontmatter fields (title, description, sidebar_label, etc.):
+        - Product name → `{{ProductName}}` placeholder (replaced at build time via `parseFrontMatter`).
+        - Product slug → `{{productSlug}}` placeholder.
+
+        `.mdx` files — fenced code blocks and inline code spans:
+        - Product name → `{{ProductName}}` placeholder (replaced at build time by the `rehypeProductName` plugin).
+        - Product slug → `{{productSlug}}` placeholder.
+
+        `.tsx` / `.ts` files under `docs/src/`:
+        - Read the product name and repo URL from Docusaurus site config:
+          ```ts
+          const { siteConfig } = useDocusaurusContext();
+          const { project } = siteConfig.customFields?.product as DocusaurusProductConfig;
+          const productName = project.name;          // product name string
+          const repoUrl = project.source.github.url; // repo URL string
+          ```
+        - Do not hardcode the product name as a string literal; always derive it from config.
 
         Review documentation changes for:
         - Technical accuracy: do code examples and parameter descriptions match the actual implementation in this PR?

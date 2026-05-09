@@ -212,7 +212,7 @@ The `SDKCard` component displays SDK information in an attractive card format wi
     title="React SDK"
     packageName="@asgardeo/auth-react"
     packageManager="npm"
-    description="Authenticate your React applications with Thunder"
+    description="Authenticate your React applications with {{ProductName}}"
     href="/sdks/react"
   />
   
@@ -228,7 +228,7 @@ The `SDKCard` component displays SDK information in an attractive card format wi
   <SDKCard
     icon={<PythonLogo />}
     title="Python SDK"
-    description="Python SDK for Thunder authentication"
+    description="Python SDK for {{ProductName}} authentication"
     comingSoon={true}
   />
 </Box>
@@ -348,6 +348,76 @@ resp, _ := client.Do(req)`}
 - deno
 
 **Source:** <RepoLink path="/blob/main/docs/src/components/CodeGroup.tsx">`docs/src/components/CodeGroup.tsx`</RepoLink>
+
+---
+
+### ProductName
+
+The `<ProductName />` component renders the current product name (e.g. *ThunderID*) from site config. Always use this component instead of hardcoding the product name — it ensures documentation stays correct if the product is ever renamed.
+
+**Usage:**
+
+```mdx
+<ProductName /> supports OAuth 2.0 and OpenID Connect out of the box.
+```
+
+**Result:** The product name is rendered inline with the surrounding text.
+
+**Source:** <RepoLink path="/blob/main/docs/src/components/ProductName.tsx">`docs/src/components/ProductName.tsx`</RepoLink>
+
+---
+
+### RepoLink
+
+The `<RepoLink />` component renders a link to a path within the project's GitHub repository. Always use this component instead of hardcoding the repository URL — it ensures links stay valid if the repository is moved or renamed.
+
+**Props:**
+- `path` (optional): Path to append to the base repository URL (e.g. `"/issues"`, `"/blob/main/README.md"`)
+- `children` (required): Link text or content
+
+**Usage:**
+
+```mdx
+Check the <RepoLink path="/issues">issue tracker</RepoLink> for known bugs.
+
+See the <RepoLink path="/blob/main/docs/sidebars.ts">`docs/sidebars.ts`</RepoLink> file for sidebar config.
+```
+
+**Source:** <RepoLink path="/blob/main/docs/src/components/RepoLink.tsx">`docs/src/components/RepoLink.tsx`</RepoLink>
+
+---
+
+### Product Name Placeholders
+
+In contexts where JSX components cannot be used — **frontmatter fields** and **fenced code blocks / inline code spans** — use the `{{ProductName}}` and `{{productSlug}}` string placeholders instead. They are replaced at build time.
+
+| Placeholder | Replaced with |
+|---|---|
+| `{{ProductName}}` | The product name (e.g. `ThunderID`) |
+| `{{productSlug}}` | The URL-safe product slug (e.g. `thunderid`) |
+
+**Frontmatter:**
+
+```mdx
+---
+title: Get {{ProductName}}
+description: Install and run {{ProductName}} locally
+---
+```
+
+**Code blocks and inline code:**
+
+````mdx
+Run the following to start {{ProductName}}:
+
+```bash
+./{{productSlug}} start
+```
+````
+
+:::warning Never hardcode the product name
+Do **not** write `Thunder`, `ThunderID`, or any other hardcoded product name string in documentation. Use `<ProductName />` in prose, `{{ProductName}}` in frontmatter and code blocks.
+:::
 
 ## Adding User Guides
 
@@ -713,7 +783,7 @@ All documentation pages support these frontmatter fields:
 ---
 title: Quick Start
 sidebar_position: 1
-description: Get started with Thunder in 5 minutes
+description: Get started with {{ProductName}} in 5 minutes
 ---
 ```
 

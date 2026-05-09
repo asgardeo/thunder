@@ -7,7 +7,7 @@ on:
   workflow_dispatch: # Allows you to trigger it manually for testing
 
 env:
-  PRODUCT_NAME: "Thunder"
+  PRODUCT_NAME: "ThunderID"
 
 jobs:
   notify-chat:

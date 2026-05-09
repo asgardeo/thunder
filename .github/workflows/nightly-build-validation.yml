@@ -14,7 +14,7 @@ permissions:
 
 env:
   GOFLAGS: "-mod=readonly"
-  PRODUCT_NAME: "Thunder"
+  PRODUCT_NAME: "ThunderID"
 
 jobs:
   dependency-guard:

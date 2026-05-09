@@ -27,7 +27,6 @@ import (
 )
 
 // CreateAgentRequest is the HTTP request body for creating an agent.
-// TODO: Refactor and get common fields from inboundclient without duplicating
 type CreateAgentRequest struct {
 	OUID        string          `json:"ouId"`
 	Type        string          `json:"type"`
@@ -36,16 +35,8 @@ type CreateAgentRequest struct {
 	Owner       string          `json:"owner,omitempty"`
 	Attributes  json.RawMessage `json:"attributes,omitempty"`
 
-	AuthFlowID                string                           `json:"authFlowId,omitempty"`
-	RegistrationFlowID        string                           `json:"registrationFlowId,omitempty"`
-	IsRegistrationFlowEnabled bool                             `json:"isRegistrationFlowEnabled,omitempty"`
-	ThemeID                   string                           `json:"themeId,omitempty"`
-	LayoutID                  string                           `json:"layoutId,omitempty"`
-	Assertion                 *inboundmodel.AssertionConfig    `json:"assertion,omitempty"`
-	LoginConsent              *inboundmodel.LoginConsentConfig `json:"loginConsent,omitempty"`
-	AllowedUserTypes          []string                         `json:"allowedUserTypes,omitempty"`
-	Certificate               *inboundmodel.Certificate        `json:"certificate,omitempty"`
-	InboundAuthConfig         []InboundAuthConfig              `json:"inboundAuthConfig,omitempty"`
+	inboundmodel.InboundAuthProfile
+	InboundAuthConfig []inboundmodel.InboundAuthConfigWithSecret `json:"inboundAuthConfig,omitempty"`
 }
 
 // UpdateAgentRequest is the HTTP request body for updating an agent.
@@ -57,16 +48,8 @@ type UpdateAgentRequest struct {
 	Owner       string          `json:"owner,omitempty"`
 	Attributes  json.RawMessage `json:"attributes,omitempty"`
 
-	AuthFlowID                string                           `json:"authFlowId,omitempty"`
-	RegistrationFlowID        string                           `json:"registrationFlowId,omitempty"`
-	IsRegistrationFlowEnabled bool                             `json:"isRegistrationFlowEnabled,omitempty"`
-	ThemeID                   string                           `json:"themeId,omitempty"`
-	LayoutID                  string                           `json:"layoutId,omitempty"`
-	Assertion                 *inboundmodel.AssertionConfig    `json:"assertion,omitempty"`
-	LoginConsent              *inboundmodel.LoginConsentConfig `json:"loginConsent,omitempty"`
-	AllowedUserTypes          []string                         `json:"allowedUserTypes,omitempty"`
-	Certificate               *inboundmodel.Certificate        `json:"certificate,omitempty"`
-	InboundAuthConfig         []InboundAuthConfig              `json:"inboundAuthConfig,omitempty"`
+	inboundmodel.InboundAuthProfile
+	InboundAuthConfig []inboundmodel.InboundAuthConfigWithSecret `json:"inboundAuthConfig,omitempty"`
 }
 
 // AgentCompleteResponse is returned on create and update operations. Includes clientSecret
@@ -81,16 +64,8 @@ type AgentCompleteResponse struct {
 	Owner       string          `json:"owner,omitempty"`
 	Attributes  json.RawMessage `json:"attributes,omitempty"`
 
-	AuthFlowID                string                           `json:"authFlowId,omitempty"`
-	RegistrationFlowID        string                           `json:"registrationFlowId,omitempty"`
-	IsRegistrationFlowEnabled bool                             `json:"isRegistrationFlowEnabled,omitempty"`
-	ThemeID                   string                           `json:"themeId,omitempty"`
-	LayoutID                  string                           `json:"layoutId,omitempty"`
-	Assertion                 *inboundmodel.AssertionConfig    `json:"assertion,omitempty"`
-	LoginConsent              *inboundmodel.LoginConsentConfig `json:"loginConsent,omitempty"`
-	AllowedUserTypes          []string                         `json:"allowedUserTypes,omitempty"`
-	Certificate               *inboundmodel.Certificate        `json:"certificate,omitempty"`
-	InboundAuthConfig         []InboundAuthConfig              `json:"inboundAuthConfig,omitempty"`
+	inboundmodel.InboundAuthProfile
+	InboundAuthConfig []inboundmodel.InboundAuthConfigWithSecret `json:"inboundAuthConfig,omitempty"`
 }
 
 // AgentGetResponse is returned on read operations. Excludes secrets (no clientSecret).
@@ -105,16 +80,8 @@ type AgentGetResponse struct {
 	Owner       string          `json:"owner,omitempty"`
 	Attributes  json.RawMessage `json:"attributes,omitempty"`
 
-	AuthFlowID                string                           `json:"authFlowId,omitempty"`
-	RegistrationFlowID        string                           `json:"registrationFlowId,omitempty"`
-	IsRegistrationFlowEnabled bool                             `json:"isRegistrationFlowEnabled,omitempty"`
-	ThemeID                   string                           `json:"themeId,omitempty"`
-	LayoutID                  string                           `json:"layoutId,omitempty"`
-	Assertion                 *inboundmodel.AssertionConfig    `json:"assertion,omitempty"`
-	LoginConsent              *inboundmodel.LoginConsentConfig `json:"loginConsent,omitempty"`
-	AllowedUserTypes          []string                         `json:"allowedUserTypes,omitempty"`
-	Certificate               *inboundmodel.Certificate        `json:"certificate,omitempty"`
-	InboundAuthConfig         []InboundAuthConfig              `json:"inboundAuthConfig,omitempty"`
+	inboundmodel.InboundAuthProfile
+	InboundAuthConfig []inboundmodel.InboundAuthConfig `json:"inboundAuthConfig,omitempty"`
 }
 
 // BasicAgentResponse is the summary view used in list responses.

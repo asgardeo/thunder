@@ -31,7 +31,7 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/asgardeo/thunder/internal/system/crypto/sign"
+	"github.com/asgardeo/thunder/internal/system/cryptolab"
 )
 
 // DecodeHeader decodes the header of a JWS token and returns it as a map.
@@ -55,22 +55,22 @@ func DecodeHeader(token string) (map[string]interface{}, error) {
 }
 
 // MapAlgorithmToSignAlg maps JWS alg header values to internal SignAlgorithm.
-func MapAlgorithmToSignAlg(jwsAlg Algorithm) (sign.SignAlgorithm, error) {
+func MapAlgorithmToSignAlg(jwsAlg Algorithm) (cryptolab.SignAlgorithm, error) {
 	switch jwsAlg {
 	case RS256:
-		return sign.RSASHA256, nil
+		return cryptolab.RSASHA256, nil
 	case RS512:
-		return sign.RSASHA512, nil
+		return cryptolab.RSASHA512, nil
 	case PS256:
-		return sign.RSAPSSSHA256, nil
+		return cryptolab.RSAPSSSHA256, nil
 	case ES256:
-		return sign.ECDSASHA256, nil
+		return cryptolab.ECDSASHA256, nil
 	case ES384:
-		return sign.ECDSASHA384, nil
+		return cryptolab.ECDSASHA384, nil
 	case ES512:
-		return sign.ECDSASHA512, nil
+		return cryptolab.ECDSASHA512, nil
 	case EdDSA:
-		return sign.ED25519, nil
+		return cryptolab.ED25519, nil
 	default:
 		return "", fmt.Errorf("unsupported JWS alg: %s", jwsAlg)
 	}

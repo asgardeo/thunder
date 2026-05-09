@@ -56,7 +56,7 @@ func newAuthorizationRequestStore() authorizationRequestStoreInterface {
 	return &authorizationRequestStore{
 		dbProvider:     provider.GetDBProvider(),
 		validityPeriod: 10 * time.Minute,
-		deploymentID:   config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID:   config.GetServerRuntime().Config.Server.Identifier,
 	}
 }
 

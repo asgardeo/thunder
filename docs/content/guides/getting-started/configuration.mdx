@@ -148,7 +148,7 @@ Stores runtime data like sessions, tokens, and temporary data. The runtime datab
 | `database.runtime.redis.username` | `""` | Redis ACL username — leave empty if ACLs are not configured |
 | `database.runtime.redis.password` | `""` | Redis password or ACL user password |
 | `database.runtime.redis.db` | `0` | Redis logical database index (0–15) |
-| `database.runtime.redis.key_prefix` | `""` | Prefix applied to all Redis keys written by <ProductName />, for example `thunder:` |
+| `database.runtime.redis.key_prefix` | `""` | Prefix applied to all Redis keys written by <ProductName />, for example `{{productSlug}}:` |
 | `database.runtime.redis.max_retries` | `5` | Maximum retry attempts for transient Redis network and timeout issues |
 | `database.runtime.redis.min_retry_backoff_ms` | `10` | Minimum delay before Redis retries in milliseconds |
 | `database.runtime.redis.max_retry_backoff_ms` | `100` | Maximum delay before Redis retries in milliseconds |
@@ -172,7 +172,7 @@ Stores runtime data like sessions, tokens, and temporary data. The runtime datab
 - Retryable classes include transient connectivity errors (`ErrBadConn`, `ErrConnDone`, connection reset/refused), timeouts, deadlocks (`40P01`), and PostgreSQL resource/availability states (`53xxx`, `57P01`, `57P02`, `57P03`, too-many-connections).
 - Non-retryable conditions include no-row outcomes (`ErrNoRows`), syntax/validation issues, and other permanent SQL conditions.
 - Write operations executed via `Execute` are not retried automatically to avoid accidental duplicate writes. If your write path is explicitly idempotent, add idempotency at the business layer (for example with deterministic IDs or upsert semantics).
-- Retry metrics are emitted through OpenTelemetry metric instruments (`thunder_db_retry_attempts_total`, `thunder_db_retry_backoff_seconds`, `thunder_db_operation_seconds`), which can be exported to Prometheus via your OpenTelemetry collector pipeline.
+- Retry metrics are emitted through OpenTelemetry metric instruments (`{{productSlug}}_db_retry_attempts_total`, `{{productSlug}}_db_retry_backoff_seconds`, `{{productSlug}}_db_operation_seconds`), which can be exported to Prometheus via your OpenTelemetry collector pipeline.
 
 ### User Database
 
@@ -229,7 +229,7 @@ Stores user profiles and credentials.
 | `cache.redis.username` | `""` | Redis username |
 | `cache.redis.password` | `""` | Redis password |
 | `cache.redis.db` | `0` | Redis database index |
-| `cache.redis.key_prefix` | `thunder` | Prefix added to all Redis cache keys |
+| `cache.redis.key_prefix` | `{{productSlug}}` | Prefix added to all Redis cache keys |
 | `cache.redis.max_retries` | `5` | Maximum retry attempts for transient Redis network and timeout issues |
 | `cache.redis.min_retry_backoff_ms` | `10` | Minimum delay before Redis retries in milliseconds |
 | `cache.redis.max_retry_backoff_ms` | `100` | Maximum delay before Redis retries in milliseconds |
@@ -264,8 +264,8 @@ That means you can override only the fields you need. <ProductName /> continues 
 - `FlowByHandleCache`
 - `CertificateByIDCache`
 - `CertificateByReferenceCache`
-- `UserSchemaByIDCache`
-- `UserSchemaByNameCache`
+- `EntityTypeByIDCache`
+- `EntityTypeByNameCache`
 - `FlowGraphCache`
 
 :::note
@@ -289,7 +289,7 @@ cache:
     username: ""
     password: ""
     db: 0
-    key_prefix: "thunder"
+    key_prefix: "thunderid"
     max_retries: 5
     min_retry_backoff_ms: 10
     max_retry_backoff_ms: 100
@@ -327,7 +327,7 @@ OAuth 2.0 and OpenID Connect settings.
 | `oauth.refresh_token.validity_period` | `86400` | Refresh token validity period in seconds (24 hours) |
 | `oauth.authorization_code.validity_period` | `600` | Authorization code validity period in seconds (10 minutes) |
 | `oauth.dcr.insecure` | `false` | If `true`, allows insecure dynamic client registration (development only) |
-| `oauth.allow_wildcard_redirect_uri` | `false` | If `true`, allows wildcard patterns (`*`, `**`) in the path component of registered redirect URIs. When `false`, only exact redirect URI matching is performed and registering a wildcard URI returns a `400 Bad Request` error. |
+| `oauth.allow_wildcard_redirect_uri` | `false` | If `true`, allows wildcard patterns in registered redirect URIs: `*` and `**` in the path component, and `*` in the host component (label-internal, alphanumeric only). When `false`, only exact redirect URI matching is performed and registering a wildcard URI returns a `400 Bad Request` error. |
 
 :::note
 Enabling `oauth.allow_wildcard_redirect_uri` affects all applications in the deployment. See [Use Wildcard Redirect URIs](/docs/next/guides/guides/applications/application-settings#use-wildcard-redirect-uris) for pattern syntax and matching rules.
@@ -350,7 +350,7 @@ User management settings.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `user.indexed_attributes` | `["username", "email", "mobileNumber", "sub"]` | User attributes that are indexed for fast lookups |
+| `user.indexed_attributes` | `["username", "email", "mobileNumber", "sub"]` | User attributes that are indexed for fast `lookups` |
 
 ## Declarative Resources
 
@@ -367,12 +367,12 @@ Example Helm values:
 ```yaml
 declarativeResources:
   enabled: true
-  # Base mount path inside the Thunder container (default: /opt/thunder/repository/resources)
+  # Base mount path inside the {{ProductName}} container (default: /opt/thunder/repository/resources)
   mountPath: /opt/thunder/repository/resources
   # Mount as read-only (recommended)
   readOnly: true
   configMap:
-    name: thunder-declarative-resources
+    name: declarative-resources
     items:
       # Format 1 — string shorthand: key and path are the same
       - "identity_providers/google.yaml"
@@ -393,7 +393,7 @@ declarativeResources:
   mountPath: /opt/thunder/repository/resources
   readOnly: true
   secret:
-    name: thunder-declarative-resources-secret
+    name: declarative-resources-secret
     items:
       - key: my-app-with-secrets
         path: applications/my-app.yaml
@@ -408,6 +408,67 @@ Authorization resource settings.
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `resource.default_delimiter` | `:` | Default delimiter for resource hierarchies |
+
+### System Resource Server
+
+The system resource server controls administrative permissions for <ProductName /> Console operations such as managing users, groups, organization units, and user types. You can customize the handle and identifier to fit your deployment requirements.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `resource.system_resource_server.handle` | `""` (empty) | Prefix added before all system permission strings. When empty, permissions use their base names (for example, `system`, `system:ou`). When set, the handle is added before every permission (for example, `mgmt:system`, `mgmt:system:ou`) |
+| `resource.system_resource_server.identifier` | `system` | Identifier for the system resource server. Can be set to a URI for [RFC 8707](https://datatracker.ietf.org/doc/html/rfc8707) resource indicator flows (for example, `https://api.example.com`) |
+
+**Example:**
+```yaml
+resource:
+  system_resource_server:
+    handle: "mgmt"
+    identifier: "https://api.example.com"
+```
+
+With the handle set to `mgmt`, all system permissions change as follows:
+
+| Default Permission | Custom Permission |
+|-------------------|-------------------|
+| `system` | `mgmt:system` |
+| `system:ou` | `mgmt:system:ou` |
+| `system:ou:view` | `mgmt:system:ou:view` |
+| `system:user` | `mgmt:system:user` |
+| `system:user:view` | `mgmt:system:user:view` |
+| `system:group` | `mgmt:system:group` |
+| `system:group:view` | `mgmt:system:group:view` |
+| `system:usertype` | `mgmt:system:usertype` |
+| `system:usertype:view` | `mgmt:system:usertype:view` |
+
+#### Update Console Scopes
+
+When you change the system resource server handle, you must also update the <ProductName /> Console scopes to match the new permission strings. The scopes tell the Console which permissions to request during sign-in.
+
+Update the `scopes` array in the Console configuration file for your deployment mode:
+
+- **Local development** (`pnpm dev`): Update `frontend/apps/console/public/config.js`.
+- **Packaged build** (`build.sh` / `setup.sh` / `setup.ps1`): The setup scripts read the handle from `deployment.yaml` and pass the value to the bootstrap process automatically. Update `frontend/apps/console/public/config.js` for the Console scopes.
+- **Helm deployment**: Update `configuration.consoleClient.scopes` in your Helm values file (`install/helm/values.yaml`).
+
+For example, with the handle set to `mgmt`, update the Console `scopes` array to:
+
+```javascript
+scopes: [
+  'openid',
+  'profile',
+  'email',
+  'ou',
+  'mgmt:system',
+  'mgmt:system:user',
+  'mgmt:system:group',
+  'mgmt:system:ou:view',
+  'mgmt:system:usertype:view',
+],
+```
+
+:::warning
+If the Console scopes do not match the configured handle, the admin user token will lack the required `authorized_permissions` claim. All administrative API calls from the Console will then return `403 Forbidden`.
+:::
 
 ## Observability Configuration
 

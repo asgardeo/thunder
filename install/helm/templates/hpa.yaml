@@ -18,14 +18,14 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "thunder.fullname" . }}-hpa
+  name: {{ include "thunderid.fullname" . }}-hpa
 spec:
   maxReplicas: {{ .Values.hpa.maxReplicas }}
   minReplicas: {{ .Values.deployment.replicaCount }}
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "thunder.fullname" . }}-deployment
+    name: {{ include "thunderid.fullname" . }}-deployment
   metrics:
   - type: Resource
     resource:

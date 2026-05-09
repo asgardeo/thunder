@@ -19,8 +19,8 @@
 # Constants
 VERSION_FILE=version.txt
 VERSION=$(shell cat $(VERSION_FILE))
-BINARY_NAME=thunder
-PRODUCT_NAME=Thunder
+BINARY_NAME=thunderid
+PRODUCT_NAME=ThunderID
 
 export WITHOUT_CONSENT ?= false
 

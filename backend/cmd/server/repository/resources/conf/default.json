@@ -92,7 +92,7 @@
       "username": "",
       "password": "",
       "db": 0,
-      "key_prefix": "thunder",
+      "key_prefix": "thunderid",
       "max_retries": 5,
       "min_retry_backoff_ms": 10,
       "max_retry_backoff_ms": 100,
@@ -128,7 +128,7 @@
     "default_auth_flow_handle": "default-basic-flow",
     "user_onboarding_flow_handle": "default-user-onboarding",
     "max_version_history": 10,
-    "auto_infer_registration": true,
+    "auto_infer_registration": false,
     "store": "composite"
   },
   "user": {
@@ -198,7 +198,7 @@
   "application": {
     "store": "composite"
   },
-  "user_schema": {
+  "user_type": {
     "store": "composite"
   },
   "role": {

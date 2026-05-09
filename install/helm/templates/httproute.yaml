@@ -18,10 +18,10 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: {{ include "thunder.fullname" . }}-httproute
+  name: {{ include "thunderid.fullname" . }}-httproute
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "thunder.labels" . | nindent 4 }}
+    {{- include "thunderid.labels" . | nindent 4 }}
   {{- with .Values.httproute.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
@@ -37,7 +37,7 @@ spec:
   {{- end }}
   rules:
     - backendRefs:
-        - name: {{ include "thunder.fullname" . }}-service
+        - name: {{ include "thunderid.fullname" . }}-service
           port: {{ .Values.service.port }}
       matches:
         - path:

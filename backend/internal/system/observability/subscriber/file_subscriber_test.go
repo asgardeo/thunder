@@ -61,7 +61,7 @@ func TestFileSubscriber_IsEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config.GetThunderRuntime().Config.Observability.Output.File.Enabled = tt.enabled
+			config.GetServerRuntime().Config.Observability.Output.File.Enabled = tt.enabled
 
 			sub := NewFileSubscriber()
 			if got := sub.IsEnabled(); got != tt.want {
@@ -86,7 +86,7 @@ func TestFileSubscriber_Initialize(t *testing.T) {
 			config: func() string {
 				tmpDir := t.TempDir()
 				filePath := filepath.Join(tmpDir, "test.log")
-				cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+				cfg := &config.GetServerRuntime().Config.Observability.Output.File
 				cfg.Enabled = true
 				cfg.FilePath = filePath
 				cfg.Format = formatJSON
@@ -98,7 +98,7 @@ func TestFileSubscriber_Initialize(t *testing.T) {
 		{
 			name: "successful initialization with default path",
 			config: func() string {
-				cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+				cfg := &config.GetServerRuntime().Config.Observability.Output.File
 				cfg.Enabled = true
 				cfg.FilePath = ""
 				cfg.Format = formatJSON
@@ -112,7 +112,7 @@ func TestFileSubscriber_Initialize(t *testing.T) {
 			config: func() string {
 				tmpDir := t.TempDir()
 				filePath := filepath.Join(tmpDir, "test.csv")
-				cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+				cfg := &config.GetServerRuntime().Config.Observability.Output.File
 				cfg.Enabled = true
 				cfg.FilePath = filePath
 				cfg.Format = "csv"
@@ -162,7 +162,7 @@ func TestFileSubscriber_MultipleInitializations_ClosesExistingAdapterWithError(t
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test-reinit.log")
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = filePath
 	cfg.Format = formatJSON
@@ -218,7 +218,7 @@ func TestFileSubscriber_GetID(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test.log")
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = filePath
 	cfg.Format = formatJSON
@@ -274,7 +274,7 @@ func TestFileSubscriber_GetCategories(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			setupTestConfig(t)
-			cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+			cfg := &config.GetServerRuntime().Config.Observability.Output.File
 			cfg.Enabled = true
 			cfg.FilePath = filePath
 			cfg.Categories = tt.categories
@@ -302,7 +302,7 @@ func TestFileSubscriber_OnEvent(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test.log")
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = filePath
 	cfg.Format = formatJSON
@@ -346,7 +346,7 @@ func TestFileSubscriber_OnEventMultiple(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test-multiple.log")
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = filePath
 	cfg.Format = formatJSON
@@ -388,7 +388,7 @@ func TestFileSubscriber_Close(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test-close.log")
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = filePath
 	cfg.Format = formatJSON
@@ -445,7 +445,7 @@ func TestFileSubscriber_WriteAfterClose(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test-after-close.log")
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = filePath
 	cfg.Format = formatJSON
@@ -480,7 +480,7 @@ func TestFileSubscriber_DefaultPathCreation(t *testing.T) {
 	defer resetTestConfig()
 
 	// Set up config with empty file path
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = ""
 	cfg.Format = formatJSON
@@ -529,7 +529,7 @@ func TestFileSubscriber_FormatterSelection(t *testing.T) {
 			setupTestConfig(t)
 			filePath := filepath.Join(tmpDir, "test-"+tt.name+".log")
 
-			cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+			cfg := &config.GetServerRuntime().Config.Observability.Output.File
 			cfg.Enabled = true
 			cfg.FilePath = filePath
 			cfg.Format = tt.format
@@ -555,7 +555,7 @@ func BenchmarkFileSubscriber_OnEvent(b *testing.B) {
 	tmpDir := b.TempDir()
 	filePath := filepath.Join(tmpDir, "benchmark.log")
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = filePath
 	cfg.Format = formatJSON
@@ -590,7 +590,7 @@ func BenchmarkFileSubscriber_OnEventComplex(b *testing.B) {
 	tmpDir := b.TempDir()
 	filePath := filepath.Join(tmpDir, "benchmark-complex.log")
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = filePath
 	cfg.Format = formatJSON
@@ -654,7 +654,7 @@ func TestFileSubscriber_CloseWithNilAdapter(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test-nil-adapter.log")
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = filePath
 	cfg.Format = formatJSON
@@ -681,7 +681,7 @@ func TestFileSubscriber_Initialize_EmptyCategoriesDefaultsToAll(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test-empty-categories.log")
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = filePath
 	cfg.Format = formatJSON
@@ -711,7 +711,7 @@ func TestFileSubscriber_MultipleInitializations(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test-multi-init.log")
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = filePath
 	cfg.Format = formatJSON
@@ -750,7 +750,7 @@ func TestFileSubscriber_OnEventConcurrent(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test-concurrent.log")
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = filePath
 	cfg.Format = formatJSON
@@ -827,7 +827,7 @@ func TestFileSubscriber_OnEvent_DifferentEventStatuses(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test-statuses.log")
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = filePath
 	cfg.Format = formatJSON
@@ -870,7 +870,7 @@ func TestFileSubscriber_OnEvent_EmptyData(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test-empty-data.log")
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = filePath
 	cfg.Format = formatJSON
@@ -913,7 +913,7 @@ func TestFileSubscriber_OnEvent_NilData(t *testing.T) {
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "test-nil-data.log")
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = filePath
 	cfg.Format = formatJSON
@@ -947,7 +947,7 @@ func TestFileSubscriber_Initialize_InvalidPath(t *testing.T) {
 	// Both Windows and Unix-like systems reject null character in file paths
 	invalidPath := t.TempDir() + string(filepath.Separator) + "invalid\x00file.log"
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.File
+	cfg := &config.GetServerRuntime().Config.Observability.Output.File
 	cfg.Enabled = true
 	cfg.FilePath = invalidPath
 	cfg.Format = formatJSON

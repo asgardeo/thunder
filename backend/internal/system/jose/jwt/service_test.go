@@ -19,6 +19,7 @@
 package jwt
 
 import (
+	"context"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
@@ -27,8 +28,10 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -40,15 +43,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/crypto/sign"
+	"github.com/asgardeo/thunder/internal/system/cryptolab"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	httpservice "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/jose/jws"
+	"github.com/asgardeo/thunder/internal/system/kmprovider"
 	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/asgardeo/thunder/tests/mocks/crypto/cryptomock"
 	"github.com/asgardeo/thunder/tests/mocks/crypto/pki/pkimock"
 )
 
@@ -74,6 +80,13 @@ type JWTServiceTestSuite struct {
 
 func TestJWTServiceSuite(t *testing.T) {
 	suite.Run(t, new(JWTServiceTestSuite))
+}
+
+func generateTestEncryptionKey(t *testing.T) string {
+	key := make([]byte, 32)
+	_, err := rand.Read(key)
+	require.NoError(t, err)
+	return hex.EncodeToString(key)
 }
 
 func (suite *JWTServiceTestSuite) SetupSuite() {
@@ -118,18 +131,29 @@ func (suite *JWTServiceTestSuite) AfterTest(_, _ string) {
 }
 
 func (suite *JWTServiceTestSuite) SetupTest() {
-	// Reset ThunderRuntime before each test
-	config.ResetThunderRuntime()
+	// Reset server runtime before each test
+	config.ResetServerRuntime()
 
 	// Create PKI mock
 	suite.pkiMock = pkimock.NewPKIServiceInterfaceMock(suite.T())
 
+	cryptoMock := cryptomock.NewRuntimeCryptoProviderMock(suite.T())
+	cryptoMock.EXPECT().
+		Sign(mock.Anything, kmprovider.KeyRef{KeyID: "test-kid"}, cryptolab.RSASHA256, mock.Anything).
+		RunAndReturn(func(
+			_ context.Context, _ kmprovider.KeyRef, _ cryptolab.SignAlgorithm, content []byte,
+		) ([]byte, error) {
+			return cryptolab.Generate(content, cryptolab.RSASHA256, suite.testPrivateKey)
+		}).Maybe()
+
 	suite.jwtService = &jwtService{
-		privateKey: suite.testPrivateKey,
-		signAlg:    sign.RSASHA256,
-		jwsAlg:     jws.RS256,
-		kid:        "test-kid",
-		logger:     log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService")),
+		cryptoProvider: cryptoMock,
+		keyRef:         kmprovider.KeyRef{KeyID: "test-kid"},
+		publicKey:      &suite.testPrivateKey.PublicKey,
+		signAlg:        cryptolab.RSASHA256,
+		jwsAlg:         jws.RS256,
+		kid:            "test-kid",
+		logger:         log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService")),
 	}
 
 	testConfig := &config.Config{
@@ -137,12 +161,15 @@ func (suite *JWTServiceTestSuite) SetupTest() {
 			KeyFile: suite.testKeyPath,
 		},
 		JWT: config.JWTConfig{
-			Issuer:         "https://test.thunder.io",
+			Issuer:         "https://auth.example.com",
 			ValidityPeriod: 3600, // Default validity period
 			PreferredKeyID: "test-kid",
 			Leeway:         30, // 30 seconds leeway for clock skew
 		},
 		Crypto: config.CryptoConfig{
+			Encryption: config.EncryptionConfig{
+				Key: generateTestEncryptionKey(suite.T()),
+			},
 			Keys: []config.KeyConfig{
 				{
 					ID:       "test-kid",
@@ -152,7 +179,7 @@ func (suite *JWTServiceTestSuite) SetupTest() {
 			},
 		},
 	}
-	err := config.InitializeThunderRuntime("", testConfig)
+	err := config.InitializeServerRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 	suite.jwtService.httpClient = httpservice.NewHTTPClientWithTimeout(10 * time.Second)
 }
@@ -407,7 +434,7 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 			expectError: false,
 		},
 		{
-			name:      "NilPrivateKey",
+			name:      "NilCryptoProvider",
 			sub:       "sub",
 			iss:       "iss",
 			validity:  3600,
@@ -415,8 +442,8 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 			setupMock: func() func() { return func() {} },
 			setupService: func() *jwtService {
 				return &jwtService{
-					privateKey: nil,
-					logger:     log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService")),
+					cryptoProvider: nil,
+					logger:         log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService")),
 				}
 			},
 			expectError: true,
@@ -432,9 +459,13 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 				return func() {}
 			},
 			setupService: func() *jwtService {
+				cryptoMock := cryptomock.NewRuntimeCryptoProviderMock(suite.T())
+				cryptoMock.EXPECT().Sign(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+					Return(nil, errors.New("signing failed"))
 				return &jwtService{
-					privateKey: &rsa.PrivateKey{}, // Invalid private key
-					logger:     log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService")),
+					cryptoProvider: cryptoMock,
+					keyRef:         kmprovider.KeyRef{KeyID: "test-kid"},
+					logger:         log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService")),
 				}
 			},
 			expectError: true,
@@ -569,7 +600,8 @@ func (suite *JWTServiceTestSuite) TestGenerateJWTScenarios() {
 
 			jwtService := tc.setupService()
 
-			token, iat, err := jwtService.GenerateJWT(tc.sub, tc.iss, tc.validity, tc.claims, TokenTypeJWT, "")
+			token, iat, err := jwtService.GenerateJWT(
+				context.Background(), tc.sub, tc.iss, tc.validity, tc.claims, TokenTypeJWT, "")
 
 			if tc.expectError {
 				assert.NotNil(t, err)
@@ -783,8 +815,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWT() {
 			jwtSvc := suite.jwtService
 			if tc.name == "PublicKeyNotAvailable" {
 				jwtSvc = &jwtService{
-					privateKey: nil,
-					logger:     log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService")),
+					publicKey: nil,
+					logger:    log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService")),
 				}
 			}
 
@@ -1108,7 +1140,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithJWKS() {
 func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 	testCases := []struct {
 		name          string
-		setupFunc     func() string
+		setupFunc     func(t *testing.T) string
 		expectedAud   string
 		expectedIss   string
 		expectError   bool
@@ -1116,7 +1148,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 	}{
 		{
 			name: "MissingExpClaim",
-			setupFunc: func() string {
+			setupFunc: func(t *testing.T) string {
 				payload := map[string]interface{}{
 					"sub": "test-subject",
 					"aud": testAudience,
@@ -1125,24 +1157,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 					"nbf": time.Now().Unix(),
 					// Missing exp claim
 				}
-
-				header := map[string]interface{}{
-					"alg": "RS256",
-					"typ": "JWT",
-					"kid": "test-kid",
-				}
-
-				headerJSON, _ := json.Marshal(header)
-				payloadJSON, _ := json.Marshal(payload)
-
-				headerBase64 := base64.RawURLEncoding.EncodeToString(headerJSON)
-				payloadBase64 := base64.RawURLEncoding.EncodeToString(payloadJSON)
-
-				signingInput := headerBase64 + "." + payloadBase64
-				signature, _ := sign.Generate([]byte(signingInput), sign.RSASHA256, suite.testPrivateKey)
-				signatureBase64 := base64.RawURLEncoding.EncodeToString(signature)
-
-				return headerBase64 + "." + payloadBase64 + "." + signatureBase64
+				return suite.createJWTWithCustomPayload(t, payload)
 			},
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
@@ -1151,7 +1166,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 		},
 		{
 			name: "MissingNbfClaim",
-			setupFunc: func() string {
+			setupFunc: func(t *testing.T) string {
 				payload := map[string]interface{}{
 					"sub": "test-subject",
 					"aud": testAudience,
@@ -1160,24 +1175,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 					"iat": time.Now().Unix(),
 					// Missing nbf claim
 				}
-
-				header := map[string]interface{}{
-					"alg": "RS256",
-					"typ": "JWT",
-					"kid": "test-kid",
-				}
-
-				headerJSON, _ := json.Marshal(header)
-				payloadJSON, _ := json.Marshal(payload)
-
-				headerBase64 := base64.RawURLEncoding.EncodeToString(headerJSON)
-				payloadBase64 := base64.RawURLEncoding.EncodeToString(payloadJSON)
-
-				signingInput := headerBase64 + "." + payloadBase64
-				signature, _ := sign.Generate([]byte(signingInput), sign.RSASHA256, suite.testPrivateKey)
-				signatureBase64 := base64.RawURLEncoding.EncodeToString(signature)
-
-				return headerBase64 + "." + payloadBase64 + "." + signatureBase64
+				return suite.createJWTWithCustomPayload(t, payload)
 			},
 			expectedAud: testAudience,
 			expectedIss: testIssuer,
@@ -1185,7 +1183,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 		},
 		{
 			name: "AudClaimAsArrayContainingExpected",
-			setupFunc: func() string {
+			setupFunc: func(t *testing.T) string {
 				payload := map[string]interface{}{
 					"sub": "test-subject",
 					"aud": []interface{}{testAudience, "https://example.auth0.com/userinfo"},
@@ -1193,7 +1191,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 					"exp": time.Now().Add(time.Hour).Unix(),
 					"iat": time.Now().Unix(),
 				}
-				return suite.createJWTWithCustomPayload(payload)
+				return suite.createJWTWithCustomPayload(t, payload)
 			},
 			expectedAud: testAudience,
 			expectedIss: testIssuer,
@@ -1201,7 +1199,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 		},
 		{
 			name: "AudClaimAsArrayWithoutExpected",
-			setupFunc: func() string {
+			setupFunc: func(t *testing.T) string {
 				payload := map[string]interface{}{
 					"sub": "test-subject",
 					"aud": []interface{}{"https://other.example.com", "https://example.auth0.com/userinfo"},
@@ -1209,7 +1207,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 					"exp": time.Now().Add(time.Hour).Unix(),
 					"iat": time.Now().Unix(),
 				}
-				return suite.createJWTWithCustomPayload(payload)
+				return suite.createJWTWithCustomPayload(t, payload)
 			},
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
@@ -1218,7 +1216,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 		},
 		{
 			name: "MissingAudClaim",
-			setupFunc: func() string {
+			setupFunc: func(t *testing.T) string {
 				payload := map[string]interface{}{
 					"sub": "test-subject",
 					"iss": testIssuer,
@@ -1227,7 +1225,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 					"nbf": time.Now().Unix(),
 					// Missing aud claim
 				}
-				return suite.createJWTWithCustomPayload(payload)
+				return suite.createJWTWithCustomPayload(t, payload)
 			},
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
@@ -1236,7 +1234,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 		},
 		{
 			name: "MissingIssClaim",
-			setupFunc: func() string {
+			setupFunc: func(t *testing.T) string {
 				payload := map[string]interface{}{
 					"sub": "test-subject",
 					"aud": testAudience,
@@ -1245,7 +1243,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 					"nbf": time.Now().Unix(),
 					// Missing iss claim
 				}
-				return suite.createJWTWithCustomPayload(payload)
+				return suite.createJWTWithCustomPayload(t, payload)
 			},
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
@@ -1254,7 +1252,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 		},
 		{
 			name: "InvalidExpClaimType",
-			setupFunc: func() string {
+			setupFunc: func(t *testing.T) string {
 				payload := map[string]interface{}{
 					"sub": "test-subject",
 					"aud": testAudience,
@@ -1263,24 +1261,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 					"iat": time.Now().Unix(),
 					"nbf": time.Now().Unix(),
 				}
-
-				header := map[string]interface{}{
-					"alg": "RS256",
-					"typ": "JWT",
-					"kid": "test-kid",
-				}
-
-				headerJSON, _ := json.Marshal(header)
-				payloadJSON, _ := json.Marshal(payload)
-
-				headerBase64 := base64.RawURLEncoding.EncodeToString(headerJSON)
-				payloadBase64 := base64.RawURLEncoding.EncodeToString(payloadJSON)
-
-				signingInput := headerBase64 + "." + payloadBase64
-				signature, _ := sign.Generate([]byte(signingInput), sign.RSASHA256, suite.testPrivateKey)
-				signatureBase64 := base64.RawURLEncoding.EncodeToString(signature)
-
-				return headerBase64 + "." + payloadBase64 + "." + signatureBase64
+				return suite.createJWTWithCustomPayload(t, payload)
 			},
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
@@ -1289,7 +1270,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 		},
 		{
 			name: "InvalidNbfClaimType",
-			setupFunc: func() string {
+			setupFunc: func(t *testing.T) string {
 				payload := map[string]interface{}{
 					"sub": "test-subject",
 					"aud": testAudience,
@@ -1298,24 +1279,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 					"iat": time.Now().Unix(),
 					"nbf": "invalid-nbf-type", // Wrong type
 				}
-
-				header := map[string]interface{}{
-					"alg": "RS256",
-					"typ": "JWT",
-					"kid": "test-kid",
-				}
-
-				headerJSON, _ := json.Marshal(header)
-				payloadJSON, _ := json.Marshal(payload)
-
-				headerBase64 := base64.RawURLEncoding.EncodeToString(headerJSON)
-				payloadBase64 := base64.RawURLEncoding.EncodeToString(payloadJSON)
-
-				signingInput := headerBase64 + "." + payloadBase64
-				signature, _ := sign.Generate([]byte(signingInput), sign.RSASHA256, suite.testPrivateKey)
-				signatureBase64 := base64.RawURLEncoding.EncodeToString(signature)
-
-				return headerBase64 + "." + payloadBase64 + "." + signatureBase64
+				return suite.createJWTWithCustomPayload(t, payload)
 			},
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
@@ -1324,7 +1288,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 		},
 		{
 			name: "InvalidAudClaimType",
-			setupFunc: func() string {
+			setupFunc: func(t *testing.T) string {
 				payload := map[string]interface{}{
 					"sub": "test-subject",
 					"aud": 12345, // Wrong type
@@ -1333,7 +1297,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 					"iat": time.Now().Unix(),
 					"nbf": time.Now().Unix(),
 				}
-				return suite.createJWTWithCustomPayload(payload)
+				return suite.createJWTWithCustomPayload(t, payload)
 			},
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
@@ -1342,7 +1306,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 		},
 		{
 			name: "InvalidIssClaimType",
-			setupFunc: func() string {
+			setupFunc: func(t *testing.T) string {
 				payload := map[string]interface{}{
 					"sub": "test-subject",
 					"aud": testAudience,
@@ -1351,7 +1315,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 					"iat": time.Now().Unix(),
 					"nbf": time.Now().Unix(),
 				}
-				return suite.createJWTWithCustomPayload(payload)
+				return suite.createJWTWithCustomPayload(t, payload)
 			},
 			expectedAud:   testAudience,
 			expectedIss:   testIssuer,
@@ -1362,7 +1326,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTClaimsEdgeCases() {
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			token := tc.setupFunc()
+			token := tc.setupFunc(t)
 			publicKey := &suite.testPrivateKey.PublicKey
 
 			err := suite.jwtService.VerifyJWTWithPublicKey(token, publicKey, tc.expectedAud, tc.expectedIss)
@@ -1386,7 +1350,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 		{
 			name: "ValidToken",
 			setupFunc: func() string {
-				token, _, err := suite.jwtService.GenerateJWT(
+				token, _, err := suite.jwtService.GenerateJWT(context.Background(),
 					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
 				assert.Nil(suite.T(), err)
 				return token
@@ -1415,7 +1379,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 		{
 			name: "PublicKeyNotAvailable",
 			setupFunc: func() string {
-				token, _, err := suite.jwtService.GenerateJWT(
+				token, _, err := suite.jwtService.GenerateJWT(context.Background(),
 					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
 				assert.Nil(suite.T(), err)
 				return token
@@ -1431,7 +1395,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 			jwtSvc := suite.jwtService
 			if tc.name == "PublicKeyNotAvailable" {
 				jwtSvc = &jwtService{
-					privateKey: nil,
+					publicKey: nil,
 				}
 			}
 
@@ -1446,7 +1410,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 }
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKey() {
-	validToken, _, err := suite.jwtService.GenerateJWT(
+	validToken, _, err := suite.jwtService.GenerateJWT(context.Background(),
 		"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
 	assert.Nil(suite.T(), err)
 
@@ -1484,7 +1448,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKey() {
 }
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKS() {
-	token, _, err := suite.jwtService.GenerateJWT(
+	token, _, err := suite.jwtService.GenerateJWT(context.Background(),
 		"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
 	assert.Nil(suite.T(), err)
 
@@ -1509,8 +1473,8 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSUsesCache() {
 	// The default SetupTest config has SecurityConfig.JWKSCacheTTL == 0, which would
 	// cause the cache to expire instantly (Now().Before(Now()) == false). Re-initialize
 	// the runtime here with a positive TTL so the cache actually retains entries.
-	config.ResetThunderRuntime()
-	defer config.ResetThunderRuntime()
+	config.ResetServerRuntime()
+	defer config.ResetServerRuntime()
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
 			Issuer:         testIssuer,
@@ -1523,7 +1487,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSUsesCache() {
 			},
 		},
 	}
-	err := config.InitializeThunderRuntime("", testConfig)
+	err := config.InitializeServerRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
 	jwksData := suite.createMockJWKSData()
@@ -1544,7 +1508,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSUsesCache() {
 	serverB := makeServer(&fetchCountB)
 	defer serverB.Close()
 
-	token, _, genErr := suite.jwtService.GenerateJWT(
+	token, _, genErr := suite.jwtService.GenerateJWT(context.Background(),
 		"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
 	assert.Nil(suite.T(), genErr)
 
@@ -1643,8 +1607,9 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 				}))
 			},
 			setupToken: func() string {
-				token, _, _ := suite.jwtService.GenerateJWT(
+				token, _, err := suite.jwtService.GenerateJWT(context.Background(),
 					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
+				assert.Nil(suite.T(), err)
 				return token
 			},
 			expectedError: ErrorFailedToGetJWKS,
@@ -1661,8 +1626,9 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 				}))
 			},
 			setupToken: func() string {
-				token, _, _ := suite.jwtService.GenerateJWT(
+				token, _, err := suite.jwtService.GenerateJWT(context.Background(),
 					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
+				assert.Nil(suite.T(), err)
 				return token
 			},
 			expectedError: ErrorFailedToParseJWKS,
@@ -1691,8 +1657,9 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 				}))
 			},
 			setupToken: func() string {
-				token, _, _ := suite.jwtService.GenerateJWT(
+				token, _, err := suite.jwtService.GenerateJWT(context.Background(),
 					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
+				assert.Nil(suite.T(), err)
 				return token
 			},
 			expectedError: ErrorNoMatchingJWKFound,
@@ -1720,8 +1687,9 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 				}))
 			},
 			setupToken: func() string {
-				token, _, _ := suite.jwtService.GenerateJWT(
+				token, _, err := suite.jwtService.GenerateJWT(context.Background(),
 					"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
+				assert.Nil(suite.T(), err)
 				return token
 			},
 			expectedError: ErrorFailedToParseJWKS,
@@ -1763,7 +1731,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSHTTPErrors() {
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithJWKSNetworkError() {
 	// Test with invalid URL to trigger network error
-	token, _, err := suite.jwtService.GenerateJWT(
+	token, _, err := suite.jwtService.GenerateJWT(context.Background(),
 		"test-subject", testIssuer, 3600, map[string]interface{}{"aud": testAudience}, TokenTypeJWT, "")
 	assert.Nil(suite.T(), err)
 
@@ -1793,9 +1761,9 @@ func (suite *JWTServiceTestSuite) createJWTWithCustomHeader(header map[string]in
 	signingInput := headerBase64 + "." + payloadBase64
 
 	// Sign
-	signature, err := sign.Generate([]byte(signingInput), sign.RSASHA256, suite.testPrivateKey)
+	signature, err := cryptolab.Generate([]byte(signingInput), cryptolab.RSASHA256, suite.testPrivateKey)
 	if err != nil {
-		suite.T().Fatalf("Failed to sign JWT: %v", err)
+		suite.T().Fatalf("Failed to sign JWT for signing input %q: %v", signingInput, err)
 	}
 
 	// Encode signature
@@ -1882,9 +1850,9 @@ func (suite *JWTServiceTestSuite) createJWTWithClaims(sub, aud, iss string, exp 
 	signingInput := headerBase64 + "." + payloadBase64
 
 	// Sign
-	signature, err := sign.Generate([]byte(signingInput), sign.RSASHA256, suite.testPrivateKey)
+	signature, err := cryptolab.Generate([]byte(signingInput), cryptolab.RSASHA256, suite.testPrivateKey)
 	if err != nil {
-		suite.T().Fatalf("Failed to sign JWT: %v", err)
+		suite.T().Fatalf("Failed to sign JWT for signing input %q: %v", signingInput, err)
 	}
 
 	// Encode signature
@@ -1900,7 +1868,9 @@ func (suite *JWTServiceTestSuite) createMalformedJWT() string {
 }
 
 // Helper method to create a JWT with custom payload for testing edge cases
-func (suite *JWTServiceTestSuite) createJWTWithCustomPayload(payload map[string]interface{}) string {
+func (suite *JWTServiceTestSuite) createJWTWithCustomPayload(t *testing.T, payload map[string]interface{}) string {
+	t.Helper()
+
 	header := map[string]interface{}{
 		"alg": "RS256",
 		"typ": "JWT",
@@ -1914,7 +1884,10 @@ func (suite *JWTServiceTestSuite) createJWTWithCustomPayload(payload map[string]
 	payloadBase64 := base64.RawURLEncoding.EncodeToString(payloadJSON)
 
 	signingInput := headerBase64 + "." + payloadBase64
-	signature, _ := sign.Generate([]byte(signingInput), sign.RSASHA256, suite.testPrivateKey)
+	signature, err := cryptolab.Generate([]byte(signingInput), cryptolab.RSASHA256, suite.testPrivateKey)
+	if err != nil {
+		t.Fatalf("Failed to sign JWT for signing input %q: %v", signingInput, err)
+	}
 	signatureBase64 := base64.RawURLEncoding.EncodeToString(signature)
 
 	return headerBase64 + "." + payloadBase64 + "." + signatureBase64
@@ -1930,25 +1903,25 @@ func (suite *JWTServiceTestSuite) TestInitWithECDSAKeys() {
 		name            string
 		curve           elliptic.Curve
 		expectedAlg     jws.Algorithm
-		expectedSignAlg sign.SignAlgorithm
+		expectedSignAlg cryptolab.SignAlgorithm
 	}{
 		{
 			name:            "P256Key",
 			curve:           elliptic.P256(),
 			expectedAlg:     jws.ES256,
-			expectedSignAlg: sign.ECDSASHA256,
+			expectedSignAlg: cryptolab.ECDSASHA256,
 		},
 		{
 			name:            "P384Key",
 			curve:           elliptic.P384(),
 			expectedAlg:     jws.ES384,
-			expectedSignAlg: sign.ECDSASHA384,
+			expectedSignAlg: cryptolab.ECDSASHA384,
 		},
 		{
 			name:            "P521Key",
 			curve:           elliptic.P521(),
 			expectedAlg:     jws.ES512,
-			expectedSignAlg: sign.ECDSASHA512,
+			expectedSignAlg: cryptolab.ECDSASHA512,
 		},
 	}
 
@@ -1994,12 +1967,12 @@ func (suite *JWTServiceTestSuite) TestInitWithECDSAKeys() {
 			// Cast to access internal fields for testing
 			jwtSvc, ok := service.(*jwtService)
 			assert.True(t, ok)
-			assert.NotNil(t, jwtSvc.privateKey)
+			assert.NotNil(t, jwtSvc.publicKey)
 			assert.Equal(t, tc.expectedSignAlg, jwtSvc.signAlg)
 			assert.Equal(t, tc.expectedAlg, jwtSvc.jwsAlg)
 
 			// Test JWT generation with ECDSA key
-			token, _, svcErr := service.GenerateJWT(
+			token, _, svcErr := service.GenerateJWT(context.Background(),
 				"test-subject", "test-iss", 3600, map[string]interface{}{"aud": "test-aud"}, TokenTypeJWT, "")
 			assert.Nil(t, svcErr)
 			assert.NotEmpty(t, token)
@@ -2057,12 +2030,12 @@ func (suite *JWTServiceTestSuite) TestInitWithEd25519Key() {
 	// Cast to access internal fields for testing
 	jwtSvc, ok := service.(*jwtService)
 	assert.True(suite.T(), ok)
-	assert.NotNil(suite.T(), jwtSvc.privateKey)
-	assert.Equal(suite.T(), sign.ED25519, jwtSvc.signAlg)
+	assert.NotNil(suite.T(), jwtSvc.publicKey)
+	assert.Equal(suite.T(), cryptolab.ED25519, jwtSvc.signAlg)
 	assert.Equal(suite.T(), jws.EdDSA, jwtSvc.jwsAlg)
 
 	// Test JWT generation with Ed25519 key
-	token, _, svcErr := service.GenerateJWT(
+	token, _, svcErr := service.GenerateJWT(context.Background(),
 		"test-subject", "test-iss", 3600, map[string]interface{}{"aud": "test-aud"}, TokenTypeJWT, "")
 	assert.Nil(suite.T(), svcErr)
 	assert.NotEmpty(suite.T(), token)
@@ -2115,7 +2088,7 @@ func (suite *JWTServiceTestSuite) TestInitWithECPrivateKeyFormat() {
 	// Cast to access internal fields for testing
 	jwtSvc, ok := service.(*jwtService)
 	assert.True(suite.T(), ok)
-	assert.Equal(suite.T(), sign.ECDSASHA256, jwtSvc.signAlg)
+	assert.Equal(suite.T(), cryptolab.ECDSASHA256, jwtSvc.signAlg)
 	assert.Equal(suite.T(), jws.ES256, jwtSvc.jwsAlg)
 }
 
@@ -2294,30 +2267,30 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKeyAlgorithmDe
 	// Test that VerifyJWTSignatureWithPublicKey correctly detects algorithm from header
 	testCases := []struct {
 		name        string
-		setupKey    func() (crypto.PrivateKey, crypto.PublicKey, sign.SignAlgorithm, jws.Algorithm)
+		setupKey    func() (crypto.PrivateKey, crypto.PublicKey, cryptolab.SignAlgorithm, jws.Algorithm)
 		expectError bool
 	}{
 		{
 			name: "jws.RS256Token",
-			setupKey: func() (crypto.PrivateKey, crypto.PublicKey, sign.SignAlgorithm, jws.Algorithm) {
+			setupKey: func() (crypto.PrivateKey, crypto.PublicKey, cryptolab.SignAlgorithm, jws.Algorithm) {
 				key, _ := rsa.GenerateKey(rand.Reader, 2048)
-				return key, &key.PublicKey, sign.RSASHA256, jws.RS256
+				return key, &key.PublicKey, cryptolab.RSASHA256, jws.RS256
 			},
 			expectError: false,
 		},
 		{
 			name: "jws.ES256Token",
-			setupKey: func() (crypto.PrivateKey, crypto.PublicKey, sign.SignAlgorithm, jws.Algorithm) {
+			setupKey: func() (crypto.PrivateKey, crypto.PublicKey, cryptolab.SignAlgorithm, jws.Algorithm) {
 				key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-				return key, &key.PublicKey, sign.ECDSASHA256, jws.ES256
+				return key, &key.PublicKey, cryptolab.ECDSASHA256, jws.ES256
 			},
 			expectError: false,
 		},
 		{
 			name: "jws.EdDSAToken",
-			setupKey: func() (crypto.PrivateKey, crypto.PublicKey, sign.SignAlgorithm, jws.Algorithm) {
+			setupKey: func() (crypto.PrivateKey, crypto.PublicKey, cryptolab.SignAlgorithm, jws.Algorithm) {
 				_, priv, _ := ed25519.GenerateKey(rand.Reader)
-				return priv, priv.Public(), sign.ED25519, jws.EdDSA
+				return priv, priv.Public(), cryptolab.ED25519, jws.EdDSA
 			},
 			expectError: false,
 		},
@@ -2326,14 +2299,24 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKeyAlgorithmDe
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			priv, pub, signAlg, jwsAlg := tc.setupKey()
+			cryptoMock := cryptomock.NewRuntimeCryptoProviderMock(t)
+			keyRef := kmprovider.KeyRef{KeyID: "test-sign-key"}
+			cryptoMock.EXPECT().Sign(mock.Anything, keyRef, signAlg, mock.Anything).
+				RunAndReturn(func(
+					_ context.Context, _ kmprovider.KeyRef, _ cryptolab.SignAlgorithm, content []byte,
+				) ([]byte, error) {
+					return cryptolab.Generate(content, signAlg, priv)
+				}).Maybe()
 			jwtService := &jwtService{
-				privateKey: priv,
-				signAlg:    signAlg,
-				jwsAlg:     jwsAlg,
+				cryptoProvider: cryptoMock,
+				keyRef:         keyRef,
+				publicKey:      pub,
+				signAlg:        signAlg,
+				jwsAlg:         jwsAlg,
 			}
 
 			// Generate token
-			token, _, err := jwtService.GenerateJWT(
+			token, _, err := jwtService.GenerateJWT(context.Background(),
 				"test-sub", "test-iss", 3600, map[string]interface{}{"aud": "test-aud"}, TokenTypeJWT, "")
 			assert.Nil(t, err)
 
@@ -2456,13 +2439,13 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithLeeway() {
 
 func (suite *JWTServiceTestSuite) TestVerifyJWTWithZeroLeeway() {
 	// Test behavior when leeway is set to 0
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		TLS: config.TLSConfig{
 			KeyFile: suite.testKeyPath,
 		},
 		JWT: config.JWTConfig{
-			Issuer:         "https://test.thunder.io",
+			Issuer:         "https://auth.example.com",
 			ValidityPeriod: 3600,
 			PreferredKeyID: "test-kid",
 			Leeway:         0, // No leeway
@@ -2477,7 +2460,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTWithZeroLeeway() {
 			},
 		},
 	}
-	err := config.InitializeThunderRuntime("", testConfig)
+	err := config.InitializeServerRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
 	// Token expired 1 second ago should fail with zero leeway

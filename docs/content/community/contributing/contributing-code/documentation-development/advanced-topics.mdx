@@ -173,7 +173,7 @@ Edit `docs/docusaurus.config.ts` for global settings:
 import type {Config} from '@docusaurus/types';
 
 const config: Config = {
-  title: 'Thunder Documentation',
+  title: '{{ProductName}} Documentation',
   tagline: 'Identity and Access Management',
   favicon: 'img/favicon.ico',
   url: 'https://your-domain.com',
@@ -181,7 +181,7 @@ const config: Config = {
   
   // GitHub Pages deployment
   organizationName: 'asgardeo',
-  projectName: 'thunder',
+  projectName: '{{productSlug}}',
   
   // Internationalization
   i18n: {
@@ -216,9 +216,9 @@ export default config;
 themeConfig: {
   // Navbar
   navbar: {
-    title: 'Thunder',
+    title: '{{ProductName}}',
     logo: {
-      alt: 'Thunder Logo',
+      alt: '{{ProductName}} Logo',
       src: 'img/logo.svg',
     },
     items: [
@@ -261,7 +261,7 @@ themeConfig: {
   algolia: {
     appId: 'YOUR_APP_ID',
     apiKey: 'YOUR_SEARCH_API_KEY',
-    indexName: 'thunder',
+    indexName: '{{productSlug}}',
   },
 },
 ```
@@ -389,7 +389,7 @@ For production sites, use Algolia DocSearch:
 algolia: {
   appId: 'YOUR_APP_ID',
   apiKey: 'YOUR_SEARCH_API_KEY',
-  indexName: 'thunder',
+  indexName: '{{productSlug}}',
   contextualSearch: true,
   searchParameters: {},
   searchPagePath: 'search',
@@ -570,8 +570,8 @@ CMD ["nginx", "-g", "daemon off;"]
 Build and run:
 
 ```bash
-docker build -f Dockerfile.docs -t thunder-docs .
-docker run -p 8080:80 thunder-docs
+docker build -f Dockerfile.docs -t {{productSlug}}-docs .
+docker run -p 8080:80 {{productSlug}}-docs
 ```
 
 ## Performance Optimization

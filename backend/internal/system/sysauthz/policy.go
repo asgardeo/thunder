@@ -161,11 +161,11 @@ func (p *ouInheritancePolicy) getAccessibleResources(ctx context.Context, action
 // An action listed here gives callers in child OUs visibility into resources defined in
 // parent OUs. Write actions must NOT be listed here — child OUs must never be able to
 // modify resources owned by a parent OU.
-// Each action implicitly encodes its resource type (e.g. ActionReadUserSchema → UserSchema),
+// Each action implicitly encodes its resource type (e.g. ActionReadUserType → EntityType),
 // so a separate resource-type map is not needed.
 var inheritanceReadActions = map[security.Action]bool{
-	security.ActionReadUserSchema:  true,
-	security.ActionListUserSchemas: true,
+	security.ActionReadUserType:  true,
+	security.ActionListUserTypes: true,
 }
 
 // isInheritanceEligible returns true when the action is registered for

@@ -301,6 +301,19 @@ var (
 			DefaultValue: "The total number of records exceeds the maximum limit in composite mode",
 		},
 	}
+	// ErrorResourceServerIDConflict is returned when a resource server with the specified ID already exists.
+	ErrorResourceServerIDConflict = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "RES-1023",
+		Error: core.I18nMessage{
+			Key:          "error.resourceservice.resource_server_id_conflict",
+			DefaultValue: "Resource server ID conflict",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.resourceservice.resource_server_id_conflict_description",
+			DefaultValue: "A resource server with the specified ID already exists",
+		},
+	}
 	// ErrorDelimiterInResourceServerHandle is returned when the resource server handle contains the delimiter.
 	ErrorDelimiterInResourceServerHandle = serviceerror.ServiceError{
 		Type: serviceerror.ClientErrorType,

@@ -198,7 +198,7 @@ var (
 		Parent:      nil,
 	}
 
-	promptActionsUserSchema = testutils.UserSchema{
+	promptActionsEntityType = testutils.UserType{
 		Name: "prompt_actions_test_person",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -224,7 +224,7 @@ var (
 	}
 
 	testUserWithMobilePromptActions = testutils.User{
-		Type: promptActionsUserSchema.Name,
+		Type: promptActionsEntityType.Name,
 		Attributes: json.RawMessage(`{
 			"username": "promptactionsuser1",
 			"password": "testpassword",
@@ -236,7 +236,7 @@ var (
 	}
 
 	testUserWithoutMobilePromptActions = testutils.User{
-		Type: promptActionsUserSchema.Name,
+		Type: promptActionsEntityType.Name,
 		Attributes: json.RawMessage(`{
 			"username": "promptactionsuser2",
 			"password": "testpassword",
@@ -250,7 +250,7 @@ var (
 var (
 	promptActionsTestAppID    string
 	promptActionsTestOUID     string
-	promptActionsUserSchemaID string
+	promptActionsEntityTypeID string
 	promptActionsTestSenderID string
 )
 
@@ -275,13 +275,13 @@ func (ts *PromptActionsAndMFAFlowTestSuite) SetupSuite() {
 	}
 	promptActionsTestOUID = ouID
 
-	// Create test user schema within the OU
-	promptActionsUserSchema.OUID = promptActionsTestOUID
-	schemaID, err := testutils.CreateUserType(promptActionsUserSchema)
+	// Create test user type within the OU
+	promptActionsEntityType.OUID = promptActionsTestOUID
+	schemaID, err := testutils.CreateUserType(promptActionsEntityType)
 	if err != nil {
-		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
+		ts.T().Fatalf("Failed to create test user type during setup: %v", err)
 	}
-	promptActionsUserSchemaID = schemaID
+	promptActionsEntityTypeID = schemaID
 
 	// Start mock notification server
 	ts.mockServer = testutils.NewMockNotificationServer(mockPromptActionsNotificationServerPort)
@@ -397,9 +397,9 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TearDownSuite() {
 		}
 	}
 
-	if promptActionsUserSchemaID != "" {
-		if err := testutils.DeleteUserType(promptActionsUserSchemaID); err != nil {
-			ts.T().Logf("Failed to delete test user schema during teardown: %v", err)
+	if promptActionsEntityTypeID != "" {
+		if err := testutils.DeleteUserType(promptActionsEntityTypeID); err != nil {
+			ts.T().Logf("Failed to delete test user type during teardown: %v", err)
 		}
 	}
 }
@@ -500,7 +500,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithMobileUserSMSOTP() 
 	jwtClaims, err := testutils.ValidateJWTAssertionFields(
 		completeFlowStep.Assertion,
 		promptActionsTestAppID,
-		promptActionsUserSchema.Name,
+		promptActionsEntityType.Name,
 		promptActionsTestOUID,
 		promptActionsTestOU.Name,
 		promptActionsTestOU.Handle,
@@ -623,7 +623,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP
 		jwtClaims, err := testutils.ValidateJWTAssertionFields(
 			completeFlowStep.Assertion,
 			promptActionsTestAppID,
-			promptActionsUserSchema.Name,
+			promptActionsEntityType.Name,
 			promptActionsTestOUID,
 			promptActionsTestOU.Name,
 			promptActionsTestOU.Handle,
@@ -733,7 +733,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestBasicAuthWithoutMobileUserSMSOTP
 		jwtClaims, err := testutils.ValidateJWTAssertionFields(
 			completeFlowStep.Assertion,
 			promptActionsTestAppID,
-			promptActionsUserSchema.Name,
+			promptActionsEntityType.Name,
 			promptActionsTestOUID,
 			promptActionsTestOU.Name,
 			promptActionsTestOU.Handle,
@@ -841,7 +841,7 @@ func (ts *PromptActionsAndMFAFlowTestSuite) TestSMSOTPAuthWithValidMobile() {
 	jwtClaims, err := testutils.ValidateJWTAssertionFields(
 		completeFlowStep.Assertion,
 		promptActionsTestAppID,
-		promptActionsUserSchema.Name,
+		promptActionsEntityType.Name,
 		promptActionsTestOUID,
 		promptActionsTestOU.Name,
 		promptActionsTestOU.Handle,

@@ -46,7 +46,7 @@ func TestResourceConfigTestSuite(t *testing.T) {
 func (s *ResourceConfigTestSuite) SetupSuite() {
 	// Initialize runtime once for all tests in the suite
 	testConfig := &config.Config{}
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	err := config.InitializeServerRuntime("/tmp/test", testConfig)
 	if err != nil {
 		s.Fail("Failed to initialize runtime", err)
 	}
@@ -54,7 +54,7 @@ func (s *ResourceConfigTestSuite) SetupSuite() {
 
 func (s *ResourceConfigTestSuite) SetupTest() {
 	// Capture original config values for restoration
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	s.originalResourceStore = runtime.Config.Resource.Store
 	s.originalDeclarativeEnabled = runtime.Config.DeclarativeResources.Enabled
 
@@ -65,14 +65,14 @@ func (s *ResourceConfigTestSuite) SetupTest() {
 
 func (s *ResourceConfigTestSuite) TearDownTest() {
 	// Restore original config values after each test to prevent mutation of shared state
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Resource.Store = s.originalResourceStore
 	runtime.Config.DeclarativeResources.Enabled = s.originalDeclarativeEnabled
 }
 
 func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_DeclarativeModeEnabled() {
 	// Set up config with declarative mode enabled
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.DeclarativeResources.Enabled = true
 
 	mode := getResourceStoreMode()
@@ -82,7 +82,7 @@ func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_DeclarativeModeEnable
 
 func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_DeclarativeModeDisabled() {
 	// Set up config with declarative mode disabled
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.DeclarativeResources.Enabled = false
 
 	mode := getResourceStoreMode()
@@ -92,7 +92,7 @@ func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_DeclarativeModeDisabl
 
 func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_DefaultMutable() {
 	// Use default config (should be mutable)
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.DeclarativeResources.Enabled = false
 
 	mode := getResourceStoreMode()
@@ -104,7 +104,7 @@ func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_DefaultMutable() {
 // Test integration with declarativeresource package
 
 func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_WithDeclarativeResourceCheck() {
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.DeclarativeResources.Enabled = true
 
 	// Verify IsDeclarativeModeEnabled returns true
@@ -116,7 +116,7 @@ func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_WithDeclarativeResour
 }
 
 func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_WithDeclarativeResourceDisabled() {
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.DeclarativeResources.Enabled = false
 
 	// Verify IsDeclarativeModeEnabled returns false
@@ -131,7 +131,7 @@ func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_WithDeclarativeResour
 
 func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_ServiceLevelMutable() {
 	// Service-level config should take precedence over global setting
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Resource.Store = "mutable"
 	runtime.Config.DeclarativeResources.Enabled = true // Global is declarative
 
@@ -143,7 +143,7 @@ func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_ServiceLevelMutable()
 
 func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_ServiceLevelDeclarative() {
 	// Service-level config should take precedence over global setting
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Resource.Store = "declarative"
 	runtime.Config.DeclarativeResources.Enabled = false // Global is mutable
 
@@ -155,7 +155,7 @@ func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_ServiceLevelDeclarati
 
 func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_ServiceLevelComposite() {
 	// Composite mode allows both declarative and mutable resources
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Resource.Store = testStoreModeComposite
 	runtime.Config.DeclarativeResources.Enabled = false
 
@@ -166,7 +166,7 @@ func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_ServiceLevelComposite
 
 func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_InvalidServiceLevelFallsBack() {
 	// Invalid service-level config should fall back to global setting
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Resource.Store = "invalid-mode"
 	runtime.Config.DeclarativeResources.Enabled = true
 
@@ -207,7 +207,7 @@ func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_CaseInsensitive() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			runtime := config.GetThunderRuntime()
+			runtime := config.GetServerRuntime()
 			runtime.Config.Resource.Store = tc.storeValue
 			runtime.Config.DeclarativeResources.Enabled = false
 
@@ -220,7 +220,7 @@ func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_CaseInsensitive() {
 
 func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_EmptyStringFallsBack() {
 	// Empty string should fall back to global setting
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Resource.Store = ""
 	runtime.Config.DeclarativeResources.Enabled = true
 
@@ -252,7 +252,7 @@ func (s *ResourceConfigTestSuite) TestGetResourceStoreMode_ValidReturnValues() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			runtime := config.GetThunderRuntime()
+			runtime := config.GetServerRuntime()
 			runtime.Config.DeclarativeResources.Enabled = tc.declarativeEnabled
 
 			mode := getResourceStoreMode()

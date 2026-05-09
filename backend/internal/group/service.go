@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/entity"
+	"github.com/asgardeo/thunder/internal/entitytype"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -35,7 +36,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 const loggerComponentName = "GroupMgtService"
@@ -66,7 +66,7 @@ type groupService struct {
 	groupStore        groupStoreInterface
 	ouService         oupkg.OrganizationUnitServiceInterface
 	entityService     entity.EntityServiceInterface
-	userSchemaService userschema.UserSchemaServiceInterface
+	entityTypeService entitytype.EntityTypeServiceInterface
 	transactioner     transaction.Transactioner
 	authzService      sysauthz.SystemAuthorizationServiceInterface
 }
@@ -76,7 +76,7 @@ func newGroupServiceWithStore(
 	store groupStoreInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	entityService entity.EntityServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	entityTypeService entitytype.EntityTypeServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
 	transactioner transaction.Transactioner,
 ) GroupServiceInterface {
@@ -84,7 +84,7 @@ func newGroupServiceWithStore(
 		groupStore:        store,
 		ouService:         ouService,
 		entityService:     entityService,
-		userSchemaService: userSchemaService,
+		entityTypeService: entityTypeService,
 		authzService:      authzService,
 		transactioner:     transactioner,
 	}
@@ -317,9 +317,13 @@ func (gs *groupService) CreateGroup(ctx context.Context, request CreateGroupRequ
 			return err
 		}
 
-		groupDaoID, err := utils.GenerateUUIDv7()
-		if err != nil {
-			return err
+		groupDaoID := request.ID
+		if groupDaoID == "" {
+			var genErr error
+			groupDaoID, genErr = utils.GenerateUUIDv7()
+			if genErr != nil {
+				return genErr
+			}
 		}
 
 		groupDAO := GroupDAO{
@@ -696,7 +700,7 @@ func (gs *groupService) resolveMembers(
 					userTypes = append(userTypes, e.Type)
 				}
 			}
-			displayAttrPaths = resolveDisplayAttributePaths(ctx, userTypes, gs.userSchemaService, logger)
+			displayAttrPaths = resolveDisplayAttributePaths(ctx, userTypes, gs.entityTypeService, logger)
 		}
 	}
 
@@ -1037,9 +1041,9 @@ func (gs *groupService) validateOU(ctx context.Context, ouID string) *serviceerr
 }
 
 // resolveDisplayAttributePaths collects unique user types and resolves their display
-// attribute paths from the user schema service.
+// attribute paths from the entity type service.
 func resolveDisplayAttributePaths(
-	ctx context.Context, userTypes []string, schemaService userschema.UserSchemaServiceInterface,
+	ctx context.Context, userTypes []string, schemaService entitytype.EntityTypeServiceInterface,
 	logger *log.Logger,
 ) map[string]string {
 	if schemaService == nil || len(userTypes) == 0 {
@@ -1051,7 +1055,7 @@ func resolveDisplayAttributePaths(
 		return nil
 	}
 
-	displayPaths, svcErr := schemaService.GetDisplayAttributesByNames(ctx, uniqueTypes)
+	displayPaths, svcErr := schemaService.GetDisplayAttributesByNames(ctx, entitytype.TypeCategoryUser, uniqueTypes)
 	if svcErr != nil {
 		if logger != nil {
 			logger.Warn("Failed to resolve display attribute paths, skipping display resolution",

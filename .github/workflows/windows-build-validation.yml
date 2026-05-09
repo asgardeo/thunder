@@ -13,8 +13,8 @@ permissions:
 
 env:
   GOFLAGS: "-mod=readonly"
-  PRODUCT_NAME: "Thunder"
-  PRODUCT_NAME_LOWER: "thunder"
+  PRODUCT_NAME: "ThunderID"
+  PRODUCT_NAME_LOWER: "thunderid"
 
 jobs:
   dependency-guard:
@@ -46,7 +46,7 @@ jobs:
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
-          version: 'latest'
+          version: '10.33.4'
           run_install: false
 
       - name: 🗄️ Get pnpm store directory
@@ -123,11 +123,11 @@ jobs:
 
       # TODO: Re-enable frontend tests after E2E issues are resolved
       # - name: 🧪 Run Console Tests
-      #   working-directory: frontend/apps/thunder-console
+      #   working-directory: frontend/apps/console
       #   run: pnpm test:coverage
 
       # - name: 🧪 Run Gate Tests
-      #   working-directory: frontend/apps/thunder-gate
+      #   working-directory: frontend/apps/gate
       #   run: pnpm test:coverage
 
       - name: 📦 Upload Windows Distribution

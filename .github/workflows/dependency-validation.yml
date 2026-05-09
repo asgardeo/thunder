@@ -1,0 +1,191 @@
+name: Dependency Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**/go.mod'
+      - '**/go.sum'
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  validate-go-dependencies:
+    name: Validate Go Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect modified go.mod files
+        id: detect-changes
+        run: |
+          # Get the base branch SHA
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          echo "Comparing $BASE_SHA...$HEAD_SHA"
+
+          # Find all go.mod files that were modified
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA | grep 'go.mod$' || true)
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No go.mod files were modified"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "Modified go.mod files:"
+            echo "$CHANGED_FILES"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            # Save the list for later use
+            echo "$CHANGED_FILES" > /tmp/changed_go_mods.txt
+          fi
+
+      - name: Checkout engineering-governance repository
+        if: steps.detect-changes.outputs.has_changes == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: wso2/engineering-governance
+          path: engineering-governance
+          ref: main
+
+      - name: Extract and validate dependencies
+        if: steps.detect-changes.outputs.has_changes == 'true'
+        id: validate
+        continue-on-error: true
+        run: |
+          chmod +x scripts/validate-go-dependencies.sh
+          scripts/validate-go-dependencies.sh \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}" \
+            "engineering-governance/dependency-registry/go.yaml"
+
+      - name: Comment on PR - Validation Failed
+        if: steps.validate.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let comment = '## Dependency Validation Results\n\n';
+
+            let hasUnapproved = false;
+
+            // Read all dependencies status
+            if (fs.existsSync('/tmp/all_deps_status.txt')) {
+              const allDepsStatus = fs.readFileSync('/tmp/all_deps_status.txt', 'utf8').trim();
+              if (allDepsStatus) {
+                const lines = allDepsStatus.split('\n');
+                for (const line of lines) {
+                  if (line.trim()) {
+                    const [status, module, version, reason] = line.split('|');
+
+                    if (status === 'UNAPPROVED') {
+                      hasUnapproved = true;
+                      comment += `**Dependency name:** ${module}\n`;
+                      comment += `**Version:** ${version}\n`;
+                      comment += `**Approved:** ❌ No - ${reason}\n\n`;
+                    } else if (status === 'APPROVED') {
+                      // Extract allowed range from reason if present
+                      let allowedRange = '';
+                      if (reason && reason.includes('constraint:')) {
+                        const match = reason.match(/constraint:\s*([^\)]+)/);
+                        if (match) {
+                          allowedRange = match[1].trim();
+                        }
+                      }
+
+                      comment += `**Dependency name:** ${module}\n`;
+                      comment += `**Version:** ${version}\n`;
+                      if (allowedRange) {
+                        comment += `**Allowed range:** ${allowedRange}\n`;
+                      }
+                      comment += `**Approved:** ✅ Yes\n\n`;
+                    }
+                  }
+                }
+              }
+            }
+
+            if (hasUnapproved) {
+              comment += '---\n\n';
+              comment += '### Next Steps\n\n';
+              comment += '1. **Review** the validation failures listed above\n';
+              comment += '2. **Check** if dependencies are in the [approved dependency list](https://github.com/wso2/engineering-governance/blob/main/dependency-registry/go.yaml)\n';
+              comment += '3. **Options to resolve:**\n';
+              comment += '   - Remove the unapproved dependencies from this PR\n';
+              comment += '   - OR submit a PR to add these dependencies to the approved list in engineering-governance\n';
+              comment += '4. Once resolved, push changes to re-run validation\n\n';
+              comment += '> **This PR is blocked until all dependencies are approved.**\n\n';
+              comment += '⚠️ Please verify the scope of the dependencies usage is necessary\n';
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Comment on PR - Validation Passed
+        if: steps.validate.outcome == 'success' && steps.detect-changes.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let comment = '## Dependency Validation Results\n\n';
+
+            // Read all dependencies status
+            if (fs.existsSync('/tmp/all_deps_status.txt')) {
+              const allDepsStatus = fs.readFileSync('/tmp/all_deps_status.txt', 'utf8').trim();
+              if (allDepsStatus) {
+                const lines = allDepsStatus.split('\n');
+                for (const line of lines) {
+                  if (line.trim()) {
+                    const [status, module, version, reason] = line.split('|');
+
+                    if (status === 'APPROVED') {
+                      // Extract allowed range from reason if present
+                      let allowedRange = '';
+                      if (reason && reason.includes('constraint:')) {
+                        const match = reason.match(/constraint:\s*([^\)]+)/);
+                        if (match) {
+                          allowedRange = match[1].trim();
+                        }
+                      }
+
+                      comment += `**Dependency name:** ${module}\n`;
+                      comment += `**Version:** ${version}\n`;
+                      if (allowedRange) {
+                        comment += `**Allowed range:** ${allowedRange}\n`;
+                      }
+                      comment += `**Approved:** ✅ Yes\n\n`;
+                    }
+                  }
+                }
+              }
+            }
+
+            comment += '⚠️ Please verify the scope of the dependencies usage is necessary\n';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Mark validation as passed
+        if: steps.detect-changes.outputs.has_changes == 'false'
+        run: |
+          echo "No dependency changes detected - validation passed"
+
+      - name: Fail job if validation failed
+        if: steps.validate.outcome == 'failure'
+        run: |
+          echo "Dependency validation failed. Please review the comments on this PR."
+          exit 1

@@ -51,6 +51,7 @@ type AuthorizationCode struct {
 	ClaimsRequest       *oauth2model.ClaimsRequest
 	ClaimsLocales       string
 	Nonce               string
+	CompletedACR        string
 }
 
 // AuthZPostRequest represents the request body for the authorization POST request.
@@ -83,4 +84,5 @@ type assertionClaims struct {
 	userID                string
 	authorizedPermissions string
 	attributeCacheID      string
+	completedACR          string
 }

@@ -176,24 +176,24 @@ func TestCompileAPIPermissions(t *testing.T) {
 		{
 			name: "Valid entries compiled",
 			entries: []apiPermissionEntry{
-				{"GET /users", PermissionUserView},
-				{"GET /users/**", PermissionUserView},
-				{"POST /users", PermissionUser},
+				{"GET /users", "system:user:view"},
+				{"GET /users/**", "system:user:view"},
+				{"POST /users", "system:user"},
 			},
 			wantLen: 3,
 		},
 		{
 			name: "Single wildcard entry",
 			entries: []apiPermissionEntry{
-				{"GET /users/*/profile", PermissionUserView},
+				{"GET /users/*/profile", "system:user:view"},
 			},
 			wantLen: 1,
 		},
 		{
 			name: "Invalid pattern stops compilation",
 			entries: []apiPermissionEntry{
-				{"GET /valid/**", PermissionUserView},
-				{"GET /invalid/**/middle/**", PermissionUser},
+				{"GET /valid/**", "system:user:view"},
+				{"GET /invalid/**/middle/**", "system:user"},
 			},
 			wantError:   true,
 			errContains: "invalid pattern",
@@ -201,8 +201,8 @@ func TestCompileAPIPermissions(t *testing.T) {
 		{
 			name: "Invalid pattern as first entry",
 			entries: []apiPermissionEntry{
-				{"GET /invalid/**/middle/**", PermissionUser},
-				{"GET /valid/**", PermissionUserView},
+				{"GET /invalid/**/middle/**", "system:user"},
+				{"GET /valid/**", "system:user:view"},
 			},
 			wantError:   true,
 			errContains: "invalid pattern",

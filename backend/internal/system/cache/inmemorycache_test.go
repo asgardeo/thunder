@@ -47,10 +47,10 @@ func (suite *InMemoryCacheTestSuite) SetupSuite() {
 			CleanupInterval: 300,
 		},
 	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/test/thunder/home", mockConfig)
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("/test/thunderid/home", mockConfig)
 	if err != nil {
-		suite.T().Fatal("Failed to initialize ThunderRuntime:", err)
+		suite.T().Fatal("Failed to initialize server runtime:", err)
 	}
 }
 

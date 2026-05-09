@@ -46,6 +46,12 @@ servers:
       port:
         default: "8090"
 
+tags:
+  - name: Flow Management
+    description: CRUD operations for flow definitions.
+  - name: Flow Versioning
+    description: Operations for listing and activating flow versions.
+
 security:
   - OAuth2: [system]
 
@@ -96,7 +102,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientError'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "FMS-1001"
                 message:
@@ -105,12 +111,16 @@ paths:
                 description:
                   key: "error.flowmgtservice.invalid_request_format_description"
                   defaultValue: "The limit parameter must be between 1 and 100"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerError'
+                $ref: '#/components/schemas/Error'
 
     post:
       tags:
@@ -137,7 +147,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientError'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "FMS-1001"
                 message:
@@ -146,12 +156,16 @@ paths:
                 description:
                   key: "error.flowmgtservice.invalid_request_format_description"
                   defaultValue: "The request body is malformed or contains invalid data"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerError'
+                $ref: '#/components/schemas/Error'
 
   /flows/{flowId}:
     get:
@@ -179,7 +193,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientError'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "FMS-1006"
                 message:
@@ -188,12 +202,16 @@ paths:
                 description:
                   key: "error.flowmgtservice.flow_not_found_description"
                   defaultValue: "The flow with the specified ID does not exist"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerError'
+                $ref: '#/components/schemas/Error'
 
     put:
       tags:
@@ -226,7 +244,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientError'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "FMS-1001"
                 message:
@@ -240,7 +258,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientError'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "FMS-1006"
                 message:
@@ -249,12 +267,16 @@ paths:
                 description:
                   key: "error.flowmgtservice.flow_not_found_description"
                   defaultValue: "The flow with the specified ID does not exist"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerError'
+                $ref: '#/components/schemas/Error'
 
     delete:
       tags:
@@ -277,7 +299,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientError'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "FMS-1002"
                 message:
@@ -291,7 +313,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientError'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "FMS-1007"
                 message:
@@ -300,12 +322,16 @@ paths:
                 description:
                   key: "error.flowmgtservice.flow_cannot_be_deleted_description"
                   defaultValue: "Cannot delete a default flow or a flow that is currently in use"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerError'
+                $ref: '#/components/schemas/Error'
 
   /flows/{flowId}/versions:
     get:
@@ -334,7 +360,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientError'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "FMS-1006"
                 message:
@@ -343,12 +369,16 @@ paths:
                 description:
                   key: "error.flowmgtservice.flow_not_found_description"
                   defaultValue: "The flow with the specified ID does not exist"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerError'
+                $ref: '#/components/schemas/Error'
 
   /flows/{flowId}/versions/{version}:
     get:
@@ -383,7 +413,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientError'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "FMS-1006"
                 message:
@@ -392,12 +422,16 @@ paths:
                 description:
                   key: "error.flowmgtservice.flow_not_found_description"
                   defaultValue: "The specified version does not exist for this flow"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerError'
+                $ref: '#/components/schemas/Error'
 
   /flows/{flowId}/restore:
     post:
@@ -433,7 +467,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientError'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "FMS-1001"
                 message:
@@ -447,7 +481,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientError'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "FMS-1006"
                 message:
@@ -456,12 +490,16 @@ paths:
                 description:
                   key: "error.flowmgtservice.flow_not_found_description"
                   defaultValue: "The specified version does not exist for this flow"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerError'
+                $ref: '#/components/schemas/Error'
 
 components:
   securitySchemes:
@@ -473,6 +511,36 @@ components:
           tokenUrl: https://localhost:8090/oauth2/token
           scopes:
             system: Access to system management APIs
+
+  responses:
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "AUTH-4010"
+            message:
+              key: "error.unauthorized"
+              defaultValue: "Unauthorized"
+            description:
+              key: "error.unauthorized_description"
+              defaultValue: "Authentication is required to access this resource"
+    Forbidden:
+      description: Forbidden - insufficient permissions to perform this operation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "AUTH-4030"
+            message:
+              key: "error.forbidden"
+              defaultValue: "Forbidden"
+            description:
+              key: "error.forbidden_description"
+              defaultValue: "You do not have sufficient permissions to access this resource"
 
   schemas:
     FlowListResponse:
@@ -1236,25 +1304,14 @@ components:
             $ref: '#/components/schemas/Component'
           description: Nested child components (for BLOCK type)
 
-    ClientError:
+
+    Error:
       type: object
       properties:
         code:
           type: string
-          description: The error code
+          description: "Error code. Client errors follow the FMS-XXXX convention; server errors use SSE-XXXX."
           example: "FMS-1001"
-        message:
-          $ref: '#/components/schemas/I18nMessage'
-        description:
-          $ref: '#/components/schemas/I18nMessage'
-    
-    ServerError:
-      type: object
-      properties:
-        code:
-          type: string
-          description: The server error code
-          example: "SSE-5000"
         message:
           $ref: '#/components/schemas/I18nMessage'
         description:

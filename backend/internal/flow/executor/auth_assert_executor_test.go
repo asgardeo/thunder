@@ -112,11 +112,11 @@ func createMockExecutorSimple(t *testing.T, name string,
 func initializeTestRuntime() error {
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
-			Issuer:         "https://test.thunder.io",
+			Issuer:         "https://auth.example.com",
 			ValidityPeriod: 3600,
 		},
 	}
-	return config.InitializeThunderRuntime("/tmp/test", testConfig)
+	return config.InitializeServerRuntime("/tmp/test", testConfig)
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestNewAuthAssertExecutor() {
@@ -130,7 +130,7 @@ func (suite *AuthAssertExecutorTestSuite) TestNewAuthAssertExecutor() {
 func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -148,8 +148,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 			},
 		},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"userType", "ouId"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"userType", "ouId"},
+				},
 			},
 		},
 	}
@@ -160,7 +162,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 		Context: &authnassert.AssuranceContext{},
 	}, nil)
 
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
 
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, testAuthOUID).
@@ -196,7 +198,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserNotAuthenticated() {
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAuthorizedPermissions() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -209,7 +211,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAuthorizedPermissions(
 		Application:      appmodel.Application{},
 	}
 
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			perms, ok := claims["authorized_permissions"]
 			return ok && perms == "read:documents write:documents"
@@ -230,7 +232,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -239,8 +241,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"email", "phone"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"email", "phone"},
+				},
 			},
 		},
 	}
@@ -251,7 +255,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 	}
 
 	suite.mockEntityProvider.On("GetEntity", "user-123").Return(existingUser, nil)
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			return claims["email"] == testEmail && claims["phone"] == "1234567890"
 		}), mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
@@ -268,7 +272,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 func (suite *AuthAssertExecutorTestSuite) TestExecute_JWTGenerationFails() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -278,7 +282,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_JWTGenerationFails() {
 		Application:      appmodel.Application{},
 	}
 
-	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("", int64(0), &serviceerror.ServiceError{
 		Type: serviceerror.ServerErrorType,
 		Code: "JWT_GENERATION_FAILED",
@@ -300,7 +304,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_JWTGenerationFails() {
 func (suite *AuthAssertExecutorTestSuite) TestExecute_AssertionGenerationFails_ServerError() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -531,7 +535,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributesFromAuthnProvider
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -541,13 +545,15 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"userType", "ouId"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"userType", "ouId"},
+				},
 			},
 		},
 	}
 
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			return claims[oauth2const.ClaimUserType] == "EXTERNAL" && claims[oauth2const.ClaimOUID] == "ou-456"
 		}), mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
@@ -567,7 +573,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
 	// App-level assertion config (validity period only — issuer always comes from  config)
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -575,13 +581,15 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				ValidityPeriod: 7200,
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					ValidityPeriod: 7200,
+				},
 			},
 		},
 	}
 
-	suite.mockJWTService.On("GenerateJWT", "user-123", "https://test.thunder.io", int64(7200),
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", "https://auth.example.com", int64(7200),
 		mock.Anything, mock.Anything, mock.Anything).Return("jwt-token", int64(7200), nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -595,7 +603,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -604,8 +612,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"ouId", "ouName", "ouHandle"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"ouId", "ouName", "ouHandle"},
+				},
 			},
 		},
 	}
@@ -616,7 +626,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 		Handle: "eng",
 	}, nil)
 
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			return claims[oauth2const.ClaimOUID] == testAssertOUID &&
 				claims[oauth2const.ClaimOUName] == "Engineering" &&
@@ -639,7 +649,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -647,8 +657,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"email"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"email"},
+				},
 			},
 		},
 	}
@@ -690,7 +702,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 
 	existingUser.Attributes = attrsJSON
 	suite.mockEntityProvider.On("GetEntity", "user-123").Return(existingUser, nil)
-	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -703,7 +715,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFails() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -712,8 +724,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFai
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{oauth2const.ClaimOUID},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{oauth2const.ClaimOUID},
+				},
 			},
 		},
 	}
@@ -736,7 +750,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFai
 func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserAttributesFails() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -745,8 +759,10 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserA
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"email", "phone"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"email", "phone"},
+				},
 			},
 		},
 	}
@@ -767,7 +783,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserA
 func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganizationUnitFails() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -776,8 +792,10 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganiz
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{oauth2const.ClaimOUID},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{oauth2const.ClaimOUID},
+				},
 			},
 		},
 	}
@@ -804,7 +822,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -813,8 +831,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
 			// Token config with user attributes configured
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"email", "username", "given_name"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"email", "username", "given_name"},
+				},
 			},
 		},
 	}
@@ -825,7 +845,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 	}
 
 	suite.mockEntityProvider.On("GetEntity", "user-123").Return(existingUser, nil)
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			// Should contain the configured user attributes from the user store
 			hasEmail := claims["email"] == testEmail
@@ -846,7 +866,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -854,8 +874,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{oauth2const.UserAttributeGroups},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{oauth2const.UserAttributeGroups},
+				},
 			},
 		},
 	}
@@ -868,7 +890,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 
 	suite.mockEntityProvider.On("GetTransitiveEntityGroups", "user-123").
 		Return(userGroups, nil)
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			// Should contain groups claim
 			groups, ok := claims[oauth2const.UserAttributeGroups].([]string)
@@ -890,7 +912,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -898,15 +920,17 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{oauth2const.UserAttributeGroups},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{oauth2const.UserAttributeGroups},
+				},
 			},
 		},
 	}
 
 	suite.mockEntityProvider.On("GetTransitiveEntityGroups", "user-123").
 		Return([]entityprovider.EntityGroup{}, nil)
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			// Should NOT contain groups claim when groups list is empty
 			_, ok := claims[oauth2const.UserAttributeGroups]
@@ -925,7 +949,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_GetUserGroupsFails() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -933,8 +957,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_GetUserGroupsFa
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{oauth2const.UserAttributeGroups},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{oauth2const.UserAttributeGroups},
+				},
 			},
 		},
 	}
@@ -1024,7 +1050,9 @@ func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_Fallback
 		ExecutionID: "flow-123",
 		RuntimeData: map[string]string{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email", "phone"}},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email", "phone"}},
+			},
 		},
 	}
 
@@ -1053,7 +1081,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConsentedAttributes_Fi
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1065,8 +1093,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConsentedAttributes_Fi
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"email", "phone", "name"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"email", "phone", "name"},
+				},
 			},
 		},
 	}
@@ -1077,7 +1107,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConsentedAttributes_Fi
 	}
 
 	suite.mockEntityProvider.On("GetEntity", "user-123").Return(existingUser, nil)
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			// Should only have email and name (consented), NOT phone
 			_, hasPhone := claims["phone"]
@@ -1098,7 +1128,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConsentedAttributes_Fi
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithEmptyConsentedAttributes() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1112,7 +1142,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithEmptyConsentedAttribut
 		Application:      appmodel.Application{},
 	}
 
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -1125,7 +1155,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithEmptyConsentedAttribut
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithoutConsentedAttributes() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1136,7 +1166,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithoutConsentedAttributes
 		Application:      appmodel.Application{},
 	}
 
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).Return("jwt-token", int64(3600), nil)
 
 	resp, err := suite.executor.Execute(ctx)
@@ -1154,7 +1184,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_AttrsSt
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1165,8 +1195,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_AttrsSt
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"email", "phone"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"email", "phone"},
+				},
 			},
 		},
 	}
@@ -1184,7 +1216,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_AttrsSt
 				cache.Attributes["phone"] == "1234567890"
 		})).Return(&attributecache.AttributeCache{ID: "cache-abc"}, nil)
 	// In the OAuth cache path, only aci goes into the JWT; individual attrs go to cache.
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			_, hasEmail := claims["email"]
 			_, hasPhone := claims["phone"]
@@ -1209,7 +1241,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_NilUser
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1221,8 +1253,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_NilUser
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: nil,
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: nil,
+				},
 			},
 		},
 	}
@@ -1235,7 +1269,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_NilUser
 	suite.mockEntityProvider.On("GetEntity", "user-123").Return(existingUser, nil)
 	suite.mockAttributeCacheSvc.On("CreateAttributeCache", mock.Anything, mock.Anything).
 		Return(&attributecache.AttributeCache{ID: "cache-xyz"}, nil)
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			// aci present, but no individual attribute claims
 			_, hasEmail := claims["email"]
@@ -1258,7 +1292,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_OnlyRes
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1269,8 +1303,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_OnlyRes
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"email", "phone"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"email", "phone"},
+				},
 			},
 		},
 	}
@@ -1288,7 +1324,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_OnlyRes
 			return cache.Attributes["email"] == testEmail && !hasPhone
 		})).Return(&attributecache.AttributeCache{ID: "cache-def"}, nil)
 	// JWT should only contain aci, not individual attrs
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			_, hasEmail := claims["email"]
 			_, hasPhone := claims["phone"]
@@ -1312,7 +1348,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_NilAsse
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1324,7 +1360,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_NilAsse
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: nil,
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: nil,
+			},
 		},
 	}
 
@@ -1336,7 +1374,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_NilAsse
 	suite.mockEntityProvider.On("GetEntity", "user-123").Return(existingUser, nil)
 	suite.mockAttributeCacheSvc.On("CreateAttributeCache", mock.Anything, mock.Anything).
 		Return(&attributecache.AttributeCache{ID: "cache-nil"}, nil)
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			_, hasEmail := claims["email"]
 			return claims["aci"] == "cache-nil" && !hasEmail
@@ -1533,7 +1571,7 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithOUDetail
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_GroupsIncludedInCache() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1544,8 +1582,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_GroupsI
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{oauth2const.UserAttributeGroups},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{oauth2const.UserAttributeGroups},
+				},
 			},
 		},
 	}
@@ -1562,7 +1602,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_GroupsI
 			groups, ok := cache.Attributes[oauth2const.UserAttributeGroups].([]string)
 			return ok && len(groups) == 2
 		})).Return(&attributecache.AttributeCache{ID: "cache-groups"}, nil)
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			_, hasGroups := claims[oauth2const.UserAttributeGroups]
 			return claims["aci"] == "cache-groups" && !hasGroups
@@ -1581,7 +1621,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_GroupsI
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_UserTypeIncludedInCache() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1593,8 +1633,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_UserTyp
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{oauth2const.ClaimUserType},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{oauth2const.ClaimUserType},
+				},
 			},
 		},
 	}
@@ -1603,7 +1645,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_UserTyp
 		mock.MatchedBy(func(cache *attributecache.AttributeCache) bool {
 			return cache.Attributes[oauth2const.ClaimUserType] == "EXTERNAL"
 		})).Return(&attributecache.AttributeCache{ID: "cache-usertype"}, nil)
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			_, hasUserType := claims[oauth2const.ClaimUserType]
 			return claims["aci"] == "cache-usertype" && !hasUserType
@@ -1621,7 +1663,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_UserTyp
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_OUDetailsIncludedInCache() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1633,8 +1675,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_OUDetai
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{oauth2const.ClaimOUID, oauth2const.ClaimOUName},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{oauth2const.ClaimOUID, oauth2const.ClaimOUName},
+				},
 			},
 		},
 	}
@@ -1646,7 +1690,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_OUDetai
 			return cache.Attributes[oauth2const.ClaimOUID] == testAuthOUID &&
 				cache.Attributes[oauth2const.ClaimOUName] == "Engineering"
 		})).Return(&attributecache.AttributeCache{ID: "cache-ou"}, nil)
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			_, hasOUID := claims[oauth2const.ClaimOUID]
 			return claims["aci"] == "cache-ou" && !hasOUID
@@ -1668,7 +1712,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithRuntimeRequiredEssenti
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1680,7 +1724,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithRuntimeRequiredEssenti
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email", "phone", "name"}},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email", "phone", "name"}},
+			},
 		},
 	}
 
@@ -1690,7 +1736,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithRuntimeRequiredEssenti
 	}
 
 	suite.mockEntityProvider.On("GetEntity", "user-123").Return(existingUser, nil)
-	suite.mockJWTService.On("GenerateJWT", "user-123", mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "user-123", mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			_, hasPhone := claims["phone"]
 			return claims["email"] == testEmail && claims["name"] == testNameValue && !hasPhone

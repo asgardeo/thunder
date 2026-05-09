@@ -226,7 +226,7 @@ var (
 		},
 	}
 
-	smsAuthUserSchema = testutils.UserSchema{
+	smsAuthEntityType = testutils.UserType{
 		Name: "sms_auth_user",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -252,7 +252,7 @@ var (
 	}
 
 	testUserWithMobile = testutils.User{
-		Type: smsAuthUserSchema.Name,
+		Type: smsAuthEntityType.Name,
 		Attributes: json.RawMessage(`{
 			"username": "smsuser",
 			"password": "testpassword",
@@ -266,7 +266,7 @@ var (
 
 var (
 	smsAuthTestAppID      string
-	smsAuthUserSchemaID   string
+	smsAuthEntityTypeID   string
 	smsAuthTestSenderID   string
 	smsAuthFlowMobileID   string
 	smsAuthFlowUsernameID string
@@ -298,13 +298,13 @@ func (ts *SMSAuthFlowTestSuite) SetupSuite() {
 	}
 	smsAuthTestOU.ID = ouID
 
-	// Create test user schema within the OU
-	smsAuthUserSchema.OUID = ouID
-	schemaID, err := testutils.CreateUserType(smsAuthUserSchema)
+	// Create test user type within the OU
+	smsAuthEntityType.OUID = ouID
+	schemaID, err := testutils.CreateUserType(smsAuthEntityType)
 	if err != nil {
-		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
+		ts.T().Fatalf("Failed to create test user type during setup: %v", err)
 	}
-	smsAuthUserSchemaID = schemaID
+	smsAuthEntityTypeID = schemaID
 
 	// Start mock notification server
 	ts.mockServer = testutils.NewMockNotificationServer(mockNotificationServerPort)
@@ -429,10 +429,10 @@ func (ts *SMSAuthFlowTestSuite) TearDownSuite() {
 		}
 	}
 
-	// Delete test user schema
-	if smsAuthUserSchemaID != "" {
-		if err := testutils.DeleteUserType(smsAuthUserSchemaID); err != nil {
-			ts.T().Logf("Failed to delete test user schema during teardown: %v", err)
+	// Delete test user type
+	if smsAuthEntityTypeID != "" {
+		if err := testutils.DeleteUserType(smsAuthEntityTypeID); err != nil {
+			ts.T().Logf("Failed to delete test user type during teardown: %v", err)
 		}
 	}
 }
@@ -510,7 +510,7 @@ func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowWithMobileNumber() {
 	jwtClaims, err := testutils.ValidateJWTAssertionFields(
 		completeFlowStep.Assertion,
 		smsAuthTestAppID,
-		smsAuthUserSchema.Name,
+		smsAuthEntityType.Name,
 		smsAuthTestOU.ID,
 		smsAuthTestOU.Name,
 		smsAuthTestOU.Handle,
@@ -613,7 +613,7 @@ func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowWithUsername() {
 	jwtClaims, err := testutils.ValidateJWTAssertionFields(
 		completeFlowStep.Assertion,
 		smsAuthTestAppID,
-		smsAuthUserSchema.Name,
+		smsAuthEntityType.Name,
 		smsAuthTestOU.ID,
 		smsAuthTestOU.Name,
 		smsAuthTestOU.Handle,
@@ -804,7 +804,7 @@ func (ts *SMSAuthFlowTestSuite) TestSMSAuthFlowSingleRequestWithMobileNumber() {
 	jwtClaims, err := testutils.ValidateJWTAssertionFields(
 		completeFlowStep.Assertion,
 		smsAuthTestAppID,
-		smsAuthUserSchema.Name,
+		smsAuthEntityType.Name,
 		smsAuthTestOU.ID,
 		smsAuthTestOU.Name,
 		smsAuthTestOU.Handle,

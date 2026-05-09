@@ -18,12 +18,12 @@
  * under the License.
  */
 
-/* eslint-disable @thunder/copyright-header, no-undef */
+/* eslint-disable @thunderid/copyright-header, no-undef */
 
 /**
  * Generates Postman collections, environments, and globals from OpenAPI specifications.
- * Product name and slug are derived from docusaurus.thunder.config.ts to keep the
- * "Thunder" term easily changeable.
+ * Product name and slug are derived from docusaurus.product.config.ts to keep the
+ * product name easily changeable.
  *
  * Usage:
  *   node scripts/generate-postman-collections.mjs [--version-path <path>]
@@ -46,7 +46,7 @@ import {readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync} from 'f
 import {join, dirname} from 'path';
 import {fileURLToPath} from 'url';
 import {promisify} from 'util';
-import {createLogger} from '@thunder/logger';
+import {createLogger} from '@thunderid/logger';
 import Converter from 'openapi-to-postmanv2';
 
 const convert = promisify(Converter.convert.bind(Converter));
@@ -58,7 +58,7 @@ const logger = createLogger('generate-postman-collections');
 
 const API_DIR = join(__dirname, '..', '..', 'api');
 const STATIC_DIR = join(__dirname, '..', 'static', 'api');
-const THUNDER_CONFIG_PATH = join(__dirname, '..', 'docusaurus.thunder.config.ts');
+const PRODUCT_CONFIG_PATH = join(__dirname, '..', 'docusaurus.product.config.ts');
 
 // Resolve version path from --version-path <path> CLI arg, defaulting to 'next'
 const versionPathArgIndex = process.argv.indexOf('--version-path');
@@ -84,11 +84,10 @@ const CONVERT_OPTIONS = {
 };
 
 /**
- * Extract project name and slug from docusaurus.thunder.config.ts using regex so the
- * script stays free of a TypeScript compilation step. The name drives display strings
- * (e.g. "Thunder API") and the slug drives file/folder names (e.g. "thunder").
+ * Extract project name and slug from docusaurus.product.config.ts using regex so the
+ * script stays free of a TypeScript compilation step. The name drives display strings.
  */
-function readThunderConfig(configPath) {
+function readProductConfig(configPath) {
   const content = readFileSync(configPath, 'utf8');
 
   // Match the top-level `name:` field inside the `project:` block  (first string value)
@@ -222,7 +221,7 @@ function generateCombinedCollection(collections, projectName, projectEmoji) {
 async function main() {
   logger.info(`Generating Postman collections (version path: ${versionPath})...`);
 
-  const {projectName, projectSlug, projectEmoji, collectionFileName} = readThunderConfig(THUNDER_CONFIG_PATH);
+  const {projectName, projectSlug, projectEmoji, collectionFileName} = readProductConfig(PRODUCT_CONFIG_PATH);
 
   logger.info(`Product: ${projectEmoji} ${projectName} (slug: ${projectSlug})`);
 

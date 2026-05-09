@@ -87,6 +87,7 @@
   /* Sidebar, TOC */
   --doc-sidebar-width: 320px;
   --ifm-toc-border-color: var(--oxygen-palette-divider);
+  --ifm-toc-padding-vertical: 0.8rem;
   --ifm-menu-link-sublist-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E");
   --ifm-menu-color-background-hover: none;
 
@@ -95,15 +96,19 @@
   /* Body Background */
   --site-background-attachment: fixed;
   --site-background-blend-mode: normal;
-  --site-background: radial-gradient(circle at 65% 30%, rgba(255, 116, 0, 0.1) 10%, rgba(255, 255, 255, 0) 40% 40%), radial-gradient(circle at 15% 50%, rgba(74, 41, 165, 0.1) 1%, rgba(255, 255, 255, 0) 40% 70%), radial-gradient(circle at center, rgba(255, 255, 255, 0.6) 0%, var(--oxygen-palette-background-default) 100%);
+  --site-background: radial-gradient(circle at 65% 30%, rgb(0 127 242 / 8%) 10%, rgba(0, 0, 0, 0) 60% 40%),
+      radial-gradient(circle at 15% 50%, rgb(0 213 255 / 12%) 1%, rgb(0 0 0 / 0%) 40% 70%),
+      radial-gradient(circle at center, rgba(255, 255, 255, 0.6) 0%, var(--oxygen-palette-background-default) 100%);
 }
-
+       
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'] {
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 
   /* Body Background */
-  --site-background: radial-gradient(circle at 65% 30%, rgb(255 116 0 / 13%) 10%, rgba(0, 0, 0, 0) 60% 40%), radial-gradient(circle at 15% 50%, rgb(132 40 0 / 18%) 1%, rgba(0, 0, 0, 0) 40% 70%), radial-gradient(circle at center, rgba(0, 0, 0, 0.6) 0%, var(--oxygen-palette-background-default) 100%);
+  --site-background: radial-gradient(circle at 15% 50%, rgb(0 136 255 / 13%) 0%, rgb(6 13 26 / 0%) 40% 70%),
+      radial-gradient(circle at 65% 30%, rgb(0 127 242 / 22%) 10%, rgba(6, 13, 26, 0%) 60% 40%),
+      radial-gradient(circle at center, rgba(0, 0, 0, 0.6) 0%, var(--oxygen-palette-background-default) 100%);
 }
 
 /* ------------------------------ Custom CSS -------------------------- */
@@ -136,24 +141,20 @@ h5 {
 /* ------------------------------ Announcement Banner ---------------------- */
 
 .theme-announcement-bar {
-  font-size: 20px;
-
-  --site-announcement-bar-stripe-color1: #e8d7ff;
-  --site-announcement-bar-stripe-color2: #ffe9d1;
-
-  background: repeating-linear-gradient(
-    35deg,
-    var(--site-announcement-bar-stripe-color1),
-    var(--site-announcement-bar-stripe-color1) 20px,
-    var(--site-announcement-bar-stripe-color2) 10px,
-    var(--site-announcement-bar-stripe-color2) 40px
-  );
-  font-weight: bold;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  border-bottom: 1px solid rgb(var(--oxygen-palette-primary-mainChannel) / 0.2);
+  background: rgb(var(--oxygen-palette-primary-mainChannel) / 0.06);
   color: var(--oxygen-palette-text-primary);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 html[data-theme='dark'] .theme-announcement-bar {
-  color: var(--oxygen-palette-common-black);
+  background: rgb(var(--oxygen-palette-primary-mainChannel) / 0.08);
+  border-bottom-color: rgb(var(--oxygen-palette-primary-mainChannel) / 0.18);
+  color: var(--oxygen-palette-text-primary);
 }
 
 
@@ -210,11 +211,6 @@ html[data-page='home'][data-theme='dark'] .navbar .navbar__item {
 html[data-page='home'][data-theme='light'] .navbar .navbar__link,
 html[data-page='home'][data-theme='light'] .navbar .navbar__item {
   color: rgba(0, 0, 0, 0.75) !important;
-}
-
-html[data-page='home'] .navbar .navbar__link:hover,
-html[data-page='home'] .navbar .navbar__link--active {
-  color: #FF6B00 !important;
 }
 
 /* Homepage GitHub icon - dark mode */
@@ -346,7 +342,7 @@ html[data-theme='dark'] .dropdown>.navbar__link:after {
 }
 
 .dropdown:hover>.navbar__link:after {
-  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' fill='none' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.293 8.293a1 1 0 0 1 1.414 0L12 14.586l6.293-6.293a1 1 0 1 1 1.414 1.414l-7 7a1 1 0 0 1-1.414 0l-7-7a1 1 0 0 1 0-1.414Z' fill='%23F87643'/%3E%3C/svg%3E") !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='24' height='24' fill='none' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4.293 8.293a1 1 0 0 1 1.414 0L12 14.586l6.293-6.293a1 1 0 1 1 1.414 1.414l-7 7a1 1 0 0 1-1.414 0l-7-7a1 1 0 0 1 0-1.414Z' fill='%234d9ef7'/%3E%3C/svg%3E") !important;
 }
 
 /* Homepage dropdown chevron - dark mode: white */
@@ -522,7 +518,11 @@ html[data-page='home'][data-theme='dark'] .dropdown>.navbar__link:after {
 
 /* Increase space between main content and right sidebar TOC */
 .theme-doc-toc-desktop {
-  padding-left: 10rem;
+  padding-left: 2rem;
+}
+
+.table-of-contents {
+  padding: 1.5rem 1rem;
 }
 
 /*
@@ -677,4 +677,23 @@ html[data-page='home'][data-theme='dark'] .dropdown>.navbar__link:after {
 /* When DevOps persona is active, hide non-deployment sections */
 [data-persona='devops'] .sidebar-persona-not-devops {
   display: none;
+}
+
+@media (min-width: 997px) {
+  .container article {
+    max-width: var(--ifm-container-width);
+    margin: 2rem auto;
+  }
+
+  .container article .apis-page {
+    margin: -2rem 0;
+  }
+}
+
+@media (min-width: 997px) {
+  @supports (scrollbar-gutter: stable) {
+    .menu {
+      padding: 3rem 1.5rem 3rem 2rem;
+    }
+  }
 }

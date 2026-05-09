@@ -1,5 +1,5 @@
 -- Table to store Organization Units
-CREATE TABLE ORGANIZATION_UNIT (
+CREATE TABLE "ORGANIZATION_UNIT" (
     DEPLOYMENT_ID       VARCHAR(255) NOT NULL,
     OU_ID           VARCHAR(36) PRIMARY KEY,
     PARENT_ID       VARCHAR(36),
@@ -14,10 +14,10 @@ CREATE TABLE ORGANIZATION_UNIT (
 );
 
 -- Composite index for handle-based OU lookups
-CREATE INDEX idx_ou_handle_parent ON ORGANIZATION_UNIT (DEPLOYMENT_ID, HANDLE, PARENT_ID);
+CREATE INDEX idx_ou_handle_parent ON "ORGANIZATION_UNIT" (DEPLOYMENT_ID, HANDLE, PARENT_ID);
 
 -- Table to store Entities (unified identity principals: users, applications, agents)
-CREATE TABLE ENTITY (
+CREATE TABLE "ENTITY" (
     DEPLOYMENT_ID       VARCHAR(255) NOT NULL,
     ID                  VARCHAR(36)  PRIMARY KEY,
     CATEGORY            VARCHAR(50)  NOT NULL,
@@ -33,10 +33,10 @@ CREATE TABLE ENTITY (
 );
 
 -- Composite index for category-based entity listing
-CREATE INDEX idx_entity_category_deployment ON ENTITY (DEPLOYMENT_ID, CATEGORY);
+CREATE INDEX idx_entity_category_deployment ON "ENTITY" (DEPLOYMENT_ID, CATEGORY);
 
 -- Composite index for OU-based entity listing
-CREATE INDEX idx_entity_ou_deployment ON ENTITY (DEPLOYMENT_ID, OU_ID);
+CREATE INDEX idx_entity_ou_deployment ON "ENTITY" (DEPLOYMENT_ID, OU_ID);
 
 -- Table to store Groups
 CREATE TABLE "GROUP" (
@@ -53,7 +53,7 @@ CREATE TABLE "GROUP" (
 CREATE INDEX idx_group_name_ou_deployment ON "GROUP" (DEPLOYMENT_ID, OU_ID, NAME);
 
 -- Table to store Group member assignments
-CREATE TABLE GROUP_MEMBER_REFERENCE (
+CREATE TABLE "GROUP_MEMBER_REFERENCE" (
     DEPLOYMENT_ID   VARCHAR(255) NOT NULL,
     GROUP_ID    VARCHAR(36) NOT NULL,
     MEMBER_TYPE VARCHAR(6)  NOT NULL CHECK (MEMBER_TYPE IN ('entity', 'group')),
@@ -65,7 +65,7 @@ CREATE TABLE GROUP_MEMBER_REFERENCE (
 );
 
 -- Table to store indexed entity identifiers for fast lookups (authentication, identification)
-CREATE TABLE ENTITY_IDENTIFIER (
+CREATE TABLE "ENTITY_IDENTIFIER" (
     DEPLOYMENT_ID   VARCHAR(255) NOT NULL,
     ENTITY_ID       VARCHAR(36)  NOT NULL,
     NAME            VARCHAR(255) NOT NULL,
@@ -73,8 +73,8 @@ CREATE TABLE ENTITY_IDENTIFIER (
     SOURCE          VARCHAR(50)  NOT NULL,
     CREATED_AT      TIMESTAMPTZ DEFAULT NOW(),
     PRIMARY KEY (ENTITY_ID, DEPLOYMENT_ID, NAME),
-    FOREIGN KEY (ENTITY_ID) REFERENCES ENTITY (ID) ON DELETE CASCADE
+    FOREIGN KEY (ENTITY_ID) REFERENCES "ENTITY" (ID) ON DELETE CASCADE
 );
 
 -- Index for fast identifier lookups (primary use case for authentication)
-CREATE INDEX idx_entity_identifier_lookup ON ENTITY_IDENTIFIER (NAME, VALUE);
+CREATE INDEX idx_entity_identifier_lookup ON "ENTITY_IDENTIFIER" (NAME, VALUE);

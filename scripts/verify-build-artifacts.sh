@@ -10,6 +10,9 @@
 
 set -e
 
+PRODUCT_NAME="ThunderID"
+PRODUCT_NAME_LOWERCASE="$(echo "$PRODUCT_NAME" | tr '[:upper:]' '[:lower:]')"
+
 echo "✅ Verifying all build artifacts were created..."
 
 # Define expected platforms (GO_OS:GO_ARCH)
@@ -37,7 +40,7 @@ for platform in "${PLATFORMS[@]}"; do
   fi
 
   # Build the expected file pattern with specific architecture
-  EXPECTED_PATTERN="target/dist/thunder-*-${PACKAGE_OS}-${PACKAGE_ARCH}.zip"
+  EXPECTED_PATTERN="target/dist/${PRODUCT_NAME_LOWERCASE}-*-${PACKAGE_OS}-${PACKAGE_ARCH}.zip"
 
   # Expand glob once into an array (nullglob ensures empty array if no match)
   shopt -s nullglob

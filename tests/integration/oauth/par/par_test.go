@@ -41,7 +41,7 @@ const (
 var (
 	testOUID string
 
-	testUserSchema = testutils.UserSchema{
+	testUserType = testutils.UserType{
 		Name: "par-test-person",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -149,7 +149,7 @@ var (
 type PARTestSuite struct {
 	suite.Suite
 	applicationID string
-	userSchemaID  string
+	entityTypeID  string
 	authFlowID    string
 	testUserID    string
 	client        *http.Client
@@ -169,13 +169,13 @@ func (ts *PARTestSuite) SetupSuite() {
 	}
 	testOUID = ouID
 
-	// Create user schema.
-	testUserSchema.OUID = ouID
-	schemaID, err := testutils.CreateUserType(testUserSchema)
+	// Create user type.
+	testUserType.OUID = ouID
+	schemaID, err := testutils.CreateUserType(testUserType)
 	if err != nil {
 		ts.T().Fatalf("Failed to create test user type: %v", err)
 	}
-	ts.userSchemaID = schemaID
+	ts.entityTypeID = schemaID
 
 	// Create authentication flow.
 	flowID, err := testutils.CreateFlow(testAuthFlow)
@@ -287,8 +287,8 @@ func (ts *PARTestSuite) TearDownSuite() {
 		}
 	}
 
-	if ts.userSchemaID != "" {
-		if err := testutils.DeleteUserType(ts.userSchemaID); err != nil {
+	if ts.entityTypeID != "" {
+		if err := testutils.DeleteUserType(ts.entityTypeID); err != nil {
 			ts.T().Errorf("Failed to delete test user type: %v", err)
 		}
 	}

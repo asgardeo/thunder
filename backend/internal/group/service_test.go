@@ -36,9 +36,9 @@ import (
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/tests/mocks/entitymock"
+	"github.com/asgardeo/thunder/tests/mocks/entitytypemock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/sysauthzmock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
 
 // stubTransactioner is a stub implementation of Transactioner for testing.
@@ -1698,8 +1698,8 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers_WithDisplay
 			},
 		}, nil).Once()
 
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
-	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything).
+	schemaMock := entitytypemock.NewEntityTypeServiceInterfaceMock(suite.T())
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything, mock.Anything).
 		Return(map[string]string{"employee": "name"}, (*serviceerror.ServiceError)(nil)).Once()
 
 	storeMock.On("GetGroupsByIDs", mock.Anything, []string{"grp-002"}).
@@ -1711,7 +1711,7 @@ func (suite *GroupServiceTestSuite) TestGroupService_GetGroupMembers_WithDisplay
 		authzService:      newAllowAllAuthz(suite.T()),
 		groupStore:        storeMock,
 		entityService:     entitySvcMock,
-		userSchemaService: schemaMock,
+		entityTypeService: schemaMock,
 	}
 
 	resp, err := service.GetGroupMembers(context.Background(), "grp-001", 5, 0, true)
@@ -2234,8 +2234,8 @@ func TestPopulateMemberDisplayNames_MixedMembers(t *testing.T) {
 			},
 		}, nil).Once()
 
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything).
+	schemaMock := entitytypemock.NewEntityTypeServiceInterfaceMock(t)
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything, mock.Anything).
 		Return(map[string]string{"employee": "name"}, (*serviceerror.ServiceError)(nil)).Once()
 
 	storeMock := newGroupStoreInterfaceMock(t)
@@ -2246,7 +2246,7 @@ func TestPopulateMemberDisplayNames_MixedMembers(t *testing.T) {
 
 	service := &groupService{
 		entityService:     entitySvcMock,
-		userSchemaService: schemaMock,
+		entityTypeService: schemaMock,
 		groupStore:        storeMock,
 	}
 	logger := log.GetLogger()
@@ -2270,13 +2270,13 @@ func TestPopulateMemberDisplayNames_UserFallbackToID(t *testing.T) {
 			{ID: "user-1", Category: entity.EntityCategoryUser, Type: "employee", Attributes: json.RawMessage(`{}`)},
 		}, nil).Once()
 
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything).
+	schemaMock := entitytypemock.NewEntityTypeServiceInterfaceMock(t)
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything, mock.Anything).
 		Return(map[string]string{"employee": "missing"}, (*serviceerror.ServiceError)(nil)).Once()
 
 	service := &groupService{
 		entityService:     entitySvcMock,
-		userSchemaService: schemaMock,
+		entityTypeService: schemaMock,
 	}
 	logger := log.GetLogger()
 
@@ -2355,13 +2355,13 @@ func TestPopulateMemberDisplayNames_SchemaServiceError(t *testing.T) {
 			},
 		}, nil).Once()
 
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything).
+	schemaMock := entitytypemock.NewEntityTypeServiceInterfaceMock(t)
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything, mock.Anything).
 		Return(map[string]string(nil), &serviceerror.ServiceError{Code: "ERR"}).Once()
 
 	service := &groupService{
 		entityService:     entitySvcMock,
-		userSchemaService: schemaMock,
+		entityTypeService: schemaMock,
 	}
 	logger := log.GetLogger()
 
@@ -2390,8 +2390,8 @@ func TestPopulateMemberDisplayNames_SchemaServiceError_WithGroupMember(t *testin
 			},
 		}, nil).Once()
 
-	schemaMock := userschemamock.NewUserSchemaServiceInterfaceMock(t)
-	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything).
+	schemaMock := entitytypemock.NewEntityTypeServiceInterfaceMock(t)
+	schemaMock.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything, mock.Anything).
 		Return(map[string]string(nil), &serviceerror.ServiceError{Code: "ERR"}).Once()
 
 	groupStoreMock.On("GetGroupsByIDs", mock.Anything, []string{"group-1"}).
@@ -2400,7 +2400,7 @@ func TestPopulateMemberDisplayNames_SchemaServiceError_WithGroupMember(t *testin
 	service := &groupService{
 		groupStore:        groupStoreMock,
 		entityService:     entitySvcMock,
-		userSchemaService: schemaMock,
+		entityTypeService: schemaMock,
 	}
 	logger := log.GetLogger()
 

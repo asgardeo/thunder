@@ -30,7 +30,7 @@ import (
 	entitypkg "github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/cryptolab/hash"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/tests/mocks/entitymock"
 )
@@ -47,8 +47,8 @@ func TestDeclarativeResourceTestSuite(t *testing.T) {
 
 // SetupTest initializes runtime config required for hashing.
 func (suite *DeclarativeResourceTestSuite) SetupTest() {
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("test", &config.Config{
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("test", &config.Config{
 		Crypto: config.CryptoConfig{
 			PasswordHashing: config.PasswordHashingConfig{
 				Algorithm: string(hash.SHA256),
@@ -115,7 +115,9 @@ func (suite *DeclarativeResourceTestSuite) TestParseCredentials_InvalidFormat() 
 }
 
 func (suite *DeclarativeResourceTestSuite) TestParseCredentialObject_HashesWhenNoStorageType() {
-	hashService, err := hash.Initialize()
+	hashService, err := hash.Initialize(
+		hash.HashConfig{Algorithm: hash.PBKDF2, SaltSize: 16, Iterations: 1, KeySize: 32},
+	)
 	suite.Require().NoError(err)
 	cred, err := parseCredentialObject(map[string]interface{}{
 		"value": "secret",
@@ -127,7 +129,9 @@ func (suite *DeclarativeResourceTestSuite) TestParseCredentialObject_HashesWhenN
 }
 
 func (suite *DeclarativeResourceTestSuite) TestParseCredentialObject_SystemManagedMarker() {
-	hashService, err := hash.Initialize()
+	hashService, err := hash.Initialize(
+		hash.HashConfig{Algorithm: hash.PBKDF2, SaltSize: 16, Iterations: 1, KeySize: 32},
+	)
 	suite.Require().NoError(err)
 	cred, err := parseCredentialObject(map[string]interface{}{
 		"value":             "raw",
@@ -362,7 +366,9 @@ func (suite *DeclarativeResourceTestSuite) TestParseCredentials_YAMLMapInterface
 }
 
 func (suite *DeclarativeResourceTestSuite) TestParseCredentialObject_YAMLMapInterfaceParams() {
-	hashService, err := hash.Initialize()
+	hashService, err := hash.Initialize(
+		hash.HashConfig{Algorithm: hash.PBKDF2, SaltSize: 16, Iterations: 1, KeySize: 32},
+	)
 	suite.Require().NoError(err)
 	credMap := map[string]interface{}{
 		"value":       "hashed-value",
@@ -390,4 +396,20 @@ func (suite *DeclarativeResourceTestSuite) TestParseCredentials_InvalidCredentia
 	}
 	_, err := parseCredentials(creds)
 	suite.Error(err)
+}
+
+func (suite *DeclarativeResourceTestSuite) TestBuildHashCfgForUser_UnrecognizedAlgorithmErrors() {
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("test", &config.Config{
+		Crypto: config.CryptoConfig{
+			PasswordHashing: config.PasswordHashingConfig{
+				Algorithm: "BCRYPT",
+			},
+		},
+	})
+	suite.Require().NoError(err)
+
+	_, err = buildHashCfgForUser()
+	suite.Error(err)
+	suite.Contains(err.Error(), "BCRYPT")
 }

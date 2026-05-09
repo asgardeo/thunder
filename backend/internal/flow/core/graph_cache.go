@@ -38,9 +38,9 @@ type graphCache struct {
 }
 
 // newGraphCache creates a new in-memory cache instance of graphCache.
-func newGraphCache() GraphCacheInterface {
+func newGraphCache(c cache.CacheInterface[*graph]) GraphCacheInterface {
 	return &graphCache{
-		cache: cache.GetInMemoryCache[*graph]("FlowGraphCache"),
+		cache: c,
 	}
 }
 

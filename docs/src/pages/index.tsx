@@ -16,27 +16,22 @@
  * under the License.
  */
 
-import type {ReactNode} from 'react';
+import Head from '@docusaurus/Head';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
+import type {ReactNode} from 'react';
 import React, {useEffect} from 'react';
-import Head from '@docusaurus/Head';
-import HeroSection from '@site/src/components/HomePage/HeroSection';
-import FeatureCardsSection from '@site/src/components/HomePage/FeatureCardsSection';
-import GetStartedSection from '@site/src/components/HomePage/GetStartedSection';
-
-import FlowsSection from '@site/src/components/HomePage/FlowsSection';
-import UIComponentsSection from '@site/src/components/HomePage/UIComponentsSection';
-import APIReferenceSection from '@site/src/components/HomePage/APIReferenceSection';
-import CommunitySection from '@site/src/components/HomePage/CommunitySection';
 import HomeFooter from '@site/src/components/Footer';
+import CommunitySection from '@site/src/components/HomePage/CommunitySection';
+import HeroSection from '@site/src/components/HomePage/HeroSection';
+import ProductOverviewSection from '@site/src/components/HomePage/ProductOverviewSection';
+import WorkflowSection from '@site/src/components/HomePage/WorkflowSection';
 
 export default function Homepage(): ReactNode {
   const {siteConfig} = useDocusaurusContext();
 
   useEffect(() => {
     document.documentElement.setAttribute('data-page', 'home');
-
     return () => {
       document.documentElement.removeAttribute('data-page');
     };
@@ -50,11 +45,8 @@ export default function Homepage(): ReactNode {
       </Head>
       <div>
         <HeroSection />
-        <FeatureCardsSection />
-        <GetStartedSection />
-        <FlowsSection />
-        <UIComponentsSection />
-        <APIReferenceSection />
+        <ProductOverviewSection />
+        <WorkflowSection />
         <CommunitySection />
         <HomeFooter />
       </div>

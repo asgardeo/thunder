@@ -776,7 +776,7 @@ The tests use a TypeScript-based mock SMS server that:
 │ └───────────┬─────────────┘ │
 │             │                 │
 │ ┌───────────▼─────────────┐ │
-│ │  Automated Thunder Setup│ │
+│ │  Automated ThunderID Setup│ │
 │ │  - Admin Auth           │ │
 │ │  - Create Sender        │ │
 │ │  - Create MFA Flow      │ │
@@ -796,7 +796,7 @@ The tests use a TypeScript-based mock SMS server that:
 └─────────────┬─────────────┘
               │
 ┌─────────────▼─────────────┐
-│   Thunder Sends SMS       │◄────────┐
+│   ThunderID Sends SMS       │◄────────┐
 │   to Mock Server          │         │
 └─────────────┬─────────────┘         │
               │                        │
@@ -818,7 +818,7 @@ The tests use a TypeScript-based mock SMS server that:
 ┌─────────────▼─────────────┐         │
 │   End Test Suite          │         │
 │ ┌─────────────────────────┐         │
-│ │  Cleanup Thunder        │         │
+│ │  Cleanup ThunderID        │         │
 │ │  - Delete Flow          │         │
 │ │  - Delete Sender        │         │
 │ │  - Delete User          │         │

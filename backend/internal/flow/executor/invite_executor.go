@@ -167,7 +167,7 @@ func (e *inviteExecutor) getOrGenerateToken(ctx *core.NodeContext) (string, erro
 
 // generateInviteLink constructs the invite link using the GateClient configuration.
 func (e *inviteExecutor) generateInviteLink(ctx *core.NodeContext, inviteToken string) string {
-	gateConfig := config.GetThunderRuntime().Config.GateClient
+	gateConfig := config.GetServerRuntime().Config.GateClient
 	gateAppURL := fmt.Sprintf("%s://%s:%d%s",
 		gateConfig.Scheme,
 		gateConfig.Hostname,
@@ -178,8 +178,8 @@ func (e *inviteExecutor) generateInviteLink(ctx *core.NodeContext, inviteToken s
 		"inviteToken": []string{inviteToken},
 	}
 
-	if ctx.AppID != "" {
-		queryParams.Set(oauth2const.AppID, ctx.AppID)
+	if ctx.EntityID != "" {
+		queryParams.Set(oauth2const.AppID, ctx.EntityID)
 	}
 
 	return fmt.Sprintf("%s/invite?%s", gateAppURL, queryParams.Encode())

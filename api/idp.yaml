@@ -16,6 +16,10 @@ servers:
       port:
         default: "8090"
 
+tags:
+  - name: Identity Providers
+    description: Identity provider management operations.
+
 security:
   - OAuth2: [system]
 
@@ -38,7 +42,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
     post:
       summary: Create an identity provider
@@ -64,7 +68,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "IDP-1007"
                 message:
@@ -78,7 +82,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "IDP-1004"
                 message:
@@ -92,7 +96,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
   /identity-providers/{id}:
     get:
@@ -119,7 +123,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "IDP-1002"
                 message:
@@ -133,7 +137,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "IDP-1001"
                 message:
@@ -147,7 +151,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
     put:
       summary: Update an identity provider
@@ -180,7 +184,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "IDP-1002"
                 message:
@@ -194,7 +198,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "IDP-1001"
                 message:
@@ -208,7 +212,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "IDP-1004"
                 message:
@@ -222,7 +226,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
     delete:
       summary: Delete an identity provider
@@ -244,7 +248,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "IDP-1002"
                 message:
@@ -258,7 +262,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
 components:
   securitySchemes:
@@ -406,48 +410,17 @@ components:
           description: Whether the property is secret
           example: false
 
-    ErrorResponse:
+    Error:
       type: object
       properties:
         code:
           type: string
-          description: Error code
+          description: "Error code. Codes follow the IDP-XXXX convention."
+          example: "IDP-1001"
         message:
           $ref: '#/components/schemas/I18nMessage'
         description:
           $ref: '#/components/schemas/I18nMessage'
-
-    ClientErrorResponse:
-      allOf:
-        - $ref: '#/components/schemas/ErrorResponse'
-        - type: object
-          properties:
-            code:
-              example: "IDP-1001"
-            message:
-              example:
-                key: "error.idpservice.idp_not_found"
-                defaultValue: "Identity provider not found"
-            description:
-              example:
-                key: "error.idpservice.idp_not_found_description"
-                defaultValue: "The requested identity provider could not be found"
-
-    ServerErrorResponse:
-      allOf:
-        - $ref: '#/components/schemas/ErrorResponse'
-        - type: object
-          properties:
-            code:
-              example: "SSE-5000"
-            message:
-              example:
-                key: "error.internal_server_error"
-                defaultValue: "Internal server error"
-            description:
-              example:
-                key: "error.internal_server_error_description"
-                defaultValue: "An unexpected error occurred while processing the request"
 
     I18nMessage:
       type: object

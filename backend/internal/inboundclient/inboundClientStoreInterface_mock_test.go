@@ -96,7 +96,7 @@ func (_c *inboundClientStoreInterfaceMock_CreateInboundClient_Call) RunAndReturn
 }
 
 // CreateOAuthProfile provides a mock function for the type inboundClientStoreInterfaceMock
-func (_mock *inboundClientStoreInterfaceMock) CreateOAuthProfile(ctx context.Context, entityID string, oauthProfile *model.OAuthProfileData) error {
+func (_mock *inboundClientStoreInterfaceMock) CreateOAuthProfile(ctx context.Context, entityID string, oauthProfile *model.OAuthProfile) error {
 	ret := _mock.Called(ctx, entityID, oauthProfile)
 
 	if len(ret) == 0 {
@@ -104,7 +104,7 @@ func (_mock *inboundClientStoreInterfaceMock) CreateOAuthProfile(ctx context.Con
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *model.OAuthProfileData) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *model.OAuthProfile) error); ok {
 		r0 = returnFunc(ctx, entityID, oauthProfile)
 	} else {
 		r0 = ret.Error(0)
@@ -120,12 +120,12 @@ type inboundClientStoreInterfaceMock_CreateOAuthProfile_Call struct {
 // CreateOAuthProfile is a helper method to define mock.On call
 //   - ctx context.Context
 //   - entityID string
-//   - oauthProfile *model.OAuthProfileData
+//   - oauthProfile *model.OAuthProfile
 func (_e *inboundClientStoreInterfaceMock_Expecter) CreateOAuthProfile(ctx interface{}, entityID interface{}, oauthProfile interface{}) *inboundClientStoreInterfaceMock_CreateOAuthProfile_Call {
 	return &inboundClientStoreInterfaceMock_CreateOAuthProfile_Call{Call: _e.mock.On("CreateOAuthProfile", ctx, entityID, oauthProfile)}
 }
 
-func (_c *inboundClientStoreInterfaceMock_CreateOAuthProfile_Call) Run(run func(ctx context.Context, entityID string, oauthProfile *model.OAuthProfileData)) *inboundClientStoreInterfaceMock_CreateOAuthProfile_Call {
+func (_c *inboundClientStoreInterfaceMock_CreateOAuthProfile_Call) Run(run func(ctx context.Context, entityID string, oauthProfile *model.OAuthProfile)) *inboundClientStoreInterfaceMock_CreateOAuthProfile_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -135,9 +135,9 @@ func (_c *inboundClientStoreInterfaceMock_CreateOAuthProfile_Call) Run(run func(
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 *model.OAuthProfileData
+		var arg2 *model.OAuthProfile
 		if args[2] != nil {
-			arg2 = args[2].(*model.OAuthProfileData)
+			arg2 = args[2].(*model.OAuthProfile)
 		}
 		run(
 			arg0,
@@ -153,7 +153,7 @@ func (_c *inboundClientStoreInterfaceMock_CreateOAuthProfile_Call) Return(err er
 	return _c
 }
 
-func (_c *inboundClientStoreInterfaceMock_CreateOAuthProfile_Call) RunAndReturn(run func(ctx context.Context, entityID string, oauthProfile *model.OAuthProfileData) error) *inboundClientStoreInterfaceMock_CreateOAuthProfile_Call {
+func (_c *inboundClientStoreInterfaceMock_CreateOAuthProfile_Call) RunAndReturn(run func(ctx context.Context, entityID string, oauthProfile *model.OAuthProfile) error) *inboundClientStoreInterfaceMock_CreateOAuthProfile_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -717,7 +717,7 @@ func (_c *inboundClientStoreInterfaceMock_UpdateInboundClient_Call) RunAndReturn
 }
 
 // UpdateOAuthProfile provides a mock function for the type inboundClientStoreInterfaceMock
-func (_mock *inboundClientStoreInterfaceMock) UpdateOAuthProfile(ctx context.Context, entityID string, oauthProfile *model.OAuthProfileData) error {
+func (_mock *inboundClientStoreInterfaceMock) UpdateOAuthProfile(ctx context.Context, entityID string, oauthProfile *model.OAuthProfile) error {
 	ret := _mock.Called(ctx, entityID, oauthProfile)
 
 	if len(ret) == 0 {
@@ -725,7 +725,7 @@ func (_mock *inboundClientStoreInterfaceMock) UpdateOAuthProfile(ctx context.Con
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *model.OAuthProfileData) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *model.OAuthProfile) error); ok {
 		r0 = returnFunc(ctx, entityID, oauthProfile)
 	} else {
 		r0 = ret.Error(0)
@@ -741,12 +741,12 @@ type inboundClientStoreInterfaceMock_UpdateOAuthProfile_Call struct {
 // UpdateOAuthProfile is a helper method to define mock.On call
 //   - ctx context.Context
 //   - entityID string
-//   - oauthProfile *model.OAuthProfileData
+//   - oauthProfile *model.OAuthProfile
 func (_e *inboundClientStoreInterfaceMock_Expecter) UpdateOAuthProfile(ctx interface{}, entityID interface{}, oauthProfile interface{}) *inboundClientStoreInterfaceMock_UpdateOAuthProfile_Call {
 	return &inboundClientStoreInterfaceMock_UpdateOAuthProfile_Call{Call: _e.mock.On("UpdateOAuthProfile", ctx, entityID, oauthProfile)}
 }
 
-func (_c *inboundClientStoreInterfaceMock_UpdateOAuthProfile_Call) Run(run func(ctx context.Context, entityID string, oauthProfile *model.OAuthProfileData)) *inboundClientStoreInterfaceMock_UpdateOAuthProfile_Call {
+func (_c *inboundClientStoreInterfaceMock_UpdateOAuthProfile_Call) Run(run func(ctx context.Context, entityID string, oauthProfile *model.OAuthProfile)) *inboundClientStoreInterfaceMock_UpdateOAuthProfile_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -756,9 +756,9 @@ func (_c *inboundClientStoreInterfaceMock_UpdateOAuthProfile_Call) Run(run func(
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 *model.OAuthProfileData
+		var arg2 *model.OAuthProfile
 		if args[2] != nil {
-			arg2 = args[2].(*model.OAuthProfileData)
+			arg2 = args[2].(*model.OAuthProfile)
 		}
 		run(
 			arg0,
@@ -774,7 +774,7 @@ func (_c *inboundClientStoreInterfaceMock_UpdateOAuthProfile_Call) Return(err er
 	return _c
 }
 
-func (_c *inboundClientStoreInterfaceMock_UpdateOAuthProfile_Call) RunAndReturn(run func(ctx context.Context, entityID string, oauthProfile *model.OAuthProfileData) error) *inboundClientStoreInterfaceMock_UpdateOAuthProfile_Call {
+func (_c *inboundClientStoreInterfaceMock_UpdateOAuthProfile_Call) RunAndReturn(run func(ctx context.Context, entityID string, oauthProfile *model.OAuthProfile) error) *inboundClientStoreInterfaceMock_UpdateOAuthProfile_Call {
 	_c.Call.Return(run)
 	return _c
 }

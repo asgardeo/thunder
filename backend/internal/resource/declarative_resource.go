@@ -25,6 +25,7 @@ import (
 	"strings"
 	"testing"
 
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -68,15 +69,24 @@ func (e *resourceServerExporter) GetParameterizerType() string {
 // GetAllResourceIDs retrieves all resource server IDs.
 // In composite mode, this excludes declarative (YAML-based) resource servers.
 func (e *resourceServerExporter) GetAllResourceIDs(ctx context.Context) ([]string, *serviceerror.ServiceError) {
-	servers, err := e.service.GetResourceServerList(ctx, 1000, 0)
-	if err != nil {
-		return nil, err
-	}
-	ids := make([]string, 0, len(servers.ResourceServers))
-	for _, server := range servers.ResourceServers {
-		// Only include mutable (database-backed) resource servers
-		if !e.service.IsResourceServerDeclarative(server.ID) {
-			ids = append(ids, server.ID)
+	ids := make([]string, 0)
+	offset := 0
+	for {
+		servers, err := e.service.GetResourceServerList(ctx, serverconst.MaxPageSize, offset)
+		if err != nil {
+			return nil, err
+		}
+		if len(servers.ResourceServers) == 0 {
+			break
+		}
+		for _, server := range servers.ResourceServers {
+			if !e.service.IsResourceServerDeclarative(server.ID) {
+				ids = append(ids, server.ID)
+			}
+		}
+		offset += len(servers.ResourceServers)
+		if offset >= servers.TotalResults {
+			break
 		}
 	}
 	return ids, nil
@@ -103,10 +113,22 @@ func (e *resourceServerExporter) GetResourceByID(ctx context.Context, id string)
 		Resources:   []Resource{},
 	}
 
-	// Get all resources for this server (parent=nil for root resources)
-	resources, err := e.service.GetResourceList(ctx, id, nil, 1000, 0)
-	if err != nil {
-		return nil, "", err
+	// Get all resources for this server
+	var allResources []Resource
+	resOffset := 0
+	for {
+		resources, err := e.service.GetResourceList(ctx, id, nil, serverconst.MaxPageSize, resOffset)
+		if err != nil {
+			return nil, "", err
+		}
+		if len(resources.Resources) == 0 {
+			break
+		}
+		allResources = append(allResources, resources.Resources...)
+		resOffset += len(resources.Resources)
+		if resOffset >= resources.TotalResults {
+			break
+		}
 	}
 
 	// Build map for hierarchical structure keyed by resource ID
@@ -114,7 +136,7 @@ func (e *resourceServerExporter) GetResourceByID(ctx context.Context, id string)
 	// Build separate map for ID to Handle lookups (for parent resolution)
 	idToHandleMap := make(map[string]string)
 
-	for _, res := range resources.Resources {
+	for _, res := range allResources {
 		resource := Resource{
 			Name:        res.Name,
 			Handle:      res.Handle,
@@ -130,12 +152,24 @@ func (e *resourceServerExporter) GetResourceByID(ctx context.Context, id string)
 		}
 
 		// Get actions for this resource
-		actions, err := e.service.GetActionList(ctx, id, &res.ID, 1000, 0)
-		if err != nil {
-			return nil, "", err
+		var allActions []Action
+		actOffset := 0
+		for {
+			actions, err := e.service.GetActionList(ctx, id, &res.ID, serverconst.MaxPageSize, actOffset)
+			if err != nil {
+				return nil, "", err
+			}
+			if len(actions.Actions) == 0 {
+				break
+			}
+			allActions = append(allActions, actions.Actions...)
+			actOffset += len(actions.Actions)
+			if actOffset >= actions.TotalResults {
+				break
+			}
 		}
 
-		for _, action := range actions.Actions {
+		for _, action := range allActions {
 			resource.Actions = append(resource.Actions, Action{
 				Name:        action.Name,
 				Handle:      action.Handle,
@@ -149,14 +183,8 @@ func (e *resourceServerExporter) GetResourceByID(ctx context.Context, id string)
 		idToHandleMap[res.ID] = res.Handle
 	}
 
-	// Get root-level actions (not associated with any resource)
-	_, err = e.service.GetActionList(ctx, id, nil, 1000, 0)
-	if err != nil {
-		return nil, "", err
-	}
-
 	// Build the hierarchical structure - add root-level resources
-	for _, res := range resources.Resources {
+	for _, res := range allResources {
 		if res.ParentHandle == "" {
 			if resource, ok := resourceIDMap[res.ID]; ok {
 				rs.Resources = append(rs.Resources, *resource)
@@ -185,14 +213,11 @@ func (e *resourceServerExporter) ValidateResource(
 }
 
 // GetResourceRules returns the parameterization rules for resource servers.
+// Resource servers have no fields that need to be parameterized as template variables,
+// so nil is returned to use the standard YAML encoder path which preserves literal values
+// and correctly quotes fields tagged with yamlfmt:"quoted" (e.g. Delimiter).
 func (e *resourceServerExporter) GetResourceRules() *declarativeresource.ResourceRules {
-	return &declarativeresource.ResourceRules{
-		Variables: []string{
-			"OUID",
-			"Identifier",
-		},
-		ArrayVariables: []string{},
-	}
+	return nil
 }
 
 // loadDeclarativeResources loads resource server resources from declarative files.
@@ -254,7 +279,7 @@ func parseAndValidateResourceServerWrapper(resourceService ResourceServiceInterf
 		}
 
 		// Process and compute permissions in-place
-		if err := processResourceServer(rs); err != nil {
+		if err := ProcessResourceServer(rs); err != nil {
 			return nil, fmt.Errorf("error processing resource server '%s': %w", rs.Name, err)
 		}
 
@@ -282,8 +307,8 @@ func parseToResourceServer(data []byte) (*ResourceServer, error) {
 	return &rs, nil
 }
 
-// processResourceServer processes the resource server and computes permissions in-place.
-func processResourceServer(rs *ResourceServer) error {
+// ProcessResourceServer processes the resource server and computes permissions in-place.
+func ProcessResourceServer(rs *ResourceServer) error {
 	delimiter := rs.Delimiter
 	if delimiter == "" {
 		delimiter = ":" // Default delimiter

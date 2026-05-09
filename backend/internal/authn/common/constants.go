@@ -29,6 +29,7 @@ const DefaultHTTPTimeout = 5 * time.Second
 const (
 	AuthenticatorCredentials = "CredentialsAuthenticator"
 	AuthenticatorSMSOTP      = "SMSOTPAuthenticator"
+	AuthenticatorMagicLink   = "MagicLinkAuthenticator"
 	AuthenticatorGoogle      = "GoogleOIDCAuthenticator"
 	AuthenticatorGithub      = "GithubOAuthAuthenticator"
 	AuthenticatorOAuth       = "OAuthAuthenticator"

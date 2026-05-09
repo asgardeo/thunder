@@ -1,0 +1,788 @@
+[
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Basic Auth Executor",
+      "label": "Identifier + Password",
+      "image": "assets/images/icons/password.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "BasicAuthExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "SMS OTP Executor",
+      "label": "Send SMS OTP",
+      "image": "assets/images/icons/mobile-message.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "SMSOTPAuthExecutor",
+          "mode": "send"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "SMS OTP Executor",
+      "label": "Verify SMS OTP",
+      "image": "assets/images/icons/mobile-message.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "SMSOTPAuthExecutor",
+          "mode": "verify"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "OAuth Executor",
+      "label": "OAuth",
+      "image": "assets/images/icons/link.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "OAuthExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "idpId": "{{IDP_ID}}",
+        "allowAuthenticationWithoutLocalUser": false,
+        "allowRegistrationWithExistingUser": false,
+        "allowCrossOUProvisioning": false
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "OIDC Auth Executor",
+      "label": "OIDC Auth",
+      "image": "assets/images/icons/link.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "OIDCAuthExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "idpId": "{{IDP_ID}}",
+        "allowAuthenticationWithoutLocalUser": false,
+        "allowRegistrationWithExistingUser": false,
+        "allowCrossOUProvisioning": false
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "GitHub Executor",
+      "label": "GitHub",
+      "image": "assets/images/icons/github.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "GithubOAuthExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "idpId": "{{IDP_ID}}",
+        "allowAuthenticationWithoutLocalUser": false,
+        "allowRegistrationWithExistingUser": false,
+        "allowCrossOUProvisioning": false
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Google Executor",
+      "label": "Google",
+      "image": "assets/images/icons/google-generic.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "GoogleOIDCAuthExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "idpId": "{{IDP_ID}}",
+        "allowAuthenticationWithoutLocalUser": false,
+        "allowRegistrationWithExistingUser": false,
+        "allowCrossOUProvisioning": false
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Passkey Executor",
+      "label": "Request Passkey",
+      "image": "assets/images/icons/fingerprint.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "PasskeyAuthExecutor",
+          "mode": "challenge"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "relyingPartyId": "localhost",
+        "relyingPartyName": "ThunderID"
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Passkey Executor",
+      "label": "Verify Passkey",
+      "image": "assets/images/icons/fingerprint.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "PasskeyAuthExecutor",
+          "mode": "verify"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Passkey Executor",
+      "label": "Start Passkey Registration",
+      "image": "assets/images/icons/fingerprint.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "PasskeyAuthExecutor",
+          "mode": "register_start"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "relyingPartyId": "localhost",
+        "relyingPartyName": "ThunderID"
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Passkey Executor",
+      "label": "Finish Passkey Registration",
+      "image": "assets/images/icons/fingerprint.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "PasskeyAuthExecutor",
+          "mode": "register_finish"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Identifying Executor",
+      "label": "Identify User",
+      "image": "assets/images/icons/magnifying-glass.svg",
+      "showOnResourcePanel": false
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "IdentifyingExecutor",
+          "mode": "identify"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Identity Resolver",
+      "label": "Resolve User",
+      "image": "assets/images/icons/magnifying-glass.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "IdentifyingExecutor",
+          "mode": "resolve"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Auth Assertion Executor",
+      "label": "Auth Assertion Generator",
+      "image": "assets/images/icons/checkbox-check.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "AuthAssertExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Provisioning Executor",
+      "label": "Provisioning",
+      "image": "assets/images/icons/user.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "ProvisioningExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "allowCrossOUProvisioning": false,
+        "assignGroup": "",
+        "assignRole": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Attribute Collector",
+      "label": "Attribute Collector",
+      "image": "assets/images/icons/form.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "AttributeCollector"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Authorization Executor",
+      "label": "Authorization",
+      "image": "assets/images/icons/stamp.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "AuthorizationExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "OU Executor",
+      "label": "OU Creation",
+      "image": "assets/images/icons/form.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "OUExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "parentOuId": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "HTTP Request Executor",
+      "label": "HTTP Request",
+      "image": "assets/images/icons/link.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "HTTPRequestExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": ""
+      },
+      "properties": {
+        "url": "",
+        "method": "GET",
+        "headers": {},
+        "body": {},
+        "timeout": 10,
+        "responseMapping": {},
+        "errorHandling": {
+          "failOnError": false,
+          "retryCount": 0,
+          "retryDelay": 0
+        }
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "User Type Resolver",
+      "label": "User Type Resolver",
+      "image": "assets/images/icons/user.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "UserTypeResolver"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "allowedUserTypes": []
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Magic Link Executor",
+      "label": "Magic Link",
+      "image": "assets/images/icons/link.svg",
+      "showOnResourcePanel": false
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "MagicLinkExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Identity Resolver",
+      "label": "Identify User",
+      "image": "assets/images/icons/magnifying-glass.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "IdentifyingExecutor",
+          "mode": "identify"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Consent Executor",
+      "label": "User Consent",
+      "image": "assets/images/icons/stamp.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "ConsentExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "timeout": "0"
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Federated Auth Resolver",
+      "label": "Resolve Federated User",
+      "image": "assets/images/icons/magnifying-glass.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "FederatedAuthResolverExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "OU Resolver Executor",
+      "label": "Resolve OU",
+      "image": "assets/images/icons/magnifying-glass.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "OUResolverExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "resolveFrom": "caller"
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Invite Executor",
+      "label": "Generate Invite",
+      "image": "assets/images/icons/link.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "InviteExecutor",
+          "mode": "generate"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Invite Executor",
+      "label": "Verify Invite",
+      "image": "assets/images/icons/link.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "InviteExecutor",
+          "mode": "verify"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Email Executor",
+      "label": "Send Email",
+      "image": "assets/images/icons/email.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "EmailExecutor",
+          "mode": "send"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "emailTemplate": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "SMS Executor",
+      "label": "Send SMS",
+      "image": "assets/images/icons/mobile-message.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "SMSExecutor"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "smsTemplate": "",
+        "senderId": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Credential Setter",
+      "label": "Set Credentials",
+      "image": "assets/images/icons/password.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "CredentialSetter"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Attribute Uniqueness Validator",
+      "label": "Validate Attribute Uniqueness",
+      "image": "assets/images/icons/checkbox-check.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "AttributeUniquenessValidator"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      }
+    }
+  },
+  {
+    "resourceType": "STEP",
+    "category": "EXECUTOR",
+    "type": "TASK_EXECUTION",
+    "display": {
+      "header": "Permission Validator",
+      "label": "Validate Permission",
+      "image": "assets/images/icons/stamp.svg",
+      "showOnResourcePanel": true
+    },
+    "data": {
+      "action": {
+        "type": "EXECUTOR",
+        "executor": {
+          "name": "PermissionValidator"
+        },
+        "onSuccess": "",
+        "onFailure": "",
+        "onIncomplete": ""
+      },
+      "properties": {
+        "requiredScopes": ["system"]
+      }
+    }
+  }
+]

@@ -25,7 +25,7 @@ database:
 
 oauth:
   jwt:
-    issuer: thunder
+    issuer: thunderid
     validity_period: 3600
 
 flow:

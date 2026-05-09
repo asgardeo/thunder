@@ -34,25 +34,25 @@ import (
 // inboundClientJSONBlob is the internal structure for marshaling/unmarshaling the
 // PROPERTIES column.
 type inboundClientJSONBlob struct {
-	Assertion          *inboundmodel.AssertionConfig    `json:"assertion,omitempty"`
-	LoginConsent       *inboundmodel.LoginConsentConfig `json:"loginConsent,omitempty"`
-	AllowedEntityTypes []string                         `json:"allowedEntityTypes,omitempty"`
-	Properties         map[string]interface{}           `json:"properties,omitempty"`
+	Assertion        *inboundmodel.AssertionConfig    `json:"assertion,omitempty"`
+	LoginConsent     *inboundmodel.LoginConsentConfig `json:"loginConsent,omitempty"`
+	AllowedUserTypes []string                         `json:"allowedUserTypes,omitempty"`
+	Properties       map[string]interface{}           `json:"properties,omitempty"`
 }
 
 // inboundClientStoreInterface defines persistence operations for inbound clients.
 // All operations are keyed by entity ID so the same store serves applications, agents, and
-// any future principal category. OAuth methods accept typed OAuthProfileData; the store
+// any future principal category. OAuth methods accept typed OAuthProfile; the store
 // handles JSON marshaling internally so callers never need to know the wire format.
 type inboundClientStoreInterface interface {
 	CreateInboundClient(ctx context.Context, client inboundmodel.InboundClient) error
-	CreateOAuthProfile(ctx context.Context, entityID string, oauthProfile *inboundmodel.OAuthProfileData) error
+	CreateOAuthProfile(ctx context.Context, entityID string, oauthProfile *inboundmodel.OAuthProfile) error
 	GetInboundClientByEntityID(ctx context.Context, entityID string) (*inboundmodel.InboundClient, error)
 	GetOAuthProfileByEntityID(ctx context.Context, entityID string) (*inboundmodel.OAuthProfile, error)
 	GetInboundClientList(ctx context.Context, limit int) ([]inboundmodel.InboundClient, error)
 	GetTotalInboundClientCount(ctx context.Context) (int, error)
 	UpdateInboundClient(ctx context.Context, client inboundmodel.InboundClient) error
-	UpdateOAuthProfile(ctx context.Context, entityID string, oauthProfile *inboundmodel.OAuthProfileData) error
+	UpdateOAuthProfile(ctx context.Context, entityID string, oauthProfile *inboundmodel.OAuthProfile) error
 	DeleteInboundClient(ctx context.Context, entityID string) error
 	DeleteOAuthProfile(ctx context.Context, entityID string) error
 	InboundClientExists(ctx context.Context, entityID string) (bool, error)
@@ -85,7 +85,7 @@ func newStore() (inboundClientStoreInterface, transaction.Transactioner, error) 
 		return nil, nil, err
 	}
 
-	deploymentID := config.GetThunderRuntime().Config.Server.Identifier
+	deploymentID := config.GetServerRuntime().Config.Server.Identifier
 	if _, err := client.QueryContext(context.Background(), queryGetInboundClientCount, deploymentID); err != nil {
 		return nil, nil, fmt.Errorf("failed to verify inbound client table: %w", err)
 	}
@@ -105,10 +105,10 @@ func marshalInboundClient(c inboundmodel.InboundClient) (
 	err error,
 ) {
 	blob := inboundClientJSONBlob{
-		Assertion:          c.Assertion,
-		LoginConsent:       c.LoginConsent,
-		AllowedEntityTypes: c.AllowedEntityTypes,
-		Properties:         c.Properties,
+		Assertion:        c.Assertion,
+		LoginConsent:     c.LoginConsent,
+		AllowedUserTypes: c.AllowedUserTypes,
+		Properties:       c.Properties,
 	}
 	propertiesBytes, err = marshalNullableJSON(blob)
 	if err != nil {
@@ -151,13 +151,13 @@ func (st *store) CreateInboundClient(ctx context.Context, client inboundmodel.In
 // CreateOAuthProfile creates a new OAuth inbound profile entry. The typed profile is
 // marshaled to JSON internally.
 func (st *store) CreateOAuthProfile(ctx context.Context, entityID string,
-	oauthProfile *inboundmodel.OAuthProfileData) error {
+	oauthProfile *inboundmodel.OAuthProfile) error {
 	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	profileJSON, err := marshalOAuthProfileData(oauthProfile)
+	profileJSON, err := marshalOAuthProfile(oauthProfile)
 	if err != nil {
 		return err
 	}
@@ -274,13 +274,13 @@ func (st *store) UpdateInboundClient(ctx context.Context, client inboundmodel.In
 // UpdateOAuthProfile updates an OAuth profile for an entity. The typed profile is marshaled
 // to JSON internally.
 func (st *store) UpdateOAuthProfile(ctx context.Context, entityID string,
-	oauthProfile *inboundmodel.OAuthProfileData) error {
+	oauthProfile *inboundmodel.OAuthProfile) error {
 	dbClient, err := st.dbProvider.GetConfigDBClient()
 	if err != nil {
 		return fmt.Errorf("failed to get database client: %w", err)
 	}
 
-	profileJSON, err := marshalOAuthProfileData(oauthProfile)
+	profileJSON, err := marshalOAuthProfile(oauthProfile)
 	if err != nil {
 		return err
 	}
@@ -296,9 +296,9 @@ func (st *store) UpdateOAuthProfile(ctx context.Context, entityID string,
 	return nil
 }
 
-// marshalOAuthProfileData serializes an OAuthProfileData to the OAUTH_CONFIG JSON format.
+// marshalOAuthProfile serializes an OAuthProfile to the OAUTH_CONFIG JSON format.
 // Returns nil bytes for nil input.
-func marshalOAuthProfileData(p *inboundmodel.OAuthProfileData) (json.RawMessage, error) {
+func marshalOAuthProfile(p *inboundmodel.OAuthProfile) (json.RawMessage, error) {
 	if p == nil {
 		return nil, nil
 	}
@@ -392,7 +392,7 @@ func buildInboundClientFromRow(row map[string]interface{}) (*inboundmodel.Inboun
 		} else {
 			client.Assertion = blob.Assertion
 			client.LoginConsent = blob.LoginConsent
-			client.AllowedEntityTypes = blob.AllowedEntityTypes
+			client.AllowedUserTypes = blob.AllowedUserTypes
 			client.Properties = blob.Properties
 		}
 	}
@@ -401,23 +401,17 @@ func buildInboundClientFromRow(row map[string]interface{}) (*inboundmodel.Inboun
 }
 
 // buildOAuthProfileFromRow constructs an OAuthProfile from a database result row.
+// Returns nil when the row has no oauth_config payload.
 func buildOAuthProfileFromRow(row map[string]interface{}) (*inboundmodel.OAuthProfile, error) {
-	entityID, ok := row["entity_id"].(string)
-	if !ok {
-		return nil, fmt.Errorf("failed to parse entity_id as string")
+	profileStr := parseJSONColumnString(row, "oauth_config")
+	if profileStr == "" {
+		return nil, nil
 	}
-
-	out := &inboundmodel.OAuthProfile{AppID: entityID}
-
-	if profileStr := parseJSONColumnString(row, "oauth_config"); profileStr != "" {
-		var p inboundmodel.OAuthProfileData
-		if err := json.Unmarshal([]byte(profileStr), &p); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal OAuth profile JSON: %w", err)
-		}
-		out.OAuthProfile = &p
+	var p inboundmodel.OAuthProfile
+	if err := json.Unmarshal([]byte(profileStr), &p); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal OAuth profile JSON: %w", err)
 	}
-
-	return out, nil
+	return &p, nil
 }
 
 // marshalNullableJSON marshals a value to JSON, returning nil for nil/empty input.

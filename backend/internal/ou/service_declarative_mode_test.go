@@ -38,13 +38,13 @@ type DeclarativeModeServiceTestSuite struct {
 
 func (suite *DeclarativeModeServiceTestSuite) SetupTest() {
 	// Initialize runtime with declarative mode enabled
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 	}
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	err := config.InitializeServerRuntime("/tmp/test", testConfig)
 	suite.Require().NoError(err)
 
 	// Create service with mock store and dependencies
@@ -59,7 +59,7 @@ func (suite *DeclarativeModeServiceTestSuite) SetupTest() {
 }
 
 func (suite *DeclarativeModeServiceTestSuite) TearDownTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 func (suite *DeclarativeModeServiceTestSuite) TestCreateOrganizationUnit_FailsInDeclarativeMode() {

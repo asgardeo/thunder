@@ -59,7 +59,7 @@ func newServiceWithConfig() *Service {
 	// Check if observability is disabled
 
 	logger.Debug("Initializing observability service")
-	config := config.GetThunderRuntime().Config.Observability
+	config := config.GetServerRuntime().Config.Observability
 	if !config.Enabled {
 		logger.Debug("Observability is disabled in configuration")
 		return &Service{

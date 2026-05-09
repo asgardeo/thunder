@@ -122,6 +122,16 @@ func (c *compositeIDPStore) GetIdentityProviderByName(ctx context.Context, idpNa
 	)
 }
 
+// GetIdentityProviderByIssuer retrieves an identity provider by its issuer property from either store.
+// Checks database store first, then falls back to file store.
+func (c *compositeIDPStore) GetIdentityProviderByIssuer(ctx context.Context, issuer string) (*IDPDTO, error) {
+	return declarativeresource.CompositeGetHelper(
+		func() (*IDPDTO, error) { return c.dbStore.GetIdentityProviderByIssuer(ctx, issuer) },
+		func() (*IDPDTO, error) { return c.fileStore.GetIdentityProviderByIssuer(ctx, issuer) },
+		ErrIDPNotFound,
+	)
+}
+
 // UpdateIdentityProvider updates an identity provider in the database store only.
 // Returns an error if the IDP is declarative (exists in file store).
 func (c *compositeIDPStore) UpdateIdentityProvider(ctx context.Context, idp *IDPDTO) error {

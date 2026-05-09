@@ -17,10 +17,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "thunder.fullname" . }}-config-map
+  name: {{ include "thunderid.fullname" . }}-config-map
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "thunder.labels" . | nindent 4 }}
+    {{- include "thunderid.labels" . | nindent 4 }}
 data:
   deployment.yaml: {{ tpl (.Files.Get "conf/deployment.yaml") . | quote }}
   gate-config.js: {{ tpl (.Files.Get "conf/apps/gate/config.js") . | quote }}

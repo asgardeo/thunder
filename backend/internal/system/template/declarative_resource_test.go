@@ -138,12 +138,12 @@ func (suite *TemplateDeclarativeResourceTestSuite) TestValidateTemplateDTO_SMSWi
 func (suite *TemplateDeclarativeResourceTestSuite) TestLoadDeclarativeResources_WithSMSTemplateFile() {
 	tempDir := suite.T().TempDir()
 	testConfig := &config.Config{}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime(tempDir, testConfig)
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime(tempDir, testConfig)
 	suite.NoError(err)
 
-	runtime := config.GetThunderRuntime()
-	resourceDir := filepath.Join(runtime.ThunderHome, "repository", "resources", "templates")
+	runtime := config.GetServerRuntime()
+	resourceDir := filepath.Join(runtime.ServerHome, "repository", "resources", "templates")
 	err = os.MkdirAll(resourceDir, 0o750)
 	suite.NoError(err)
 
@@ -195,8 +195,8 @@ func (suite *TemplateDeclarativeResourceTestSuite) TestValidateTemplateDTO_Unsup
 func (suite *TemplateDeclarativeResourceTestSuite) TestLoadDeclarativeResources_Integration() {
 	tempDir := suite.T().TempDir()
 	testConfig := &config.Config{}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime(tempDir, testConfig)
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime(tempDir, testConfig)
 	suite.NoError(err)
 
 	genericStore := declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeTemplate)
@@ -211,12 +211,12 @@ func (suite *TemplateDeclarativeResourceTestSuite) TestLoadDeclarativeResources_
 func (suite *TemplateDeclarativeResourceTestSuite) TestLoadDeclarativeResources_WithTemplateFiles() {
 	tempDir := suite.T().TempDir()
 	testConfig := &config.Config{}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime(tempDir, testConfig)
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime(tempDir, testConfig)
 	suite.NoError(err)
 
-	runtime := config.GetThunderRuntime()
-	resourceDir := filepath.Join(runtime.ThunderHome, "repository", "resources", "templates")
+	runtime := config.GetServerRuntime()
+	resourceDir := filepath.Join(runtime.ServerHome, "repository", "resources", "templates")
 	err = os.MkdirAll(resourceDir, 0o750)
 	suite.NoError(err)
 
@@ -247,8 +247,8 @@ body: "Hello {{ctx(inviteLink)}}"
 func (suite *TemplateDeclarativeResourceTestSuite) TestLoadDeclarativeResources_WithEmptyDirectoryPath() {
 	tempDir := suite.T().TempDir()
 	testConfig := &config.Config{}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime(tempDir, testConfig)
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime(tempDir, testConfig)
 	suite.NoError(err)
 
 	genericStore := declarativeresource.NewGenericFileBasedStoreForTest(entity.KeyTypeTemplate)

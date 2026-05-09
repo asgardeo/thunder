@@ -141,12 +141,12 @@ packages:
       pkgname: user
       filename: "{{.InterfaceName}}_mock_test.go"
 
-  github.com/asgardeo/thunder/internal/userschema:
+  github.com/asgardeo/thunder/internal/entitytype:
     config:
       all: true
-      dir: internal/userschema
+      dir: internal/entitytype
       structname: '{{.InterfaceName}}Mock'
-      pkgname: userschema
+      pkgname: entitytype
       filename: "{{.InterfaceName}}_mock_test.go"
 
   github.com/asgardeo/thunder/internal/group:

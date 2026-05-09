@@ -21,16 +21,16 @@ package user
 import (
 	"context"
 
+	"github.com/asgardeo/thunder/internal/entitytype"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 // ResolveDisplayAttributePaths collects unique user types and resolves their display
-// attribute paths from the user schema service.
+// attribute paths from the entity type service.
 // Returns nil if there are no types to resolve or if the lookup fails.
 func ResolveDisplayAttributePaths(
-	ctx context.Context, userTypes []string, schemaService userschema.UserSchemaServiceInterface,
+	ctx context.Context, userTypes []string, schemaService entitytype.EntityTypeServiceInterface,
 	logger *log.Logger,
 ) map[string]string {
 	if schemaService == nil || len(userTypes) == 0 {
@@ -42,7 +42,7 @@ func ResolveDisplayAttributePaths(
 		return nil
 	}
 
-	displayPaths, svcErr := schemaService.GetDisplayAttributesByNames(ctx, uniqueTypes)
+	displayPaths, svcErr := schemaService.GetDisplayAttributesByNames(ctx, entitytype.TypeCategoryUser, uniqueTypes)
 	if svcErr != nil {
 		if logger != nil {
 			logger.Warn("Failed to resolve display attribute paths, skipping display resolution",

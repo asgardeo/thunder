@@ -36,7 +36,7 @@ import (
 //
 // Returns normalized store mode: "mutable", "declarative", or "composite"
 func getRoleStoreMode() serverconst.StoreMode {
-	cfg := config.GetThunderRuntime().Config
+	cfg := config.GetServerRuntime().Config
 	// Check if service-level configuration is explicitly set
 	if cfg.Role.Store != "" {
 		mode := serverconst.StoreMode(strings.ToLower(strings.TrimSpace(cfg.Role.Store)))

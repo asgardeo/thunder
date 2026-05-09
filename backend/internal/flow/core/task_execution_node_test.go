@@ -360,7 +360,7 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteEnrichesRuntimeData() {
 
 	ctx := &NodeContext{
 		ExecutionID: "test-flow",
-		AppID:       "app-789",
+		EntityID:    "app-789",
 		RuntimeData: map[string]string{"existing": "value"},
 	}
 	resp, err := node.Execute(ctx)

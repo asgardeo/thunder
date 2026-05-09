@@ -32,8 +32,8 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/entityprovidermock"
+	"github.com/asgardeo/thunder/tests/mocks/entitytypemock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
 
 const (
@@ -44,7 +44,7 @@ const (
 type AttributeUniquenessValidatorTestSuite struct {
 	suite.Suite
 	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
-	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
+	mockEntityTypeService *entitytypemock.EntityTypeServiceInterfaceMock
 	mockEntityProvider    *entityprovidermock.EntityProviderInterfaceMock
 	mockBaseExecutor      *coremock.ExecutorInterfaceMock
 	executor              *attributeUniquenessValidator
@@ -52,7 +52,7 @@ type AttributeUniquenessValidatorTestSuite struct {
 
 func (suite *AttributeUniquenessValidatorTestSuite) SetupTest() {
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockEntityTypeService = entitytypemock.NewEntityTypeServiceInterfaceMock(suite.T())
 	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
 
 	suite.mockBaseExecutor = coremock.NewExecutorInterfaceMock(suite.T())
@@ -74,7 +74,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) SetupTest() {
 		prerequisites).Return(suite.mockBaseExecutor)
 
 	suite.executor = newAttributeUniquenessValidator(
-		suite.mockFlowFactory, suite.mockUserSchemaService, suite.mockEntityProvider)
+		suite.mockFlowFactory, suite.mockEntityTypeService, suite.mockEntityProvider)
 }
 
 func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_NoUserType_SkipsCheck() {
@@ -88,7 +88,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_NoUserType_Skips
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	suite.mockUserSchemaService.AssertNotCalled(suite.T(), "GetUniqueAttributes")
+	suite.mockEntityTypeService.AssertNotCalled(suite.T(), "GetUniqueAttributes")
 }
 
 func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_NoConflict_ReturnsComplete() {
@@ -100,7 +100,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_NoConflict_Retur
 		},
 	}
 
-	suite.mockUserSchemaService.On("GetUniqueAttributes", mock.Anything, testUniquenessUserType).
+	suite.mockEntityTypeService.On("GetUniqueAttributes", mock.Anything, mock.Anything, testUniquenessUserType).
 		Return([]string{"email", "username"}, nil)
 
 	freeID := (*string)(nil)
@@ -136,7 +136,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_AttributeConflic
 				},
 			}
 
-			suite.mockUserSchemaService.On("GetUniqueAttributes", mock.Anything, testUniquenessUserType).
+			suite.mockEntityTypeService.On("GetUniqueAttributes", mock.Anything, mock.Anything, testUniquenessUserType).
 				Return([]string{tt.attribute}, nil).Once()
 
 			existingUserID := testExistingUserID
@@ -164,7 +164,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_UniqueAttrNotInI
 		},
 	}
 
-	suite.mockUserSchemaService.On("GetUniqueAttributes", mock.Anything, testUniquenessUserType).
+	suite.mockEntityTypeService.On("GetUniqueAttributes", mock.Anything, mock.Anything, testUniquenessUserType).
 		Return([]string{"email", "username"}, nil)
 
 	freeID := (*string)(nil)
@@ -189,7 +189,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_SchemaServiceErr
 		},
 	}
 
-	suite.mockUserSchemaService.On("GetUniqueAttributes", mock.Anything, testUniquenessUserType).
+	suite.mockEntityTypeService.On("GetUniqueAttributes", mock.Anything, mock.Anything, testUniquenessUserType).
 		Return([]string(nil), &serviceerror.ServiceError{
 			Code:  "schema_not_found",
 			Error: i18ncore.I18nMessage{Key: "error.test.schema_not_found", DefaultValue: "schema not found"},
@@ -211,7 +211,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_IdentifyUserSyst
 		},
 	}
 
-	suite.mockUserSchemaService.On("GetUniqueAttributes", mock.Anything, testUniquenessUserType).
+	suite.mockEntityTypeService.On("GetUniqueAttributes", mock.Anything, mock.Anything, testUniquenessUserType).
 		Return([]string{"email"}, nil)
 
 	suite.mockEntityProvider.On("IdentifyEntity", map[string]interface{}{"email": "test@example.com"}).
@@ -233,7 +233,7 @@ func (suite *AttributeUniquenessValidatorTestSuite) TestExecute_NoUniqueAttribut
 		},
 	}
 
-	suite.mockUserSchemaService.On("GetUniqueAttributes", mock.Anything, testUniquenessUserType).
+	suite.mockEntityTypeService.On("GetUniqueAttributes", mock.Anything, mock.Anything, testUniquenessUserType).
 		Return([]string{}, nil)
 
 	resp, err := suite.executor.Execute(ctx)

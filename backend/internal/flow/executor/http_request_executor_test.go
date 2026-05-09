@@ -50,11 +50,11 @@ func TestHTTPRequestExecutorTestSuite(t *testing.T) {
 }
 
 func (suite *HTTPRequestExecutorTestSuite) SetupSuite() {
-	_ = config.InitializeThunderRuntime("test", &config.Config{})
+	_ = config.InitializeServerRuntime("test", &config.Config{})
 }
 
 func (suite *HTTPRequestExecutorTestSuite) TearDownSuite() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 func (suite *HTTPRequestExecutorTestSuite) SetupTest() {

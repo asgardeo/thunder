@@ -33,9 +33,17 @@ import (
 
 const testServerURL = testutils.TestServerURL
 
-type errorResponse struct {
-	Error            string `json:"error"`
-	ErrorDescription string `json:"error_description"`
+// i18nMessage mirrors the i18n message structure returned in API error responses.
+type i18nMessage struct {
+	Key          string `json:"key"`
+	DefaultValue string `json:"defaultValue"`
+}
+
+// apiErrorResponse mirrors apierror.ErrorResponse for decoding security error responses.
+type apiErrorResponse struct {
+	Code        string      `json:"code"`
+	Message     i18nMessage `json:"message"`
+	Description i18nMessage `json:"description"`
 }
 
 // APIAuthTestSuite validates both authentication and authorization behavior for protected APIs.
@@ -46,7 +54,7 @@ type APIAuthTestSuite struct {
 	invalidTokenClient *http.Client
 	userClient         *http.Client
 	ouID               string
-	userSchemaID       string
+	entityTypeID       string
 	regularUserID      string
 }
 
@@ -70,39 +78,39 @@ func (suite *APIAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err)
 	suite.ouID = ouID
 
-	userSchema := testutils.UserSchema{
+	entityType := testutils.UserType{
 		Name:                  fmt.Sprintf("api-auth-user-%d", time.Now().UnixNano()),
 		OUID:                  suite.ouID,
 		AllowSelfRegistration: true,
 		Schema: map[string]interface{}{
-			"username":  map[string]interface{}{"type": "string"},
-			"password":  map[string]interface{}{"type": "string", "credential": true},
-			"email":     map[string]interface{}{"type": "string"},
-			"given_name": map[string]interface{}{"type": "string"},
-			"family_name":  map[string]interface{}{"type": "string"},
+			"username":    map[string]interface{}{"type": "string"},
+			"password":    map[string]interface{}{"type": "string", "credential": true},
+			"email":       map[string]interface{}{"type": "string"},
+			"given_name":  map[string]interface{}{"type": "string"},
+			"family_name": map[string]interface{}{"type": "string"},
 		},
 	}
 
-	userSchemaID, err := testutils.CreateUserType(userSchema)
+	entityTypeID, err := testutils.CreateUserType(entityType)
 	suite.Require().NoError(err)
-	suite.userSchemaID = userSchemaID
+	suite.entityTypeID = entityTypeID
 
 	username := fmt.Sprintf("authuser_%d", time.Now().UnixNano())
 	password := "ApiAuthTest123!"
 	userAttrs := map[string]interface{}{
-		"username":  username,
-		"password":  password,
-		"email":     fmt.Sprintf("%s@example.com", username),
-		"given_name": "API",
-		"family_name":  "Auth",
+		"username":    username,
+		"password":    password,
+		"email":       fmt.Sprintf("%s@example.com", username),
+		"given_name":  "API",
+		"family_name": "Auth",
 	}
 	attrBytes, err := json.Marshal(userAttrs)
 	suite.Require().NoError(err)
 
 	userID, err := testutils.CreateUser(testutils.User{
-		OUID:             suite.ouID,
-		Type:             userSchema.Name,
-		Attributes:       attrBytes,
+		OUID:       suite.ouID,
+		Type:       entityType.Name,
+		Attributes: attrBytes,
 	})
 	suite.Require().NoError(err)
 	suite.regularUserID = userID
@@ -119,9 +127,9 @@ func (suite *APIAuthTestSuite) TearDownSuite() {
 		}
 	}
 
-	if suite.userSchemaID != "" {
-		if err := testutils.DeleteUserType(suite.userSchemaID); err != nil {
-			suite.T().Logf("Failed to delete user schema: %v", err)
+	if suite.entityTypeID != "" {
+		if err := testutils.DeleteUserType(suite.entityTypeID); err != nil {
+			suite.T().Logf("Failed to delete user type: %v", err)
 		}
 	}
 
@@ -157,7 +165,7 @@ func (suite *APIAuthTestSuite) TestMissingTokenIsUnauthorized() {
 	suite.Require().NoError(err)
 	defer closeBodyQuietly(suite.T(), resp.Body)
 
-	suite.assertSecurityError(resp, http.StatusUnauthorized, "unauthorized",
+	suite.assertSecurityError(resp, http.StatusUnauthorized, "AUTH-4010",
 		"Authentication is required to access this resource")
 	suite.Equal("Bearer", resp.Header.Get("WWW-Authenticate"))
 }
@@ -171,7 +179,7 @@ func (suite *APIAuthTestSuite) TestInvalidTokenIsUnauthorized() {
 	suite.Require().NoError(err)
 	defer closeBodyQuietly(suite.T(), resp.Body)
 
-	suite.assertSecurityError(resp, http.StatusUnauthorized, "unauthorized",
+	suite.assertSecurityError(resp, http.StatusUnauthorized, "AUTH-4010",
 		"Authentication is required to access this resource")
 	suite.Equal("Bearer", resp.Header.Get("WWW-Authenticate"))
 }
@@ -187,30 +195,23 @@ func (suite *APIAuthTestSuite) TestNonSystemScopeIsForbidden() {
 	suite.Require().NoError(err)
 	defer closeBodyQuietly(suite.T(), resp.Body)
 
-	suite.Equal(http.StatusForbidden, resp.StatusCode)
-
-	bodyBytes, err := io.ReadAll(resp.Body)
-	suite.Require().NoError(err)
-
-	var errResp errorResponse
-	suite.Require().NoError(json.Unmarshal(bodyBytes, &errResp))
-
-	suite.Equal("forbidden", errResp.Error)
-	suite.Equal("You do not have sufficient permissions to access this resource", errResp.ErrorDescription)
+	suite.assertSecurityError(resp, http.StatusForbidden, "AUTH-4030",
+		"You do not have sufficient permissions to access this resource")
+	suite.Equal("Bearer", resp.Header.Get("WWW-Authenticate"))
 }
 
-func (suite *APIAuthTestSuite) assertSecurityError(resp *http.Response, expectedStatus int, expectedCode,
-	expectedDescription string) {
+func (suite *APIAuthTestSuite) assertSecurityError(resp *http.Response, expectedStatus int,
+	expectedCode, expectedDescription string) {
 	suite.Equal(expectedStatus, resp.StatusCode)
 
 	bodyBytes, err := io.ReadAll(resp.Body)
 	suite.Require().NoError(err)
 
-	var errResp errorResponse
+	var errResp apiErrorResponse
 	suite.Require().NoError(json.Unmarshal(bodyBytes, &errResp))
 
-	suite.Equal(expectedCode, errResp.Error)
-	suite.Equal(expectedDescription, errResp.ErrorDescription)
+	suite.Equal(expectedCode, errResp.Code)
+	suite.Equal(expectedDescription, errResp.Description.DefaultValue)
 }
 
 func (suite *APIAuthTestSuite) protectedResourceURL() string {

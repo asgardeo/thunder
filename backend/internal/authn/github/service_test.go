@@ -76,7 +76,7 @@ func (suite *GithubOAuthAuthnServiceTestSuite) SetupTest() {
 			MinVersion: "1.3",
 		},
 	}
-	err := config.InitializeThunderRuntime("", thunderConfig)
+	err := config.InitializeServerRuntime("", thunderConfig)
 	assert.NoError(suite.T(), err)
 }
 

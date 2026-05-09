@@ -75,7 +75,7 @@ func (c *compositeStore) CreateInboundClient(ctx context.Context, client inbound
 }
 
 func (c *compositeStore) CreateOAuthProfile(ctx context.Context, entityID string,
-	oauthProfile *inboundmodel.OAuthProfileData) error {
+	oauthProfile *inboundmodel.OAuthProfile) error {
 	return c.dbStore.CreateOAuthProfile(ctx, entityID, oauthProfile)
 }
 
@@ -108,7 +108,7 @@ func (c *compositeStore) UpdateInboundClient(ctx context.Context, client inbound
 }
 
 func (c *compositeStore) UpdateOAuthProfile(ctx context.Context, entityID string,
-	oauthProfile *inboundmodel.OAuthProfileData) error {
+	oauthProfile *inboundmodel.OAuthProfile) error {
 	return c.dbStore.UpdateOAuthProfile(ctx, entityID, oauthProfile)
 }
 

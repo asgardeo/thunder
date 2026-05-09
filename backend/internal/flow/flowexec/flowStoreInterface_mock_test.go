@@ -163,16 +163,16 @@ func (_c *flowStoreInterfaceMock_GetFlowContext_Call) RunAndReturn(run func(ctx 
 }
 
 // StoreFlowContext provides a mock function for the type flowStoreInterfaceMock
-func (_mock *flowStoreInterfaceMock) StoreFlowContext(ctx context.Context, engineCtx EngineContext, expirySeconds int64) error {
-	ret := _mock.Called(ctx, engineCtx, expirySeconds)
+func (_mock *flowStoreInterfaceMock) StoreFlowContext(ctx context.Context, dbModel FlowContextDB, expirySeconds int64) error {
+	ret := _mock.Called(ctx, dbModel, expirySeconds)
 
 	if len(ret) == 0 {
 		panic("no return value specified for StoreFlowContext")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, EngineContext, int64) error); ok {
-		r0 = returnFunc(ctx, engineCtx, expirySeconds)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, FlowContextDB, int64) error); ok {
+		r0 = returnFunc(ctx, dbModel, expirySeconds)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -186,21 +186,21 @@ type flowStoreInterfaceMock_StoreFlowContext_Call struct {
 
 // StoreFlowContext is a helper method to define mock.On call
 //   - ctx context.Context
-//   - engineCtx EngineContext
+//   - dbModel FlowContextDB
 //   - expirySeconds int64
-func (_e *flowStoreInterfaceMock_Expecter) StoreFlowContext(ctx interface{}, engineCtx interface{}, expirySeconds interface{}) *flowStoreInterfaceMock_StoreFlowContext_Call {
-	return &flowStoreInterfaceMock_StoreFlowContext_Call{Call: _e.mock.On("StoreFlowContext", ctx, engineCtx, expirySeconds)}
+func (_e *flowStoreInterfaceMock_Expecter) StoreFlowContext(ctx interface{}, dbModel interface{}, expirySeconds interface{}) *flowStoreInterfaceMock_StoreFlowContext_Call {
+	return &flowStoreInterfaceMock_StoreFlowContext_Call{Call: _e.mock.On("StoreFlowContext", ctx, dbModel, expirySeconds)}
 }
 
-func (_c *flowStoreInterfaceMock_StoreFlowContext_Call) Run(run func(ctx context.Context, engineCtx EngineContext, expirySeconds int64)) *flowStoreInterfaceMock_StoreFlowContext_Call {
+func (_c *flowStoreInterfaceMock_StoreFlowContext_Call) Run(run func(ctx context.Context, dbModel FlowContextDB, expirySeconds int64)) *flowStoreInterfaceMock_StoreFlowContext_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 EngineContext
+		var arg1 FlowContextDB
 		if args[1] != nil {
-			arg1 = args[1].(EngineContext)
+			arg1 = args[1].(FlowContextDB)
 		}
 		var arg2 int64
 		if args[2] != nil {
@@ -220,22 +220,22 @@ func (_c *flowStoreInterfaceMock_StoreFlowContext_Call) Return(err error) *flowS
 	return _c
 }
 
-func (_c *flowStoreInterfaceMock_StoreFlowContext_Call) RunAndReturn(run func(ctx context.Context, engineCtx EngineContext, expirySeconds int64) error) *flowStoreInterfaceMock_StoreFlowContext_Call {
+func (_c *flowStoreInterfaceMock_StoreFlowContext_Call) RunAndReturn(run func(ctx context.Context, dbModel FlowContextDB, expirySeconds int64) error) *flowStoreInterfaceMock_StoreFlowContext_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // UpdateFlowContext provides a mock function for the type flowStoreInterfaceMock
-func (_mock *flowStoreInterfaceMock) UpdateFlowContext(ctx context.Context, engineCtx EngineContext) error {
-	ret := _mock.Called(ctx, engineCtx)
+func (_mock *flowStoreInterfaceMock) UpdateFlowContext(ctx context.Context, dbModel FlowContextDB) error {
+	ret := _mock.Called(ctx, dbModel)
 
 	if len(ret) == 0 {
 		panic("no return value specified for UpdateFlowContext")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, EngineContext) error); ok {
-		r0 = returnFunc(ctx, engineCtx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, FlowContextDB) error); ok {
+		r0 = returnFunc(ctx, dbModel)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -249,20 +249,20 @@ type flowStoreInterfaceMock_UpdateFlowContext_Call struct {
 
 // UpdateFlowContext is a helper method to define mock.On call
 //   - ctx context.Context
-//   - engineCtx EngineContext
-func (_e *flowStoreInterfaceMock_Expecter) UpdateFlowContext(ctx interface{}, engineCtx interface{}) *flowStoreInterfaceMock_UpdateFlowContext_Call {
-	return &flowStoreInterfaceMock_UpdateFlowContext_Call{Call: _e.mock.On("UpdateFlowContext", ctx, engineCtx)}
+//   - dbModel FlowContextDB
+func (_e *flowStoreInterfaceMock_Expecter) UpdateFlowContext(ctx interface{}, dbModel interface{}) *flowStoreInterfaceMock_UpdateFlowContext_Call {
+	return &flowStoreInterfaceMock_UpdateFlowContext_Call{Call: _e.mock.On("UpdateFlowContext", ctx, dbModel)}
 }
 
-func (_c *flowStoreInterfaceMock_UpdateFlowContext_Call) Run(run func(ctx context.Context, engineCtx EngineContext)) *flowStoreInterfaceMock_UpdateFlowContext_Call {
+func (_c *flowStoreInterfaceMock_UpdateFlowContext_Call) Run(run func(ctx context.Context, dbModel FlowContextDB)) *flowStoreInterfaceMock_UpdateFlowContext_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 EngineContext
+		var arg1 FlowContextDB
 		if args[1] != nil {
-			arg1 = args[1].(EngineContext)
+			arg1 = args[1].(FlowContextDB)
 		}
 		run(
 			arg0,
@@ -277,7 +277,7 @@ func (_c *flowStoreInterfaceMock_UpdateFlowContext_Call) Return(err error) *flow
 	return _c
 }
 
-func (_c *flowStoreInterfaceMock_UpdateFlowContext_Call) RunAndReturn(run func(ctx context.Context, engineCtx EngineContext) error) *flowStoreInterfaceMock_UpdateFlowContext_Call {
+func (_c *flowStoreInterfaceMock_UpdateFlowContext_Call) RunAndReturn(run func(ctx context.Context, dbModel FlowContextDB) error) *flowStoreInterfaceMock_UpdateFlowContext_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -18,6 +18,8 @@
 
 package utils
 
+import "strconv"
+
 // CompareValues performs a type-flexible equality comparison between two values.
 // This is useful when comparing values that may have different numeric types
 // (e.g., comparing int with float64 after JSON unmarshaling).
@@ -97,4 +99,10 @@ func ToFloat64(v interface{}) (float64, bool) {
 	default:
 		return 0, false
 	}
+}
+
+// SecondsToMinutes converts seconds to minutes and returns as a string.
+func SecondsToMinutes(seconds int64) string {
+	minutes := seconds / 60
+	return strconv.FormatInt(minutes, 10)
 }

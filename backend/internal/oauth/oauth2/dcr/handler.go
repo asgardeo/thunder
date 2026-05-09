@@ -20,7 +20,6 @@ package dcr
 
 import (
 	"net/http"
-	"slices"
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -45,7 +44,7 @@ func newDCRHandler(dcrService DCRServiceInterface) *dcrHandler {
 func (dh *dcrHandler) HandleDCRRegistration(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	// When DCR is not insecure, require a valid token with required permissions.
-	if !config.GetThunderRuntime().Config.OAuth.DCR.Insecure && !dh.checkDCRAuthorization(r, w) {
+	if !config.GetServerRuntime().Config.OAuth.DCR.Insecure && !dh.checkDCRAuthorization(r, w) {
 		return
 	}
 
@@ -76,7 +75,7 @@ func (dh *dcrHandler) HandleDCRRegistration(w http.ResponseWriter, r *http.Reque
 // checkDCRAuthorization verifies that the caller holds required permission.
 // Returns true if authorized, false (and writes an HTTP 401) otherwise.
 func (dh *dcrHandler) checkDCRAuthorization(r *http.Request, w http.ResponseWriter) bool {
-	if slices.Contains(security.GetPermissions(r.Context()), "system") {
+	if security.HasSystemPermission(security.GetPermissions(r.Context())) {
 		return true
 	}
 	sysutils.WriteJSONError(w, ErrorUnauthorized.Code,

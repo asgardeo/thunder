@@ -20,8 +20,9 @@ package executor
 
 // Executor name constants
 const (
-	ExecutorNameBasicAuth = "BasicAuthExecutor"
-	ExecutorNameSMSAuth   = "SMSOTPAuthExecutor"
+	ExecutorNameBasicAuth     = "BasicAuthExecutor"
+	ExecutorNameSMSAuth       = "SMSOTPAuthExecutor"
+	ExecutorNameMagicLinkAuth = "MagicLinkAuthExecutor"
 	// nolint:gosec // G101: This is an executor name, not a credential
 	ExecutorNamePasskeyAuth                  = "PasskeyAuthExecutor"
 	ExecutorNameOAuth                        = "OAuthExecutor"
@@ -65,21 +66,21 @@ const (
 	userAttributeGroups   = "groups"
 	userAttributeSub      = "sub"
 
-	userInputCode             = "code"
-	userInputNonce            = "nonce"
+	userInputCode  = "code"
+	userInputNonce = "nonce"
+	userInputState = "state"
+
 	userInputOuName           = "ouName"
 	userInputOuHandle         = "ouHandle"
 	userInputOuDesc           = "ouDescription"
 	userInputInviteToken      = "inviteToken"
 	userInputOTP              = "otp"
+	userInputMagicLinkToken   = "token"
 	userInputConsentDecisions = "consent_decisions"
 
 	ouIDKey        = "ouId"
 	defaultOUIDKey = "defaultOUID"
 	userTypeKey    = "userType"
-	// TODO: Revisit when the generic OTP executor is implemented.
-	runtimeKeySMSOTPMobileNumber = "smsOTPMobileNumber"
-	runtimeKeySMSOTPPhoneAttr    = "smsOTPPhoneAttr"
 
 	dataValueTrue  = "true"
 	dataValueFalse = "false"
@@ -87,17 +88,22 @@ const (
 
 // Executor property keys
 const (
-	propertyKeyAssignGroup          = "assignGroup"
-	propertyKeyAssignRole           = "assignRole"
-	propertyKeyRequiredScopes       = "requiredScopes"
-	propertyKeyEmailTemplate        = "emailTemplate"
-	propertyKeySMSTemplate          = "smsTemplate"
-	propertyKeyAllowedUserTypes     = "allowedUserTypes"
-	propertyKeyNotificationSenderID = "senderId"
+	propertyKeyAssignGroup    = "assignGroup"
+	propertyKeyAssignRole     = "assignRole"
+	propertyKeyRequiredScopes = "requiredScopes"
+	propertyKeyEmailTemplate  = "emailTemplate"
+	// TODO: Revisit propertyKeyTokenExpiry and propertyKeyMagicLinkURL — these should not be node properties.
+	propertyKeyTokenExpiry                  = "tokenExpiry"
+	propertyKeyMagicLinkURL                 = "magicLinkURL"
+	propertyKeySMSTemplate                  = "smsTemplate"
+	propertyKeyAllowedUserTypes             = "allowedUserTypes"
+	propertyKeyNotificationSenderID         = "senderId"
+	propertyKeyDynamicInputsIncludeOptional = "includeOptional"
+	propertyKeyMaxDynamicInputsPerPrompt    = "maxPerPrompt"
 )
 
 // nonSearchableInputs contains the list of user inputs/ attributes that are non-searchable.
-var nonSearchableInputs = []string{"password", "code", "nonce", "otp"}
+var nonSearchableInputs = []string{"password", "code", "nonce", "otp", "token", "userInputMagicLinkToken"}
 
 // Failure reason constants
 const (
@@ -106,4 +112,5 @@ const (
 	failureReasonInvalidCredentials   = "Invalid credentials provided" // #nosec G101
 	failureReasonFailedToIdentifyUser = "Failed to identify user"
 	failureReasonInvalidOTP           = "invalid OTP provided"
+	failureReasonInvalidMagicLink     = "Invalid magic link token"
 )

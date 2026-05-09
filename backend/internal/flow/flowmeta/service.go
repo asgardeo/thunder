@@ -22,10 +22,12 @@ package flowmeta
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
-	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/design/common"
 	"github.com/asgardeo/thunder/internal/design/resolve"
+	"github.com/asgardeo/thunder/internal/entityprovider"
+	"github.com/asgardeo/thunder/internal/inboundclient"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
@@ -61,27 +63,30 @@ type FlowMetaServiceInterface interface {
 
 // flowMetaService is the implementation of FlowMetaServiceInterface.
 type flowMetaService struct {
-	applicationService application.ApplicationServiceInterface
-	ouService          ou.OrganizationUnitServiceInterface
-	designResolve      resolve.DesignResolveServiceInterface
-	i18nService        i18nmgt.I18nServiceInterface
-	logger             *log.Logger
+	inboundClientService inboundclient.InboundClientServiceInterface
+	entityProvider       entityprovider.EntityProviderInterface
+	ouService            ou.OrganizationUnitServiceInterface
+	designResolve        resolve.DesignResolveServiceInterface
+	i18nService          i18nmgt.I18nServiceInterface
+	logger               *log.Logger
 }
 
 // newFlowMetaService creates a new instance of flowMetaService with injected dependencies.
 func newFlowMetaService(
-	applicationService application.ApplicationServiceInterface,
+	inboundClientService inboundclient.InboundClientServiceInterface,
+	entityProvider entityprovider.EntityProviderInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	designResolve resolve.DesignResolveServiceInterface,
 	i18nService i18nmgt.I18nServiceInterface,
 ) FlowMetaServiceInterface {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, loggerComponentName))
 	return &flowMetaService{
-		applicationService: applicationService,
-		ouService:          ouService,
-		designResolve:      designResolve,
-		i18nService:        i18nService,
-		logger:             logger,
+		inboundClientService: inboundClientService,
+		entityProvider:       entityProvider,
+		ouService:            ouService,
+		designResolve:        designResolve,
+		i18nService:          i18nService,
+		logger:               logger,
 	}
 }
 
@@ -163,29 +168,26 @@ func (fms *flowMetaService) populateTypeMetadata(
 		return id, nil
 	}
 
-	app, svcErr := fms.applicationService.GetApplication(ctx, id)
-	if svcErr != nil {
-		if svcErr.Code == application.ErrorApplicationNotFound.Code {
+	client, err := fms.inboundClientService.GetInboundClientByEntityID(ctx, id)
+	if err != nil {
+		if errors.Is(err, inboundclient.ErrInboundClientNotFound) {
 			return "", &ErrorApplicationNotFound
 		}
+		fms.logger.Error("Failed to get inbound client", log.String("appID", id), log.Error(err))
+		return "", &ErrorApplicationFetchFailed
+	}
+	if client == nil {
+		return "", &ErrorApplicationNotFound
+	}
 
-		fms.logger.Error("Failed to get application",
-			log.String("appID", id),
-			log.String("error", svcErr.Error.DefaultValue),
-			log.String("code", svcErr.Code))
+	entity, epErr := fms.entityProvider.GetEntity(id)
+	if epErr != nil && epErr.Code != entityprovider.ErrorCodeEntityNotFound {
+		fms.logger.Error("Failed to get entity", log.String("appID", id), log.Error(epErr))
 		return "", &ErrorApplicationFetchFailed
 	}
 
-	response.IsRegistrationFlowEnabled = app.IsRegistrationFlowEnabled
-	response.Application = &ApplicationMetadata{
-		ID:          app.ID,
-		Name:        app.Name,
-		Description: app.Description,
-		LogoURL:     app.LogoURL,
-		URL:         app.URL,
-		TosURI:      app.TosURI,
-		PolicyURI:   app.PolicyURI,
-	}
+	response.IsRegistrationFlowEnabled = client.IsRegistrationFlowEnabled
+	response.Application = buildApplicationMetadata(client.ID, entity, client.Properties)
 
 	ouList, ouErr := fms.ouService.GetOrganizationUnitList(ctx, 1, 0)
 	if ouErr != nil {
@@ -299,4 +301,38 @@ func (fms *flowMetaService) populateI18nMetadata(response *FlowMetadataResponse,
 	}
 
 	response.I18n.Languages = languages
+}
+
+// buildApplicationMetadata composes the /flow/meta application view from the inbound-client +
+// entity records. Entity-agnostic: works for applications and agents alike.
+func buildApplicationMetadata(
+	id string, entity *entityprovider.Entity, props map[string]interface{},
+) *ApplicationMetadata {
+	meta := &ApplicationMetadata{ID: id}
+	if entity != nil && len(entity.SystemAttributes) > 0 {
+		var attrs map[string]interface{}
+		if err := json.Unmarshal(entity.SystemAttributes, &attrs); err == nil && attrs != nil {
+			if name, ok := attrs["name"].(string); ok {
+				meta.Name = name
+			}
+			if desc, ok := attrs["description"].(string); ok {
+				meta.Description = desc
+			}
+		}
+	}
+	if props != nil {
+		if v, ok := props["logo_url"].(string); ok {
+			meta.LogoURL = v
+		}
+		if v, ok := props["url"].(string); ok {
+			meta.URL = v
+		}
+		if v, ok := props["tos_uri"].(string); ok {
+			meta.TosURI = v
+		}
+		if v, ok := props["policy_uri"].(string); ok {
+			meta.PolicyURI = v
+		}
+	}
+	return meta
 }

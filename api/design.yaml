@@ -539,7 +539,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "DSR-1004"
                 message:
@@ -904,12 +904,13 @@ components:
             showLogo: true
             logoPosition: "top"
 
-    ErrorResponse:
+
+    Error:
       type: object
       properties:
         code:
           type: string
-          description: Error code
+          description: "Error code. Codes follow the DSR-XXXX convention."
           example: "DSR-1001"
         message:
           $ref: '#/components/schemas/I18nMessage'
@@ -936,7 +937,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
           example:
             code: "DSR-1001"
             message:
@@ -947,13 +948,13 @@ components:
               defaultValue: "The request contains invalid parameters"
 
     Unauthorized:
-      description: Unauthorized
+      description: Unauthorized - missing or invalid authentication token
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
           example:
-            code: "AUTH-4001"
+            code: "AUTH-4010"
             message:
               key: "error.unauthorized"
               defaultValue: "Unauthorized"
@@ -966,7 +967,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
           example:
             code: "DSR-1004"
             message:
@@ -981,7 +982,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
           example:
             code: "THM-1004"
             message:
@@ -996,7 +997,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
           example:
             code: "SSE-5000"
             message:

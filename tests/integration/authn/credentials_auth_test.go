@@ -42,7 +42,7 @@ var (
 		Parent:      nil,
 	}
 
-	credentialUserSchemas = map[string]testutils.UserSchema{
+	credentialEntityTypes = map[string]testutils.UserType{
 		"username_password": {
 			Name: "username_password",
 			Schema: map[string]interface{}{
@@ -119,7 +119,7 @@ type CredentialsAuthTestSuite struct {
 	suite.Suite
 	client        *http.Client
 	users         map[string]string // map of test name to user ID
-	userSchemaIDs map[string]string
+	entityTypeIDs map[string]string
 	ouID          string
 }
 
@@ -130,7 +130,7 @@ func TestCredentialsAuthTestSuite(t *testing.T) {
 func (suite *CredentialsAuthTestSuite) SetupSuite() {
 	suite.client = testutils.GetHTTPClient()
 	suite.users = make(map[string]string)
-	suite.userSchemaIDs = make(map[string]string)
+	suite.entityTypeIDs = make(map[string]string)
 
 	// Create test organization unit
 	ouID, err := testutils.CreateOrganizationUnit(testOU)
@@ -139,13 +139,13 @@ func (suite *CredentialsAuthTestSuite) SetupSuite() {
 	}
 	suite.ouID = ouID
 
-	for userType, schema := range credentialUserSchemas {
+	for userType, schema := range credentialEntityTypes {
 		schema.OUID = suite.ouID
 		schemaID, err := testutils.CreateUserType(schema)
 		if err != nil {
-			suite.T().Fatalf("Failed to create user schema %s during setup: %v", userType, err)
+			suite.T().Fatalf("Failed to create user type %s during setup: %v", userType, err)
 		}
-		suite.userSchemaIDs[userType] = schemaID
+		suite.entityTypeIDs[userType] = schemaID
 	}
 
 	// Create test users with different attribute types
@@ -216,11 +216,11 @@ func (suite *CredentialsAuthTestSuite) TearDownSuite() {
 		}
 	}
 
-	for userType, schemaID := range suite.userSchemaIDs {
+	for userType, schemaID := range suite.entityTypeIDs {
 		if schemaID != "" {
 			err := testutils.DeleteUserType(schemaID)
 			if err != nil {
-				suite.T().Errorf("Failed to delete user schema %s during teardown: %v", userType, err)
+				suite.T().Errorf("Failed to delete user type %s during teardown: %v", userType, err)
 			}
 		}
 	}

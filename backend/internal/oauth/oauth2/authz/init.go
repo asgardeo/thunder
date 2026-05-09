@@ -60,7 +60,7 @@ func Initialize(
 // initializeAuthorizationStores creates the authorization code store, request store, and transactioner.
 func initializeAuthorizationStores() (
 	AuthorizationCodeStoreInterface, authorizationRequestStoreInterface, transaction.Transactioner, error) {
-	if config.GetThunderRuntime().Config.Database.Runtime.Type == provider.DataSourceTypeRedis {
+	if config.GetServerRuntime().Config.Database.Runtime.Type == provider.DataSourceTypeRedis {
 		redisProvider := provider.GetRedisProvider()
 		return newRedisAuthorizationCodeStore(redisProvider),
 			newRedisAuthorizationRequestStore(redisProvider),

@@ -333,12 +333,12 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/user-schemas",
+              "raw": "{{baseUrl}}/user-types",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "user-schemas"
+                "user-types"
               ]
             }
           },

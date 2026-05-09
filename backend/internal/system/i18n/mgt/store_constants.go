@@ -26,46 +26,46 @@ var (
 	// queryGetDistinctLanguages retrieves all distinct language codes.
 	queryGetDistinctLanguages = dbmodel.DBQuery{
 		ID: "I18N-01",
-		Query: `SELECT DISTINCT LANGUAGE_CODE FROM TRANSLATION ` +
+		Query: `SELECT DISTINCT LANGUAGE_CODE FROM "TRANSLATION" ` +
 			`WHERE DEPLOYMENT_ID = $1 ORDER BY LANGUAGE_CODE`,
 	}
 
 	// queryGetTranslationsByLanguage retrieves all translations for a language and namespace.
 	queryGetTranslations = dbmodel.DBQuery{
 		ID: "I18N-02",
-		Query: `SELECT MESSAGE_KEY, LANGUAGE_CODE, NAMESPACE, VALUE FROM TRANSLATION ` +
+		Query: `SELECT MESSAGE_KEY, LANGUAGE_CODE, NAMESPACE, VALUE FROM "TRANSLATION" ` +
 			`WHERE DEPLOYMENT_ID = $1 ORDER BY MESSAGE_KEY`,
 	}
 
 	// queryGetTranslationsByLanguage retrieves all translations for a language and namespace.
 	queryGetTranslationsByNamespace = dbmodel.DBQuery{
 		ID: "I18N-03",
-		Query: `SELECT MESSAGE_KEY, LANGUAGE_CODE, NAMESPACE, VALUE FROM TRANSLATION ` +
+		Query: `SELECT MESSAGE_KEY, LANGUAGE_CODE, NAMESPACE, VALUE FROM "TRANSLATION" ` +
 			`WHERE NAMESPACE = $1 AND DEPLOYMENT_ID = $2 ORDER BY MESSAGE_KEY`,
 	}
 
 	// queryGetTranslation retrieves a single translation by key, and namespace.
 	queryGetTranslation = dbmodel.DBQuery{
 		ID: "I18N-04",
-		Query: `SELECT MESSAGE_KEY, LANGUAGE_CODE, NAMESPACE, VALUE FROM TRANSLATION ` +
+		Query: `SELECT MESSAGE_KEY, LANGUAGE_CODE, NAMESPACE, VALUE FROM "TRANSLATION" ` +
 			`WHERE MESSAGE_KEY = $1 AND NAMESPACE = $2 AND DEPLOYMENT_ID = $3`,
 	}
 
 	// queryInsertTranslation inserts a new translation.
 	queryInsertTranslation = dbmodel.DBQuery{
 		ID: "I18N-05",
-		Query: `INSERT INTO TRANSLATION (MESSAGE_KEY, LANGUAGE_CODE, NAMESPACE, VALUE, DEPLOYMENT_ID) ` +
+		Query: `INSERT INTO "TRANSLATION" (MESSAGE_KEY, LANGUAGE_CODE, NAMESPACE, VALUE, DEPLOYMENT_ID) ` +
 			`VALUES ($1, $2, $3, $4, $5)`,
 	}
 
 	// queryUpsertTranslation inserts or updates a translation.
 	queryUpsertTranslation = dbmodel.DBQuery{
 		ID: "I18N-06",
-		Query: `INSERT INTO TRANSLATION (MESSAGE_KEY, LANGUAGE_CODE, NAMESPACE, VALUE, DEPLOYMENT_ID) ` +
+		Query: `INSERT INTO "TRANSLATION" (MESSAGE_KEY, LANGUAGE_CODE, NAMESPACE, VALUE, DEPLOYMENT_ID) ` +
 			`VALUES ($1, $2, $3, $4, $5) ` +
 			`ON CONFLICT (DEPLOYMENT_ID, NAMESPACE, MESSAGE_KEY, LANGUAGE_CODE) ` +
 			`DO UPDATE SET VALUE = EXCLUDED.VALUE, UPDATED_AT = NOW()`,
-		SQLiteQuery: `INSERT INTO TRANSLATION (MESSAGE_KEY, LANGUAGE_CODE, NAMESPACE, VALUE, DEPLOYMENT_ID) ` +
+		SQLiteQuery: `INSERT INTO "TRANSLATION" (MESSAGE_KEY, LANGUAGE_CODE, NAMESPACE, VALUE, DEPLOYMENT_ID) ` +
 			`VALUES ($1, $2, $3, $4, $5) ` +
 			`ON CONFLICT (DEPLOYMENT_ID, NAMESPACE, MESSAGE_KEY, LANGUAGE_CODE) ` +
 			`DO UPDATE SET VALUE = excluded.VALUE, UPDATED_AT = datetime('now')`,
@@ -74,25 +74,25 @@ var (
 	// queryDeleteTranslation deletes a translation by language, key, and namespace.
 	queryDeleteTranslation = dbmodel.DBQuery{
 		ID: "I18N-07",
-		Query: `DELETE FROM TRANSLATION ` +
+		Query: `DELETE FROM "TRANSLATION" ` +
 			`WHERE LANGUAGE_CODE = $1 AND MESSAGE_KEY = $2 AND NAMESPACE = $3 AND DEPLOYMENT_ID = $4`,
 	}
 
 	// queryDeleteTranslationsByLanguage deletes all translations for a language code.
 	queryDeleteTranslationsByLanguage = dbmodel.DBQuery{
 		ID:    "I18N-08",
-		Query: `DELETE FROM TRANSLATION WHERE LANGUAGE_CODE = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `DELETE FROM "TRANSLATION" WHERE LANGUAGE_CODE = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryDeleteTranslationsByNamespace deletes all translations for a given namespace.
 	queryDeleteTranslationsByNamespace = dbmodel.DBQuery{
 		ID:    "I18N-09",
-		Query: `DELETE FROM TRANSLATION WHERE NAMESPACE = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `DELETE FROM "TRANSLATION" WHERE NAMESPACE = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryDeleteTranslationsByKey deletes all translations for a given namespace and key.
 	queryDeleteTranslationsByKey = dbmodel.DBQuery{
 		ID:    "I18N-10",
-		Query: `DELETE FROM TRANSLATION WHERE NAMESPACE = $1 AND MESSAGE_KEY = $2 AND DEPLOYMENT_ID = $3`,
+		Query: `DELETE FROM "TRANSLATION" WHERE NAMESPACE = $1 AND MESSAGE_KEY = $2 AND DEPLOYMENT_ID = $3`,
 	}
 )

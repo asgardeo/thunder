@@ -29,10 +29,10 @@ metadata:
     {{- else }}
     {{- toYaml .Values.ingress.customAnnotations | nindent 4 }}
     {{- end }}
-  name: {{ include "thunder.fullname" . }}-ingress
+  name: {{ include "thunderid.fullname" . }}-ingress
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "thunder.labels" . | nindent 4 }}
+    {{- include "thunderid.labels" . | nindent 4 }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
@@ -43,7 +43,7 @@ spec:
             pathType: ImplementationSpecific
             backend:
               service:
-                name: {{ include "thunder.fullname" .  }}-service
+                name: {{ include "thunderid.fullname" .  }}-service
                 port:
                   number: {{ .Values.service.port }}
   {{- if not .Values.configuration.server.httpOnly }}

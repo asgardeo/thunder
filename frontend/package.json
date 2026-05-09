@@ -1,8 +1,8 @@
 {
   "private": true,
-  "name": "@thunder/frontend",
+  "name": "@thunderid/frontend",
   "version": "0.0.0",
-  "description": "Frontend workspace for ⚡️ Thunder",
+  "description": "Frontend workspace for ⚡️ ThunderID",
   "author": "WSO2",
   "license": "Apache-2.0",
   "type": "module",
@@ -16,7 +16,7 @@
   },
   "keywords": [
     "asgardeo",
-    "thunder",
+    "thunderid",
     "frontend",
     "workspace",
     "wso2"
@@ -36,9 +36,9 @@
     "typecheck": "nx run-many --target=typecheck --all --parallel"
   },
   "devDependencies": {
-    "@thunder/eslint-plugin-thunder": "workspace:^",
-    "@thunder/logger": "workspace:^",
-    "@thunder/prettier-config": "workspace:^",
+    "@thunderid/eslint-plugin": "workspace:^",
+    "@thunderid/logger": "workspace:^",
+    "@thunderid/prettier-config": "workspace:^",
     "eslint": "catalog:",
     "i18next-cli": "1.51.3",
     "nx": "22.6.2",

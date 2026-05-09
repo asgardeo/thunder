@@ -19,14 +19,14 @@
 import {writeFileSync, readFileSync} from 'fs';
 import {join, dirname} from 'path';
 import {fileURLToPath} from 'url';
-import {createLogger} from '@thunder/logger';
+import {createLogger} from '@thunderid/logger';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const THUNDER_CONFIG_PATH = join(__dirname, '..', 'docusaurus.thunder.config.ts');
+const PRODUCT_CONFIG_PATH = join(__dirname, '..', 'docusaurus.product.config.ts');
 
-function readThunderConfig(configPath) {
+function readProductConfig(configPath) {
   const content = readFileSync(configPath, 'utf8');
   const nameMatch = content.match(/project\s*:\s*\{[^}]*?name\s*:\s*['"]([^'"]+)['"]/s);
   const projectName = nameMatch ? nameMatch[1] : 'Unknown Project';
@@ -36,7 +36,7 @@ function readThunderConfig(configPath) {
   return {projectName, githubFullName, githubOwner, githubRepoName};
 }
 
-const {projectName, githubFullName, githubOwner, githubRepoName} = readThunderConfig(THUNDER_CONFIG_PATH);
+const {projectName, githubFullName, githubOwner, githubRepoName} = readProductConfig(PRODUCT_CONFIG_PATH);
 
 const OUTPUT_FILE = join(__dirname, '..', 'content', 'releases.md');
 const GITHUB_REPO = githubFullName;

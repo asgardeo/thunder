@@ -1,4 +1,4 @@
-# Thunder API-Based Authentication Sample Application
+# ThunderID API-Based Authentication Sample Application
 
 This sample application demonstrates how to integrate authentication into a React application using direct API calls instead of SDK-based OAuth redirects. It showcases API-based user registration (sign-up) and authentication (sign-in) flows.
 
@@ -17,7 +17,7 @@ This sample application demonstrates how to integrate authentication into a Reac
 - A running server instance (default: `https://localhost:8090`)
 - Server configured with appropriate CORS settings
 - SSL certificates (`server.key` and `server.cert`) in the project root
-- The "Customer" user schema and "customers" organization unit created (via `02-sample-resources.sh` bootstrap script)
+- The "Customer" user type and "customers" organization unit created (via `02-sample-resources.sh` bootstrap script)
 
 ## Quick Start
 
@@ -51,7 +51,7 @@ cp ../../target/out/.cert/server.cert .
 
 ### 3. Set Up Sample Resources
 
-Run the bootstrap script to create the required "Customer" user schema and "customers" organization unit:
+Run the bootstrap script to create the required "Customer" user type and "customers" organization unit:
 
 ```bash
 # From the project root
@@ -81,7 +81,7 @@ The application will be available at [https://localhost:3000](https://localhost:
 | `npm run preview` | Preview the production build locally |
 | `npm run lint` | Run ESLint to check code quality |
 
-## Important: Sign-Up Requirements
+## Important: Sign up Requirements
 
 To use the sign-up functionality, you need to temporarily disable security by setting the following environment variable before starting the server:
 
@@ -132,17 +132,17 @@ This sample interacts with the following APIs:
 
 ## How It Works
 
-### Sign-Up Flow
+### Sign up Flow
 1. User fills in the registration form (username, name, email, password)
 2. Application fetches the "customers" organization unit ID
 3. Sends a POST request to `/users` with user attributes and type "Customer"
 4. On success, displays confirmation message
 
-### Sign-In Flow
+### Sign in Flow
 1. User enters username and password
 2. Application sends credentials to `/auth/credentials/authenticate`
 3. On success, receives an assertion token (JWT)
-4. Token is stored in sessionStorage
+4. Token is stored in `sessionStorage`
 5. User is redirected to the dashboard
 
 ### Dashboard
@@ -158,8 +158,8 @@ This sample interacts with the following APIs:
 - Ensure server is running and accessible at the configured base URL
 - Check CORS configuration in `deployment.yaml`
 
-**Issue**: "User schema not found" error during sign-up
-- Run the `02-sample-resources.sh` bootstrap script to create the "Customer" user schema
+**Issue**: "User type not found" error during sign-up
+- Run the `02-sample-resources.sh` bootstrap script to create the "Customer" user type
 
 **Issue**: "Organization unit not found" error during sign-up
 - Run the `02-sample-resources.sh` bootstrap script to create the "customers" organization unit

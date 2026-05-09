@@ -1,5 +1,5 @@
 -- Table to store OAuth2 authorization codes.
-CREATE TABLE AUTHORIZATION_CODE (
+CREATE TABLE "AUTHORIZATION_CODE" (
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     CODE_ID VARCHAR(36) PRIMARY KEY,
     AUTHORIZATION_CODE VARCHAR(500) NOT NULL,
@@ -11,13 +11,13 @@ CREATE TABLE AUTHORIZATION_CODE (
 );
 
 -- Composite index for authorization code lookup by client + code + deployment (hot login-path query)
-CREATE INDEX idx_authz_code_client_code_deployment ON AUTHORIZATION_CODE (CLIENT_ID, AUTHORIZATION_CODE, DEPLOYMENT_ID);
+CREATE INDEX idx_authz_code_client_code_deployment ON "AUTHORIZATION_CODE" (CLIENT_ID, AUTHORIZATION_CODE, DEPLOYMENT_ID);
 
 -- Index for expiry time on AUTHORIZATION_CODE (supports cleanup and expiry checks)
-CREATE INDEX idx_authz_code_expiry_time ON AUTHORIZATION_CODE (EXPIRY_TIME);
+CREATE INDEX idx_authz_code_expiry_time ON "AUTHORIZATION_CODE" (EXPIRY_TIME);
 
 -- Table to store OAuth2 authorization request context
-CREATE TABLE AUTHORIZATION_REQUEST (
+CREATE TABLE "AUTHORIZATION_REQUEST" (
     AUTH_ID VARCHAR(36) NOT NULL,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     REQUEST_DATA JSONB NOT NULL,
@@ -27,10 +27,10 @@ CREATE TABLE AUTHORIZATION_REQUEST (
 );
 
 -- Index for expiry time on AUTHORIZATION_REQUEST (supports cleanup and expiry checks)
-CREATE INDEX idx_authorization_request_expiry_time ON AUTHORIZATION_REQUEST (EXPIRY_TIME);
+CREATE INDEX idx_authorization_request_expiry_time ON "AUTHORIZATION_REQUEST" (EXPIRY_TIME);
 
 -- Table to store flow context
-CREATE TABLE FLOW_CONTEXT (
+CREATE TABLE "FLOW_CONTEXT" (
     FLOW_ID VARCHAR(36) NOT NULL,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     CONTEXT JSONB,
@@ -41,13 +41,13 @@ CREATE TABLE FLOW_CONTEXT (
 );
 
 -- Index for deployment isolation on FLOW_CONTEXT
-CREATE INDEX idx_flow_context_deployment_id ON FLOW_CONTEXT (DEPLOYMENT_ID);
+CREATE INDEX idx_flow_context_deployment_id ON "FLOW_CONTEXT" (DEPLOYMENT_ID);
 
 -- Index for expiry time on FLOW_CONTEXT
-CREATE INDEX idx_flow_context_expiry_time ON FLOW_CONTEXT (EXPIRY_TIME);
+CREATE INDEX idx_flow_context_expiry_time ON "FLOW_CONTEXT" (EXPIRY_TIME);
 
 -- Table to store WebAuthn session data
-CREATE TABLE WEBAUTHN_SESSION (
+CREATE TABLE "WEBAUTHN_SESSION" (
     SESSION_KEY VARCHAR(255) NOT NULL,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     SESSION_DATA JSONB NOT NULL,
@@ -57,10 +57,10 @@ CREATE TABLE WEBAUTHN_SESSION (
 );
 
 -- Index for expiry time on WEBAUTHN_SESSION
-CREATE INDEX idx_webauthn_session_expiry_time ON WEBAUTHN_SESSION (EXPIRY_TIME);
+CREATE INDEX idx_webauthn_session_expiry_time ON "WEBAUTHN_SESSION" (EXPIRY_TIME);
 
 -- Table to store attribute cache entries
-CREATE TABLE ATTRIBUTE_CACHE (
+CREATE TABLE "ATTRIBUTE_CACHE" (
     ID VARCHAR(36) PRIMARY KEY,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     ATTRIBUTES JSONB NOT NULL,
@@ -69,7 +69,7 @@ CREATE TABLE ATTRIBUTE_CACHE (
 );
 
 -- Table to store pushed authorization requests (PAR)
-CREATE TABLE PAR_REQUEST (
+CREATE TABLE "PAR_REQUEST" (
     REQUEST_URI VARCHAR(43) PRIMARY KEY,
     DEPLOYMENT_ID VARCHAR(255) NOT NULL,
     REQUEST_PARAMS JSONB NOT NULL,
@@ -77,4 +77,4 @@ CREATE TABLE PAR_REQUEST (
 );
 
 -- Index for expiry time on PAR_REQUEST (supports cleanup and expiry checks)
-CREATE INDEX idx_par_request_expiry_time ON PAR_REQUEST (EXPIRY_TIME);
+CREATE INDEX idx_par_request_expiry_time ON "PAR_REQUEST" (EXPIRY_TIME);

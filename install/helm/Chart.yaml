@@ -15,8 +15,8 @@
 # under the License.
 
 apiVersion: v2
-name: thunder
-description: A Helm chart for Thunder - Lightweight user and identity management system
+name: thunderid
+description: A Helm chart for ThunderID - Lightweight user and identity management system
 type: application
-version: 0.35.0
-appVersion: "0.35.0"
+version: 0.37.0
+appVersion: "0.37.0"

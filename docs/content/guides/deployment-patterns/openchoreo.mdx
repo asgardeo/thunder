@@ -43,7 +43,7 @@ Export your database connection details as environment variables:
 
 ```bash
 export DB_HOST="postgres.default.svc.cluster.local"
-export DB_USER="thunder_user"
+export DB_USER="thunderid_user"
 export DB_PASS="<your-database-password>"
 ```
 
@@ -52,7 +52,7 @@ export DB_PASS="<your-database-password>"
 Clone the <ProductName /> repository if you have not already done so. Then install <ProductName /> using the OpenChoreo Helm chart:
 
 ```bash
-helm install thunder install/openchoreo/helm/ \
+helm install thunderid install/openchoreo/helm/ \
   --namespace identity-platform \
   --create-namespace \
   --set database.host="$DB_HOST" \
@@ -83,13 +83,13 @@ kubectl get organizations,projects,deploymentpipelines,environments
 Pass configuration values directly on the command line:
 
 ```bash
-helm upgrade --install thunder install/openchoreo/helm/ \
+helm upgrade --install thunderid install/openchoreo/helm/ \
   --namespace identity-platform \
   --create-namespace \
   --set database.host="postgres.example.com" \
-  --set database.config.username="thunder_user" \
+  --set database.config.username="thunderid_user" \
   --set database.config.password="<config-db-password>" \
-  --set database.runtime.username="thunder_user" \
+  --set database.runtime.username="thunderid_user" \
   --set database.runtime.password="<runtime-db-password>" \
   --set database.config.sslmode="require" \
   --set database.runtime.sslmode="require" \
@@ -104,7 +104,7 @@ For a repeatable deployment, use a values file:
 
     ```yaml
     # Component configuration
-    componentName: thunder-identity
+    componentName: thunderid-identity
     pipelineName: identity-platform-pipeline
 
     # Container image configuration
@@ -118,26 +118,26 @@ For a repeatable deployment, use a values file:
       port: 5432
       identity:
         database: configdb
-        username: thunder_user
+        username: thunderid_user
         password: <config-db-password>
         type: postgres
         sslmode: require
       runtime:
         database: runtimedb
-        username: thunder_user
+        username: thunderid_user
         password: <runtime-db-password>
         type: postgres
         sslmode: require
       user:
         database: userdb
-        username: thunder_user
+        username: thunderid_user
         password: <user-db-password>
         type: postgres
         sslmode: require
 
     # JWT configuration
     jwt:
-      issuer: thunder-identity-platform
+      issuer: thunderid-identity-platform
       validity: 7200
 
     # OAuth configuration
@@ -167,7 +167,7 @@ For a repeatable deployment, use a values file:
     organization:
       name: identity-platform
       displayName: Identity Platform Organization
-      description: Thunder-powered identity management platform
+      description: {{ProductName}}-powered identity management platform
 
     # Cluster-scoped resources (only created in non-default namespaces)
     serviceClass:
@@ -182,7 +182,7 @@ For a repeatable deployment, use a values file:
 2. Install using the values file:
 
     ```bash
-    helm upgrade --install thunder install/openchoreo/helm/ \
+    helm upgrade --install thunderid install/openchoreo/helm/ \
       --namespace identity-platform \
       --create-namespace \
       -f custom-values.yaml
@@ -205,14 +205,14 @@ Before deploying <ProductName />, prepare the PostgreSQL instance:
 2. Create a dedicated user:
 
     ```sql
-    CREATE USER thunder_user WITH PASSWORD '<secure-password>';
+    CREATE USER thunderid_user WITH PASSWORD '<secure-password>';
     ```
 
 3. Grant the required privileges in each database:
 
     ```sql
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO thunder_user;
-    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO thunder_user;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO thunderid_user;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO thunderid_user;
     ```
 
 4. Run the initialization scripts from `backend/dbscripts` to create the schema.
@@ -227,19 +227,19 @@ database:
   port: 5432
   identity:
     database: configdb
-    username: thunder_user
+    username: thunderid_user
     password: <config-db-password>
     type: postgres
     sslmode: require
   runtime:
     database: runtimedb
-    username: thunder_user
+    username: thunderid_user
     password: <runtime-db-password>
     type: postgres
     sslmode: require
   user:
     database: userdb
-    username: thunder_user
+    username: thunderid_user
     password: <user-db-password>
     type: postgres
     sslmode: require
@@ -253,19 +253,19 @@ database:
   port: 5432
   identity:
     database: configdb
-    username: thunder_user
+    username: thunderid_user
     password: <config-db-password>
     type: postgres
     sslmode: disable
   runtime:
     database: runtimedb
-    username: thunder_user
+    username: thunderid_user
     password: <runtime-db-password>
     type: postgres
     sslmode: disable
   user:
     database: userdb
-    username: thunder_user
+    username: thunderid_user
     password: <user-db-password>
     type: postgres
     sslmode: disable

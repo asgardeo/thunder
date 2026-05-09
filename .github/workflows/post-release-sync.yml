@@ -18,8 +18,8 @@ permissions:
 env:
   SOURCE_BRANCH: "release"
   TARGET_BRANCH: "main"
-  RELEASE_GIT_USER_NAME: "thunder-automation-bot"
-  RELEASE_GIT_USER_EMAIL: "thunder-bot@wso2.com"
+  RELEASE_GIT_USER_NAME: "thunderid-automation-bot"
+  RELEASE_GIT_USER_EMAIL: "thunderid-bot@wso2.com"
 
 jobs:
   sync-release-to-main:

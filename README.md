@@ -1,4 +1,4 @@
-# Thunder ⚡
+# ThunderID ⚡
 
 ### Identity Management Suite
 
@@ -6,10 +6,17 @@
 [![GitHub last commit](https://img.shields.io/github/last-commit/asgardeo/thunder.svg)](https://github.com/asgardeo/thunder/commits/main)
 [![GitHub issues](https://img.shields.io/github/issues/asgardeo/thunder.svg)](https://github.com/asgardeo/thunder/issues)
 [![codecov.io](https://codecov.io/github/asgardeo/thunder/coverage.svg?branch=main)](https://codecov.io/github/asgardeo/thunder?branch=main)
+[![GitHub Release](https://img.shields.io/github/v/release/asgardeo/thunder?color=blue)](https://github.com/asgardeo/thunder/releases/latest)
 
-Thunder is a modern, open-source identity management service designed for teams building secure, customizable authentication experiences across applications, services, and AI agents. It enables developers to design and orchestrate login, registration, and recovery flows using a flexible identity flow designer.
+ThunderID is a lightweight, open-source Identity and Access Management (IAM) engine built to secure access for humans, AI agents, and machines.
 
-Designed for extensibility, scalability, and seamless containerized deployment, Thunder integrates naturally with microservices and DevOps environments—serving as the core identity layer for your cloud platform.
+Designed for the agentic era, ThunderID provides a developer-first IAM platform and supporting tools for securing applications, APIs, services, and agent-driven workflows across traditional and decentralized identity ecosystems, with post-quantum-ready security built in from the start.
+
+Core design goals of ThunderID include:
+- **Agent-native identity:** Manage AI agents as first-class identities with delegated authority, consent-aware access, traceability, and support for issuing verifiable credentials to agents. ThunderID also aims to expose IAM capabilities through interfaces that agents can use safely and programmatically.
+- **Decentralized identity:** Bridge the adoption gap for relying parties by making it practical for service providers to consume, verify, and trust decentralized identity in real-world applications, including DIDs, verifiable credentials, digital wallets, trust registries, and issuer-verifier-holder interaction models.
+- **Cloud-native IAM:** Provide a lightweight, containerized identity product that can run across on-premises and cloud environments, with declarative identity flows, policies, and configuration suitable for automation, versioning, and GitOps practices.
+- **Post-quantum-safe security:** Build on a crypto-agile foundation where algorithms, key types, signing methods, and token protection mechanisms can evolve over time, including support for post-quantum-safe algorithms and hybrid transition approaches across key management, credential issuance, assertions, and secure service-to-service communication.
 
 ---
 
@@ -36,34 +43,34 @@ Designed for extensibility, scalability, and seamless containerized deployment, 
 
 ## ⚡ Quickstart
 
-This Quickstart guide will help you get started with Thunder quickly. It walks you through downloading and running the product, trying out the sample app, and exploring registering a user, logging in, and using the Client Credentials flow.
+This Quickstart guide will help you get started with ThunderID quickly. It walks you through downloading and running the product, trying out the sample app, and exploring registering a user, logging in, and using the Client Credentials flow.
 
-### Download and Run Thunder
+### Download and Run ThunderID
 
-You can run Thunder either by downloading the release artifact or using the official Docker image.
+You can run ThunderID either by downloading the release artifact or using the official Docker image.
 
 #### Option 1: Run from Release Artifact
 
-Follow these steps to download the latest release of Thunder and run it locally.
+Follow these steps to download the latest release of ThunderID and run it locally.
 
 1. **Download the distribution from the latest release**
 
-    Download `thunder-<version>-<os>-<arch>.zip` from the [latest release](https://github.com/asgardeo/thunder/releases/latest) for your operating system and architecture.
+    Download `thunderid-<version>-<os>-<arch>.zip` from the [latest release](https://github.com/asgardeo/thunder/releases/latest) for your operating system and architecture.
 
-    For example, if you are using a MacOS machine with a Apple Silicon (ARM64) processor, you would download `thunder-<version>-macos-arm64.zip`.
+    For example, if you are using a MacOS machine with a Apple Silicon (ARM64) processor, you would download `thunderid-<version>-macos-arm64.zip`.
 
 2. **Unzip the product**
 
     Unzip the downloaded file using the following command:
 
     ```bash
-    unzip thunder-<version>-<os>-<arch>.zip
+    unzip thunderid-<version>-<os>-<arch>.zip
     ```
 
     Navigate to the unzipped directory:
 
     ```bash
-    cd thunder-<version>-<os>-<arch>/
+    cd thunderid-<version>-<os>-<arch>/
     ```
 
 3. **Setup the product**
@@ -102,17 +109,17 @@ Follow these steps to download the latest release of Thunder and run it locally.
 
 #### Option 2: Run with Docker Compose
 
-Follow these steps to run Thunder using Docker Compose.
+Follow these steps to run ThunderID using Docker Compose.
 
 1. **Download the Docker Compose file**
 
     Download the `docker-compose.yml` file using the following command:
 
     ```bash
-    curl -o docker-compose.yml https://raw.githubusercontent.com/asgardeo/thunder/v0.35.0/install/quick-start/docker-compose.yml
+    curl -o docker-compose.yml https://raw.githubusercontent.com/asgardeo/thunder/v0.37.0/install/quick-start/docker-compose.yml
     ```
 
-2. **Start Thunder**
+2. **Start ThunderID**
 
     Run the following command in the directory where you downloaded the `docker-compose.yml` file:
 
@@ -123,7 +130,7 @@ Follow these steps to run Thunder using Docker Compose.
     This will automatically:
     - Initialize the database
     - Run the setup process
-    - Start the Thunder server
+    - Start the ThunderID server
 
     **Note the id of the sample app indicated with the log line `[INFO] Sample App ID: <id>` in the setup logs.** You'll need it for the sample app configuration.
 
@@ -131,9 +138,9 @@ Follow these steps to run Thunder using Docker Compose.
 
 ### Try Out the Product
 
-#### Try out the Thunder Console
+#### Try out the ThunderID Console
 
-Follow these steps to access the Thunder Console:
+Follow these steps to access the ThunderID Console:
 
 1. Open your browser and navigate to [https://localhost:8090/console](https://localhost:8090/console).
 
@@ -141,7 +148,7 @@ Follow these steps to access the Thunder Console:
 
 #### Try Out with the Sample App
 
-Thunder provides two sample applications to help you get started quickly:
+ThunderID provides two sample applications to help you get started quickly:
 
 - **React Vanilla Sample** — Sample React application demonstrating direct API integration without external SDKs. Supports Native Flow API or Standard OAuth/OIDC.
 - **React SDK Sample** — Sample React application demonstrating SDK-based integration using `@asgardeo/react` for OAuth 2.0/OIDC authentication.
@@ -223,7 +230,7 @@ The React Vanilla sample supports user self-registration and login:
 
 #### Obtain System API Token
 
-To access the system APIs of Thunder, you need a token with system permissions. Follow the steps below to obtain a system API token.
+To access the system APIs of ThunderID, you need a token with system permissions. Follow the steps below to obtain a system API token.
 
 1. Run the following command, replacing `<application_id>` with the sample app ID generated during "Setup the product."
 
@@ -309,11 +316,11 @@ To try out the Client Credentials flow, follow these steps:
 
 Please refer to the [Contributing Guide](https://asgardeo.github.io/thunder/docs/next/community/contributing/overview) for the different ways to contribute to this project and the relevant guidelines.
 
-For code contributions, refer to the [Contributing Code](https://asgardeo.github.io/thunder/docs/next/community/contributing/contributing-code/prerequisites) section for details on the prerequisites and instructions for running Thunder in development mode.
+For code contributions, refer to the [Contributing Code](https://asgardeo.github.io/thunder/docs/next/community/contributing/contributing-code/prerequisites) section for details on the prerequisites and instructions for running ThunderID in development mode.
 
 ## Documentation
 
-Please refer to the [Documentation](https://asgardeo.github.io/thunder/docs/next/guides/getting-started/what-is-thunder) for additional guidance on getting started with Thunder and exploring its features, concepts, and usage.
+Please refer to the [Documentation](https://asgardeo.github.io/thunder/docs/next/guides/getting-started/what-is-thunder) for additional guidance on getting started with ThunderID and exploring its features, concepts, and usage.
 
 <details>
 <summary><h2>Advanced Setup & Configuration</h2></summary>
@@ -353,7 +360,7 @@ docker compose down
 docker compose down -v
 ```
 
-#### Step 2: Configure Thunder to Use PostgreSQL
+#### Step 2: Configure ThunderID to Use PostgreSQL
 
 1. Open the `backend/cmd/server/repository/conf/deployment.yaml` file.
 2. Update the `database` section to point to the PostgreSQL database:

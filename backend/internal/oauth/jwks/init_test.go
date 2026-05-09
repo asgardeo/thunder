@@ -44,11 +44,11 @@ func TestInitTestSuite(t *testing.T) {
 func (suite *InitTestSuite) SetupTest() {
 	// Initialize Runtime config for CORS middleware
 	testConfig := &config.Config{}
-	_ = config.InitializeThunderRuntime("test", testConfig)
+	_ = config.InitializeServerRuntime("test", testConfig)
 }
 
 func (suite *InitTestSuite) TearDownTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 func (suite *InitTestSuite) TestInitialize() {

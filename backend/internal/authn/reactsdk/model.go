@@ -20,7 +20,7 @@ package reactsdk
 
 // integrateReactSDKInput represents the input for the integrate_react_sdk tool.
 type integrateReactSDKInput struct {
-	ThunderURL string `json:"thunder_url,omitempty" jsonschema:"URL of the Thunder server which is the baseurl for SDK"`
+	ServerURL string `json:"server_url,omitempty" jsonschema:"URL of the ThunderID server which is the baseurl for SDK"`
 }
 
 // integrateReactSDKOutput represents the output for the integrate_react_sdk tool.

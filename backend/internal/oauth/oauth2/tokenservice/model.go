@@ -20,6 +20,8 @@
 package tokenservice
 
 import (
+	"context"
+
 	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
 )
@@ -46,6 +48,7 @@ type TokenConfig struct {
 // The aud claim is serialized as a JSON array when Audiences has 2+ entries, and as a string
 // when it has a single entry.
 type AccessTokenBuildContext struct {
+	Context          context.Context
 	Subject          string
 	Audiences        []string
 	ClientID         string
@@ -62,6 +65,7 @@ type AccessTokenBuildContext struct {
 
 // RefreshTokenBuildContext contains all the information needed to build a refresh token.
 type RefreshTokenBuildContext struct {
+	Context              context.Context
 	ClientID             string
 	Scopes               []string
 	GrantType            string
@@ -75,6 +79,7 @@ type RefreshTokenBuildContext struct {
 
 // IDTokenBuildContext contains all the information needed to build an ID token (OIDC).
 type IDTokenBuildContext struct {
+	Context        context.Context
 	Subject        string
 	Audience       string
 	Scopes         []string
@@ -83,6 +88,7 @@ type IDTokenBuildContext struct {
 	OAuthApp       *inboundmodel.OAuthClient
 	ClaimsRequest  *oauth2model.ClaimsRequest
 	Nonce          string
+	CompletedACR   string
 }
 
 // RefreshTokenClaims represents the validated claims from a refresh token.

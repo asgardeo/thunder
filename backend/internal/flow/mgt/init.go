@@ -27,6 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
 
+	"github.com/asgardeo/thunder/internal/system/cache"
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
@@ -38,11 +39,12 @@ import (
 func Initialize(
 	mux *http.ServeMux,
 	mcpServer *mcp.Server,
+	cacheManager cache.CacheManagerInterface,
 	flowFactory core.FlowFactoryInterface,
 	executorRegistry executor.ExecutorRegistryInterface,
 	graphCache core.GraphCacheInterface,
 ) (FlowMgtServiceInterface, declarativeresource.ResourceExporter, error) {
-	store, compositeStore, transactioner, err := initializeStore()
+	store, compositeStore, transactioner, err := initializeStore(cacheManager)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -83,15 +85,19 @@ func Initialize(
 //   - Reads check both stores (merged results)
 //   - Writes only go to database store
 //   - Declarative flows cannot be updated or deleted
-func initializeStore() (flowStoreInterface, *compositeFlowStore, transaction.Transactioner, error) {
+func initializeStore(cacheManager cache.CacheManagerInterface) (
+	flowStoreInterface, *compositeFlowStore, transaction.Transactioner, error) {
 	var compositeStore *compositeFlowStore
 
 	storeMode := getFlowStoreMode()
 
+	flowByIDCache := cache.GetCache[*CompleteFlowDefinition](cacheManager, "FlowByIDCache")
+	flowByHandleCache := cache.GetCache[*CompleteFlowDefinition](cacheManager, "FlowByHandleCache")
+
 	switch storeMode {
 	case serverconst.StoreModeComposite:
 		fileStore, _ := newFileBasedStore()
-		dbStore, transactioner, err := newCacheBackedFlowStore()
+		dbStore, transactioner, err := newCacheBackedFlowStore(flowByIDCache, flowByHandleCache)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -109,7 +115,7 @@ func initializeStore() (flowStoreInterface, *compositeFlowStore, transaction.Tra
 		return fileStore, nil, transactioner, nil
 
 	default:
-		store, transactioner, err := newCacheBackedFlowStore()
+		store, transactioner, err := newCacheBackedFlowStore(flowByIDCache, flowByHandleCache)
 		if err != nil {
 			return nil, nil, nil, err
 		}
@@ -122,7 +128,7 @@ func initializeStore() (flowStoreInterface, *compositeFlowStore, transaction.Tra
 //  1. If Flow.Store is explicitly configured, use it
 //  2. Otherwise, fall back to global DeclarativeResources.Enabled
 func getFlowStoreMode() serverconst.StoreMode {
-	cfg := config.GetThunderRuntime().Config
+	cfg := config.GetServerRuntime().Config
 	// Check if service-level configuration is explicitly set
 	if cfg.Flow.Store != "" {
 		mode := serverconst.StoreMode(strings.ToLower(strings.TrimSpace(cfg.Flow.Store)))

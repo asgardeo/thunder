@@ -43,11 +43,11 @@ permissions:
 
 env:
   GOFLAGS: "-mod=readonly"
-  PRODUCT_NAME: "Thunder"
-  PRODUCT_NAME_LOWER: "thunder"
+  PRODUCT_NAME: "ThunderID"
+  PRODUCT_NAME_LOWER: "thunderid"
   RELEASE_BRANCH: "release"
-  RELEASE_GIT_USER_NAME: "thunder-automation-bot"
-  RELEASE_GIT_USER_EMAIL: "thunder-bot@wso2.com"
+  RELEASE_GIT_USER_NAME: "thunderid-automation-bot"
+  RELEASE_GIT_USER_EMAIL: "thunderid-bot@wso2.com"
 
 jobs:
   build:
@@ -287,7 +287,7 @@ jobs:
         env:
           POSTGRES_USER: dbuser
           POSTGRES_PASSWORD: dbpassword
-          POSTGRES_DB: thunderdb
+          POSTGRES_DB: postgredb
         ports:
           - 5432:5432
         options: >-
@@ -437,9 +437,9 @@ jobs:
 
       - name: 🐳 Build and Push Multi-Arch Docker Image
         run: |
-          # Convert repository name to lowercase for GHCR
-          REPO_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          IMAGE_NAME="ghcr.io/${REPO_NAME}"
+          # Build image under the repository owner with the product name
+          OWNER_NAME=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_NAME="ghcr.io/${OWNER_NAME}/${PRODUCT_NAME_LOWER}"
           
           # Get version without 'v' prefix for Docker tags
           DOCKER_VERSION="${{ needs.build.outputs.version }}"
@@ -612,7 +612,7 @@ jobs:
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
-          version: 9
+          version: '10.33.4'
 
       - name: 🏷️ Update Sample Apps Version
         run: |

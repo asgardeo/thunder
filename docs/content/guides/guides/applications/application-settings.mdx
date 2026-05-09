@@ -28,45 +28,69 @@ Under **Access** on the General tab, you can restrict which users can authentica
 
 ## Use Wildcard Redirect URIs
 
-<ProductName /> supports wildcard patterns in the path component of registered redirect URIs. This lets you register a single pattern that covers a range of valid callback paths, rather than listing every exact URI.
+<ProductName /> supports wildcard patterns in the **path** and **host** components of registered redirect URIs. This lets you register a single pattern that covers a range of valid callbacks, rather than listing every exact URI. The path and host scopes use different wildcard semantics — see the syntax tables below.
 
 :::note
-Wildcard redirect URI support is disabled by default. A <ProductName /> administrator must set `oauth.allow_wildcard_redirect_uri: true` in `deployment.yaml` before you can register wildcard patterns. See [Configuration](/docs/next/guides/getting-started/configuration) for details.
+Wildcard redirect URI support is disabled by default. A <ProductName /> administrator must set `oauth.allow_wildcard_redirect_uri: true` in `deployment.yaml` before you can register wildcard patterns. The same flag enables both path and host wildcards. See [Configuration](/docs/next/guides/getting-started/configuration) for details.
 :::
 
-### Wildcard Syntax
+### Path Wildcard Syntax
+
+In the path, wildcards operate at the level of `/`-delimited segments.
 
 | Wildcard | Matches | Example pattern | Matches | Does not match |
 |----------|---------|-----------------|---------|----------------|
 | `*` | Exactly one path segment (no slashes) | `https://example.com/cb/*` | `https://example.com/cb/v1` | `https://example.com/cb/v1/extra` |
 | `**` | Zero or more path segments | `https://example.com/app/**/cb` | `https://example.com/app/cb`, `https://example.com/app/tenant/region/cb` | `https://example.com/app` (missing trailing `cb`) |
 
+`*` and `**` must appear as complete path segments. Mixed segments such as `/foo*` or `/*bar` are rejected at registration. Full regular expression syntax (e.g., `[a-z]+`) is also rejected.
+
+### Host Wildcard Syntax
+
+In the host, wildcards operate at the level of characters within a single DNS label (between `.` separators).
+
+| Wildcard | Matches | Example pattern | Matches | Does not match |
+|----------|---------|-----------------|---------|----------------|
+| `*` | One or more alphanumeric characters (`[0-9a-zA-Z]+`) within a single label | `https://app-*.example.com/cb` | `https://app-prod.example.com/cb`, `https://app-staging.example.com/cb` | `https://app-foo-bar.example.com/cb` (hyphen inside dynamic part), `https://app-foo.dev.example.com/cb` (dot inside dynamic part) |
+
+You can use multiple `*` wildcards in the same label as long as they are separated by literal characters:
+
+```
+Pattern:  https://tenant-app-*-*.gateway.example.com/cb
+Matches:  https://tenant-app-019dfc78-f19ab4f2.gateway.example.com/cb
+```
+
+`*` in the host matches **only** alphanumeric characters — hyphens, underscores, and dots are not matched by `*`. Register them as literal characters where needed.
+
 ### Wildcard Placement Rules
 
-Wildcards are only permitted in the **path** component of a URI.
+| URI Component | Path Wildcards (`*`, `**`) | Host Wildcards (`*`) |
+|---------------|---------------------------|----------------------|
+| Scheme (e.g., `https`) | No | No |
+| Host / domain | — | Yes — label-internal only (whole-label `*` such as `*.example.com` is rejected) |
+| Port (e.g., `:8443`) | — | No (registering `:80*0` is rejected) |
+| Path (e.g., `/callback`) | Yes | — |
+| Query string (e.g., `?foo=bar`) | No | No |
+| Fragment | Not allowed in redirect URIs | Not allowed in redirect URIs |
 
-| URI Component | Wildcards Allowed |
-|---------------|-------------------|
-| Scheme (e.g., `https`) | No |
-| Host / domain (e.g., `example.com`) | No |
-| Path (e.g., `/callback/*`) | Yes |
-| Query string (e.g., `?foo=bar`) | No |
-| Fragment | Not allowed in redirect URIs |
-
-Only `*` and `**` are supported. Full regular expression syntax (e.g., `[a-z]+`) is rejected.
+A whole-label wildcard such as `https://*.example.com/cb` is rejected at registration; `*` must be flanked by literal characters within the same label.
 
 ### Matching Rules at Authorization Time
 
 When <ProductName /> receives an authorization request, it evaluates the incoming `redirect_uri` against each registered URI in registration order. The first match wins.
 
-- **Scheme and host** must match exactly (case-insensitive per RFC 3986).
+- **Scheme** must match exactly (case-insensitive).
+- **Host** must match the registered host. When the registered host contains `*`, comparison is per-label and case-insensitive; `*` matches one or more alphanumeric characters within a label and never crosses a `.`.
+- **Port** must match exactly.
 - **Query string** must match exactly. A mismatch in query parameters causes the request to be rejected.
 - **Path wildcards** are expanded as described above.
 - If `redirect_uri` is omitted from the request and the single registered URI contains a wildcard, the request is rejected — a wildcard pattern cannot serve as a concrete redirect target.
 
+If a registered redirect URI fails any of these rules at registration time, the request returns `400 Bad Request` with error `APP-1012` (`Invalid redirect URI`).
+
 ### Token Request Behavior
 
-The `redirect_uri` in a token request is always validated with exact matching per [RFC 6749 §4.1.3](https://www.rfc-editor.org/rfc/rfc6749#section-4.1.3). Wildcard expansion does not apply. The value must exactly match the `redirect_uri` sent in the original authorization request.
+The `redirect_uri` in a token request is always validated with exact matching per [RFC 6749 §4.1.3](https://www.rfc-editor.org/rfc/rfc6749#section-4.1.3). Wildcard expansion does not apply — neither in the path nor in the host. The value must exactly match the `redirect_uri` sent in the original authorization request.
 
 ### Deep Link Support
 

@@ -1,4 +1,4 @@
-# Thunder React SDK Sample Application
+# ThunderID React SDK Sample Application
 
 This sample application demonstrates how to integrate authentication into a React application using the `@asgardeo/react` SDK. It showcases OAuth 2.0/OIDC based user authentication, token management, and user profile display.
 

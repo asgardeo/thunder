@@ -124,3 +124,27 @@ func (suite *ValueUtilTestSuite) TestToFloat64_Failure() {
 		})
 	}
 }
+
+func (suite *ValueUtilTestSuite) TestSecondsToMinutes() {
+	testCases := []struct {
+		name     string
+		seconds  int64
+		expected string
+	}{
+		{"Zero seconds", 0, "0"},
+		{"30 seconds rounds down to 0", 30, "0"},
+		{"60 seconds", 60, "1"},
+		{"90 seconds rounds down to 1", 90, "1"},
+		{"120 seconds", 120, "2"},
+		{"300 seconds", 300, "5"},
+		{"3600 seconds", 3600, "60"},
+		{"86400 seconds", 86400, "1440"},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			result := SecondsToMinutes(tc.seconds)
+			assert.Equal(suite.T(), tc.expected, result)
+		})
+	}
+}

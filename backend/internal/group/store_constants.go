@@ -146,14 +146,14 @@ var (
 	// QueryGetGroupMembers is the query to get members assigned to a group.
 	QueryGetGroupMembers = dbmodel.DBQuery{
 		ID: "GRQ-GROUP_MGT-07",
-		Query: `SELECT MEMBER_ID, MEMBER_TYPE FROM GROUP_MEMBER_REFERENCE WHERE GROUP_ID = $1 AND DEPLOYMENT_ID = $4 ` +
-			`ORDER BY MEMBER_TYPE, MEMBER_ID LIMIT $2 OFFSET $3`,
+		Query: `SELECT MEMBER_ID, MEMBER_TYPE FROM "GROUP_MEMBER_REFERENCE" ` +
+			`WHERE GROUP_ID = $1 AND DEPLOYMENT_ID = $4 ORDER BY MEMBER_TYPE, MEMBER_ID LIMIT $2 OFFSET $3`,
 	}
 
 	// QueryGetGroupMemberCount is the query to get total count of members in a group.
 	QueryGetGroupMemberCount = dbmodel.DBQuery{
 		ID:    "GRQ-GROUP_MGT-08",
-		Query: `SELECT COUNT(*) as total FROM GROUP_MEMBER_REFERENCE WHERE GROUP_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `SELECT COUNT(*) as total FROM "GROUP_MEMBER_REFERENCE" WHERE GROUP_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// QueryUpdateGroup is the query to update a group.
@@ -171,13 +171,13 @@ var (
 	// QueryDeleteGroupMembers is the query to delete all members assigned to a group.
 	QueryDeleteGroupMembers = dbmodel.DBQuery{
 		ID:    "GRQ-GROUP_MGT-11",
-		Query: `DELETE FROM GROUP_MEMBER_REFERENCE WHERE GROUP_ID = $1 AND DEPLOYMENT_ID = $2`,
+		Query: `DELETE FROM "GROUP_MEMBER_REFERENCE" WHERE GROUP_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// QueryAddMemberToGroup is the query to assign member to a group.
 	QueryAddMemberToGroup = dbmodel.DBQuery{
 		ID: "GRQ-GROUP_MGT-12",
-		Query: `INSERT INTO GROUP_MEMBER_REFERENCE (GROUP_ID, MEMBER_TYPE, MEMBER_ID, DEPLOYMENT_ID) ` +
+		Query: `INSERT INTO "GROUP_MEMBER_REFERENCE" (GROUP_ID, MEMBER_TYPE, MEMBER_ID, DEPLOYMENT_ID) ` +
 			`VALUES ($1, $2, $3, $4) ON CONFLICT (GROUP_ID, MEMBER_TYPE, MEMBER_ID, DEPLOYMENT_ID) DO NOTHING`,
 	}
 
@@ -210,7 +210,7 @@ var (
 	// QueryDeleteGroupMember is the query to delete a specific member from a group.
 	QueryDeleteGroupMember = dbmodel.DBQuery{
 		ID: "GRQ-GROUP_MGT-17",
-		Query: `DELETE FROM GROUP_MEMBER_REFERENCE ` +
+		Query: `DELETE FROM "GROUP_MEMBER_REFERENCE" ` +
 			`WHERE GROUP_ID = $1 AND MEMBER_TYPE = $2 AND MEMBER_ID = $3 AND DEPLOYMENT_ID = $4`,
 	}
 )
@@ -253,7 +253,7 @@ func buildGroupINClauseQuery(
 func buildBulkGroupExistsQuery(groupIDs []string, deploymentID string) (dbmodel.DBQuery, []interface{}, error) {
 	return buildGroupINClauseQuery(
 		"GRQ-GROUP_MGT-18",
-		"SELECT ID FROM \"GROUP\" WHERE ID IN (%s) AND DEPLOYMENT_ID = %s",
+		`SELECT ID FROM "GROUP" WHERE ID IN (%s) AND DEPLOYMENT_ID = %s`,
 		groupIDs, deploymentID,
 	)
 }
@@ -262,7 +262,7 @@ func buildBulkGroupExistsQuery(groupIDs []string, deploymentID string) (dbmodel.
 func buildGetGroupsByIDsQuery(groupIDs []string, deploymentID string) (dbmodel.DBQuery, []interface{}, error) {
 	return buildGroupINClauseQuery(
 		"GRQ-GROUP_MGT-19",
-		"SELECT ID, OU_ID, NAME, DESCRIPTION FROM \"GROUP\" WHERE ID IN (%s) AND DEPLOYMENT_ID = %s",
+		`SELECT ID, OU_ID, NAME, DESCRIPTION FROM "GROUP" WHERE ID IN (%s) AND DEPLOYMENT_ID = %s`,
 		groupIDs, deploymentID,
 	)
 }

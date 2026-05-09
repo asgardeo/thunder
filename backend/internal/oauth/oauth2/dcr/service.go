@@ -233,7 +233,7 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 		appName = application.AppI18nRef(appID, "name")
 	}
 
-	oauthAppConfig := &model.OAuthAppConfigDTO{
+	oauthAppConfig := &inboundmodel.OAuthConfigWithSecret{
 		ClientID:                           clientID,
 		RedirectURIs:                       request.RedirectURIs,
 		GrantTypes:                         request.GrantTypes,
@@ -244,12 +244,13 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 		RequirePushedAuthorizationRequests: request.RequirePushedAuthorizationRequests,
 		Scopes:                             scopes,
 		UserInfo:                           buildUserInfoConfig(request),
+		Token:                              buildTokenConfig(request),
 	}
 
-	inboundAuthConfig := []model.InboundAuthConfigDTO{
+	inboundAuthConfig := []inboundmodel.InboundAuthConfigWithSecret{
 		{
-			Type:           model.OAuthInboundAuthType,
-			OAuthAppConfig: oauthAppConfig,
+			Type:        inboundmodel.OAuthInboundAuthType,
+			OAuthConfig: oauthAppConfig,
 		},
 	}
 
@@ -263,7 +264,9 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 		TosURI:            request.TosURI,
 		PolicyURI:         request.PolicyURI,
 		Contacts:          request.Contacts,
-		Certificate:       appCertificate,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			Certificate: appCertificate,
+		},
 	}
 
 	return appDTO, nil
@@ -297,14 +300,35 @@ func buildUserInfoConfig(request *DCRRegistrationRequest) *inboundmodel.UserInfo
 	}
 }
 
+// buildTokenConfig builds the OAuthTokenConfig from DCR request fields.
+func buildTokenConfig(request *DCRRegistrationRequest) *inboundmodel.OAuthTokenConfig {
+	idToken := buildIDTokenConfig(request)
+	if idToken == nil {
+		return nil
+	}
+	return &inboundmodel.OAuthTokenConfig{IDToken: idToken}
+}
+
+// buildIDTokenConfig maps ID token encryption fields from a DCR request to an IDTokenConfig.
+func buildIDTokenConfig(request *DCRRegistrationRequest) *inboundmodel.IDTokenConfig {
+	if request.IDTokenEncryptedResponseAlg == "" && request.IDTokenEncryptedResponseEnc == "" {
+		return nil
+	}
+	return &inboundmodel.IDTokenConfig{
+		ResponseType:  inboundmodel.IDTokenResponseTypeJWE,
+		EncryptionAlg: request.IDTokenEncryptedResponseAlg,
+		EncryptionEnc: request.IDTokenEncryptedResponseEnc,
+	}
+}
+
 // convertApplicationToDCRResponse converts Application DTO to DCR registration response.
 func (ds *dcrService) convertApplicationToDCRResponse(appDTO *model.ApplicationDTO, originalClientName string) (
 	*DCRRegistrationResponse, *serviceerror.ServiceError) {
-	if len(appDTO.InboundAuthConfig) == 0 || appDTO.InboundAuthConfig[0].OAuthAppConfig == nil {
-		return &DCRRegistrationResponse{}, nil
+	if len(appDTO.InboundAuthConfig) == 0 || appDTO.InboundAuthConfig[0].OAuthConfig == nil {
+		return nil, &ErrorServerError
 	}
 
-	oauthConfig := appDTO.InboundAuthConfig[0].OAuthAppConfig
+	oauthConfig := appDTO.InboundAuthConfig[0].OAuthConfig
 
 	clientName := originalClientName
 	if clientName == "" {
@@ -333,6 +357,12 @@ func (ds *dcrService) convertApplicationToDCRResponse(appDTO *model.ApplicationD
 		userInfoEncryptedEnc = oauthConfig.UserInfo.EncryptionEnc
 	}
 
+	var idTokenEncryptedAlg, idTokenEncryptedEnc string
+	if oauthConfig.Token != nil && oauthConfig.Token.IDToken != nil {
+		idTokenEncryptedAlg = oauthConfig.Token.IDToken.EncryptionAlg
+		idTokenEncryptedEnc = oauthConfig.Token.IDToken.EncryptionEnc
+	}
+
 	response := &DCRRegistrationResponse{
 		ClientID:                           oauthConfig.ClientID,
 		ClientSecret:                       oauthConfig.ClientSecret,
@@ -350,11 +380,13 @@ func (ds *dcrService) convertApplicationToDCRResponse(appDTO *model.ApplicationD
 		TosURI:                             appDTO.TosURI,
 		PolicyURI:                          appDTO.PolicyURI,
 		Contacts:                           appDTO.Contacts,
-		AppID:                              oauthConfig.AppID,
+		AppID:                              appDTO.ID,
 		RequirePushedAuthorizationRequests: oauthConfig.RequirePushedAuthorizationRequests,
 		UserInfoSignedResponseAlg:          userInfoSignedAlg,
 		UserInfoEncryptedResponseAlg:       userInfoEncryptedAlg,
 		UserInfoEncryptedResponseEnc:       userInfoEncryptedEnc,
+		IDTokenEncryptedResponseAlg:        idTokenEncryptedAlg,
+		IDTokenEncryptedResponseEnc:        idTokenEncryptedEnc,
 	}
 
 	return response, nil

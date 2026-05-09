@@ -23,11 +23,12 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/entity"
+	"github.com/asgardeo/thunder/internal/entitytype"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
+	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
-	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 // Initialize initializes the group service and registers its routes.
@@ -36,25 +37,27 @@ func Initialize(
 	dbProvider provider.DBProviderInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	entityService entity.EntityServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	entityTypeService entitytype.EntityTypeServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
-) (GroupServiceInterface, oupkg.OUGroupResolver, error) {
+) (GroupServiceInterface, oupkg.OUGroupResolver, declarativeresource.ResourceExporter, error) {
 	transactioner, err := dbProvider.GetUserDBTransactioner()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	groupStore := newGroupStore()
 	groupService := newGroupServiceWithStore(
-		groupStore, ouService, entityService, userSchemaService, authzService, transactioner,
+		groupStore, ouService, entityService, entityTypeService, authzService, transactioner,
 	)
 
 	// Create resolver for OU package to query group data without cross-DB access
 	ouGroupResolver := newOUGroupResolver(groupStore)
 
+	exporter := newGroupExporter(groupService)
+
 	groupHandler := newGroupHandler(groupService)
 	registerRoutes(mux, groupHandler)
-	return groupService, ouGroupResolver, nil
+	return groupService, ouGroupResolver, exporter, nil
 }
 
 // registerRoutes registers the routes for group management operations.

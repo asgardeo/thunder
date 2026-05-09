@@ -22,10 +22,10 @@ import (
 	"context"
 
 	"github.com/asgardeo/thunder/internal/entity"
+	"github.com/asgardeo/thunder/internal/entitytype"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 // ouUserResolverAdapter implements oupkg.OUUserResolver using the entity service.
@@ -33,14 +33,14 @@ import (
 // accessing the entity layer, maintaining proper package boundaries.
 type ouUserResolverAdapter struct {
 	entityService     entity.EntityServiceInterface
-	userSchemaService userschema.UserSchemaServiceInterface
+	entityTypeService entitytype.EntityTypeServiceInterface
 }
 
 // newOUUserResolver creates a new OUUserResolver backed by the given entity service.
 func newOUUserResolver(
-	entityService entity.EntityServiceInterface, userSchemaService userschema.UserSchemaServiceInterface,
+	entityService entity.EntityServiceInterface, entityTypeService entitytype.EntityTypeServiceInterface,
 ) oupkg.OUUserResolver {
-	return &ouUserResolverAdapter{entityService: entityService, userSchemaService: userSchemaService}
+	return &ouUserResolverAdapter{entityService: entityService, entityTypeService: entityTypeService}
 }
 
 // GetUserCountByOUID returns the count of users belonging to the given organization unit.
@@ -62,7 +62,7 @@ func (a *ouUserResolverAdapter) GetUserListByOUID(
 
 	var displayAttrPaths map[string]string
 	if includeDisplay {
-		displayAttrPaths = resolveOUUserDisplayPaths(ctx, users, a.userSchemaService)
+		displayAttrPaths = resolveOUUserDisplayPaths(ctx, users, a.entityTypeService)
 	}
 
 	result := make([]oupkg.User, len(users))
@@ -78,7 +78,7 @@ func (a *ouUserResolverAdapter) GetUserListByOUID(
 
 // resolveOUUserDisplayPaths collects user types and resolves their display attribute paths.
 func resolveOUUserDisplayPaths(
-	ctx context.Context, users []User, schemaService userschema.UserSchemaServiceInterface,
+	ctx context.Context, users []User, schemaService entitytype.EntityTypeServiceInterface,
 ) map[string]string {
 	userTypes := make([]string, 0, len(users))
 	for _, u := range users {

@@ -57,8 +57,8 @@ type GroupAuthzTestSuite struct {
 	groupOU1ID string
 	groupOU2ID string
 
-	// User schemas (one for the user-manager in OU1)
-	userSchemaOU1ID string
+	// user types (one for the user-manager in OU1)
+	entityTypeOU1ID string
 
 	// Test role and manager
 	groupMgrRoleID      string
@@ -85,7 +85,7 @@ const (
 	groupMgrUsername  = "authz-group-manager"
 	groupMgrPassword  = "GroupMgr@123"
 	groupMgrRoleName  = "Group Admin (group-authz-test)"
-	userSchemaOU1Name = "authz-mgr-schema-ou1"
+	entityTypeOU1Name = "authz-mgr-schema-ou1"
 
 	groupAuthzDevelopClientID    = "CONSOLE"
 	groupAuthzDevelopRedirectURI = "https://localhost:8095/console"
@@ -124,9 +124,9 @@ func (ts *GroupAuthzTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "create group-authz OU2")
 	ts.groupOU2ID = ou2ID
 
-	// ---- 2. Create user schema for user-manager in OU1 ----
-	schemaOU1ID, err := testutils.CreateUserType(testutils.UserSchema{
-		Name:               userSchemaOU1Name,
+	// ---- 2. Create user type for user-manager in OU1 ----
+	schemaOU1ID, err := testutils.CreateUserType(testutils.UserType{
+		Name:               entityTypeOU1Name,
 		OUID: ts.groupOU1ID,
 		Schema: map[string]interface{}{
 			"username":     map[string]interface{}{"type": "string"},
@@ -134,12 +134,12 @@ func (ts *GroupAuthzTestSuite) SetupSuite() {
 			"display_name": map[string]interface{}{"type": "string"},
 		},
 	})
-	ts.Require().NoError(err, "create user schema for OU1")
-	ts.userSchemaOU1ID = schemaOU1ID
+	ts.Require().NoError(err, "create user type for OU1")
+	ts.entityTypeOU1ID = schemaOU1ID
 
 	// ---- 3. Create the user-manager in OU1 ----
 	userMgrID, err := testutils.CreateUser(testutils.User{
-		Type:             userSchemaOU1Name,
+		Type:             entityTypeOU1Name,
 		OUID: ts.groupOU1ID,
 		Attributes: json.RawMessage(fmt.Sprintf(
 			`{"username": %q, "password": %q, "display_name": "Group Manager"}`,
@@ -151,7 +151,7 @@ func (ts *GroupAuthzTestSuite) SetupSuite() {
 
 	// ---- 3b. Create a plain member user in OU1 (used in membership authz tests) ----
 	memberOU1ID, err := testutils.CreateUser(testutils.User{
-		Type:             userSchemaOU1Name,
+		Type:             entityTypeOU1Name,
 		OUID: ts.groupOU1ID,
 		Attributes: json.RawMessage(fmt.Sprintf(
 			`{"username": %q, "password": %q, "display_name": "Member OU1"}`,
@@ -161,8 +161,8 @@ func (ts *GroupAuthzTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "create member user in OU1")
 	ts.memberUserOU1ID = memberOU1ID
 
-	// ---- 3c. Create a user schema for OU2 ----
-	schemaOU2ID, err := testutils.CreateUserType(testutils.UserSchema{
+	// ---- 3c. Create a user type for OU2 ----
+	schemaOU2ID, err := testutils.CreateUserType(testutils.UserType{
 		Name:               memberSchemaOU2Name,
 		OUID: ts.groupOU2ID,
 		Schema: map[string]interface{}{
@@ -171,7 +171,7 @@ func (ts *GroupAuthzTestSuite) SetupSuite() {
 			"display_name": map[string]interface{}{"type": "string"},
 		},
 	})
-	ts.Require().NoError(err, "create user schema for OU2")
+	ts.Require().NoError(err, "create user type for OU2")
 	ts.memberSchemaOU2ID = schemaOU2ID
 
 	// ---- 3d. Create a plain member user in OU2 (used in membership authz tests) ----
@@ -212,7 +212,7 @@ func (ts *GroupAuthzTestSuite) SetupSuite() {
 	ts.targetGroupOU2ID = targetOU2ID
 
 	// ---- 5. Look up the system resource server seeded by bootstrap ----
-	systemRSID, err := testutils.GetResourceServerByIdentifier("system")
+	systemRSID, err := testutils.GetResourceServerByName("System")
 	ts.Require().NoError(err, "look up system resource server")
 
 	// ---- 6. Create a role with system:group permission and assign to the user-manager ----
@@ -289,9 +289,9 @@ func (ts *GroupAuthzTestSuite) TearDownSuite() {
 			ts.T().Logf("teardown: delete member schema OU2: %v", err)
 		}
 	}
-	if ts.userSchemaOU1ID != "" {
-		if err := testutils.DeleteUserType(ts.userSchemaOU1ID); err != nil {
-			ts.T().Logf("teardown: delete user schema OU1: %v", err)
+	if ts.entityTypeOU1ID != "" {
+		if err := testutils.DeleteUserType(ts.entityTypeOU1ID); err != nil {
+			ts.T().Logf("teardown: delete user type OU1: %v", err)
 		}
 	}
 	if ts.groupOU2ID != "" {

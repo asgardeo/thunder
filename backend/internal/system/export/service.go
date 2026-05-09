@@ -45,9 +45,12 @@ const (
 	resourceTypeApplication        = "application"
 	resourceTypeIdentityProvider   = "identity_provider"
 	resourceTypeNotificationSender = "notification_sender"
-	resourceTypeUserSchema         = "user_schema"
+	resourceTypeUserType           = "user_type"
 	resourceTypeOU                 = "organization_unit"
 	resourceTypeUser               = "user"
+	resourceTypeGroup              = "group"
+	resourceTypeResourceServer     = "resource_server"
+	resourceTypeRole               = "role"
 	resourceTypeFlow               = "flow"
 	resourceTypeTranslation        = "translation"
 	resourceTypeLayout             = "layout"
@@ -120,9 +123,12 @@ func (es *exportService) ExportResources(
 		resourceTypeApplication:        request.Applications,
 		resourceTypeIdentityProvider:   request.IdentityProviders,
 		resourceTypeNotificationSender: request.NotificationSenders,
-		resourceTypeUserSchema:         request.UserSchemas,
+		resourceTypeUserType:           request.UserTypes,
 		resourceTypeOU:                 request.OrganizationUnits,
 		resourceTypeUser:               request.Users,
+		resourceTypeGroup:              request.Groups,
+		resourceTypeResourceServer:     request.ResourceServers,
+		resourceTypeRole:               request.Roles,
 		resourceTypeFlow:               request.Flows,
 		resourceTypeTranslation:        request.Translations,
 		resourceTypeLayout:             request.Layouts,
@@ -130,7 +136,14 @@ func (es *exportService) ExportResources(
 	}
 
 	// Export resources using the registry
-	for resourceType, resourceIDs := range resourceMap {
+	resourceTypes := make([]string, 0, len(resourceMap))
+	for k := range resourceMap {
+		resourceTypes = append(resourceTypes, k)
+	}
+	sort.Strings(resourceTypes)
+
+	for _, resourceType := range resourceTypes {
+		resourceIDs := resourceMap[resourceType]
 		if len(resourceIDs) == 0 {
 			continue
 		}

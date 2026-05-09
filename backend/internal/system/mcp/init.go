@@ -28,7 +28,9 @@ import (
 
 	"github.com/asgardeo/thunder/internal/system/config"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
+	"github.com/asgardeo/thunder/internal/system/log"
 	mcpauth "github.com/asgardeo/thunder/internal/system/mcp/auth"
+	"github.com/asgardeo/thunder/internal/system/security"
 )
 
 // Initialize initializes the MCP server and registers its routes with the provided mux.
@@ -36,7 +38,7 @@ func Initialize(
 	mux *http.ServeMux,
 	jwtService jwt.JWTServiceInterface,
 ) *mcpsdk.Server {
-	cfg := config.GetThunderRuntime().Config
+	cfg := config.GetServerRuntime().Config
 	baseURL := config.GetServerURL(&cfg.Server)
 
 	mcpURL := baseURL + MCPEndpointPath
@@ -44,6 +46,12 @@ func Initialize(
 
 	// Create MCP server and register standalone tools
 	mcpServer := newServer()
+
+	sysPerm := security.GetSystemPermissions()
+	if sysPerm == nil {
+		log.GetLogger().Fatal("System permissions not initialized before MCP initialization")
+	}
+	rootPerm := sysPerm.Root
 
 	tokenVerifier := mcpauth.NewTokenVerifier(jwtService, cfg.JWT.Issuer, mcpURL)
 	httpHandler := mcpsdk.NewStreamableHTTPHandler(func(*http.Request) *mcpsdk.Server {
@@ -53,14 +61,14 @@ func Initialize(
 	// Secure MCP handler with bearer token authentication
 	securedHandler := auth.RequireBearerToken(tokenVerifier, &auth.RequireBearerTokenOptions{
 		ResourceMetadataURL: resourceMetadataURL,
-		Scopes:              []string{"system"},
+		Scopes:              []string{rootPerm},
 	})(httpHandler)
 
 	// Register protected resource metadata endpoint
 	metadata := &oauthex.ProtectedResourceMetadata{
 		Resource:             mcpURL,
 		AuthorizationServers: []string{cfg.JWT.Issuer},
-		ScopesSupported:      []string{"system"},
+		ScopesSupported:      []string{rootPerm},
 	}
 	mux.Handle(OAuthProtectedResourceMetadataPath, auth.ProtectedResourceMetadataHandler(metadata))
 

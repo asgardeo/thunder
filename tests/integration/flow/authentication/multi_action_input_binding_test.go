@@ -130,7 +130,7 @@ var (
 		Parent:      nil,
 	}
 
-	multiActionInputBindingUserSchema = testutils.UserSchema{
+	multiActionInputBindingEntityType = testutils.UserType{
 		Name: "multi_action_input_binding_test_person",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -156,7 +156,7 @@ var (
 	}
 
 	testUserMultiActionInputBinding = testutils.User{
-		Type: multiActionInputBindingUserSchema.Name,
+		Type: multiActionInputBindingEntityType.Name,
 		Attributes: json.RawMessage(`{
 			"username": "multiactionuser",
 			"password": "testpassword",
@@ -171,7 +171,7 @@ var (
 var (
 	multiActionInputBindingTestAppID    string
 	multiActionInputBindingTestOUID     string
-	multiActionInputBindingUserSchemaID string
+	multiActionInputBindingEntityTypeID string
 )
 
 type MultiActionInputBindingTestSuite struct {
@@ -214,13 +214,13 @@ func (ts *MultiActionInputBindingTestSuite) SetupSuite() {
 	}
 	multiActionInputBindingTestOUID = ouID
 
-	// Create test user schema within the OU
-	multiActionInputBindingUserSchema.OUID = multiActionInputBindingTestOUID
-	schemaID, err := testutils.CreateUserType(multiActionInputBindingUserSchema)
+	// Create test user type within the OU
+	multiActionInputBindingEntityType.OUID = multiActionInputBindingTestOUID
+	schemaID, err := testutils.CreateUserType(multiActionInputBindingEntityType)
 	if err != nil {
-		ts.T().Fatalf("Failed to create test user schema: %v", err)
+		ts.T().Fatalf("Failed to create test user type: %v", err)
 	}
-	multiActionInputBindingUserSchemaID = schemaID
+	multiActionInputBindingEntityTypeID = schemaID
 
 	// Create test user with the created OU
 	testUser := testUserMultiActionInputBinding
@@ -299,10 +299,10 @@ func (ts *MultiActionInputBindingTestSuite) TearDownSuite() {
 		}
 	}
 
-	// Delete test user schema
-	if multiActionInputBindingUserSchemaID != "" {
-		if err := testutils.DeleteUserType(multiActionInputBindingUserSchemaID); err != nil {
-			ts.T().Logf("Failed to delete user schema: %v", err)
+	// Delete test user type
+	if multiActionInputBindingEntityTypeID != "" {
+		if err := testutils.DeleteUserType(multiActionInputBindingEntityTypeID); err != nil {
+			ts.T().Logf("Failed to delete user type: %v", err)
 		}
 	}
 
@@ -418,12 +418,12 @@ func (ts *MultiActionInputBindingTestSuite) TestGoogleAuthFlowComplete() {
 	ts.Require().NotEmpty(redirectURL)
 
 	// Simulate Google OAuth flow
-	authCode, err := testutils.SimulateFederatedOAuthFlow(redirectURL)
+	authCode, state, err := testutils.SimulateFederatedOAuthFlow(redirectURL)
 	ts.Require().NoError(err, "Failed to simulate Google authorization")
 	ts.Require().NotEmpty(authCode)
 
 	// Complete flow with authorization code
-	inputs := map[string]string{"code": authCode}
+	inputs := map[string]string{"code": authCode, "state": state}
 	flowStep, err = common.CompleteFlow(ExecutionID, inputs, "", flowStep.ChallengeToken)
 	ts.Require().NoError(err, "Failed to complete flow with auth code")
 

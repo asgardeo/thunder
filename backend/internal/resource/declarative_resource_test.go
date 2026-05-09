@@ -23,6 +23,7 @@ import (
 	"errors"
 	"testing"
 
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -65,13 +66,14 @@ func (s *ResourceServerExporterTestSuite) TestGetParameterizerType() {
 func (s *ResourceServerExporterTestSuite) TestGetAllResourceIDs_Success() {
 	ctx := context.Background()
 	expectedList := &ResourceServerList{
+		TotalResults: 2,
 		ResourceServers: []ResourceServer{
 			{ID: "rs1", Name: "Resource Server 1"},
 			{ID: "rs2", Name: "Resource Server 2"},
 		},
 	}
 
-	s.mockService.EXPECT().GetResourceServerList(ctx, 1000, 0).Return(expectedList, nil)
+	s.mockService.EXPECT().GetResourceServerList(ctx, serverconst.MaxPageSize, 0).Return(expectedList, nil)
 	s.mockService.EXPECT().IsResourceServerDeclarative("rs1").Return(false)
 	s.mockService.EXPECT().IsResourceServerDeclarative("rs2").Return(false)
 
@@ -86,6 +88,7 @@ func (s *ResourceServerExporterTestSuite) TestGetAllResourceIDs_Success() {
 func (s *ResourceServerExporterTestSuite) TestGetAllResourceIDs_FilterDeclarative() {
 	ctx := context.Background()
 	expectedList := &ResourceServerList{
+		TotalResults: 3,
 		ResourceServers: []ResourceServer{
 			{ID: "rs1", Name: "Mutable Server"},
 			{ID: "rs2", Name: "Declarative Server"},
@@ -93,7 +96,7 @@ func (s *ResourceServerExporterTestSuite) TestGetAllResourceIDs_FilterDeclarativ
 		},
 	}
 
-	s.mockService.EXPECT().GetResourceServerList(ctx, 1000, 0).Return(expectedList, nil)
+	s.mockService.EXPECT().GetResourceServerList(ctx, serverconst.MaxPageSize, 0).Return(expectedList, nil)
 	s.mockService.EXPECT().IsResourceServerDeclarative("rs1").Return(false)
 	s.mockService.EXPECT().IsResourceServerDeclarative("rs2").Return(true)
 	s.mockService.EXPECT().IsResourceServerDeclarative("rs3").Return(false)
@@ -113,7 +116,7 @@ func (s *ResourceServerExporterTestSuite) TestGetAllResourceIDs_Error() {
 		Error: i18ncore.I18nMessage{DefaultValue: "test error"},
 	}
 
-	s.mockService.EXPECT().GetResourceServerList(ctx, 1000, 0).Return(nil, expectedError)
+	s.mockService.EXPECT().GetResourceServerList(ctx, serverconst.MaxPageSize, 0).Return(nil, expectedError)
 
 	ids, err := s.exporter.GetAllResourceIDs(ctx)
 
@@ -135,6 +138,7 @@ func (s *ResourceServerExporterTestSuite) TestGetResourceByID_Success() {
 	}
 
 	resources := &ResourceList{
+		TotalResults: 1,
 		Resources: []Resource{
 			{
 				ID:           "res1",
@@ -149,6 +153,7 @@ func (s *ResourceServerExporterTestSuite) TestGetResourceByID_Success() {
 	}
 
 	actions := &ActionList{
+		TotalResults: 1,
 		Actions: []Action{
 			{
 				ID:          "act1",
@@ -162,10 +167,9 @@ func (s *ResourceServerExporterTestSuite) TestGetResourceByID_Success() {
 
 	resourceID := "res1"
 	s.mockService.EXPECT().GetResourceServer(ctx, serverID).Return(server, nil)
-	s.mockService.EXPECT().GetResourceList(ctx, serverID, (*string)(nil), 1000, 0).Return(resources, nil)
-	s.mockService.EXPECT().GetActionList(ctx, serverID, &resourceID, 1000, 0).Return(actions, nil)
-	s.mockService.EXPECT().GetActionList(
-		ctx, serverID, (*string)(nil), 1000, 0).Return(&ActionList{Actions: []Action{}}, nil)
+	s.mockService.EXPECT().GetResourceList(
+		ctx, serverID, (*string)(nil), serverconst.MaxPageSize, 0).Return(resources, nil)
+	s.mockService.EXPECT().GetActionList(ctx, serverID, &resourceID, serverconst.MaxPageSize, 0).Return(actions, nil)
 
 	result, name, err := s.exporter.GetResourceByID(ctx, serverID)
 
@@ -235,9 +239,7 @@ func (s *ResourceServerExporterTestSuite) TestValidateResource_EmptyName() {
 func (s *ResourceServerExporterTestSuite) TestGetResourceRules() {
 	rules := s.exporter.GetResourceRules()
 
-	assert.NotNil(s.T(), rules)
-	assert.Contains(s.T(), rules.Variables, "OUID")
-	assert.Contains(s.T(), rules.Variables, "Identifier")
+	assert.Nil(s.T(), rules)
 }
 
 func TestParseToResourceServer(t *testing.T) {
@@ -382,7 +384,7 @@ func TestProcessResourceServer_SetsPermissionsAndDelimiter(t *testing.T) {
 		},
 	}
 
-	err := processResourceServer(rs)
+	err := ProcessResourceServer(rs)
 
 	assert.NoError(t, err)
 	assert.Equal(t, ":", rs.Delimiter)
@@ -413,7 +415,7 @@ func TestProcessResourceServer_WithHandlePrefixesPermissions(t *testing.T) {
 		},
 	}
 
-	err := processResourceServer(rs)
+	err := ProcessResourceServer(rs)
 
 	assert.NoError(t, err)
 	assert.Equal(t, ":", rs.Delimiter)
@@ -434,7 +436,7 @@ func TestProcessResourceServer_DuplicateHandle(t *testing.T) {
 		},
 	}
 
-	err := processResourceServer(rs)
+	err := ProcessResourceServer(rs)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "duplicate resource handle")

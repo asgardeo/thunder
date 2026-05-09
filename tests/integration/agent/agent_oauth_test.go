@@ -61,7 +61,7 @@ type AgentOAuthFlowsTestSuite struct {
 	suite.Suite
 	ouID         string
 	schemaID     string
-	userSchemaID string
+	entityTypeID string
 	userID       string
 	authFlowID   string
 }
@@ -79,8 +79,8 @@ func (ts *AgentOAuthFlowsTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "Failed to create OU")
 	ts.ouID = ouID
 
-	schemaID, err := testutils.CreateUserType(testutils.UserSchema{
-		Name: "agent-oauth-flow-type",
+	schemaID, err := testutils.CreateAgentType(testutils.UserType{
+		Name: "default",
 		OUID: ts.ouID,
 		Schema: map[string]interface{}{
 			"description": map[string]interface{}{"type": "string"},
@@ -89,7 +89,7 @@ func (ts *AgentOAuthFlowsTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "Failed to create agent schema")
 	ts.schemaID = schemaID
 
-	userSchemaID, err := testutils.CreateUserType(testutils.UserSchema{
+	entityTypeID, err := testutils.CreateUserType(testutils.UserType{
 		Name: "agent-oauth-flow-person",
 		OUID: ts.ouID,
 		Schema: map[string]interface{}{
@@ -97,8 +97,8 @@ func (ts *AgentOAuthFlowsTestSuite) SetupSuite() {
 			"password": map[string]interface{}{"type": "string", "credential": true},
 		},
 	})
-	ts.Require().NoError(err, "Failed to create user schema")
-	ts.userSchemaID = userSchemaID
+	ts.Require().NoError(err, "Failed to create user type")
+	ts.entityTypeID = entityTypeID
 
 	attributesJSON, err := json.Marshal(map[string]interface{}{
 		"username": oauthFlowsTestUsername,
@@ -122,11 +122,11 @@ func (ts *AgentOAuthFlowsTestSuite) TearDownSuite() {
 	if ts.userID != "" {
 		_ = testutils.DeleteUser(ts.userID)
 	}
-	if ts.userSchemaID != "" {
-		_ = testutils.DeleteUserType(ts.userSchemaID)
+	if ts.entityTypeID != "" {
+		_ = testutils.DeleteUserType(ts.entityTypeID)
 	}
 	if ts.schemaID != "" {
-		_ = testutils.DeleteUserType(ts.schemaID)
+		_ = testutils.DeleteAgentType(ts.schemaID)
 	}
 	if ts.ouID != "" {
 		_ = testutils.DeleteOrganizationUnit(ts.ouID)
@@ -139,7 +139,7 @@ func (ts *AgentOAuthFlowsTestSuite) TearDownSuite() {
 func (ts *AgentOAuthFlowsTestSuite) TestAgentCC_TokenIssuance() {
 	agentID, err := createAgent(Agent{
 		OUID:       ts.ouID,
-		Type:       "agent-oauth-flow-type",
+		Type:       "default",
 		Name:       "cc-token-agent",
 		AuthFlowID: ts.authFlowID,
 		InboundAuthConfig: []InboundAuthConfig{
@@ -174,7 +174,7 @@ func (ts *AgentOAuthFlowsTestSuite) TestAgentCC_TokenIssuance() {
 func (ts *AgentOAuthFlowsTestSuite) TestAgentCC_ClientSecretPost() {
 	agentID, err := createAgent(Agent{
 		OUID:       ts.ouID,
-		Type:       "agent-oauth-flow-type",
+		Type:       "default",
 		Name:       "cc-post-agent",
 		AuthFlowID: ts.authFlowID,
 		InboundAuthConfig: []InboundAuthConfig{
@@ -203,7 +203,7 @@ func (ts *AgentOAuthFlowsTestSuite) TestAgentCC_ClientSecretPost() {
 func (ts *AgentOAuthFlowsTestSuite) TestAgentCC_InvalidCredentials() {
 	agentID, err := createAgent(Agent{
 		OUID:       ts.ouID,
-		Type:       "agent-oauth-flow-type",
+		Type:       "default",
 		Name:       "cc-invalid-cred-agent",
 		AuthFlowID: ts.authFlowID,
 		InboundAuthConfig: []InboundAuthConfig{
@@ -236,7 +236,7 @@ func (ts *AgentOAuthFlowsTestSuite) TestAgentCC_InvalidCredentials() {
 func (ts *AgentOAuthFlowsTestSuite) TestAgentAuthCode_FullRoundTrip() {
 	agentID, err := createAgent(Agent{
 		OUID:             ts.ouID,
-		Type:             "agent-oauth-flow-type",
+		Type:             "default",
 		Name:             "authcode-agent",
 		AuthFlowID:       ts.authFlowID,
 		AllowedUserTypes: []string{"agent-oauth-flow-person"},
@@ -270,7 +270,7 @@ func (ts *AgentOAuthFlowsTestSuite) TestAgentAuthCode_FullRoundTrip() {
 func (ts *AgentOAuthFlowsTestSuite) TestAgentAuthCode_WithPKCE() {
 	agentID, err := createAgent(Agent{
 		OUID:             ts.ouID,
-		Type:             "agent-oauth-flow-type",
+		Type:             "default",
 		Name:             "authcode-pkce-agent",
 		AuthFlowID:       ts.authFlowID,
 		AllowedUserTypes: []string{"agent-oauth-flow-person"},
@@ -306,7 +306,7 @@ func (ts *AgentOAuthFlowsTestSuite) TestAgentAuthCode_WithPKCE() {
 func (ts *AgentOAuthFlowsTestSuite) TestAgentAuthCode_RefreshToken() {
 	agentID, err := createAgent(Agent{
 		OUID:             ts.ouID,
-		Type:             "agent-oauth-flow-type",
+		Type:             "default",
 		Name:             "authcode-refresh-agent",
 		AuthFlowID:       ts.authFlowID,
 		AllowedUserTypes: []string{"agent-oauth-flow-person"},
@@ -349,7 +349,7 @@ func (ts *AgentOAuthFlowsTestSuite) TestAgentAuthCode_RefreshToken() {
 func (ts *AgentOAuthFlowsTestSuite) TestAgentCreate_DuplicateClientID() {
 	firstID, err := createAgent(Agent{
 		OUID:       ts.ouID,
-		Type:       "agent-oauth-flow-type",
+		Type:       "default",
 		Name:       "dup-client-first-agent",
 		AuthFlowID: ts.authFlowID,
 		InboundAuthConfig: []InboundAuthConfig{
@@ -369,7 +369,7 @@ func (ts *AgentOAuthFlowsTestSuite) TestAgentCreate_DuplicateClientID() {
 
 	resp, err := doPost(testServerURL+agentBasePath, Agent{
 		OUID:       ts.ouID,
-		Type:       "agent-oauth-flow-type",
+		Type:       "default",
 		Name:       "dup-client-second-agent",
 		AuthFlowID: ts.authFlowID,
 		InboundAuthConfig: []InboundAuthConfig{
@@ -394,7 +394,7 @@ func (ts *AgentOAuthFlowsTestSuite) TestAgentCreate_DuplicateClientID() {
 func (ts *AgentOAuthFlowsTestSuite) TestAgentUpdate_DuplicateClientID() {
 	firstID, err := createAgent(Agent{
 		OUID:       ts.ouID,
-		Type:       "agent-oauth-flow-type",
+		Type:       "default",
 		Name:       "dup-upd-first-agent",
 		AuthFlowID: ts.authFlowID,
 		InboundAuthConfig: []InboundAuthConfig{
@@ -414,7 +414,7 @@ func (ts *AgentOAuthFlowsTestSuite) TestAgentUpdate_DuplicateClientID() {
 
 	secondID, err := createAgent(Agent{
 		OUID:       ts.ouID,
-		Type:       "agent-oauth-flow-type",
+		Type:       "default",
 		Name:       "dup-upd-second-agent",
 		AuthFlowID: ts.authFlowID,
 		InboundAuthConfig: []InboundAuthConfig{
@@ -434,7 +434,7 @@ func (ts *AgentOAuthFlowsTestSuite) TestAgentUpdate_DuplicateClientID() {
 
 	updatePayload := Agent{
 		OUID:       ts.ouID,
-		Type:       "agent-oauth-flow-type",
+		Type:       "default",
 		Name:       "dup-upd-second-agent",
 		AuthFlowID: ts.authFlowID,
 		InboundAuthConfig: []InboundAuthConfig{
@@ -468,7 +468,7 @@ func (ts *AgentOAuthFlowsTestSuite) TestAgentUpdate_DuplicateClientID() {
 func (ts *AgentOAuthFlowsTestSuite) TestAgentUpdate_AddOAuthProfile() {
 	agentID, err := createAgent(Agent{
 		OUID: ts.ouID,
-		Type: "agent-oauth-flow-type",
+		Type: "default",
 		Name: "promote-to-oauth-agent",
 	})
 	ts.Require().NoError(err)
@@ -484,7 +484,7 @@ func (ts *AgentOAuthFlowsTestSuite) TestAgentUpdate_AddOAuthProfile() {
 
 	withOAuth := Agent{
 		OUID:       ts.ouID,
-		Type:       "agent-oauth-flow-type",
+		Type:       "default",
 		Name:       "promote-to-oauth-agent",
 		AuthFlowID: ts.authFlowID,
 		InboundAuthConfig: []InboundAuthConfig{
@@ -552,8 +552,8 @@ func (s *CCAgentAuthzTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.ouID = ouID
 
-	schemaID, err := testutils.CreateUserType(testutils.UserSchema{
-		Name: "cc-authz-agent",
+	schemaID, err := testutils.CreateAgentType(testutils.UserType{
+		Name: "default",
 		OUID: s.ouID,
 		Schema: map[string]interface{}{
 			"description": map[string]interface{}{"type": "string"},
@@ -640,7 +640,7 @@ func (s *CCAgentAuthzTestSuite) TearDownSuite() {
 		_ = testutils.DeleteResourceServer(s.resourceServerID)
 	}
 	if s.agentSchemaID != "" {
-		_ = testutils.DeleteUserType(s.agentSchemaID)
+		_ = testutils.DeleteAgentType(s.agentSchemaID)
 	}
 	if s.ouID != "" {
 		_ = testutils.DeleteOrganizationUnit(s.ouID)
@@ -650,7 +650,7 @@ func (s *CCAgentAuthzTestSuite) TearDownSuite() {
 func (s *CCAgentAuthzTestSuite) createOAuthAgent() (string, error) {
 	agent := map[string]interface{}{
 		"name": "CC Authz Test Agent",
-		"type": "cc-authz-agent",
+		"type": "default",
 		"ouId": s.ouID,
 		"inboundAuthConfig": []map[string]interface{}{
 			{
@@ -789,7 +789,7 @@ type AgentTokenExchangeTestSuite struct {
 	suite.Suite
 	client         *http.Client
 	ouID           string
-	userSchemaID   string
+	entityTypeID   string
 	agentSchemaID  string
 	agentID        string
 	userID         string
@@ -811,8 +811,8 @@ func (s *AgentTokenExchangeTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.ouID = ouID
 
-	agentSchemaID, err := testutils.CreateUserType(testutils.UserSchema{
-		Name: "agent-te-type",
+	agentSchemaID, err := testutils.CreateAgentType(testutils.UserType{
+		Name: "default",
 		OUID: s.ouID,
 		Schema: map[string]interface{}{
 			"description": map[string]interface{}{"type": "string"},
@@ -821,7 +821,7 @@ func (s *AgentTokenExchangeTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 	s.agentSchemaID = agentSchemaID
 
-	userSchemaID, err := testutils.CreateUserType(testutils.UserSchema{
+	entityTypeID, err := testutils.CreateUserType(testutils.UserType{
 		Name: "agent-te-person",
 		OUID: s.ouID,
 		Schema: map[string]interface{}{
@@ -830,7 +830,7 @@ func (s *AgentTokenExchangeTestSuite) SetupSuite() {
 		},
 	})
 	s.Require().NoError(err)
-	s.userSchemaID = userSchemaID
+	s.entityTypeID = entityTypeID
 
 	attributesJSON, err := json.Marshal(map[string]interface{}{
 		"username": agentTEUsername,
@@ -858,11 +858,11 @@ func (s *AgentTokenExchangeTestSuite) TearDownSuite() {
 	if s.userID != "" {
 		_ = testutils.DeleteUser(s.userID)
 	}
-	if s.userSchemaID != "" {
-		_ = testutils.DeleteUserType(s.userSchemaID)
+	if s.entityTypeID != "" {
+		_ = testutils.DeleteUserType(s.entityTypeID)
 	}
 	if s.agentSchemaID != "" {
-		_ = testutils.DeleteUserType(s.agentSchemaID)
+		_ = testutils.DeleteAgentType(s.agentSchemaID)
 	}
 	if s.ouID != "" {
 		_ = testutils.DeleteOrganizationUnit(s.ouID)
@@ -872,7 +872,7 @@ func (s *AgentTokenExchangeTestSuite) TearDownSuite() {
 func (s *AgentTokenExchangeTestSuite) createTokenExchangeAgent() (string, error) {
 	agent := map[string]interface{}{
 		"name": "Agent Token Exchange Test",
-		"type": "agent-te-type",
+		"type": "default",
 		"ouId": s.ouID,
 		"inboundAuthConfig": []map[string]interface{}{
 			{

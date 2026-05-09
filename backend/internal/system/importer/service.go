@@ -25,11 +25,15 @@ import (
 	"sort"
 	"time"
 
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
+
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
+	"github.com/asgardeo/thunder/internal/entitytype"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
+	"github.com/asgardeo/thunder/internal/group"
 	"github.com/asgardeo/thunder/internal/idp"
 	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
 	"github.com/asgardeo/thunder/internal/ou"
@@ -40,7 +44,6 @@ import (
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/user"
-	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 type applicationAdapter interface {
@@ -88,14 +91,18 @@ type ouAdapter interface {
 		*serviceerror.ServiceError)
 }
 
-type userSchemaAdapter interface {
-	CreateUserSchema(ctx context.Context, request userschema.CreateUserSchemaRequestWithID) (*userschema.UserSchema,
+type entityTypeAdapter interface {
+	CreateEntityType(ctx context.Context, category entitytype.TypeCategory,
+		request entitytype.CreateEntityTypeRequestWithID) (*entitytype.EntityType,
 		*serviceerror.ServiceError)
-	GetUserSchema(ctx context.Context, schemaID string, includeDisplay bool) (*userschema.UserSchema,
+	GetEntityType(ctx context.Context, category entitytype.TypeCategory, schemaID string,
+		includeDisplay bool) (*entitytype.EntityType,
 		*serviceerror.ServiceError)
-	GetUserSchemaByName(ctx context.Context, schemaName string) (*userschema.UserSchema, *serviceerror.ServiceError)
-	UpdateUserSchema(ctx context.Context, schemaID string, request userschema.UpdateUserSchemaRequest) (
-		*userschema.UserSchema,
+	GetEntityTypeByName(ctx context.Context, category entitytype.TypeCategory,
+		schemaName string) (*entitytype.EntityType, *serviceerror.ServiceError)
+	UpdateEntityType(ctx context.Context, category entitytype.TypeCategory, schemaID string,
+		request entitytype.UpdateEntityTypeRequest) (
+		*entitytype.EntityType,
 		*serviceerror.ServiceError)
 }
 
@@ -105,6 +112,16 @@ type roleAdapter interface {
 	GetRoleWithPermissions(ctx context.Context, id string) (*role.RoleWithPermissions, *serviceerror.ServiceError)
 	UpdateRoleWithPermissions(ctx context.Context, id string, role role.RoleUpdateDetail) (*role.RoleWithPermissions,
 		*serviceerror.ServiceError)
+	AddAssignments(ctx context.Context, id string, assignments []role.RoleAssignment) *serviceerror.ServiceError
+}
+
+type groupAdapter interface {
+	CreateGroup(ctx context.Context, request group.CreateGroupRequest) (*group.Group, *serviceerror.ServiceError)
+	GetGroup(ctx context.Context, groupID string, includeDisplay bool) (*group.Group, *serviceerror.ServiceError)
+	UpdateGroup(ctx context.Context, groupID string, request group.UpdateGroupRequest) (
+		*group.Group, *serviceerror.ServiceError)
+	AddGroupMembers(ctx context.Context, groupID string, members []group.Member) (
+		*group.Group, *serviceerror.ServiceError)
 }
 
 type resourceServerAdapter interface {
@@ -113,6 +130,12 @@ type resourceServerAdapter interface {
 	GetResourceServer(ctx context.Context, id string) (*resource.ResourceServer, *serviceerror.ServiceError)
 	UpdateResourceServer(ctx context.Context, id string, rs resource.ResourceServer) (*resource.ResourceServer,
 		*serviceerror.ServiceError)
+	CreateResource(ctx context.Context, resourceServerID string, res resource.Resource) (
+		*resource.Resource, *serviceerror.ServiceError)
+	GetResourceList(ctx context.Context, resourceServerID string, parentID *string, limit, offset int) (
+		*resource.ResourceList, *serviceerror.ServiceError)
+	CreateAction(ctx context.Context, resourceServerID string, resourceID *string, action resource.Action) (
+		*resource.Action, *serviceerror.ServiceError)
 }
 
 type themeAdapter interface {
@@ -161,8 +184,9 @@ type importService struct {
 	idpService         idpAdapter
 	flowService        flowAdapter
 	ouService          ouAdapter
-	userSchemaService  userSchemaAdapter
+	entityTypeService  entityTypeAdapter
 	roleService        roleAdapter
+	groupService       groupAdapter
 	resourceService    resourceServerAdapter
 	themeService       themeAdapter
 	layoutService      layoutAdapter
@@ -175,8 +199,9 @@ func newImportService(
 	idpService idpAdapter,
 	flowService flowAdapter,
 	ouService ouAdapter,
-	userSchemaService userSchemaAdapter,
+	entityTypeService entityTypeAdapter,
 	roleService roleAdapter,
+	groupService groupAdapter,
 	resourceService resourceServerAdapter,
 	themeService themeAdapter,
 	layoutService layoutAdapter,
@@ -188,8 +213,9 @@ func newImportService(
 		idpService:         idpService,
 		flowService:        flowService,
 		ouService:          ouService,
-		userSchemaService:  userSchemaService,
+		entityTypeService:  entityTypeService,
 		roleService:        roleService,
+		groupService:       groupService,
 		resourceService:    resourceService,
 		themeService:       themeService,
 		layoutService:      layoutService,
@@ -330,10 +356,12 @@ func (s *importService) importDocument(
 		return s.importFlow(ctx, doc, options, dryRun)
 	case resourceTypeOrganizationUnit:
 		return s.importOrganizationUnit(ctx, doc, options, dryRun)
-	case resourceTypeUserSchema:
-		return s.importUserSchema(ctx, doc, options, dryRun)
+	case resourceTypeEntityType:
+		return s.importEntityType(ctx, doc, options, dryRun)
 	case resourceTypeRole:
 		return s.importRole(ctx, doc, options, dryRun)
+	case resourceTypeGroup:
+		return s.importGroup(ctx, doc, options, dryRun)
 	case resourceTypeResourceServer:
 		return s.importResourceServer(ctx, doc, options, dryRun)
 	case resourceTypeTheme:
@@ -583,9 +611,10 @@ func (s *importService) importFlow(
 
 var resourceDependencyOrder = []string{
 	resourceTypeOrganizationUnit,
-	resourceTypeUserSchema,
+	resourceTypeEntityType,
 	resourceTypeResourceServer,
 	resourceTypeRole,
+	resourceTypeGroup,
 	resourceTypeIdentityProvider,
 	resourceTypeNotificationSender,
 	resourceTypeFlow,
@@ -754,49 +783,54 @@ func (s *importService) importApplication(
 
 func applicationRequestToDTO(req *appmodel.ApplicationRequestWithID) *appmodel.ApplicationDTO {
 	appDTO := &appmodel.ApplicationDTO{
-		ID:                        req.ID,
-		OUID:                      req.OUID,
-		Name:                      req.Name,
-		Description:               req.Description,
-		AuthFlowID:                req.AuthFlowID,
-		RegistrationFlowID:        req.RegistrationFlowID,
-		IsRegistrationFlowEnabled: req.IsRegistrationFlowEnabled,
-		ThemeID:                   req.ThemeID,
-		LayoutID:                  req.LayoutID,
-		Template:                  req.Template,
-		URL:                       req.URL,
-		LogoURL:                   req.LogoURL,
-		Assertion:                 req.Assertion,
-		Certificate:               req.Certificate,
-		TosURI:                    req.TosURI,
-		PolicyURI:                 req.PolicyURI,
-		Contacts:                  req.Contacts,
-		AllowedUserTypes:          req.AllowedUserTypes,
-		Metadata:                  req.Metadata,
+		ID:          req.ID,
+		OUID:        req.OUID,
+		Name:        req.Name,
+		Description: req.Description,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:                req.AuthFlowID,
+			RegistrationFlowID:        req.RegistrationFlowID,
+			IsRegistrationFlowEnabled: req.IsRegistrationFlowEnabled,
+			ThemeID:                   req.ThemeID,
+			LayoutID:                  req.LayoutID,
+			Assertion:                 req.Assertion,
+			LoginConsent:              req.LoginConsent,
+			AllowedUserTypes:          req.AllowedUserTypes,
+			Certificate:               req.Certificate,
+		},
+		Template:  req.Template,
+		URL:       req.URL,
+		LogoURL:   req.LogoURL,
+		TosURI:    req.TosURI,
+		PolicyURI: req.PolicyURI,
+		Contacts:  req.Contacts,
+		Metadata:  req.Metadata,
 	}
 
 	if len(req.InboundAuthConfig) > 0 {
-		inboundAuthConfigDTOs := make([]appmodel.InboundAuthConfigDTO, 0, len(req.InboundAuthConfig))
+		inboundAuthConfigDTOs := make([]inboundmodel.InboundAuthConfigWithSecret, 0, len(req.InboundAuthConfig))
 		for _, config := range req.InboundAuthConfig {
-			if config.Type != appmodel.OAuthInboundAuthType || config.OAuthAppConfig == nil {
+			if config.Type != inboundmodel.OAuthInboundAuthType || config.OAuthConfig == nil {
 				continue
 			}
 
-			inboundAuthConfigDTOs = append(inboundAuthConfigDTOs, appmodel.InboundAuthConfigDTO{
+			inboundAuthConfigDTOs = append(inboundAuthConfigDTOs, inboundmodel.InboundAuthConfigWithSecret{
 				Type: config.Type,
-				OAuthAppConfig: &appmodel.OAuthAppConfigDTO{
-					ClientID:                config.OAuthAppConfig.ClientID,
-					ClientSecret:            config.OAuthAppConfig.ClientSecret,
-					RedirectURIs:            config.OAuthAppConfig.RedirectURIs,
-					GrantTypes:              config.OAuthAppConfig.GrantTypes,
-					ResponseTypes:           config.OAuthAppConfig.ResponseTypes,
-					TokenEndpointAuthMethod: config.OAuthAppConfig.TokenEndpointAuthMethod,
-					PKCERequired:            config.OAuthAppConfig.PKCERequired,
-					PublicClient:            config.OAuthAppConfig.PublicClient,
-					Token:                   config.OAuthAppConfig.Token,
-					Scopes:                  config.OAuthAppConfig.Scopes,
-					UserInfo:                config.OAuthAppConfig.UserInfo,
-					ScopeClaims:             config.OAuthAppConfig.ScopeClaims,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+					ClientID:                           config.OAuthConfig.ClientID,
+					ClientSecret:                       config.OAuthConfig.ClientSecret,
+					RedirectURIs:                       config.OAuthConfig.RedirectURIs,
+					GrantTypes:                         config.OAuthConfig.GrantTypes,
+					ResponseTypes:                      config.OAuthConfig.ResponseTypes,
+					TokenEndpointAuthMethod:            config.OAuthConfig.TokenEndpointAuthMethod,
+					PKCERequired:                       config.OAuthConfig.PKCERequired,
+					PublicClient:                       config.OAuthConfig.PublicClient,
+					RequirePushedAuthorizationRequests: config.OAuthConfig.RequirePushedAuthorizationRequests,
+					Token:                              config.OAuthConfig.Token,
+					Scopes:                             config.OAuthConfig.Scopes,
+					UserInfo:                           config.OAuthConfig.UserInfo,
+					ScopeClaims:                        config.OAuthConfig.ScopeClaims,
+					Certificate:                        config.OAuthConfig.Certificate,
 				},
 			})
 		}
@@ -806,14 +840,14 @@ func applicationRequestToDTO(req *appmodel.ApplicationRequestWithID) *appmodel.A
 	return appDTO
 }
 
-func getOAuthConfigForImportLog(appDTO *appmodel.ApplicationDTO) *appmodel.OAuthAppConfigDTO {
+func getOAuthConfigForImportLog(appDTO *appmodel.ApplicationDTO) *inboundmodel.OAuthConfigWithSecret {
 	if appDTO == nil {
 		return nil
 	}
 
 	for _, inboundAuth := range appDTO.InboundAuthConfig {
-		if inboundAuth.Type == appmodel.OAuthInboundAuthType && inboundAuth.OAuthAppConfig != nil {
-			return inboundAuth.OAuthAppConfig
+		if inboundAuth.Type == inboundmodel.OAuthInboundAuthType && inboundAuth.OAuthConfig != nil {
+			return inboundAuth.OAuthConfig
 		}
 	}
 

@@ -19,6 +19,7 @@
 package executor
 
 import (
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 
 	"encoding/json"
@@ -724,16 +725,16 @@ func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithAllFields() 
 				"tenant_id": "tenant-123",
 				"region":    "us-west",
 			},
-			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						ClientID: "oauth-client-1",
 					},
 				},
 				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						ClientID: "oauth-client-2",
 					},
 				},
@@ -789,10 +790,10 @@ func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithOnlyAppMetad
 func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithOnlyClientIDs() {
 	ctx := &core.NodeContext{
 		Application: appmodel.Application{
-			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						ClientID: "single-oauth-client",
 					},
 				},
@@ -812,10 +813,10 @@ func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithOnlyClientID
 func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithNilOAuthConfig() {
 	ctx := &core.NodeContext{
 		Application: appmodel.Application{
-			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 				{
-					Type:           appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: nil,
+					Type:        inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: nil,
 				},
 			},
 		},
@@ -831,10 +832,10 @@ func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithNilOAuthConf
 func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithEmptyClientID() {
 	ctx := &core.NodeContext{
 		Application: appmodel.Application{
-			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						ClientID: "",
 					},
 				},
@@ -852,26 +853,26 @@ func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithEmptyClientI
 func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithMixedInboundConfigs() {
 	ctx := &core.NodeContext{
 		Application: appmodel.Application{
-			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						ClientID: "valid-client",
 					},
 				},
 				{
-					Type:           appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: nil,
+					Type:        inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: nil,
 				},
 				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						ClientID: "",
 					},
 				},
 				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						ClientID: "another-valid-client",
 					},
 				},

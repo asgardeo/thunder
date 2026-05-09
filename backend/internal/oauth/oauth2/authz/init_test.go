@@ -58,11 +58,11 @@ func (suite *InitTestSuite) SetupTest() {
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
 				Type:   "sqlite",
-				SQLite: config.SQLiteDataSource{Path: "thunder_test.db"},
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 			Runtime: config.DataSource{
 				Type:   "sqlite",
-				SQLite: config.SQLiteDataSource{Path: "thunder_test.db"},
+				SQLite: config.SQLiteDataSource{Path: "test.db"},
 			},
 		},
 		GateClient: config.GateClientConfig{
@@ -75,7 +75,7 @@ func (suite *InitTestSuite) SetupTest() {
 		CORS: config.CORSConfig{AllowedOrigins: allowedOrigins},
 	}
 	suite.Require().NoError(cors.InitializeMatcher(testConfig.CORS.AllowedOrigins))
-	_ = config.InitializeThunderRuntime("", testConfig)
+	_ = config.InitializeServerRuntime("", testConfig)
 
 	suite.mockInboundClient = inboundclientmock.NewInboundClientServiceInterfaceMock(suite.T())
 	suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
@@ -84,7 +84,7 @@ func (suite *InitTestSuite) SetupTest() {
 }
 
 func (suite *InitTestSuite) TearDownTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 func (suite *InitTestSuite) TestInitialize() {

@@ -268,21 +268,21 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_InvalidStore
 
 func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_Success() {
 	// Setup temp dir
-	tempDir, err := os.MkdirTemp("", "thunder_test_resources_success")
+	tempDir, err := os.MkdirTemp("", "test_resources_success")
 	assert.NoError(s.T(), err)
 	defer func() {
 		_ = os.RemoveAll(tempDir)
 	}()
 
 	// Setup Runtime with temp dir
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 	}
-	_ = config.InitializeThunderRuntime(tempDir, testConfig)
-	defer config.ResetThunderRuntime()
+	_ = config.InitializeServerRuntime(tempDir, testConfig)
+	defer config.ResetServerRuntime()
 
 	// Create translations directory
 	translationsDir := filepath.Join(tempDir, "repository", "resources", "translations")

@@ -680,6 +680,50 @@ func (_c *PromptNodeInterfaceMock_GetType_Call) RunAndReturn(run func() common.N
 	return _c
 }
 
+// GetVariant provides a mock function for the type PromptNodeInterfaceMock
+func (_mock *PromptNodeInterfaceMock) GetVariant() common.NodeVariant {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetVariant")
+	}
+
+	var r0 common.NodeVariant
+	if returnFunc, ok := ret.Get(0).(func() common.NodeVariant); ok {
+		r0 = returnFunc()
+	} else {
+		r0 = ret.Get(0).(common.NodeVariant)
+	}
+	return r0
+}
+
+// PromptNodeInterfaceMock_GetVariant_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetVariant'
+type PromptNodeInterfaceMock_GetVariant_Call struct {
+	*mock.Call
+}
+
+// GetVariant is a helper method to define mock.On call
+func (_e *PromptNodeInterfaceMock_Expecter) GetVariant() *PromptNodeInterfaceMock_GetVariant_Call {
+	return &PromptNodeInterfaceMock_GetVariant_Call{Call: _e.mock.On("GetVariant")}
+}
+
+func (_c *PromptNodeInterfaceMock_GetVariant_Call) Run(run func()) *PromptNodeInterfaceMock_GetVariant_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *PromptNodeInterfaceMock_GetVariant_Call) Return(nodeVariant common.NodeVariant) *PromptNodeInterfaceMock_GetVariant_Call {
+	_c.Call.Return(nodeVariant)
+	return _c
+}
+
+func (_c *PromptNodeInterfaceMock_GetVariant_Call) RunAndReturn(run func() common.NodeVariant) *PromptNodeInterfaceMock_GetVariant_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // IsDisplayOnly provides a mock function for the type PromptNodeInterfaceMock
 func (_mock *PromptNodeInterfaceMock) IsDisplayOnly() bool {
 	ret := _mock.Called()
@@ -1234,6 +1278,46 @@ func (_c *PromptNodeInterfaceMock_SetPrompts_Call) Return() *PromptNodeInterface
 }
 
 func (_c *PromptNodeInterfaceMock_SetPrompts_Call) RunAndReturn(run func(prompts []common.Prompt)) *PromptNodeInterfaceMock_SetPrompts_Call {
+	_c.Run(run)
+	return _c
+}
+
+// SetVariant provides a mock function for the type PromptNodeInterfaceMock
+func (_mock *PromptNodeInterfaceMock) SetVariant(variant common.NodeVariant) {
+	_mock.Called(variant)
+	return
+}
+
+// PromptNodeInterfaceMock_SetVariant_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetVariant'
+type PromptNodeInterfaceMock_SetVariant_Call struct {
+	*mock.Call
+}
+
+// SetVariant is a helper method to define mock.On call
+//   - variant common.NodeVariant
+func (_e *PromptNodeInterfaceMock_Expecter) SetVariant(variant interface{}) *PromptNodeInterfaceMock_SetVariant_Call {
+	return &PromptNodeInterfaceMock_SetVariant_Call{Call: _e.mock.On("SetVariant", variant)}
+}
+
+func (_c *PromptNodeInterfaceMock_SetVariant_Call) Run(run func(variant common.NodeVariant)) *PromptNodeInterfaceMock_SetVariant_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 common.NodeVariant
+		if args[0] != nil {
+			arg0 = args[0].(common.NodeVariant)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *PromptNodeInterfaceMock_SetVariant_Call) Return() *PromptNodeInterfaceMock_SetVariant_Call {
+	_c.Call.Return()
+	return _c
+}
+
+func (_c *PromptNodeInterfaceMock_SetVariant_Call) RunAndReturn(run func(variant common.NodeVariant)) *PromptNodeInterfaceMock_SetVariant_Call {
 	_c.Run(run)
 	return _c
 }

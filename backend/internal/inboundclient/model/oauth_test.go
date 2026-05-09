@@ -45,8 +45,8 @@ func TestOAuthClientTestSuite(t *testing.T) {
 }
 
 func (suite *OAuthClientTestSuite) SetupTest() {
-	sysconfig.ResetThunderRuntime()
-	suite.Require().NoError(sysconfig.InitializeThunderRuntime("/tmp/test", &sysconfig.Config{}))
+	sysconfig.ResetServerRuntime()
+	suite.Require().NoError(sysconfig.InitializeServerRuntime("/tmp/test", &sysconfig.Config{}))
 }
 
 func (suite *OAuthClientTestSuite) TestIsAllowedGrantType_AuthorizationCode() {
@@ -385,8 +385,8 @@ func TestOAuthHelperTestSuite(t *testing.T) {
 }
 
 func (suite *OAuthHelperTestSuite) SetupTest() {
-	sysconfig.ResetThunderRuntime()
-	suite.Require().NoError(sysconfig.InitializeThunderRuntime("/tmp/test", &sysconfig.Config{}))
+	sysconfig.ResetServerRuntime()
+	suite.Require().NoError(sysconfig.InitializeServerRuntime("/tmp/test", &sysconfig.Config{}))
 }
 
 func (suite *OAuthHelperTestSuite) TestIsAllowedGrantType_ValidGrantType() {
@@ -554,10 +554,10 @@ func (suite *OAuthHelperTestSuite) TestValidateRedirectURI_InvalidURLFormat() {
 }
 
 func (suite *OAuthClientTestSuite) TestRequiresPAR_GlobalConfigEnabled() {
-	sysconfig.ResetThunderRuntime()
+	sysconfig.ResetServerRuntime()
 	cfg := &sysconfig.Config{}
 	cfg.OAuth.PAR.RequirePAR = true
-	suite.Require().NoError(sysconfig.InitializeThunderRuntime("/tmp/test", cfg))
+	suite.Require().NoError(sysconfig.InitializeServerRuntime("/tmp/test", cfg))
 
 	c := &model.OAuthClient{RequirePushedAuthorizationRequests: false}
 	suite.True(c.RequiresPAR())
@@ -574,10 +574,10 @@ func (suite *OAuthClientTestSuite) TestRequiresPAR_BothFalse() {
 }
 
 func (suite *OAuthHelperTestSuite) TestMatchAnyRedirectURIPattern_WildcardEnabled_Matches() {
-	sysconfig.ResetThunderRuntime()
+	sysconfig.ResetServerRuntime()
 	cfg := &sysconfig.Config{}
 	cfg.OAuth.AllowWildcardRedirectURI = true
-	suite.Require().NoError(sysconfig.InitializeThunderRuntime("/tmp/test", cfg))
+	suite.Require().NoError(sysconfig.InitializeServerRuntime("/tmp/test", cfg))
 
 	err := model.ValidateRedirectURI(
 		[]string{"https://app.example.com/*"},
@@ -590,6 +590,56 @@ func (suite *OAuthHelperTestSuite) TestMatchAnyRedirectURIPattern_WildcardDisabl
 	err := model.ValidateRedirectURI(
 		[]string{"https://app.example.com/*"},
 		"https://app.example.com/cb",
+	)
+	suite.Error(err)
+}
+
+func (suite *OAuthHelperTestSuite) TestMatchAnyRedirectURIPattern_HostWildcardEnabled_Matches() {
+	sysconfig.ResetServerRuntime()
+	cfg := &sysconfig.Config{}
+	cfg.OAuth.AllowWildcardRedirectURI = true
+	suite.Require().NoError(sysconfig.InitializeServerRuntime("/tmp/test", cfg))
+
+	err := model.ValidateRedirectURI(
+		[]string{"https://tenant-app-*-*.gateway.example.com/cb"},
+		"https://tenant-app-019dfc78-f19ab4f2.gateway.example.com/cb",
+	)
+	suite.NoError(err)
+}
+
+func (suite *OAuthHelperTestSuite) TestMatchAnyRedirectURIPattern_HostWildcardEnabled_NonMatchingDynamicPart() {
+	sysconfig.ResetServerRuntime()
+	cfg := &sysconfig.Config{}
+	cfg.OAuth.AllowWildcardRedirectURI = true
+	suite.Require().NoError(sysconfig.InitializeServerRuntime("/tmp/test", cfg))
+
+	// Hyphen inside the dynamic part is not in [0-9a-zA-Z]+, so this must fail.
+	err := model.ValidateRedirectURI(
+		[]string{"https://app-*-prod.example.com/cb"},
+		"https://app-foo-bar-prod.example.com/cb",
+	)
+	suite.Error(err)
+}
+
+func (suite *OAuthHelperTestSuite) TestMatchAnyRedirectURIPattern_HostWildcardDisabled_NoMatch() {
+	// Default: AllowWildcardRedirectURI = false. Note the pattern would never have made it
+	// past registration with the flag off, but we still verify the matcher returns no match.
+	err := model.ValidateRedirectURI(
+		[]string{"https://app-*.example.com/cb"},
+		"https://app-prod.example.com/cb",
+	)
+	suite.Error(err)
+}
+
+func (suite *OAuthHelperTestSuite) TestMatchAnyRedirectURIPattern_HostWildcardDoesNotCrossDot() {
+	sysconfig.ResetServerRuntime()
+	cfg := &sysconfig.Config{}
+	cfg.OAuth.AllowWildcardRedirectURI = true
+	suite.Require().NoError(sysconfig.InitializeServerRuntime("/tmp/test", cfg))
+
+	err := model.ValidateRedirectURI(
+		[]string{"https://app-*.example.com/cb"},
+		"https://app-foo.evil.example.com/cb",
 	)
 	suite.Error(err)
 }

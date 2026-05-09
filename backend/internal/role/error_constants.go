@@ -239,6 +239,19 @@ var (
 			DefaultValue: "The type parameter must be 'user', 'group', or 'app'",
 		},
 	}
+	// ErrorRoleIDConflict is the error returned when a role with the specified ID already exists.
+	ErrorRoleIDConflict = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "ROL-1018",
+		Error: core.I18nMessage{
+			Key:          "error.roleservice.role_id_conflict",
+			DefaultValue: "Role ID conflict",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.roleservice.role_id_conflict_description",
+			DefaultValue: "A role with the specified ID already exists",
+		},
+	}
 	// ResultLimitExceededInCompositeMode is the error returned when the total number of records exceeds
 	// the maximum limit in composite mode (combining database and declarative resources).
 	ResultLimitExceededInCompositeMode = serviceerror.ServiceError{

@@ -59,7 +59,7 @@ var (
 // initRedisProvider initializes the singleton Redis provider.
 func initRedisProvider() {
 	redisOnce.Do(func() {
-		cfg := config.GetThunderRuntime().Config.Database.Runtime
+		cfg := config.GetServerRuntime().Config.Database.Runtime
 		// This is a no-op when runtime.type is not "redis".
 		if cfg.Type != DataSourceTypeRedis {
 			return

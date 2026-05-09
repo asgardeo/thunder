@@ -38,6 +38,8 @@ type PermissionValidatorTestSuite struct {
 }
 
 func (suite *PermissionValidatorTestSuite) SetupTest() {
+	security.InitSystemPermissions("")
+
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	mockBaseExecutor := coremock.NewExecutorInterfaceMock(suite.T())
 

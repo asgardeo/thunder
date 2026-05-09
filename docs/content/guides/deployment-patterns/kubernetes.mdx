@@ -11,7 +11,7 @@ This guide walks you through deploying <ProductName /> to a Kubernetes cluster u
 
 ## Architecture Overview
 
-![<ProductName /> Kubernetes Architecture](/assets/images/thunder-kubernetes-diagram.png)
+![<ProductName /> Kubernetes Architecture](/assets/images/product-kubernetes-diagram.png)
 
 The diagram above shows the <ProductName /> deployment in Kubernetes, including the application pods, ingress controller, and database configuration.
 
@@ -48,23 +48,23 @@ kubectl get pods -n ingress-nginx
 Install <ProductName /> from the GitHub Container Registry:
 
 ```bash
-helm install thunder oci://ghcr.io/asgardeo/helm-charts/thunder
+helm install thunderid oci://ghcr.io/asgardeo/helm-charts/thunderid
 ```
 
 To install a specific version:
 
 ```bash
-helm install thunder oci://ghcr.io/asgardeo/helm-charts/thunder --version 0.11.0
+helm install thunderid oci://ghcr.io/asgardeo/helm-charts/thunderid --version 0.11.0
 ```
 
 ### Step 2: Verify the Installation
 
 ```bash
 # Check pod status
-kubectl get pods -l app.kubernetes.io/name=thunder
+kubectl get pods -l app.kubernetes.io/name=thunderid
 
 # Check services
-kubectl get services -l app.kubernetes.io/name=thunder
+kubectl get services -l app.kubernetes.io/name=thunderid
 
 # Check ingress
 kubectl get ingress
@@ -73,8 +73,8 @@ kubectl get ingress
 ### Step 3: Access <ProductName />
 
 1. Get the external IP address of your NGINX Ingress Controller.
-2. Add an entry to your `/etc/hosts` file that maps the IP address to `thunder.local`.
-3. Open <ProductName /> at `http://thunder.local`.
+2. Add an entry to your `/etc/hosts` file that maps the IP address to `{{productSlug}}.local`.
+3. Open <ProductName /> at `http://{{productSlug}}.local`.
 
 If you are using a cloud provider, the load balancer assigns the external IP automatically.
 
@@ -85,7 +85,7 @@ If you are using a cloud provider, the load balancer assigns the external IP aut
 Pass configuration values directly on the command line. The following example installs <ProductName /> with SQLite for development or testing:
 
 ```bash
-helm install thunder oci://ghcr.io/asgardeo/helm-charts/thunder \
+helm install thunderid oci://ghcr.io/asgardeo/helm-charts/thunderid \
   --set configuration.database.config.type=sqlite \
   --set configuration.database.runtime.type=sqlite
 ```
@@ -108,7 +108,7 @@ For production deployments, use a values file to manage configuration:
           memory: 1Gi
 
     ingress:
-      hostname: thunder.example.com
+      hostname: {{productSlug}}.example.com
 
     configuration:
       database:
@@ -117,7 +117,7 @@ For production deployments, use a values file to manage configuration:
           host: postgres.default.svc.cluster.local
           port: 5432
           name: configdb
-          username: thunder_user
+          username: thunderid_user
           password: <config-db-password>
           sslmode: require
         runtime:
@@ -125,7 +125,7 @@ For production deployments, use a values file to manage configuration:
           host: postgres.default.svc.cluster.local
           port: 5432
           name: runtimedb
-          username: thunder_user
+          username: thunderid_user
           password: <runtime-db-password>
           sslmode: require
         user:
@@ -133,7 +133,7 @@ For production deployments, use a values file to manage configuration:
           host: postgres.default.svc.cluster.local
           port: 5432
           name: userdb
-          username: thunder_user
+          username: thunderid_user
           password: <user-db-password>
           sslmode: require
     ```
@@ -141,7 +141,7 @@ For production deployments, use a values file to manage configuration:
 2. Install using the values file:
 
     ```bash
-    helm install thunder oci://ghcr.io/asgardeo/helm-charts/thunder -f custom-values.yaml
+    helm install thunderid oci://ghcr.io/asgardeo/helm-charts/thunderid -f custom-values.yaml
     ```
 
 ## Database Setup
@@ -163,14 +163,14 @@ Before deploying <ProductName />, prepare the PostgreSQL instance:
 2. Create a dedicated user:
 
     ```sql
-    CREATE USER thunder_user WITH PASSWORD '<secure-password>';
+    CREATE USER thunderid_user WITH PASSWORD '<secure-password>';
     ```
 
 3. Grant the required privileges in each database:
 
     ```sql
-    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO thunder_user;
-    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO thunder_user;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO thunderid_user;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO thunderid_user;
     ```
 
 4. Run the initialization scripts from `backend/dbscripts` to create the schema.
@@ -187,7 +187,7 @@ configuration:
       host: postgres.example.com
       port: 5432
       name: configdb
-      username: thunder_user
+      username: thunderid_user
       password: <config-db-password>
       sslmode: require
     runtime:
@@ -195,7 +195,7 @@ configuration:
       host: postgres.example.com
       port: 5432
       name: runtimedb
-      username: thunder_user
+      username: thunderid_user
       password: <runtime-db-password>
       sslmode: require
     user:
@@ -203,7 +203,7 @@ configuration:
       host: postgres.example.com
       port: 5432
       name: userdb
-      username: thunder_user
+      username: thunderid_user
       password: <user-db-password>
       sslmode: require
 ```
@@ -234,7 +234,7 @@ configuration:
 To upgrade to a new version:
 
 ```bash
-helm upgrade thunder oci://ghcr.io/asgardeo/helm-charts/thunder \
+helm upgrade thunderid oci://ghcr.io/asgardeo/helm-charts/thunderid \
   --version 0.12.0 \
   -f custom-values.yaml
 ```
@@ -242,10 +242,11 @@ helm upgrade thunder oci://ghcr.io/asgardeo/helm-charts/thunder \
 To roll back to a previous release:
 
 ```bash
-helm rollback thunder 1
+helm rollback {{productSlug}} 1
 ```
 
 ## Next Steps
 
+- [Production Deployment Guidelines](./production-guidelines) — Apply security hardening for production: replace TLS certificates, generate a unique encryption key, configure a CORS allowlist, and set up Redis caching for multi-pod deployments.
 - [Deploy <ProductName /> on OpenChoreo](./openchoreo) — Deploy <ProductName /> on the OpenChoreo platform.
 - [Deploy <ProductName /> with Docker](./docker) — Run <ProductName /> locally using Docker.

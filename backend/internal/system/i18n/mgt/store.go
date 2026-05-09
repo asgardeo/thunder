@@ -52,7 +52,7 @@ type i18nStore struct {
 func newI18nStore() i18nStoreInterface {
 	return &i18nStore{
 		dbProvider:   provider.GetDBProvider(),
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
 	}
 }
 

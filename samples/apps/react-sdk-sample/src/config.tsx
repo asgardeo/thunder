@@ -20,8 +20,8 @@ const response = await fetch('/runtime.json');
 const runtimeConfig = await response.json();
 
 const config = {
-    clientId: runtimeConfig.clientId || import.meta.env.VITE_REACT_APP_CLIENT_ID,
-    baseUrl: runtimeConfig.baseUrl || import.meta.env.VITE_THUNDER_BASE_URL,
+  clientId: runtimeConfig.clientId || import.meta.env.VITE_REACT_APP_CLIENT_ID,
+  baseUrl: runtimeConfig.baseUrl || import.meta.env.VITE_THUNDERID_BASE_URL,
 };
 
 export default config;

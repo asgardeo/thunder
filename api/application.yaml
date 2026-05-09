@@ -151,6 +151,9 @@ paths:
                       idToken:
                         validityPeriod: 3600
                         userAttributes: ["email", "name", "given_name", "family_name"]
+                        responseType: "JWE"
+                        encryptionAlg: "RSA-OAEP-256"
+                        encryptionEnc: "A256GCM"
                     userInfo:
                       responseType: "JWS"
                       signingAlg: "RS256"
@@ -158,6 +161,7 @@ paths:
                     scopeClaims:
                       profile: ["name", "family_name", "given_name", "picture"]
                       employee: ["emp_id", "department"]
+                    acrValues: ["urn:thunder:silver", "urn:thunder:gold"]
       responses:
         "201":
           description: Application created
@@ -220,6 +224,9 @@ paths:
                         idToken:
                           validityPeriod: 1800
                           userAttributes: ["email", "email_verified", "name", "given_name", "family_name"]
+                          responseType: "JWE"
+                          encryptionAlg: "RSA-OAEP-256"
+                          encryptionEnc: "A256GCM"
                       userInfo:
                         responseType: "JWS"
                         signingAlg: "RS256"
@@ -227,6 +234,7 @@ paths:
                       scopeClaims:
                         profile: ["name", "family_name", "given_name", "picture"]
                         employee: ["emp_id", "department"]
+                      acrValues: ["urn:thunder:silver", "urn:thunder:gold"]
         "400":
           description: Bad request
           content:
@@ -355,6 +363,9 @@ paths:
                         idToken:
                           validityPeriod: 1800
                           userAttributes: ["email", "email_verified", "name", "given_name", "family_name"]
+                          responseType: "JWE"
+                          encryptionAlg: "RSA-OAEP-256"
+                          encryptionEnc: "A256GCM"
                       userInfo:
                         responseType: "JWS"
                         signingAlg: "RS256"
@@ -362,6 +373,7 @@ paths:
                       scopeClaims:
                         profile: ["name", "family_name", "given_name", "picture"]
                         employee: ["emp_id", "department"]
+                      acrValues: ["urn:thunder:silver", "urn:thunder:gold"]
         "400":
           description: Bad request
           content:
@@ -478,6 +490,9 @@ paths:
                       idToken:
                         validityPeriod: 1800
                         userAttributes: ["email", "email_verified", "name", "given_name", "family_name"]
+                        responseType: "JWE"
+                        encryptionAlg: "RSA-OAEP-256"
+                        encryptionEnc: "A256GCM"
                     userInfo:
                       responseType: "JWS"
                       signingAlg: "RS256"
@@ -485,6 +500,7 @@ paths:
                     scopeClaims:
                       profile: ["name", "family_name", "given_name", "picture"]
                       employee: ["emp_id", "department"]
+                    acrValues: ["urn:thunder:silver", "urn:thunder:gold"]
       responses:
         "200":
           description: Application updated
@@ -549,6 +565,9 @@ paths:
                         idToken:
                           validityPeriod: 1800
                           userAttributes: ["email", "email_verified", "name", "given_name", "family_name"]
+                          responseType: "JWE"
+                          encryptionAlg: "RSA-OAEP-256"
+                          encryptionEnc: "A256GCM"
                       userInfo:
                         responseType: "JWS"
                         signingAlg: "RS256"
@@ -556,6 +575,7 @@ paths:
                       scopeClaims:
                         profile: ["name", "family_name", "given_name", "picture"]
                         employee: ["emp_id", "department"]
+                      acrValues: ["urn:thunder:silver", "urn:thunder:gold"]
         "400":
           description: Bad request
           content:
@@ -1117,6 +1137,25 @@ components:
             type: string
           description: The user attributes to include in the ID token. Only claims requested by scopes AND listed here will be included.
           example: ["email", "name", "given_name", "family_name"]
+        responseType:
+          type: string
+          description: |
+            The format of the ID token response.
+            JWT returns a standard signed JWT (default).
+            JWE returns an encrypted JWT — requires encryptionAlg, encryptionEnc, and a client certificate.
+            NESTED_JWT returns a sign-then-encrypt JWT — requires encryptionAlg, encryptionEnc, and a client certificate.
+          enum: ["JWT", "JWE", "NESTED_JWT"]
+          example: "JWE"
+        encryptionAlg:
+          type: string
+          description: JWE key-management algorithm for encrypted ID token responses (e.g. RSA-OAEP-256). Required when responseType is JWE or NESTED_JWT.
+          enum: ["RSA-OAEP", "RSA-OAEP-256"]
+          example: "RSA-OAEP-256"
+        encryptionEnc:
+          type: string
+          description: JWE content-encryption algorithm (e.g. A256GCM). Required when responseType is JWE or NESTED_JWT.
+          enum: ["A128CBC-HS256", "A256GCM"]
+          example: "A256GCM"
 
     UserInfoConfig:
       type: object
@@ -1235,7 +1274,7 @@ components:
           example: ["code"]
         tokenEndpointAuthMethod:
           type: string
-          enum: ["client_secret_basic", "client_secret_post", "none"]
+          enum: ["client_secret_basic", "client_secret_post", "private_key_jwt", "none"]
           description: The token endpoint authentication method for the OAuth application. Defaults to "client_secret_basic" if not specified.
           example: "client_secret_basic"
         pkceRequired:
@@ -1278,6 +1317,18 @@ components:
           example:
             profile: ["name", "family_name", "given_name", "picture"]
             employee: ["emp_id", "department"]
+        acrValues:
+          type: array
+          items:
+            type: string
+          description: |
+            ACR (Authentication Context Class Reference) values for the application.
+            Defines the allowed set of ACR values for authorization requests. When acr_values is
+            provided in an authorization request, only values present in this list are accepted;
+            unrecognised values are silently ignored. If filtering removes all requested ACRs,
+            the full list is used as a fallback. When acr_values is omitted from the request,
+            this configured list is used as the effective ACR set.
+          example: ["urn:thunder:silver", "urn:thunder:gold"]
 
     OAuthAppConfigComplete:
       type: object
@@ -1313,7 +1364,7 @@ components:
           example: ["code"]
         tokenEndpointAuthMethod:
           type: string
-          enum: ["client_secret_basic", "client_secret_post", "none"]
+          enum: ["client_secret_basic", "client_secret_post", "private_key_jwt", "none"]
           description: The token endpoint authentication method for the OAuth application. Defaults to "client_secret_basic" if not specified.
           example: "client_secret_basic"
         pkceRequired:
@@ -1356,6 +1407,18 @@ components:
           example:
             profile: ["name", "family_name", "given_name", "picture"]
             employee: ["emp_id", "department"]
+        acrValues:
+          type: array
+          items:
+            type: string
+          description: |
+            ACR (Authentication Context Class Reference) values for the application.
+            Defines the allowed set of ACR values for authorization requests. When acr_values is
+            provided in an authorization request, only values present in this list are accepted;
+            unrecognised values are silently ignored. If filtering removes all requested ACRs,
+            the full list is used as a fallback. When acr_values is omitted from the request,
+            this configured list is used as the effective ACR set.
+          example: ["urn:thunder:silver", "urn:thunder:gold"]
 
     Error:
       type: object
@@ -1363,7 +1426,7 @@ components:
       properties:
         code:
           type: string
-          description: The error code.
+          description: "Error code. Codes follow the APP-XXXX convention."
           example: "APP-1001"
         message:
           $ref: '#/components/schemas/I18nMessage'

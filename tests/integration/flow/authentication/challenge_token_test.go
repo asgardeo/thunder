@@ -109,7 +109,7 @@ var (
 		},
 	}
 
-	ctTokenUserSchema = testutils.UserSchema{
+	ctTokenEntityType = testutils.UserType{
 		Name: "ct_token_test_user",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -123,7 +123,7 @@ var (
 	}
 
 	ctTokenTestUser = testutils.User{
-		Type: ctTokenUserSchema.Name,
+		Type: ctTokenEntityType.Name,
 		Attributes: json.RawMessage(`{
 			"username": "ct_token_testuser",
 			"password": "testpassword"
@@ -133,7 +133,7 @@ var (
 
 var (
 	ctTokenTestAppID    string
-	ctTokenUserSchemaID string
+	ctTokenEntityTypeID string
 )
 
 type ChallengeTokenTestSuite struct {
@@ -153,10 +153,10 @@ func (ts *ChallengeTokenTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "Failed to create test organization unit")
 	ts.ouID = ouID
 
-	ctTokenUserSchema.OUID = ts.ouID
-	schemaID, err := testutils.CreateUserType(ctTokenUserSchema)
-	ts.Require().NoError(err, "Failed to create test user schema")
-	ctTokenUserSchemaID = schemaID
+	ctTokenEntityType.OUID = ts.ouID
+	schemaID, err := testutils.CreateUserType(ctTokenEntityType)
+	ts.Require().NoError(err, "Failed to create test user type")
+	ctTokenEntityTypeID = schemaID
 
 	flowID, err := testutils.CreateFlow(ctTokenTestFlow)
 	ts.Require().NoError(err, "Failed to create challenge token test flow")
@@ -169,7 +169,7 @@ func (ts *ChallengeTokenTestSuite) SetupSuite() {
 		ClientID:                  "ct_token_test_client",
 		ClientSecret:              "ct_token_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
-		AllowedUserTypes:          []string{ctTokenUserSchema.Name},
+		AllowedUserTypes:          []string{ctTokenEntityType.Name},
 		AuthFlowID:                flowID,
 		OUID:                      ts.ouID,
 	}
@@ -198,9 +198,9 @@ func (ts *ChallengeTokenTestSuite) TearDownSuite() {
 			ts.T().Logf("Failed to delete test flow %s: %v", flowID, err)
 		}
 	}
-	if ctTokenUserSchemaID != "" {
-		if err := testutils.DeleteUserType(ctTokenUserSchemaID); err != nil {
-			ts.T().Logf("Failed to delete test user schema: %v", err)
+	if ctTokenEntityTypeID != "" {
+		if err := testutils.DeleteUserType(ctTokenEntityTypeID); err != nil {
+			ts.T().Logf("Failed to delete test user type: %v", err)
 		}
 	}
 	if ts.ouID != "" {

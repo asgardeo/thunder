@@ -141,14 +141,14 @@ func makeAppInboundParser(appService ApplicationServiceInterface) func([]byte) (
 			return nil, fmt.Errorf("error validating application '%s': %v", appDTO.Name, svcErr)
 		}
 
-		profile := toConfigDAO(validatedApp)
+		profile := toInboundClient(validatedApp)
 
 		for _, inbound := range validatedApp.InboundAuthConfig {
-			if oauthData := buildOAuthConfigData(inbound); oauthData != nil {
+			if oauthProfile := buildOAuthProfileFromProcessed(inbound); oauthProfile != nil {
 				if profile.Properties == nil {
 					profile.Properties = make(map[string]interface{})
 				}
-				profile.Properties[inboundclient.PropOAuthProfile] = *oauthData
+				profile.Properties[inboundclient.PropOAuthProfile] = *oauthProfile
 				break
 			}
 		}
@@ -165,51 +165,53 @@ func parseToApplicationDTO(data []byte) (*model.ApplicationDTO, error) {
 	}
 
 	appDTO := model.ApplicationDTO{
-		ID:                        appRequest.ID,
-		OUID:                      appRequest.OUID,
-		Name:                      appRequest.Name,
-		Description:               appRequest.Description,
-		AuthFlowID:                appRequest.AuthFlowID,
-		RegistrationFlowID:        appRequest.RegistrationFlowID,
-		IsRegistrationFlowEnabled: appRequest.IsRegistrationFlowEnabled,
-		ThemeID:                   appRequest.ThemeID,
-		LayoutID:                  appRequest.LayoutID,
-		Template:                  appRequest.Template,
-		URL:                       appRequest.URL,
-		LogoURL:                   appRequest.LogoURL,
-		TosURI:                    appRequest.TosURI,
-		PolicyURI:                 appRequest.PolicyURI,
-		Contacts:                  appRequest.Contacts,
-		Assertion:                 appRequest.Assertion,
-		Certificate:               appRequest.Certificate,
-		AllowedUserTypes:          appRequest.AllowedUserTypes,
-		LoginConsent:              &inboundmodel.LoginConsentConfig{ValidityPeriod: 0},
-		Metadata:                  appRequest.Metadata,
+		ID:          appRequest.ID,
+		OUID:        appRequest.OUID,
+		Name:        appRequest.Name,
+		Description: appRequest.Description,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:                appRequest.AuthFlowID,
+			RegistrationFlowID:        appRequest.RegistrationFlowID,
+			IsRegistrationFlowEnabled: appRequest.IsRegistrationFlowEnabled,
+			ThemeID:                   appRequest.ThemeID,
+			LayoutID:                  appRequest.LayoutID,
+			Assertion:                 appRequest.Assertion,
+			Certificate:               appRequest.Certificate,
+			AllowedUserTypes:          appRequest.AllowedUserTypes,
+			LoginConsent:              appRequest.LoginConsent,
+		},
+		Template:  appRequest.Template,
+		URL:       appRequest.URL,
+		LogoURL:   appRequest.LogoURL,
+		TosURI:    appRequest.TosURI,
+		PolicyURI: appRequest.PolicyURI,
+		Contacts:  appRequest.Contacts,
+		Metadata:  appRequest.Metadata,
 	}
 	if len(appRequest.InboundAuthConfig) > 0 {
-		inboundAuthConfigDTOs := make([]model.InboundAuthConfigDTO, 0)
+		inboundAuthConfigDTOs := make([]inboundmodel.InboundAuthConfigWithSecret, 0)
 		for _, config := range appRequest.InboundAuthConfig {
-			if config.Type != model.OAuthInboundAuthType || config.OAuthAppConfig == nil {
+			if config.Type != inboundmodel.OAuthInboundAuthType || config.OAuthConfig == nil {
 				continue
 			}
 
-			inboundAuthConfigDTO := model.InboundAuthConfigDTO{
+			inboundAuthConfigDTO := inboundmodel.InboundAuthConfigWithSecret{
 				Type: config.Type,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
-					ClientID:                           config.OAuthAppConfig.ClientID,
-					ClientSecret:                       config.OAuthAppConfig.ClientSecret,
-					RedirectURIs:                       config.OAuthAppConfig.RedirectURIs,
-					GrantTypes:                         config.OAuthAppConfig.GrantTypes,
-					ResponseTypes:                      config.OAuthAppConfig.ResponseTypes,
-					TokenEndpointAuthMethod:            config.OAuthAppConfig.TokenEndpointAuthMethod,
-					PKCERequired:                       config.OAuthAppConfig.PKCERequired,
-					PublicClient:                       config.OAuthAppConfig.PublicClient,
-					RequirePushedAuthorizationRequests: config.OAuthAppConfig.RequirePushedAuthorizationRequests,
-					Token:                              config.OAuthAppConfig.Token,
-					Scopes:                             config.OAuthAppConfig.Scopes,
-					UserInfo:                           config.OAuthAppConfig.UserInfo,
-					ScopeClaims:                        config.OAuthAppConfig.ScopeClaims,
-					Certificate:                        config.OAuthAppConfig.Certificate,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+					ClientID:                           config.OAuthConfig.ClientID,
+					ClientSecret:                       config.OAuthConfig.ClientSecret,
+					RedirectURIs:                       config.OAuthConfig.RedirectURIs,
+					GrantTypes:                         config.OAuthConfig.GrantTypes,
+					ResponseTypes:                      config.OAuthConfig.ResponseTypes,
+					TokenEndpointAuthMethod:            config.OAuthConfig.TokenEndpointAuthMethod,
+					PKCERequired:                       config.OAuthConfig.PKCERequired,
+					PublicClient:                       config.OAuthConfig.PublicClient,
+					RequirePushedAuthorizationRequests: config.OAuthConfig.RequirePushedAuthorizationRequests,
+					Token:                              config.OAuthConfig.Token,
+					Scopes:                             config.OAuthConfig.Scopes,
+					UserInfo:                           config.OAuthConfig.UserInfo,
+					ScopeClaims:                        config.OAuthConfig.ScopeClaims,
+					Certificate:                        config.OAuthConfig.Certificate,
 				},
 			}
 			inboundAuthConfigDTOs = append(inboundAuthConfigDTOs, inboundAuthConfigDTO)
@@ -223,11 +225,11 @@ func parseToApplicationDTO(data []byte) (*model.ApplicationDTO, error) {
 func (e *applicationExporter) GetResourceRules() *declarativeresource.ResourceRules {
 	return &declarativeresource.ResourceRules{
 		Variables: []string{
-			"InboundAuthConfig[].OAuthAppConfig.ClientID",
-			"InboundAuthConfig[].OAuthAppConfig.ClientSecret",
+			"InboundAuthConfig[].OAuthConfig.ClientID",
+			"InboundAuthConfig[].OAuthConfig.ClientSecret",
 		},
 		ArrayVariables: []string{
-			"InboundAuthConfig[].OAuthAppConfig.RedirectURIs",
+			"InboundAuthConfig[].OAuthConfig.RedirectURIs",
 		},
 	}
 }
@@ -242,13 +244,13 @@ func (e *applicationExporter) GetResourceRulesForResource(resource interface{}) 
 	}
 
 	for _, inbound := range app.InboundAuthConfig {
-		if inbound.OAuthAppConfig != nil && inbound.OAuthAppConfig.PublicClient {
+		if inbound.OAuthConfig != nil && inbound.OAuthConfig.PublicClient {
 			return &declarativeresource.ResourceRules{
 				Variables: []string{
-					"InboundAuthConfig[].OAuthAppConfig.ClientID",
+					"InboundAuthConfig[].OAuthConfig.ClientID",
 				},
 				ArrayVariables: []string{
-					"InboundAuthConfig[].OAuthAppConfig.RedirectURIs",
+					"InboundAuthConfig[].OAuthConfig.RedirectURIs",
 				},
 			}
 		}
@@ -287,9 +289,9 @@ func makeAppEntityParser(
 		}
 
 		var clientID, clientSecret string
-		if inboundAuthConfig != nil && inboundAuthConfig.OAuthAppConfig != nil {
-			clientID = inboundAuthConfig.OAuthAppConfig.ClientID
-			clientSecret = inboundAuthConfig.OAuthAppConfig.ClientSecret
+		if inboundAuthConfig != nil && inboundAuthConfig.OAuthConfig != nil {
+			clientID = inboundAuthConfig.OAuthConfig.ClientID
+			clientSecret = inboundAuthConfig.OAuthConfig.ClientSecret
 		}
 
 		sysAttrsJSON, err := buildSystemAttributes(appDTO, clientID)

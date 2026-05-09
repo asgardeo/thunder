@@ -106,7 +106,10 @@ func (s *agentService) CreateAgent(ctx context.Context, req *model.CreateAgentRe
 
 	owner := req.Owner
 	if owner == "" {
+		// Default to the authenticated subject.
 		owner = security.GetSubject(ctx)
+	} else if svcErr := s.validateOwnerExists(ctx, owner); svcErr != nil {
+		return nil, svcErr
 	}
 
 	e, sysCredsJSON, buildErr := buildAgentEntity(agentID, req.Type, req.OUID, req.Attributes,
@@ -127,7 +130,7 @@ func (s *agentService) CreateAgent(ctx context.Context, req *model.CreateAgentRe
 
 	authFlowID, regFlowID := req.AuthFlowID, req.RegistrationFlowID
 	assertion, loginConsent := req.Assertion, req.LoginConsent
-	var inboundConfigs []model.InboundAuthConfig
+	var inboundConfigs []inboundmodel.InboundAuthConfigWithSecret
 
 	if needsInboundClient(req) {
 		resolvedClient, resolvedOAuth, svcErr := s.createInboundForAgent(ctx, agentID, req, clientSecret)
@@ -140,9 +143,9 @@ func (s *agentService) CreateAgent(ctx context.Context, req *model.CreateAgentRe
 		assertion = resolvedClient.Assertion
 		loginConsent = resolvedClient.LoginConsent
 		if resolvedOAuth != nil {
-			inboundConfigs = []model.InboundAuthConfig{{
-				Type:   model.OAuthInboundAuthType,
-				Config: oauthProfileToConfig(clientID, resolvedOAuth),
+			inboundConfigs = []inboundmodel.InboundAuthConfigWithSecret{{
+				Type:        inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: oauthProfileToComplete(clientID, resolvedOAuth),
 			}}
 		}
 	}
@@ -258,8 +261,8 @@ func (s *agentService) UpdateAgent(ctx context.Context, agentID string,
 			log.String("agentID", agentID), log.Error(oauthErr))
 		return nil, &serviceerror.InternalServerError
 	}
-	if existingOAuth != nil && existingOAuth.OAuthProfile != nil {
-		existingOAuthMethod = existingOAuth.OAuthProfile.TokenEndpointAuthMethod
+	if existingOAuth != nil {
+		existingOAuthMethod = existingOAuth.TokenEndpointAuthMethod
 	}
 
 	clientID, clientSecret, svcErr := s.resolveOAuthCredentials(
@@ -268,9 +271,9 @@ func (s *agentService) UpdateAgent(ctx context.Context, agentID string,
 		return nil, svcErr
 	}
 
-	owner := req.Owner
-	if owner == "" {
-		owner = currentOwner
+	owner, svcErr := s.resolveUpdateOwner(ctx, req.Owner, currentOwner)
+	if svcErr != nil {
+		return nil, svcErr
 	}
 
 	ouID := req.OUID
@@ -331,11 +334,11 @@ func (s *agentService) UpdateAgent(ctx context.Context, agentID string,
 	regFlowID := resolvedClient.RegistrationFlowID
 	assertion := resolvedClient.Assertion
 	loginConsent := resolvedClient.LoginConsent
-	var inboundConfigs []model.InboundAuthConfig
+	var inboundConfigs []inboundmodel.InboundAuthConfigWithSecret
 	if resolvedOAuth != nil {
-		inboundConfigs = []model.InboundAuthConfig{{
-			Type:   model.OAuthInboundAuthType,
-			Config: oauthProfileToConfig(clientID, resolvedOAuth),
+		inboundConfigs = []inboundmodel.InboundAuthConfigWithSecret{{
+			Type:        inboundmodel.OAuthInboundAuthType,
+			OAuthConfig: oauthProfileToComplete(clientID, resolvedOAuth),
 		}}
 	}
 
@@ -470,6 +473,39 @@ func (s *agentService) validateOUExists(ctx context.Context, ouID string) *servi
 	return nil
 }
 
+// resolveUpdateOwner picks the effective owner for an update — either the requested owner or the
+// existing one — and validates it exists when the owner is changing.
+func (s *agentService) resolveUpdateOwner(
+	ctx context.Context, requestedOwner, currentOwner string,
+) (string, *serviceerror.ServiceError) {
+	owner := requestedOwner
+	if owner == "" {
+		owner = currentOwner
+	}
+	if owner != currentOwner {
+		if svcErr := s.validateOwnerExists(ctx, owner); svcErr != nil {
+			return "", svcErr
+		}
+	}
+	return owner, nil
+}
+
+// validateOwnerExists returns an error when the given owner ID does not resolve to an existing entity.
+func (s *agentService) validateOwnerExists(ctx context.Context, ownerID string) *serviceerror.ServiceError {
+	if ownerID == "" {
+		return nil
+	}
+	_, err := s.entityService.GetEntity(ctx, ownerID)
+	if err != nil {
+		if errors.Is(err, entity.ErrEntityNotFound) {
+			return &ErrorOwnerNotFound
+		}
+		s.logger.Error("Failed to verify owner existence", log.String("ownerID", ownerID), log.Error(err))
+		return &serviceerror.InternalServerError
+	}
+	return nil
+}
+
 // validateNameUnique returns an error if another agent already uses the given name (excludeID is exempt on updates).
 func (s *agentService) validateNameUnique(ctx context.Context, name, excludeID string) *serviceerror.ServiceError {
 	if name == "" {
@@ -504,9 +540,12 @@ func (s *agentService) validateNameUnique(ctx context.Context, name, excludeID s
 
 // resolveOAuthCredentials resolves the clientID and clientSecret for an agent OAuth profile.
 func (s *agentService) resolveOAuthCredentials(ctx context.Context,
-	configs []model.InboundAuthConfig, existingClientID, existingOAuthMethod string,
+	configs []inboundmodel.InboundAuthConfigWithSecret, existingClientID, existingOAuthMethod string,
 ) (string, string, *serviceerror.ServiceError) {
-	oauthCfg := pickOAuthConfig(configs)
+	oauthCfg, svcErr := pickOAuthConfig(configs)
+	if svcErr != nil {
+		return "", "", svcErr
+	}
 	if oauthCfg == nil {
 		return existingClientID, "", nil
 	}
@@ -573,16 +612,16 @@ func (s *agentService) isClientIDTaken(
 // createInboundForAgent creates the inbound client row; applies server defaults via CreateInboundClient.
 func (s *agentService) createInboundForAgent(ctx context.Context, agentID string,
 	req *model.CreateAgentRequest, clientSecret string) (
-	inboundmodel.InboundClient, *inboundmodel.OAuthProfileData, *serviceerror.ServiceError) {
+	inboundmodel.InboundClient, *inboundmodel.OAuthProfile, *serviceerror.ServiceError) {
 	client := buildInboundClientRecord(agentID, req.AuthFlowID, req.RegistrationFlowID,
 		req.IsRegistrationFlowEnabled, req.ThemeID, req.LayoutID, req.Assertion,
 		req.LoginConsent, req.AllowedUserTypes)
 
-	oauthData := buildOAuthProfileData(req.InboundAuthConfig)
+	oauthProfile := buildOAuthProfile(req.InboundAuthConfig)
 
 	hasSecret := clientSecret != ""
 	if err := s.inboundClientService.CreateInboundClient(ctx, &client, req.Certificate,
-		oauthData, hasSecret, req.Name); err != nil {
+		oauthProfile, hasSecret, req.Name); err != nil {
 		if mapped := s.translateInboundClientError(err); mapped != nil {
 			return inboundmodel.InboundClient{}, nil, mapped
 		}
@@ -590,13 +629,13 @@ func (s *agentService) createInboundForAgent(ctx context.Context, agentID string
 			log.String("agentID", agentID), log.Error(err))
 		return inboundmodel.InboundClient{}, nil, &serviceerror.InternalServerError
 	}
-	return client, oauthData, nil
+	return client, oauthProfile, nil
 }
 
 // reconcileInboundForUpdate creates, updates, or removes the inbound client row and returns the mutated structs.
 func (s *agentService) reconcileInboundForUpdate(ctx context.Context, agentID string,
 	req *model.UpdateAgentRequest, clientID, clientSecret, oldName, newName string,
-) (inboundmodel.InboundClient, *inboundmodel.OAuthProfileData, *serviceerror.ServiceError) {
+) (inboundmodel.InboundClient, *inboundmodel.OAuthProfile, *serviceerror.ServiceError) {
 	wantsInbound := updateNeedsInboundClient(req)
 
 	existingClient, getErr := s.inboundClientService.GetInboundClientByEntityID(ctx, agentID)
@@ -617,7 +656,7 @@ func (s *agentService) reconcileInboundForUpdate(ctx context.Context, agentID st
 	client := buildInboundClientRecord(agentID, req.AuthFlowID, req.RegistrationFlowID,
 		req.IsRegistrationFlowEnabled, req.ThemeID, req.LayoutID, req.Assertion,
 		req.LoginConsent, req.AllowedUserTypes)
-	oauthData := buildOAuthProfileData(req.InboundAuthConfig)
+	oauthProfile := buildOAuthProfile(req.InboundAuthConfig)
 	hasSecret := clientSecret != ""
 
 	if hasExisting {
@@ -626,7 +665,7 @@ func (s *agentService) reconcileInboundForUpdate(ctx context.Context, agentID st
 			entityName = oldName
 		}
 		if err := s.inboundClientService.UpdateInboundClient(ctx, &client, req.Certificate,
-			oauthData, hasSecret, clientID, entityName); err != nil {
+			oauthProfile, hasSecret, clientID, entityName); err != nil {
 			if mapped := s.translateInboundClientError(err); mapped != nil {
 				return inboundmodel.InboundClient{}, nil, mapped
 			}
@@ -634,11 +673,11 @@ func (s *agentService) reconcileInboundForUpdate(ctx context.Context, agentID st
 				log.String("agentID", agentID), log.Error(err))
 			return inboundmodel.InboundClient{}, nil, &serviceerror.InternalServerError
 		}
-		return client, oauthData, nil
+		return client, oauthProfile, nil
 	}
 
 	if err := s.inboundClientService.CreateInboundClient(ctx, &client, req.Certificate,
-		oauthData, hasSecret, newName); err != nil {
+		oauthProfile, hasSecret, newName); err != nil {
 		if mapped := s.translateInboundClientError(err); mapped != nil {
 			return inboundmodel.InboundClient{}, nil, mapped
 		}
@@ -646,7 +685,7 @@ func (s *agentService) reconcileInboundForUpdate(ctx context.Context, agentID st
 			log.String("agentID", agentID), log.Error(err))
 		return inboundmodel.InboundClient{}, nil, &serviceerror.InternalServerError
 	}
-	return client, oauthData, nil
+	return client, oauthProfile, nil
 }
 
 // composeGetResponse builds the GET response by loading inbound client, OAuth profile, and certificates for the entity.
@@ -683,7 +722,7 @@ func (s *agentService) composeGetResponse(ctx context.Context, e *entity.Entity)
 	resp.LayoutID = inbound.LayoutID
 	resp.Assertion = inbound.Assertion
 	resp.LoginConsent = inbound.LoginConsent
-	resp.AllowedUserTypes = inbound.AllowedEntityTypes
+	resp.AllowedUserTypes = inbound.AllowedUserTypes
 
 	oauth, oauthErr := s.inboundClientService.GetOAuthProfileByEntityID(ctx, e.ID)
 	if oauthErr != nil && !errors.Is(oauthErr, inboundclient.ErrInboundClientNotFound) {
@@ -691,13 +730,13 @@ func (s *agentService) composeGetResponse(ctx context.Context, e *entity.Entity)
 			log.String("agentID", e.ID), log.Error(oauthErr))
 		return nil, &serviceerror.InternalServerError
 	}
-	if oauthErr == nil && oauth != nil && oauth.OAuthProfile != nil {
-		resp.InboundAuthConfig = removeSecrets([]model.InboundAuthConfig{
+	if oauthErr == nil && oauth != nil {
+		resp.InboundAuthConfig = []inboundmodel.InboundAuthConfig{
 			{
-				Type:   model.OAuthInboundAuthType,
-				Config: oauthProfileToConfig(clientID, oauth.OAuthProfile),
+				Type:        inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: oauthProfileToConfig(clientID, oauth),
 			},
-		})
+		}
 	}
 
 	entityCert, certOpErr := s.inboundClientService.GetCertificate(ctx, cert.CertificateReferenceTypeApplication, e.ID)
@@ -712,8 +751,8 @@ func (s *agentService) composeGetResponse(ctx context.Context, e *entity.Entity)
 		if oauthCertOpErr != nil {
 			return nil, s.translateCertOperationError(oauthCertOpErr)
 		}
-		if len(resp.InboundAuthConfig) > 0 && resp.InboundAuthConfig[0].Config != nil {
-			resp.InboundAuthConfig[0].Config.Certificate = oauthCert
+		if len(resp.InboundAuthConfig) > 0 && resp.InboundAuthConfig[0].OAuthConfig != nil {
+			resp.InboundAuthConfig[0].OAuthConfig.Certificate = oauthCert
 		}
 	}
 
@@ -878,18 +917,30 @@ func normalizeLoginConsent(lc *inboundmodel.LoginConsentConfig) {
 	}
 }
 
-// pickOAuthConfig returns the first OAuth-typed entry, or nil.
-func pickOAuthConfig(configs []model.InboundAuthConfig) *model.OAuthAgentConfig {
+// pickOAuthConfig returns the single OAuth-typed entry from a request input, or nil if absent.
+// Returns ErrorMultipleOAuthConfigs if more than one OAuth entry is present.
+func pickOAuthConfig(
+	configs []inboundmodel.InboundAuthConfigWithSecret,
+) (*inboundmodel.OAuthConfigWithSecret, *serviceerror.ServiceError) {
+	var found *inboundmodel.OAuthConfigWithSecret
+	isOAuthConfig := false
 	for i := range configs {
-		if configs[i].Type == model.OAuthInboundAuthType && configs[i].Config != nil {
-			return configs[i].Config
+		if configs[i].Type != inboundmodel.OAuthInboundAuthType {
+			continue
+		}
+		if isOAuthConfig {
+			return nil, &ErrorMultipleOAuthConfigs
+		}
+		isOAuthConfig = true
+		if configs[i].OAuthConfig != nil {
+			found = configs[i].OAuthConfig
 		}
 	}
-	return nil
+	return found, nil
 }
 
 // requiresClientSecret reports whether the OAuth config implies a confidential client requiring a secret.
-func requiresClientSecret(cfg *model.OAuthAgentConfig) bool {
+func requiresClientSecret(cfg *inboundmodel.OAuthConfigWithSecret) bool {
 	if cfg == nil {
 		return false
 	}
@@ -906,24 +957,6 @@ func requiresClientSecret(cfg *model.OAuthAgentConfig) bool {
 	}
 	// Default to client_secret_basic when unspecified.
 	return true
-}
-
-// removeSecrets returns a copy of the configs with clientSecret stripped.
-func removeSecrets(in []model.InboundAuthConfig) []model.InboundAuthConfig {
-	if len(in) == 0 {
-		return nil
-	}
-	out := make([]model.InboundAuthConfig, len(in))
-	for i, cfg := range in {
-		copyCfg := cfg
-		if copyCfg.Config != nil {
-			c := *copyCfg.Config
-			c.ClientSecret = ""
-			copyCfg.Config = &c
-		}
-		out[i] = copyCfg
-	}
-	return out
 }
 
 // buildAgentEntity constructs the entity row and system credentials JSON for a new or updated agent.
@@ -1019,13 +1052,13 @@ func buildInboundClientRecord(agentID, authFlowID, regFlowID string, isRegEnable
 		LayoutID:                  layoutID,
 		Assertion:                 assertion,
 		LoginConsent:              loginConsent,
-		AllowedEntityTypes:        allowedUserTypes,
+		AllowedUserTypes:          allowedUserTypes,
 	}
 }
 
-// buildOAuthProfileData maps the agent OAuth config to the inbound client profile shape.
-func buildOAuthProfileData(configs []model.InboundAuthConfig) *inboundmodel.OAuthProfileData {
-	cfg := pickOAuthConfig(configs)
+// buildOAuthProfile maps the agent OAuth config to the inbound client profile shape.
+func buildOAuthProfile(configs []inboundmodel.InboundAuthConfigWithSecret) *inboundmodel.OAuthProfile {
+	cfg, _ := pickOAuthConfig(configs)
 	if cfg == nil {
 		return nil
 	}
@@ -1038,7 +1071,7 @@ func buildOAuthProfileData(configs []model.InboundAuthConfig) *inboundmodel.OAut
 		// Default to client_credentials for agents.
 		grantTypes = []string{string(oauth2const.GrantTypeClientCredentials)}
 	}
-	return &inboundmodel.OAuthProfileData{
+	return &inboundmodel.OAuthProfile{
 		RedirectURIs:                       cfg.RedirectURIs,
 		GrantTypes:                         grantTypes,
 		ResponseTypes:                      sysutils.ConvertToStringSlice(cfg.ResponseTypes),
@@ -1054,20 +1087,13 @@ func buildOAuthProfileData(configs []model.InboundAuthConfig) *inboundmodel.OAut
 	}
 }
 
-// oauthProfileToConfig converts a stored OAuth profile back into the agent-facing config.
-func oauthProfileToConfig(clientID string, p *inboundmodel.OAuthProfileData) *model.OAuthAgentConfig {
+// oauthProfileToComplete converts a stored OAuth profile into the create/update shape.
+func oauthProfileToComplete(clientID string, p *inboundmodel.OAuthProfile) *inboundmodel.OAuthConfigWithSecret {
 	if p == nil {
 		return nil
 	}
-	grants := make([]oauth2const.GrantType, 0, len(p.GrantTypes))
-	for _, g := range p.GrantTypes {
-		grants = append(grants, oauth2const.GrantType(g))
-	}
-	respTypes := make([]oauth2const.ResponseType, 0, len(p.ResponseTypes))
-	for _, r := range p.ResponseTypes {
-		respTypes = append(respTypes, oauth2const.ResponseType(r))
-	}
-	return &model.OAuthAgentConfig{
+	grants, respTypes := convertGrantAndResponseTypes(p)
+	return &inboundmodel.OAuthConfigWithSecret{
 		ClientID:                           clientID,
 		RedirectURIs:                       p.RedirectURIs,
 		GrantTypes:                         grants,
@@ -1084,29 +1110,70 @@ func oauthProfileToConfig(clientID string, p *inboundmodel.OAuthProfileData) *mo
 	}
 }
 
+// oauthProfileToConfig converts a stored OAuth profile into the read (GET) response shape.
+func oauthProfileToConfig(clientID string, p *inboundmodel.OAuthProfile) *inboundmodel.OAuthConfig {
+	if p == nil {
+		return nil
+	}
+	grants, respTypes := convertGrantAndResponseTypes(p)
+	return &inboundmodel.OAuthConfig{
+		ClientID:                           clientID,
+		RedirectURIs:                       p.RedirectURIs,
+		GrantTypes:                         grants,
+		ResponseTypes:                      respTypes,
+		TokenEndpointAuthMethod:            oauth2const.TokenEndpointAuthMethod(p.TokenEndpointAuthMethod),
+		PKCERequired:                       p.PKCERequired,
+		PublicClient:                       p.PublicClient,
+		RequirePushedAuthorizationRequests: p.RequirePushedAuthorizationRequests,
+		Certificate:                        p.Certificate,
+		Token:                              p.Token,
+		Scopes:                             p.Scopes,
+		UserInfo:                           p.UserInfo,
+		ScopeClaims:                        p.ScopeClaims,
+	}
+}
+
+// convertGrantAndResponseTypes adapts the stored string slices to the typed enums shared by
+// both response shapes.
+func convertGrantAndResponseTypes(
+	p *inboundmodel.OAuthProfile,
+) ([]oauth2const.GrantType, []oauth2const.ResponseType) {
+	grants := make([]oauth2const.GrantType, 0, len(p.GrantTypes))
+	for _, g := range p.GrantTypes {
+		grants = append(grants, oauth2const.GrantType(g))
+	}
+	respTypes := make([]oauth2const.ResponseType, 0, len(p.ResponseTypes))
+	for _, r := range p.ResponseTypes {
+		respTypes = append(respTypes, oauth2const.ResponseType(r))
+	}
+	return grants, respTypes
+}
+
 // buildCompleteResponse constructs the full create/update response including credentials and all inbound auth fields.
 func buildCompleteResponse(agentID, owner, clientID, clientSecret, agentType, name, description string,
 	attributes json.RawMessage, authFlowID, regFlowID string, isRegEnabled bool,
 	themeID, layoutID string, assertion *inboundmodel.AssertionConfig,
 	loginConsent *inboundmodel.LoginConsentConfig, allowedUserTypes []string,
-	certificate *inboundmodel.Certificate, inboundAuthConfig []model.InboundAuthConfig,
+	certificate *inboundmodel.Certificate, inboundAuthConfig []inboundmodel.InboundAuthConfigWithSecret,
 ) *model.AgentCompleteResponse {
 	resp := &model.AgentCompleteResponse{
-		ID:                        agentID,
-		Type:                      agentType,
-		Name:                      name,
-		Description:               description,
-		Owner:                     owner,
-		Attributes:                attributes,
-		AuthFlowID:                authFlowID,
-		RegistrationFlowID:        regFlowID,
-		IsRegistrationFlowEnabled: isRegEnabled,
-		ThemeID:                   themeID,
-		LayoutID:                  layoutID,
-		Assertion:                 assertion,
-		LoginConsent:              loginConsent,
-		AllowedUserTypes:          allowedUserTypes,
-		Certificate:               certificate,
+		ID:          agentID,
+		Type:        agentType,
+		Name:        name,
+		Description: description,
+		Owner:       owner,
+		Attributes:  attributes,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:                authFlowID,
+			RegistrationFlowID:        regFlowID,
+			IsRegistrationFlowEnabled: isRegEnabled,
+			ThemeID:                   themeID,
+			LayoutID:                  layoutID,
+			Assertion:                 assertion,
+			LoginConsent:              loginConsent,
+			AllowedUserTypes:          allowedUserTypes,
+			Certificate:               certificate,
+		},
 	}
 	if len(inboundAuthConfig) > 0 {
 		resp.InboundAuthConfig = annotateOAuthConfig(inboundAuthConfig, clientID, clientSecret)
@@ -1115,19 +1182,21 @@ func buildCompleteResponse(agentID, owner, clientID, clientSecret, agentType, na
 }
 
 // annotateOAuthConfig stamps clientID and clientSecret onto the OAuth entry.
-func annotateOAuthConfig(in []model.InboundAuthConfig, clientID, clientSecret string) []model.InboundAuthConfig {
-	out := make([]model.InboundAuthConfig, len(in))
+func annotateOAuthConfig(
+	in []inboundmodel.InboundAuthConfigWithSecret, clientID, clientSecret string,
+) []inboundmodel.InboundAuthConfigWithSecret {
+	out := make([]inboundmodel.InboundAuthConfigWithSecret, len(in))
 	for i, cfg := range in {
 		copyCfg := cfg
-		if copyCfg.Type == model.OAuthInboundAuthType && copyCfg.Config != nil {
-			c := *copyCfg.Config
+		if copyCfg.Type == inboundmodel.OAuthInboundAuthType && copyCfg.OAuthConfig != nil {
+			c := *copyCfg.OAuthConfig
 			if clientID != "" {
 				c.ClientID = clientID
 			}
 			if clientSecret != "" {
 				c.ClientSecret = clientSecret
 			}
-			copyCfg.Config = &c
+			copyCfg.OAuthConfig = &c
 		}
 		out[i] = copyCfg
 	}
@@ -1225,6 +1294,8 @@ func translateInboundClientFKError(err error) *serviceerror.ServiceError {
 		return &ErrorLayoutNotFound
 	case errors.Is(err, inboundclient.ErrFKInvalidUserType):
 		return &ErrorInvalidUserType
+	case errors.Is(err, inboundclient.ErrUserSchemaLookupFailed):
+		return &serviceerror.InternalServerError
 	default:
 		return nil
 	}

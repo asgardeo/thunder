@@ -18,8 +18,8 @@ concurrency:
 
 env:
   GOFLAGS: "-mod=readonly"
-  PRODUCT_NAME: "Thunder"
-  PRODUCT_NAME_LOWER: "thunder"
+  PRODUCT_NAME: "ThunderID"
+  PRODUCT_NAME_LOWER: "thunderid"
 
 jobs:
   dependency-guard:
@@ -45,7 +45,7 @@ jobs:
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
-          version: 'latest'
+          version: '10.33.4'
           run_install: false
 
       - name: 🔍 Run pnpm audit (Frontend)
@@ -197,7 +197,7 @@ jobs:
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
-          version: 'latest'
+          version: '10.33.4'
           run_install: false
           cache_dependency_path: frontend/pnpm-lock.yaml
 
@@ -246,7 +246,7 @@ jobs:
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
-          version: 'latest'
+          version: '10.33.4'
           run_install: false
           cache_dependency_path: frontend/pnpm-lock.yaml
 
@@ -338,7 +338,7 @@ jobs:
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
-          version: 'latest'
+          version: '10.33.4'
           run_install: false
           cache_dependency_path: frontend/pnpm-lock.yaml
 
@@ -354,13 +354,13 @@ jobs:
 
       - name: 🧪 Run Console Tests with Coverage
         run: |
-          cd frontend/apps/thunder-console
+          cd frontend/apps/console
           pnpm vitest run --coverage --shard=${{ matrix.shard }}/4
 
       - name: 🧪 Run Gate Tests with Coverage
         if: matrix.shard == 1
         run: |
-          cd frontend/apps/thunder-gate
+          cd frontend/apps/gate
           pnpm test:coverage
 
       # Strip branch data (BRDA/BRF/BRH) from frontend LCOV reports before uploading.
@@ -370,7 +370,7 @@ jobs:
       # Line and function coverage remain unaffected and accurately reflect test quality.
       - name: 🧹 Strip branch data from frontend LCOV reports
         run: |
-          for lcov_file in frontend/apps/thunder-console/coverage/lcov.info frontend/apps/thunder-gate/coverage/lcov.info; do
+          for lcov_file in frontend/apps/console/coverage/lcov.info frontend/apps/gate/coverage/lcov.info; do
             if [ -f "$lcov_file" ]; then
               sed -i '/^BRDA:/d;/^BRF:/d;/^BRH:/d' "$lcov_file"
             fi
@@ -380,7 +380,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: console-coverage-shard-${{ matrix.shard }}
-          path: frontend/apps/thunder-console/coverage/lcov.info
+          path: frontend/apps/console/coverage/lcov.info
           if-no-files-found: error
 
       - name: 📦 Upload gate coverage artifact
@@ -388,7 +388,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: gate-coverage
-          path: frontend/apps/thunder-gate/coverage/lcov.info
+          path: frontend/apps/gate/coverage/lcov.info
           if-no-files-found: error
 
   upload-frontend-coverage:
@@ -416,7 +416,7 @@ jobs:
         run: |
           cat coverage/console/console-coverage-shard-*/lcov.info > coverage/console-merged-lcov.info
 
-      - name: 📊 Upload `@thunder/console` Unit Test Coverage Report to Codecov
+      - name: 📊 Upload `@thunderid/console` Unit Test Coverage Report to Codecov
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -426,7 +426,7 @@ jobs:
           name: Frontend Console App Unit Tests
           fail_ci_if_error: false
 
-      - name: 📊 Upload `@thunder/gate` Unit Test Coverage Report to Codecov
+      - name: 📊 Upload `@thunderid/gate` Unit Test Coverage Report to Codecov
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -456,7 +456,7 @@ jobs:
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
-          version: 'latest'
+          version: '10.33.4'
           run_install: false
           cache_dependency_path: frontend/pnpm-lock.yaml
 
@@ -486,7 +486,7 @@ jobs:
         env:
           POSTGRES_USER: dbuser
           POSTGRES_PASSWORD: dbpassword
-          POSTGRES_DB: thunderdb
+          POSTGRES_DB: postgredb
         ports:
           - 5432:5432
         options: >-
@@ -856,7 +856,7 @@ jobs:
       - name: 📦 Install pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
         with:
-          version: 'latest'
+          version: '10.33.4'
           run_install: false
 
       - name: 📚 Build docs

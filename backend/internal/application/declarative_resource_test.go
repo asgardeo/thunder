@@ -19,16 +19,16 @@
 package application_test
 
 import (
-	"github.com/stretchr/testify/mock"
-
 	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/application"
 	"github.com/asgardeo/thunder/internal/application/model"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
@@ -188,9 +188,9 @@ func (s *ApplicationExporterTestSuite) TestGetResourceRulesForResource_PublicCli
 	app := &model.Application{
 		ID:   "app1",
 		Name: "Public App",
-		InboundAuthConfig: []model.InboundAuthConfigComplete{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				OAuthAppConfig: &model.OAuthAppConfigComplete{
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:     "client-id-1",
 					PublicClient: true,
 				},
@@ -201,9 +201,9 @@ func (s *ApplicationExporterTestSuite) TestGetResourceRulesForResource_PublicCli
 	rules := pr.GetResourceRulesForResource(app)
 
 	assert.NotNil(s.T(), rules)
-	assert.Contains(s.T(), rules.Variables, "InboundAuthConfig[].OAuthAppConfig.ClientID")
-	assert.NotContains(s.T(), rules.Variables, "InboundAuthConfig[].OAuthAppConfig.ClientSecret")
-	assert.Contains(s.T(), rules.ArrayVariables, "InboundAuthConfig[].OAuthAppConfig.RedirectURIs")
+	assert.Contains(s.T(), rules.Variables, "InboundAuthConfig[].OAuthConfig.ClientID")
+	assert.NotContains(s.T(), rules.Variables, "InboundAuthConfig[].OAuthConfig.ClientSecret")
+	assert.Contains(s.T(), rules.ArrayVariables, "InboundAuthConfig[].OAuthConfig.RedirectURIs")
 }
 
 func (s *ApplicationExporterTestSuite) TestGetResourceRulesForResource_ConfidentialClient() {
@@ -213,9 +213,9 @@ func (s *ApplicationExporterTestSuite) TestGetResourceRulesForResource_Confident
 	app := &model.Application{
 		ID:   "app2",
 		Name: "Confidential App",
-		InboundAuthConfig: []model.InboundAuthConfigComplete{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				OAuthAppConfig: &model.OAuthAppConfigComplete{
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:     "client-id-2",
 					PublicClient: false,
 				},
@@ -226,9 +226,9 @@ func (s *ApplicationExporterTestSuite) TestGetResourceRulesForResource_Confident
 	rules := pr.GetResourceRulesForResource(app)
 
 	assert.NotNil(s.T(), rules)
-	assert.Contains(s.T(), rules.Variables, "InboundAuthConfig[].OAuthAppConfig.ClientID")
-	assert.Contains(s.T(), rules.Variables, "InboundAuthConfig[].OAuthAppConfig.ClientSecret")
-	assert.Contains(s.T(), rules.ArrayVariables, "InboundAuthConfig[].OAuthAppConfig.RedirectURIs")
+	assert.Contains(s.T(), rules.Variables, "InboundAuthConfig[].OAuthConfig.ClientID")
+	assert.Contains(s.T(), rules.Variables, "InboundAuthConfig[].OAuthConfig.ClientSecret")
+	assert.Contains(s.T(), rules.ArrayVariables, "InboundAuthConfig[].OAuthConfig.RedirectURIs")
 }
 
 func (s *ApplicationExporterTestSuite) TestGetResourceRulesForResource_NonApplicationType() {
@@ -238,6 +238,6 @@ func (s *ApplicationExporterTestSuite) TestGetResourceRulesForResource_NonApplic
 	rules := pr.GetResourceRulesForResource("not-an-application")
 
 	assert.NotNil(s.T(), rules)
-	assert.Contains(s.T(), rules.Variables, "InboundAuthConfig[].OAuthAppConfig.ClientID")
-	assert.Contains(s.T(), rules.Variables, "InboundAuthConfig[].OAuthAppConfig.ClientSecret")
+	assert.Contains(s.T(), rules.Variables, "InboundAuthConfig[].OAuthConfig.ClientID")
+	assert.Contains(s.T(), rules.Variables, "InboundAuthConfig[].OAuthConfig.ClientSecret")
 }

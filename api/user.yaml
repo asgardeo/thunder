@@ -22,7 +22,7 @@ tags:
     description: Operations related to user management using hierarchical handle paths
   - name: self
     description: Self service operations related to the user
-  - name: user-schemas
+  - name: user-types
     description: Operations related to user type schema management
 
 security:
@@ -191,16 +191,6 @@ paths:
                     description:
                       key: "error.userservice.invalid_request_format_description"
                       defaultValue: "The request body is malformed or contains invalid data"
-                invalid-group-id:
-                  summary: Invalid group ID
-                  value:
-                    code: "USR-1007"
-                    message:
-                      key: "error.userservice.invalid_group_id"
-                      defaultValue: "Invalid group ID"
-                    description:
-                      key: "error.userservice.invalid_group_id_description"
-                      defaultValue: "One or more group IDs in the request do not exist"
                 ou-not-found:
                   summary: Organization unit not found
                   value:
@@ -221,16 +211,6 @@ paths:
                     description:
                       key: "error.userservice.schema_validation_failed_description"
                       defaultValue: "User attributes do not conform to the required schema"
-                user-schema-not-found:
-                  summary: User schema not found
-                  value:
-                    code: "USR-1021"
-                    message:
-                      key: "error.userservice.user_schema_not_found"
-                      defaultValue: "User schema not found"
-                    description:
-                      key: "error.userservice.user_schema_not_found_description"
-                      defaultValue: "The specified user schema does not exist"
         "409":
           description: Conflict
           content:
@@ -359,16 +339,6 @@ paths:
                     description:
                       key: "error.userservice.invalid_request_format_description"
                       defaultValue: "The request body is malformed or contains invalid data"
-                invalid-group-id:
-                  summary: Invalid group ID
-                  value:
-                    code: "USR-1007"
-                    message:
-                      key: "error.userservice.invalid_group_id"
-                      defaultValue: "Invalid group ID"
-                    description:
-                      key: "error.userservice.invalid_group_id_description"
-                      defaultValue: "One or more group IDs in the request do not exist"
                 ou-not-found:
                   summary: Organization unit not found
                   value:
@@ -389,16 +359,6 @@ paths:
                     description:
                       key: "error.userservice.schema_validation_failed_description"
                       defaultValue: "User attributes do not conform to the required schema"
-                user-schema-not-found:
-                  summary: User schema not found
-                  value:
-                    code: "USR-1021"
-                    message:
-                      key: "error.userservice.user_schema_not_found"
-                      defaultValue: "User schema not found"
-                    description:
-                      key: "error.userservice.user_schema_not_found_description"
-                      defaultValue: "The specified user schema does not exist"
         "409":
           description: Conflict
           content:
@@ -757,16 +717,6 @@ paths:
                     description:
                       key: "error.userservice.schema_validation_failed_description"
                       defaultValue: "User attributes do not conform to the required schema"
-                user-schema-not-found:
-                  summary: User schema not found
-                  value:
-                    code: "USR-1021"
-                    message:
-                      key: "error.userservice.user_schema_not_found"
-                      defaultValue: "User schema not found"
-                    description:
-                      key: "error.userservice.user_schema_not_found_description"
-                      defaultValue: "The specified user schema does not exist"
         "404":
           description: Organization unit not found
           content:
@@ -853,19 +803,19 @@ paths:
                   lastname: "Wu"
                   email: "alice.wu@company.inc"
         "401":
-          description: Unauthorized - missing or invalid token
+          description: Unauthorized - missing or invalid authentication token
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                code: "USR-1018"
+                code: "AUTH-4010"
                 message:
-                  key: "error.userservice.authentication_failed"
-                  defaultValue: "Authentication failed"
+                  key: "error.unauthorized"
+                  defaultValue: "Unauthorized"
                 description:
-                  key: "error.userservice.authentication_failed_description"
-                  defaultValue: "Invalid credentials provided"
+                  key: "error.unauthorized_description"
+                  defaultValue: "Authentication is required to access this resource"
         "404":
           description: Authenticated user not found
           content:
@@ -955,30 +905,30 @@ paths:
                     description:
                       key: "error.userservice.schema_validation_failed_description"
                       defaultValue: "User attributes do not conform to the required schema"
-                user-schema-not-found:
-                  summary: User schema not found
+                user-type-not-found:
+                  summary: User type not found
                   value:
                     code: "USR-1021"
                     message:
-                      key: "error.userservice.user_schema_not_found"
-                      defaultValue: "User schema not found"
+                      key: "error.userservice.user_type_not_found"
+                      defaultValue: "User type not found"
                     description:
-                      key: "error.userservice.user_schema_not_found_description"
-                      defaultValue: "The specified user schema does not exist"
+                      key: "error.userservice.user_type_not_found_description"
+                      defaultValue: "The specified user type does not exist"
         "401":
-          description: Unauthorized - missing or invalid token
+          description: Unauthorized - missing or invalid authentication token
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                code: "USR-1018"
+                code: "AUTH-4010"
                 message:
-                  key: "error.userservice.authentication_failed"
-                  defaultValue: "Authentication failed"
+                  key: "error.unauthorized"
+                  defaultValue: "Unauthorized"
                 description:
-                  key: "error.userservice.authentication_failed_description"
-                  defaultValue: "Invalid credentials provided"
+                  key: "error.unauthorized_description"
+                  defaultValue: "Authentication is required to access this resource"
         "404":
           description: Authenticated user not found
           content:
@@ -1059,19 +1009,19 @@ paths:
                       key: "error.userservice.missing_credentials_description"
                       defaultValue: "At least one credential field must be provided"
         "401":
-          description: Unauthorized - missing or invalid token
+          description: Unauthorized - missing or invalid authentication token
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                code: "USR-1018"
+                code: "AUTH-4010"
                 message:
-                  key: "error.userservice.authentication_failed"
-                  defaultValue: "Authentication failed"
+                  key: "error.unauthorized"
+                  defaultValue: "Unauthorized"
                 description:
-                  key: "error.userservice.authentication_failed_description"
-                  defaultValue: "Invalid credentials provided"
+                  key: "error.unauthorized_description"
+                  defaultValue: "Authentication is required to access this resource"
         "404":
           description: Authenticated user not found
           content:
@@ -1101,10 +1051,10 @@ paths:
                   key: "error.internal_server_error_description"
                   defaultValue: "An unexpected error occurred while processing the request"
 
-  /user-schemas:
+  /user-types:
     get:
       tags:
-        - user-schemas
+        - user-types
       summary: List user type schemas
       description: |
         Retrieves a list of all user type schemas that define the structure
@@ -1119,7 +1069,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserSchemaListResponse'
+                $ref: '#/components/schemas/UserTypeListResponse'
               example:
                 totalResults: 3
                 startIndex: 1
@@ -1175,7 +1125,7 @@ paths:
 
     post:
       tags:
-        - user-schemas
+        - user-types
       summary: Create a new user type schema
       description: |
         Creates a new user type schema that defines the structure and attributes
@@ -1185,7 +1135,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUserSchemaRequest'
+              $ref: '#/components/schemas/CreateUserTypeRequest'
             example:
               name: "partner"
               ouId: "26eec421-f1bb-4deb-a5d3-9ab6554c2ae6"
@@ -1217,11 +1167,11 @@ paths:
                   type: "string"
       responses:
         "201":
-          description: User schema created
+          description: User type created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserSchema'
+                $ref: '#/components/schemas/UserType'
               example:
                 id: "880e8400-e29b-41d4-a716-446655440003"
                 name: "partner"
@@ -1274,10 +1224,10 @@ paths:
                   value:
                     code: "USRS-1004"
                     message:
-                      key: "error.userschemaservice.invalid_user_schema_request"
-                      defaultValue: "Invalid user schema request"
+                      key: "error.entitytypeservice.invalid_user_type_request"
+                      defaultValue: "Invalid user type request"
                     description:
-                      key: "error.userschemaservice.invalid_user_schema_request_description"
+                      key: "error.entitytypeservice.invalid_user_type_request_description"
                       defaultValue: "One or more attribute definitions are invalid"
         "409":
           description: Conflict
@@ -1288,18 +1238,18 @@ paths:
               example:
                 code: "USRS-1003"
                 message:
-                  key: "error.userschemaservice.user_schema_name_conflict"
-                  defaultValue: "User schema name conflict"
+                  key: "error.entitytypeservice.user_type_name_conflict"
+                  defaultValue: "User type name conflict"
                 description:
-                  key: "error.userschemaservice.user_schema_name_conflict_description"
-                  defaultValue: "A user schema with the same name already exists"
+                  key: "error.entitytypeservice.user_type_name_conflict_description"
+                  defaultValue: "A user type with the same name already exists"
         "500":
           description: Internal server error
 
-  /user-schemas/{id}:
+  /user-types/{id}:
     get:
       tags:
-        - user-schemas
+        - user-types
       summary: Get a user type schema by ID
       description: |
         Retrieves the details of a specific user type schema by its ID.
@@ -1314,11 +1264,11 @@ paths:
         - $ref: '#/components/parameters/includeQueryParam'
       responses:
         "200":
-          description: User schema details
+          description: User type details
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserSchema'
+                $ref: '#/components/schemas/UserType'
               examples:
                 simple:
                   summary: Employee schema with simple attributes
@@ -1390,7 +1340,7 @@ paths:
                           type: "string"
                           enum: ["email", "sms", "phone", "mail"]
         "404":
-          description: User schema not found
+          description: User type not found
           content:
             application/json:
               schema:
@@ -1398,17 +1348,17 @@ paths:
               example:
                 code: "USRS-1002"
                 message:
-                  key: "error.userschemaservice.user_schema_not_found"
-                  defaultValue: "User schema not found"
+                  key: "error.entitytypeservice.user_type_not_found"
+                  defaultValue: "User type not found"
                 description:
-                  key: "error.userschemaservice.user_schema_not_found_description"
-                  defaultValue: "The user schema with the specified id does not exist"
+                  key: "error.entitytypeservice.user_type_not_found_description"
+                  defaultValue: "The user type with the specified id does not exist"
         "500":
           description: Internal server error
 
     put:
       tags:
-        - user-schemas
+        - user-types
       summary: Update a user type schema by ID
       description: |
         Updates an existing user type schema with new attribute definitions.
@@ -1426,7 +1376,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateUserSchemaRequest'
+              $ref: '#/components/schemas/UpdateUserTypeRequest'
             example:
               name: "customer"
               ouId: "26eec421-f1bb-4deb-a5d3-9ab6554c2ae6"
@@ -1454,11 +1404,11 @@ paths:
                   enum: ["bronze", "silver", "gold", "platinum"]
       responses:
         "200":
-          description: User schema updated
+          description: User type updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserSchema'
+                $ref: '#/components/schemas/UserType'
               example:
                 id: "550e8400-e29b-41d4-a716-446655440000"
                 name: "customer"
@@ -1507,13 +1457,13 @@ paths:
                   value:
                     code: "USRS-1004"
                     message:
-                      key: "error.userschemaservice.invalid_user_schema_request"
-                      defaultValue: "Invalid user schema request"
+                      key: "error.entitytypeservice.invalid_user_type_request"
+                      defaultValue: "Invalid user type request"
                     description:
-                      key: "error.userschemaservice.invalid_user_schema_request_description"
+                      key: "error.entitytypeservice.invalid_user_type_request_description"
                       defaultValue: "One or more attribute definitions are invalid"
         "404":
-          description: User schema not found
+          description: User type not found
           content:
             application/json:
               schema:
@@ -1521,13 +1471,13 @@ paths:
               example:
                 code: "USRS-1002"
                 message:
-                  key: "error.userschemaservice.user_schema_not_found"
-                  defaultValue: "User schema not found"
+                  key: "error.entitytypeservice.user_type_not_found"
+                  defaultValue: "User type not found"
                 description:
-                  key: "error.userschemaservice.user_schema_not_found_description"
-                  defaultValue: "The user schema with the specified id does not exist"
+                  key: "error.entitytypeservice.user_type_not_found_description"
+                  defaultValue: "The user type with the specified id does not exist"
         "409":
-          description: User schema name already exists
+          description: User type name already exists
           content:
             application/json:
               schema:
@@ -1535,17 +1485,17 @@ paths:
               example:
                 code: "USRS-1003"
                 message:
-                  key: "error.userschemaservice.user_schema_name_conflict"
-                  defaultValue: "User schema name conflict"
+                  key: "error.entitytypeservice.user_type_name_conflict"
+                  defaultValue: "User type name conflict"
                 description:
-                  key: "error.userschemaservice.user_schema_name_conflict_description"
-                  defaultValue: "A user schema with the same name already exists"
+                  key: "error.entitytypeservice.user_type_name_conflict_description"
+                  defaultValue: "A user type with the same name already exists"
         "500":
           description: Internal server error
 
     delete:
       tags:
-        - user-schemas
+        - user-types
       summary: Delete a user type schema by ID
       description: |
         Deletes a user type schema. This operation will fail if there are 
@@ -1560,7 +1510,7 @@ paths:
           example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         "204":
-          description: User schema deleted
+          description: User type deleted
         "400":
           description: Bad request
           content:
@@ -1570,10 +1520,10 @@ paths:
               example:
                 code: "USRS-1004"
                 message:
-                  key: "error.userschemaservice.invalid_user_schema_request"
-                  defaultValue: "Invalid user schema request"
+                  key: "error.entitytypeservice.invalid_user_type_request"
+                  defaultValue: "Invalid user type request"
                 description:
-                  key: "error.userschemaservice.invalid_user_schema_request_description"
+                  key: "error.entitytypeservice.invalid_user_type_request_description"
                   defaultValue: "Cannot delete schema because users of this type exist"
         "500":
           description: Internal server error
@@ -1824,14 +1774,14 @@ components:
           description: "User attributes"
           additionalProperties: true
 
-    UserSchema:
+    UserType:
       type: object
       required: [id, name, ouId, schema]
       properties:
         id:
           type: string
           format: uuid
-          description: "The unique identifier of the user schema"
+          description: "The unique identifier of the user type"
         name:
           type: string
           description: "The user type this schema defines"
@@ -1849,7 +1799,7 @@ components:
           default: false
         systemAttributes:
           type: object
-          description: "System-level metadata for the user schema"
+          description: "System-level metadata for the user type"
           properties:
             display:
               type: string
@@ -1918,7 +1868,7 @@ components:
                     type: object
                     description: "Nested properties of the object"
                     additionalProperties:
-                      $ref: "#/components/schemas/UserSchema/properties/schema/additionalProperties"
+                      $ref: "#/components/schemas/UserType/properties/schema/additionalProperties"
                 additionalProperties: false
               - type: object
                 description: "Array property definition"
@@ -1964,7 +1914,7 @@ components:
                           properties:
                             type: object
                             additionalProperties:
-                              $ref: "#/components/schemas/UserSchema/properties/schema/additionalProperties"
+                              $ref: "#/components/schemas/UserType/properties/schema/additionalProperties"
                         additionalProperties: false
                 additionalProperties: false
           example:
@@ -2006,7 +1956,7 @@ components:
                 type: "string"
                 enum: ["vip", "premium", "standard"]
 
-    UserSchemaListResponse:
+    UserTypeListResponse:
       type: object
       properties:
         totalResults:
@@ -2030,7 +1980,7 @@ components:
               id:
                 type: string
                 format: uuid
-                description: "The unique identifier of the user schema"
+                description: "The unique identifier of the user type"
               name:
                 type: string
                 description: "The user type this schema defines"
@@ -2048,7 +1998,7 @@ components:
                 default: false
               systemAttributes:
                 type: object
-                description: "System-level metadata for the user schema"
+                description: "System-level metadata for the user type"
                 properties:
                   display:
                     type: string
@@ -2059,7 +2009,7 @@ components:
           items:
             $ref: '#/components/schemas/Link'
 
-    CreateUserSchemaRequest:
+    CreateUserTypeRequest:
       type: object
       required: [name, ouId, schema]
       properties:
@@ -2075,14 +2025,14 @@ components:
           description: "Whether the user type supports user-initiated registration"
           default: false
         systemAttributes:
-          $ref: "#/components/schemas/UserSchema/properties/systemAttributes"
+          $ref: "#/components/schemas/UserType/properties/systemAttributes"
         schema:
           type: object
           description: "JSON Schema definition for the user type"
           additionalProperties:
-            $ref: "#/components/schemas/UserSchema/properties/schema/additionalProperties"
+            $ref: "#/components/schemas/UserType/properties/schema/additionalProperties"
 
-    UpdateUserSchemaRequest:
+    UpdateUserTypeRequest:
       type: object
       required: [name, ouId, schema]
       properties:
@@ -2098,12 +2048,12 @@ components:
           description: "Whether the user type supports user-initiated registration"
           default: false
         systemAttributes:
-          $ref: "#/components/schemas/UserSchema/properties/systemAttributes"
+          $ref: "#/components/schemas/UserType/properties/systemAttributes"
         schema:
           type: object
           description: "JSON Schema definition for the user type"
           additionalProperties:
-            $ref: "#/components/schemas/UserSchema/properties/schema/additionalProperties"
+            $ref: "#/components/schemas/UserType/properties/schema/additionalProperties"
 
     Error:
       type: object
@@ -2111,6 +2061,8 @@ components:
       properties:
         code:
           type: string
+          description: "Error code. Codes follow the USR-XXXX convention."
+          example: "USR-1001"
         message:
           $ref: '#/components/schemas/I18nMessage'
         description:

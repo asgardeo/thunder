@@ -29,7 +29,7 @@ import (
 
 	"github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/cryptolab/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -115,7 +115,7 @@ func (s *otpService) SendOTP(
 		ExpiryTime: otp.ExpiryTimeInMillis,
 	}
 
-	sessionToken, err := s.createSessionToken(sessionData)
+	sessionToken, err := s.createSessionToken(ctx, sessionData)
 	if err != nil {
 		logger.Error("Failed to create session token", log.Error(err))
 		return nil, &serviceerror.InternalServerError
@@ -282,18 +282,18 @@ func (s *otpService) sendSMSOTP(ctx context.Context, recipient, otp string,
 }
 
 // createSessionToken creates a JWT session token with OTP session data.
-func (s *otpService) createSessionToken(sessionData common.OTPSessionData) (string, error) {
+func (s *otpService) createSessionToken(ctx context.Context, sessionData common.OTPSessionData) (string, error) {
 	claims := map[string]interface{}{
 		"otp_data": sessionData,
 	}
 
 	// Use a short validity period for the token (same as OTP expiry)
 	validityPeriod := (sessionData.ExpiryTime - time.Now().UnixMilli()) / 1000
-	jwtConfig := config.GetThunderRuntime().Config.JWT
+	jwtConfig := config.GetServerRuntime().Config.JWT
 
 	claims["aud"] = "otp-svc"
 	token, _, err := s.jwtService.GenerateJWT(
-		"otp-svc", jwtConfig.Issuer, validityPeriod, claims, jwt.TokenTypeJWT, "")
+		ctx, "otp-svc", jwtConfig.Issuer, validityPeriod, claims, jwt.TokenTypeJWT, "")
 	if err != nil {
 		return "", fmt.Errorf("failed to generate JWT token: %v", err)
 	}
@@ -305,7 +305,7 @@ func (s *otpService) createSessionToken(sessionData common.OTPSessionData) (stri
 func (s *otpService) verifyAndDecodeSessionToken(token string, logger *log.Logger) (
 	*common.OTPSessionData, *serviceerror.ServiceError) {
 	// Verify JWT signature
-	jwtConfig := config.GetThunderRuntime().Config.JWT
+	jwtConfig := config.GetServerRuntime().Config.JWT
 	svcErr := s.jwtService.VerifyJWT(token, "otp-svc", jwtConfig.Issuer)
 	if svcErr != nil {
 		logger.Debug("Invalid session token", log.String("error", svcErr.Error.DefaultValue))

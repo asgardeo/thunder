@@ -68,13 +68,13 @@ func NewOTelSubscriber() *OTelSubscriber {
 
 // IsEnabled checks if the OTel subscriber should be activated based on configuration.
 func (o *OTelSubscriber) IsEnabled() bool {
-	return config.GetThunderRuntime().Config.Observability.Output.OpenTelemetry.Enabled
+	return config.GetServerRuntime().Config.Observability.Output.OpenTelemetry.Enabled
 }
 
 // Initialize sets up the OTel subscriber with the provided configuration.
 func (o *OTelSubscriber) Initialize() error {
 	// Get config from observability service
-	otelConfig := config.GetThunderRuntime().Config.Observability.Output.OpenTelemetry
+	otelConfig := config.GetServerRuntime().Config.Observability.Output.OpenTelemetry
 
 	o.logger = log.GetLogger().With(log.String(log.LoggerKeyComponentName, otelSubscriberComponentName))
 
@@ -105,7 +105,7 @@ func (o *OTelSubscriber) Initialize() error {
 	o.tracerProvider = tracerProvider
 
 	// Get tracer from the global provider
-	o.tracer = otel.Tracer("thunder-observability")
+	o.tracer = otel.Tracer("thunderid-observability")
 	o.id, err = utils.GenerateUUIDv7()
 	if err != nil {
 		o.logger.Error("Failed to generate UUID", log.Error(err))

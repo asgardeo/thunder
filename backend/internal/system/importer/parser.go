@@ -30,9 +30,10 @@ import (
 
 const (
 	resourceTypeOrganizationUnit   = "organization_unit"
-	resourceTypeUserSchema         = "user_schema"
+	resourceTypeEntityType         = "user_type"
 	resourceTypeResourceServer     = "resource_server"
 	resourceTypeRole               = "role"
+	resourceTypeGroup              = "group"
 	resourceTypeIdentityProvider   = "identity_provider"
 	resourceTypeNotificationSender = "notification_sender"
 	resourceTypeFlow               = "flow"
@@ -153,7 +154,7 @@ func parseResourceTypeFromComment(comment string) string {
 func isKnownResourceType(resourceType string) bool {
 	knownTypes := map[string]struct{}{
 		resourceTypeOrganizationUnit:   {},
-		resourceTypeUserSchema:         {},
+		resourceTypeEntityType:         {},
 		resourceTypeResourceServer:     {},
 		resourceTypeRole:               {},
 		resourceTypeIdentityProvider:   {},
@@ -163,6 +164,7 @@ func isKnownResourceType(resourceType string) bool {
 		resourceTypeLayout:             {},
 		resourceTypeApplication:        {},
 		resourceTypeUser:               {},
+		resourceTypeGroup:              {},
 		resourceTypeTranslation:        {},
 	}
 
@@ -178,7 +180,7 @@ func classifyResourceType(node *yaml.Node) string {
 	}
 
 	if hasAllKeys(node, "organization_unit_id", "schema") {
-		matches = append(matches, resourceTypeUserSchema)
+		matches = append(matches, resourceTypeEntityType)
 	}
 
 	if hasAllKeys(node, "identifier", "resources") {
@@ -211,6 +213,11 @@ func classifyResourceType(node *yaml.Node) string {
 
 	if hasAnyKey(node, "auth_flow_id", "registration_flow_id", "inbound_auth_config", "allowed_user_types") {
 		matches = append(matches, resourceTypeApplication)
+	}
+
+	if hasAllKeys(node, "name", "ou_id") &&
+		!hasAnyKey(node, "handle", "permissions", "identifier", "type", "flowType", "displayName", "properties") {
+		matches = append(matches, resourceTypeGroup)
 	}
 
 	if hasAllKeys(node, "handle", "name") &&

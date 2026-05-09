@@ -74,7 +74,7 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) SetupTest() {
 			Leeway: 30, // 30 seconds leeway for clock skew
 		},
 	}
-	_ = config.InitializeThunderRuntime("test", testConfig)
+	_ = config.InitializeServerRuntime("test", testConfig)
 }
 
 func (suite *GoogleOIDCAuthnServiceTestSuite) TestBuildAuthorizeURLSuccess() {
@@ -928,13 +928,13 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDToken_Leeway_IssuedI
 
 func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDToken_Leeway_ZeroLeeway_ExpiredShouldFail() {
 	// Reset and reinitialize with zero leeway
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
 			Leeway: 0, // No leeway
 		},
 	}
-	_ = config.InitializeThunderRuntime("test", testConfig)
+	_ = config.InitializeServerRuntime("test", testConfig)
 
 	now := time.Now()
 	// Token expired 1 second ago - should fail with zero leeway
@@ -963,13 +963,13 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDToken_Leeway_ZeroLee
 
 func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDToken_Leeway_IatExactlyAtBoundary_ShouldPass() {
 	// Reset and reinitialize with 30 second leeway
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
 			Leeway: 30, // 30 seconds leeway
 		},
 	}
-	_ = config.InitializeThunderRuntime("test", testConfig)
+	_ = config.InitializeServerRuntime("test", testConfig)
 
 	now := time.Now()
 	// Token iat is exactly at leeway boundary (now + 30 seconds)
@@ -998,13 +998,13 @@ func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDToken_Leeway_IatExac
 
 func (suite *GoogleOIDCAuthnServiceTestSuite) TestValidateIDToken_Leeway_IatJustBeyondBoundary_ShouldFail() {
 	// Reset and reinitialize with 30 second leeway
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		JWT: config.JWTConfig{
 			Leeway: 30, // 30 seconds leeway
 		},
 	}
-	_ = config.InitializeThunderRuntime("test", testConfig)
+	_ = config.InitializeServerRuntime("test", testConfig)
 
 	now := time.Now()
 	// Token iat is just beyond leeway boundary (now + 31 seconds)

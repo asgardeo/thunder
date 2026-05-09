@@ -42,7 +42,7 @@ func TestCORSMiddlewareTestSuite(t *testing.T) {
 // initRuntime parses the given YAML allowed-origins document, installs a
 // fresh CORS matcher from it, and seeds the runtime config singleton. Pass
 // the empty string to install an empty matcher. SetupTest calls this with
-// the default doc; tests that need different origins call ResetThunderRuntime
+// the default doc; tests that need different origins call ResetServerRuntime
 // + initRuntime directly. cors.InitializeMatcher is invoked explicitly here
 // because production wires it from the server bootstrap; tests that bypass
 // LoadConfig + main own that step themselves.
@@ -53,7 +53,7 @@ func (suite *CORSMiddlewareTestSuite) initRuntime(allowedOriginsYAML string) {
 	}
 	cfg := &config.Config{CORS: config.CORSConfig{AllowedOrigins: entries}}
 	suite.Require().NoError(cors.InitializeMatcher(cfg.CORS.AllowedOrigins))
-	suite.Require().NoError(config.InitializeThunderRuntime("/tmp", cfg))
+	suite.Require().NoError(config.InitializeServerRuntime("/tmp", cfg))
 }
 
 func (suite *CORSMiddlewareTestSuite) SetupTest() {
@@ -65,7 +65,7 @@ func (suite *CORSMiddlewareTestSuite) SetupTest() {
 }
 
 func (suite *CORSMiddlewareTestSuite) TearDownTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 // newGetRequest returns a (GET request, recorder) pair primed with the given
@@ -267,7 +267,7 @@ func (suite *CORSMiddlewareTestSuite) TestWithCORS_MultipleAllowedOrigins() {
 }
 
 func (suite *CORSMiddlewareTestSuite) TestWithCORS_NoOriginsConfigured() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	suite.initRuntime("")
 
 	_, wrapped := WithCORS("GET /test", noopHandler, fullOpts)
@@ -392,7 +392,7 @@ func (suite *CORSMiddlewareTestSuite) TestWithCORS_OriginAllWhitespaceIgnored() 
 // --- IPv6 / IDN / null. ---------------------------------------------------
 
 func (suite *CORSMiddlewareTestSuite) TestWithCORS_IPv6Origin() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	suite.initRuntime(`
 - http://[::1]:8080
 `)
@@ -409,7 +409,7 @@ func (suite *CORSMiddlewareTestSuite) TestWithCORS_IPv6Origin() {
 func (suite *CORSMiddlewareTestSuite) TestWithCORS_IDNOriginPunycodeEquivalence() {
 	// Configure with the Punycode form; a request that uses the Unicode form
 	// must canonicalize to the same value and match.
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	suite.initRuntime(`
 - https://xn--mnchen-3ya.example
 `)
@@ -424,7 +424,7 @@ func (suite *CORSMiddlewareTestSuite) TestWithCORS_IDNOriginPunycodeEquivalence(
 }
 
 func (suite *CORSMiddlewareTestSuite) TestWithCORS_NullOriginAllowed() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	suite.initRuntime(`
 - "null"
 `)
@@ -476,7 +476,7 @@ func (suite *CORSMiddlewareTestSuite) TestWithCORS_HostCaseInsensitive() {
 
 func (suite *CORSMiddlewareTestSuite) TestWithCORS_HotReloadMatcherTakesEffect() {
 	// The middleware reads the matcher from CORSConfig on every request, so
-	// a fresh matcher installed via ResetThunderRuntime + Initialize takes
+	// a fresh matcher installed via ResetServerRuntime + Initialize takes
 	// effect on the very next request.
 	_, wrapped := WithCORS("GET /test", noopHandler, fullOpts)
 
@@ -484,7 +484,7 @@ func (suite *CORSMiddlewareTestSuite) TestWithCORS_HotReloadMatcherTakesEffect()
 	wrapped(w1, req1)
 	assert.Equal(suite.T(), "https://example.com", w1.Header().Get("Access-Control-Allow-Origin"))
 
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	suite.initRuntime(`
 - https://other.com
 `)

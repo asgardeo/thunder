@@ -290,3 +290,97 @@ func (suite *AuthzValidationTestSuite) TestValidatePromptParameter_LoginConsent(
 	errCode, _ := ValidatePromptParameter("login consent")
 	assert.Equal(suite.T(), constants.ErrorConsentRequired, errCode)
 }
+
+type ACRValuesTestSuite struct {
+	suite.Suite
+}
+
+func TestACRValuesTestSuite(t *testing.T) {
+	suite.Run(t, new(ACRValuesTestSuite))
+}
+
+func (suite *ACRValuesTestSuite) TestParseACRValues_SingleACR() {
+	result := parseACRValues("urn:thunder:acr:password")
+	assert.Equal(suite.T(), []string{"urn:thunder:acr:password"}, result)
+}
+
+func (suite *ACRValuesTestSuite) TestParseACRValues_MultipleACRs() {
+	result := parseACRValues("urn:thunder:acr:password urn:thunder:acr:generated-code")
+	assert.Equal(suite.T(),
+		[]string{"urn:thunder:acr:password", "urn:thunder:acr:generated-code"}, result)
+}
+
+func (suite *ACRValuesTestSuite) TestParseACRValues_DeduplicatesPreservingFirstOccurrence() {
+	result := parseACRValues("urn:thunder:acr:generated-code urn:thunder:acr:generated-code urn:thunder:acr:password")
+	assert.Equal(suite.T(),
+		[]string{"urn:thunder:acr:generated-code", "urn:thunder:acr:password"}, result)
+}
+
+func (suite *ACRValuesTestSuite) TestParseACRValues_EmptyString() {
+	result := parseACRValues("")
+	assert.Empty(suite.T(), result)
+}
+
+func (suite *ACRValuesTestSuite) TestParseACRValues_OnlyWhitespace() {
+	result := parseACRValues("   ")
+	assert.Empty(suite.T(), result)
+}
+
+func (suite *ACRValuesTestSuite) TestParseACRValues_ExtraSpacesBetweenACRs() {
+	result := parseACRValues("urn:thunder:acr:password   urn:thunder:acr:generated-code")
+	assert.Equal(suite.T(),
+		[]string{"urn:thunder:acr:password", "urn:thunder:acr:generated-code"}, result)
+}
+
+func (suite *ACRValuesTestSuite) TestParseACRValues_PreservesOrder() {
+	result := parseACRValues("urn:thunder:acr:biometrics urn:thunder:acr:password urn:thunder:acr:generated-code")
+	assert.Equal(suite.T(), []string{
+		"urn:thunder:acr:biometrics",
+		"urn:thunder:acr:password",
+		"urn:thunder:acr:generated-code",
+	}, result)
+}
+
+func (suite *ACRValuesTestSuite) TestResolveACRValues_NoRequest_NoDefaults() {
+	assert.Equal(suite.T(), "", ResolveACRValues("", nil))
+}
+
+func (suite *ACRValuesTestSuite) TestResolveACRValues_NoRequest_FallsBackToDefaults() {
+	defaults := []string{"urn:thunder:acr:password", "urn:thunder:acr:generated-code"}
+	result := ResolveACRValues("", defaults)
+	assert.ElementsMatch(suite.T(), defaults, strings.Fields(result))
+}
+
+func (suite *ACRValuesTestSuite) TestResolveACRValues_AllRequestedInDefaults_PreservesRequestedOrder() {
+	defaults := []string{"urn:thunder:acr:password", "urn:thunder:acr:generated-code"}
+	result := ResolveACRValues("urn:thunder:acr:generated-code urn:thunder:acr:password", defaults)
+	assert.Equal(suite.T(),
+		[]string{"urn:thunder:acr:generated-code", "urn:thunder:acr:password"},
+		strings.Fields(result))
+}
+
+func (suite *ACRValuesTestSuite) TestResolveACRValues_SomeNotInDefaults_FiltersOutUnknown() {
+	defaults := []string{"urn:thunder:acr:password", "urn:thunder:acr:generated-code"}
+	result := ResolveACRValues("urn:thunder:acr:password urn:thunder:acr:biometrics", defaults)
+	assert.Equal(suite.T(), []string{"urn:thunder:acr:password"}, strings.Fields(result))
+}
+
+func (suite *ACRValuesTestSuite) TestResolveACRValues_NoneInDefaults_FallsBackToDefaults() {
+	defaults := []string{"urn:thunder:acr:password", "urn:thunder:acr:generated-code"}
+	result := ResolveACRValues("urn:thunder:acr:biometrics urn:thunder:acr:linked-wallet", defaults)
+	assert.ElementsMatch(suite.T(), defaults, strings.Fields(result))
+}
+
+func (suite *ACRValuesTestSuite) TestResolveACRValues_DuplicatesDeduped() {
+	defaults := []string{"urn:thunder:acr:password", "urn:thunder:acr:generated-code"}
+	result := ResolveACRValues(
+		"urn:thunder:acr:password urn:thunder:acr:password urn:thunder:acr:generated-code", defaults)
+	assert.Equal(suite.T(),
+		[]string{"urn:thunder:acr:password", "urn:thunder:acr:generated-code"},
+		strings.Fields(result))
+}
+
+func (suite *ACRValuesTestSuite) TestResolveACRValues_RequestPresent_NoDefaults_ReturnsEmpty() {
+	result := ResolveACRValues("urn:thunder:acr:password urn:thunder:acr:generated-code", nil)
+	assert.Equal(suite.T(), "", result)
+}

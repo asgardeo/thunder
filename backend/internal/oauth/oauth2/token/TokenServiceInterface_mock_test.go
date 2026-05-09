@@ -4,6 +4,7 @@ package token
 
 import (
 	context "context"
+
 	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 
 	model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"

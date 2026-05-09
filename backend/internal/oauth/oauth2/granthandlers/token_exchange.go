@@ -136,7 +136,7 @@ func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenReques
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "TokenExchangeGrantHandler"))
 
 	// Validate and extract subject token claims
-	subjectClaims, err := h.tokenValidator.ValidateSubjectToken(tokenRequest.SubjectToken, oauthApp)
+	subjectClaims, err := h.tokenValidator.ValidateSubjectToken(ctx, tokenRequest.SubjectToken, oauthApp)
 	if err != nil {
 		logger.Debug("Failed to validate subject token", log.Error(err))
 		return nil, &model.ErrorResponse{
@@ -148,7 +148,7 @@ func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenReques
 	// Validate and extract actor token claims if present
 	var actorClaims *tokenservice.SubjectTokenClaims
 	if tokenRequest.ActorToken != "" {
-		actorClaims, err = h.tokenValidator.ValidateSubjectToken(tokenRequest.ActorToken, oauthApp)
+		actorClaims, err = h.tokenValidator.ValidateSubjectToken(ctx, tokenRequest.ActorToken, oauthApp)
 		if err != nil {
 			logger.Debug("Failed to validate actor token", log.Error(err))
 			return nil, &model.ErrorResponse{
@@ -190,6 +190,7 @@ func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenReques
 
 	// Build access token using token builder
 	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
+		Context:        ctx,
 		Subject:        subjectClaims.Sub,
 		Audiences:      finalAudiences,
 		ClientID:       tokenRequest.ClientID,

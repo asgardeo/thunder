@@ -143,7 +143,9 @@ type ResourcePermissions struct {
 }
 
 // RoleCreationDetail represents the parameters for creating a role.
+// ID is optional; if empty, the service generates a new UUID.
 type RoleCreationDetail struct {
+	ID          string
 	Name        string
 	Description string
 	OUID        string

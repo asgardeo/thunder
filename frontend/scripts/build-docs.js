@@ -18,7 +18,7 @@
  * under the License.
  */
 
-/* eslint-disable @thunder/copyright-header */
+/* eslint-disable @thunderid/copyright-header */
 
 // TODO: We can remove this once NX sorts out their current limitations for including folder outside the workspace.
 // Tracker: https://github.com/asgardeo/thunder/issues/1199
@@ -26,7 +26,7 @@
 import {spawn} from 'node:child_process';
 import {resolve, join} from 'node:path';
 import process from 'node:process';
-import {createLogger} from '@thunder/logger';
+import {createLogger} from '@thunderid/logger';
 
 const logger = createLogger({level: 'info'});
 const docsDir = resolve(process.cwd(), join('..', 'docs'));

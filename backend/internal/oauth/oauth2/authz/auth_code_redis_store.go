@@ -62,7 +62,7 @@ func newRedisAuthorizationCodeStore(p provider.RedisProviderInterface) Authoriza
 	return &redisAuthorizationCodeStore{
 		client:       p.GetRedisClient(),
 		keyPrefix:    p.GetKeyPrefix(),
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
 	}
 }
 

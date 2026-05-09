@@ -15,7 +15,7 @@ The MCP server is available at the `/mcp` endpoint on your <ProductName /> insta
 
 ### Authentication
 
-The MCP endpoint is secured with OAuth 2.0 Bearer Token authentication following the [MCP Authorization Specification](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization). Clients must present a valid JWT access token with the `system` scope. <ProductName /> validates the token signature, issuer, audience (set to the MCP server URL), and expiry. See [Step 3](#step-3-add-thunder-mcp-server-to-vs-code) for setup instructions.
+The MCP endpoint is secured with OAuth 2.0 Bearer Token authentication following the [MCP Authorization Specification](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization). Clients must present a valid JWT access token with the `system` scope. <ProductName /> validates the token signature, issuer, audience (set to the MCP server URL), and expiry. See [Step 3](#step-3-add-mcp-server-to-vs-code) for setup instructions.
 
 ## Available Tools
 
@@ -23,38 +23,38 @@ The MCP endpoint is secured with OAuth 2.0 Bearer Token authentication following
 
 | Tool Name | Description | Parameters |
 |---|---|---|
-| `thunder_list_applications` | List all registered applications. | None |
-| `thunder_get_application_by_id` | Retrieve full details of an application by ID including OAuth settings, customizations, and flow associations. | `id` (string, required) |
-| `thunder_get_application_by_client_id` | Retrieve full details of an application by `client_id` including OAuth settings, customizations, and flow associations. | `client_id` (string, required) |
-| `thunder_create_application` | Create a new application optionally with OAuth configuration. Use `thunder_get_application_templates` to get pre-configured minimal templates for common app types (SPA, Mobile, Server, M2M). | Application object (see schema) |
-| `thunder_update_application` | Update an existing application (full replacement). Provide the complete application object. | Application object with `id` (required) |
-| `thunder_get_application_templates` | Get minimal OAuth configuration templates for common application types (SPA, Mobile, Server, M2M). | None |
+| `{{productSlug}}_list_applications` | List all registered applications. | None |
+| `{{productSlug}}_get_application_by_id` | Retrieve full details of an application by ID including OAuth settings, customizations, and flow associations. | `id` (string, required) |
+| `{{productSlug}}_get_application_by_client_id` | Retrieve full details of an application by `client_id` including OAuth settings, customizations, and flow associations. | `client_id` (string, required) |
+| `{{productSlug}}_create_application` | Create a new application optionally with OAuth configuration. Use `{{productSlug}}_get_application_templates` to get pre-configured minimal templates for common app types (SPA, Mobile, Server, M2M). | Application object (see schema) |
+| `{{productSlug}}_update_application` | Update an existing application (full replacement). Provide the complete application object. | Application object with `id` (required) |
+| `{{productSlug}}_get_application_templates` | Get minimal OAuth configuration templates for common application types (SPA, Mobile, Server, M2M). | None |
 
 ### Flow Tools
 
 | Tool Name | Description | Parameters |
 |---|---|---|
-| `thunder_list_flows` | List available flows with optional filtering. | `limit` (int, default: 30), `offset` (int, default: 0), `flow_type` (`enum`: `AUTHENTICATION`, `REGISTRATION`) |
-| `thunder_get_flow_by_handle` | Retrieve a complete flow definition by its human-readable handle. | `handle` (string, required), `flow_type` (`enum`, required) |
-| `thunder_get_flow_by_id` | Retrieve a complete flow definition by its unique ID (UUID). | `id` (string, required) |
-| `thunder_create_flow` | Create a new authentication or registration flow. | Flow definition object (see schema) |
-| `thunder_update_flow` | Update an existing flow definition. | `id` (string, required), `name` (string, required), `nodes` (array, required) |
+| `{{productSlug}}_list_flows` | List available flows with optional filtering. | `limit` (int, default: 30), `offset` (int, default: 0), `flow_type` (`enum`: `AUTHENTICATION`, `REGISTRATION`) |
+| `{{productSlug}}_get_flow_by_handle` | Retrieve a complete flow definition by its human-readable handle. | `handle` (string, required), `flow_type` (`enum`, required) |
+| `{{productSlug}}_get_flow_by_id` | Retrieve a complete flow definition by its unique ID (UUID). | `id` (string, required) |
+| `{{productSlug}}_create_flow` | Create a new authentication or registration flow. | Flow definition object (see schema) |
+| `{{productSlug}}_update_flow` | Update an existing flow definition. | `id` (string, required), `name` (string, required), `nodes` (array, required) |
 
 ### React SDK Tools
 
 | Tool Name | Description | Parameters |
 |---|---|---|
-| `thunder_integrate_react_sdk` | Provides instructions and code snippets for integrating <ProductName /> authentication via the Asgardeo React SDK. Supports redirect-based (Mode 1) and self-hosted login (Mode 2). | `thunder_url` (string, optional) |
+| `{{productSlug}}_integrate_react_sdk` | Provides instructions and code snippets for integrating <ProductName /> authentication via the Asgardeo React SDK. Supports redirect-based (Mode 1) and self-hosted login (Mode 2). | `{{productSlug}}_url` (string, optional) |
 
 ## Prerequisites
 
 - <ProductName /> server running (default: `https://localhost:8090`)
 - VS Code with MCP support (or another MCP-compatible client)
-- Choose an authentication approach — see [Step 3](#step-3-add-thunder-mcp-server-to-vs-code) for detailed setup:
+- Choose an authentication approach — see [Step 3](#step-3-add-mcp-server-to-vs-code) for detailed setup:
   - **Option A**: Standard MCP authorization flow using DCR (recommended)
   - **Option B**: Client credentials with a pre-registered application
 
-## Step 1: Add <ProductName /> Certificate to System Certificates
+## Step 1: Add Certificate to System Certificates
 
 <ProductName /> uses HTTPS with a self-signed certificate by default. Add the <ProductName /> certificate (`backend/cmd/server/repository/resources/security/server.cert`) to your system's trusted certificates (Keychain on macOS, certificate store on Linux/Windows).
 
@@ -62,7 +62,7 @@ The MCP endpoint is secured with OAuth 2.0 Bearer Token authentication following
 
 The MCP client (VS Code) needs to be configured to trust system certificates and should be restarted.
 
-## Step 3: Add <ProductName /> MCP Server to VS Code
+## Step 3: Add MCP Server to VS Code
 
 Two approaches are available to authenticate with the <ProductName /> MCP server: the standard MCP authorization flow using DCR (recommended), or client credentials with a pre-registered application.
 
@@ -83,7 +83,7 @@ This approach follows the MCP Authorization Specification. The MCP client handle
    ```json
    {
      "servers": {
-       "thunder-mcp": {
+       "{{productSlug}}-mcp": {
          "url": "https://localhost:8090/mcp",
          "type": "http"
        }
@@ -135,7 +135,7 @@ If you prefer not to enable open DCR, you can pre-register an application and us
    ```json
    {
      "servers": {
-       "thunder-mcp": {
+       "{{productSlug}}-mcp": {
          "url": "https://localhost:8090/mcp",
          "type": "http",
          "headers": {
@@ -164,8 +164,8 @@ Ask your AI assistant:
 
 The assistant will:
 
-1. Use `thunder_get_application_templates` to get the SPA template
-2. Use `thunder_create_application` to create the application with appropriate OAuth settings
+1. Use `{{productSlug}}_get_application_templates` to get the SPA template
+2. Use `{{productSlug}}_create_application` to create the application with appropriate OAuth settings
 3. Return the `clientId` for use in your React app
 
 ### Step 2: Get React SDK Integration Instructions
@@ -175,7 +175,7 @@ Ask your AI assistant:
 
 The assistant will:
 
-1. Use `thunder_integrate_react_sdk` with your <ProductName /> URL
+1. Use `{{productSlug}}_integrate_react_sdk` with your <ProductName /> URL
 2. Provide complete integration instructions including:
    - Provider configuration
    - Component usage examples
@@ -189,9 +189,9 @@ Ask your AI assistant:
 
 The assistant will:
 
-1. Use `thunder_get_application_by_client_id` to retrieve your application details
-2. Use `thunder_get_flow_by_id` to retrieve the current authentication flow
-3. Suggest modifications or use `thunder_update_flow` to customize the flow
+1. Use `{{productSlug}}_get_application_by_client_id` to retrieve your application details
+2. Use `{{productSlug}}_get_flow_by_id` to retrieve the current authentication flow
+3. Suggest modifications or use `{{productSlug}}_update_flow` to customize the flow
 
 ### Step 4: Update Application Flow
 
@@ -200,9 +200,9 @@ Ask your AI assistant:
 
 The assistant will:
 
-1. Check if a custom flow exists using `thunder_list_flows`
-2. Create a new flow with email OTP using `thunder_create_flow` if needed
-3. Update your application using `thunder_update_application` to use the new flow
+1. Check if a custom flow exists using `{{productSlug}}_list_flows`
+2. Create a new flow with email OTP using `{{productSlug}}_create_flow` if needed
+3. Update your application using `{{productSlug}}_update_application` to use the new flow
 
 ## Troubleshooting
 

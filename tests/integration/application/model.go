@@ -71,6 +71,7 @@ type OAuthAppConfig struct {
 	ScopeClaims             map[string][]string `json:"scopeClaims,omitempty"`
 	UserInfo                *UserInfoConfig     `json:"userInfo,omitempty"`
 	Certificate             *ApplicationCert    `json:"certificate,omitempty"`
+	AcrValues               []string            `json:"acrValues,omitempty"`
 }
 
 // OAuthTokenConfig represents the OAuth token configuration.
@@ -109,6 +110,9 @@ type AccessTokenConfig struct {
 type IDTokenConfig struct {
 	ValidityPeriod int64    `json:"validityPeriod,omitempty"`
 	UserAttributes []string `json:"userAttributes,omitempty"`
+	ResponseType   string   `json:"responseType,omitempty"`
+	EncryptionAlg  string   `json:"encryptionAlg,omitempty"`
+	EncryptionEnc  string   `json:"encryptionEnc,omitempty"`
 }
 
 // ApplicationList represents the response structure for listing applications.
@@ -270,6 +274,10 @@ func (app *Application) equals(expectedApp Application) bool {
 				}
 
 				if oauth.PublicClient != expectedOAuth.PublicClient {
+					return false
+				}
+
+				if !compareStringSlices(oauth.AcrValues, expectedOAuth.AcrValues) {
 					return false
 				}
 

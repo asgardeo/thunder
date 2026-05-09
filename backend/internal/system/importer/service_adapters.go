@@ -23,6 +23,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/asgardeo/thunder/internal/entitytype"
+	"github.com/asgardeo/thunder/internal/group"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/role"
@@ -30,10 +32,10 @@ import (
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/internal/user"
-	"github.com/asgardeo/thunder/internal/userschema"
 
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
+	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 )
 
 type roleDeclarativeYAML struct {
@@ -53,12 +55,13 @@ type userDeclarativeYAML struct {
 	Credentials map[string]interface{} `yaml:"credentials,omitempty"`
 }
 
-type userSchemaDeclarativeYAML struct {
+type entityTypeDeclarativeYAML struct {
 	ID                    string                       `yaml:"id"`
+	Category              entitytype.TypeCategory      `yaml:"category,omitempty"`
 	Name                  string                       `yaml:"name"`
 	OUID                  string                       `yaml:"organization_unit_id"`
 	AllowSelfRegistration bool                         `yaml:"allow_self_registration,omitempty"`
-	SystemAttributes      *userschema.SystemAttributes `yaml:"system_attributes,omitempty"`
+	SystemAttributes      *entitytype.SystemAttributes `yaml:"system_attributes,omitempty"`
 	Schema                interface{}                  `yaml:"schema"`
 }
 
@@ -134,16 +137,16 @@ func (s *importService) importOrganizationUnit(
 	return successOutcome(resourceTypeOrganizationUnit, created.ID, created.Name, operationCreate)
 }
 
-func (s *importService) importUserSchema(
+func (s *importService) importEntityType(
 	ctx context.Context, doc parsedDocument, options *ImportOptions, dryRun bool,
 ) ImportItemOutcome {
-	if s.userSchemaService == nil {
-		return unsupportedAdapterOutcome(resourceTypeUserSchema, "user schema")
+	if s.entityTypeService == nil {
+		return unsupportedAdapterOutcome(resourceTypeEntityType, "user type")
 	}
 
-	var req userSchemaDeclarativeYAML
+	var req entityTypeDeclarativeYAML
 	if err := doc.Node.Decode(&req); err != nil {
-		return decodeErrorOutcome(resourceTypeUserSchema, req.ID, req.Name, err)
+		return decodeErrorOutcome(resourceTypeEntityType, req.ID, req.Name, err)
 	}
 
 	var (
@@ -157,7 +160,7 @@ func (s *importService) importUserSchema(
 		schemaBytes, err = json.Marshal(v)
 		if err != nil {
 			return ImportItemOutcome{
-				ResourceType: resourceTypeUserSchema,
+				ResourceType: resourceTypeEntityType,
 				ResourceID:   req.ID,
 				ResourceName: req.Name,
 				Status:       statusFailed,
@@ -167,7 +170,22 @@ func (s *importService) importUserSchema(
 		}
 	}
 
-	createReq := userschema.CreateUserSchemaRequestWithID{
+	category := req.Category
+	if category == "" {
+		category = entitytype.TypeCategoryUser
+	}
+	if !category.IsValid() {
+		return ImportItemOutcome{
+			ResourceType: resourceTypeEntityType,
+			ResourceID:   req.ID,
+			ResourceName: req.Name,
+			Status:       statusFailed,
+			Code:         ErrorInvalidYAMLContent.Code,
+			Message:      fmt.Sprintf("invalid entity type category %q", string(category)),
+		}
+	}
+
+	createReq := entitytype.CreateEntityTypeRequestWithID{
 		ID:                    req.ID,
 		Name:                  req.Name,
 		OUID:                  req.OUID,
@@ -175,7 +193,7 @@ func (s *importService) importUserSchema(
 		SystemAttributes:      req.SystemAttributes,
 		Schema:                schemaBytes,
 	}
-	updateReq := userschema.UpdateUserSchemaRequest{
+	updateReq := entitytype.UpdateEntityTypeRequest{
 		Name:                  createReq.Name,
 		OUID:                  createReq.OUID,
 		AllowSelfRegistration: createReq.AllowSelfRegistration,
@@ -185,41 +203,41 @@ func (s *importService) importUserSchema(
 
 	if dryRun {
 		if options.IsUpsertEnabled() && req.ID != "" {
-			_, svcErr := s.userSchemaService.GetUserSchema(ctx, req.ID, false)
+			_, svcErr := s.entityTypeService.GetEntityType(ctx, category, req.ID, false)
 			if svcErr == nil {
-				return successOutcome(resourceTypeUserSchema, req.ID, req.Name, operationUpdate)
+				return successOutcome(resourceTypeEntityType, req.ID, req.Name, operationUpdate)
 			}
 
 			if !isNotFoundServiceError(svcErr) {
-				return serviceErrorOutcome(resourceTypeUserSchema, req.ID, req.Name, operationUpdate, svcErr)
+				return serviceErrorOutcome(resourceTypeEntityType, req.ID, req.Name, operationUpdate, svcErr)
 			}
 		}
 
-		return successOutcome(resourceTypeUserSchema, req.ID, req.Name, operationCreate)
+		return successOutcome(resourceTypeEntityType, req.ID, req.Name, operationCreate)
 	}
 
 	if options.IsUpsertEnabled() && req.ID != "" {
-		updated, svcErr := s.userSchemaService.UpdateUserSchema(ctx, req.ID, updateReq)
+		updated, svcErr := s.entityTypeService.UpdateEntityType(ctx, category, req.ID, updateReq)
 		if svcErr == nil {
-			return successOutcome(resourceTypeUserSchema, updated.ID, updated.Name, operationUpdate)
+			return successOutcome(resourceTypeEntityType, updated.ID, updated.Name, operationUpdate)
 		}
 
 		if !isNotFoundServiceError(svcErr) {
-			return serviceErrorOutcome(resourceTypeUserSchema, req.ID, req.Name, operationUpdate, svcErr)
+			return serviceErrorOutcome(resourceTypeEntityType, req.ID, req.Name, operationUpdate, svcErr)
 		}
 
-		created, createErr := s.userSchemaService.CreateUserSchema(ctx, createReq)
+		created, createErr := s.entityTypeService.CreateEntityType(ctx, category, createReq)
 		if createErr != nil {
-			return serviceErrorOutcome(resourceTypeUserSchema, req.ID, req.Name, operationCreate, createErr)
+			return serviceErrorOutcome(resourceTypeEntityType, req.ID, req.Name, operationCreate, createErr)
 		}
-		return successOutcome(resourceTypeUserSchema, created.ID, created.Name, operationCreate)
+		return successOutcome(resourceTypeEntityType, created.ID, created.Name, operationCreate)
 	}
 
-	created, svcErr := s.userSchemaService.CreateUserSchema(ctx, createReq)
+	created, svcErr := s.entityTypeService.CreateEntityType(ctx, category, createReq)
 	if svcErr != nil {
-		return serviceErrorOutcome(resourceTypeUserSchema, req.ID, req.Name, operationCreate, svcErr)
+		return serviceErrorOutcome(resourceTypeEntityType, req.ID, req.Name, operationCreate, svcErr)
 	}
-	return successOutcome(resourceTypeUserSchema, created.ID, created.Name, operationCreate)
+	return successOutcome(resourceTypeEntityType, created.ID, created.Name, operationCreate)
 }
 
 func (s *importService) importRole(
@@ -235,6 +253,7 @@ func (s *importService) importRole(
 	}
 
 	createReq := role.RoleCreationDetail{
+		ID:          req.ID,
 		Name:        req.Name,
 		Description: req.Description,
 		OUID:        req.OUID,
@@ -252,17 +271,6 @@ func (s *importService) importRole(
 		if options.IsUpsertEnabled() && req.ID != "" {
 			_, svcErr := s.roleService.GetRoleWithPermissions(ctx, req.ID)
 			if svcErr == nil {
-				if len(req.Assignments) > 0 {
-					return ImportItemOutcome{
-						ResourceType: resourceTypeRole,
-						ResourceID:   req.ID,
-						ResourceName: req.Name,
-						Operation:    operationUpdate,
-						Status:       statusFailed,
-						Code:         ErrorInvalidImportRequest.Code,
-						Message:      "role assignment updates are not supported in upsert mode",
-					}
-				}
 				return successOutcome(resourceTypeRole, req.ID, req.Name, operationUpdate)
 			}
 
@@ -277,38 +285,20 @@ func (s *importService) importRole(
 	if options.IsUpsertEnabled() && req.ID != "" {
 		_, svcErr := s.roleService.GetRoleWithPermissions(ctx, req.ID)
 		if svcErr == nil {
-			if len(req.Assignments) > 0 {
-				return ImportItemOutcome{
-					ResourceType: resourceTypeRole,
-					ResourceID:   req.ID,
-					ResourceName: req.Name,
-					Operation:    operationUpdate,
-					Status:       statusFailed,
-					Code:         ErrorInvalidImportRequest.Code,
-					Message:      "role assignment updates are not supported in upsert mode",
-				}
-			}
-
 			updated, updateErr := s.roleService.UpdateRoleWithPermissions(ctx, req.ID, updateReq)
 			if updateErr != nil {
 				return serviceErrorOutcome(resourceTypeRole, req.ID, req.Name, operationUpdate, updateErr)
+			}
+			if len(req.Assignments) > 0 {
+				if assignErr := s.roleService.AddAssignments(ctx, updated.ID, req.Assignments); assignErr != nil {
+					return serviceErrorOutcome(resourceTypeRole, updated.ID, updated.Name, operationUpdate, assignErr)
+				}
 			}
 			return successOutcome(resourceTypeRole, updated.ID, updated.Name, operationUpdate)
 		}
 
 		if !isNotFoundServiceError(svcErr) {
 			return serviceErrorOutcome(resourceTypeRole, req.ID, req.Name, operationUpdate, svcErr)
-		}
-
-		// ID-preserving create is not supported; return a clear failure when ID is set but not found.
-		return ImportItemOutcome{
-			ResourceType: resourceTypeRole,
-			ResourceID:   req.ID,
-			ResourceName: req.Name,
-			Operation:    operationCreate,
-			Status:       statusFailed,
-			Code:         ErrorInvalidImportRequest.Code,
-			Message:      "role with the given ID not found; ID-preserving create is not supported",
 		}
 	}
 
@@ -317,6 +307,82 @@ func (s *importService) importRole(
 		return serviceErrorOutcome(resourceTypeRole, req.ID, req.Name, operationCreate, svcErr)
 	}
 	return successOutcome(resourceTypeRole, created.ID, created.Name, operationCreate)
+}
+
+func (s *importService) importGroup(
+	ctx context.Context, doc parsedDocument, options *ImportOptions, dryRun bool,
+) ImportItemOutcome {
+	if s.groupService == nil {
+		return unsupportedAdapterOutcome(resourceTypeGroup, "group")
+	}
+
+	var req group.CreateGroupRequest
+	// Use a local struct to capture the ID from YAML (ID is json:"-" on CreateGroupRequest)
+	var raw struct {
+		ID          string         `yaml:"id"`
+		Name        string         `yaml:"name"`
+		Description string         `yaml:"description,omitempty"`
+		OUID        string         `yaml:"ou_id"`
+		Members     []group.Member `yaml:"members,omitempty"`
+	}
+	if err := doc.Node.Decode(&raw); err != nil {
+		return decodeErrorOutcome(resourceTypeGroup, raw.ID, raw.Name, err)
+	}
+	req = group.CreateGroupRequest{
+		ID:          raw.ID,
+		Name:        raw.Name,
+		Description: raw.Description,
+		OUID:        raw.OUID,
+	}
+
+	updateReq := group.UpdateGroupRequest{
+		Name:        raw.Name,
+		Description: raw.Description,
+		OUID:        raw.OUID,
+	}
+
+	if dryRun {
+		if options.IsUpsertEnabled() && raw.ID != "" {
+			_, svcErr := s.groupService.GetGroup(ctx, raw.ID, false)
+			if svcErr == nil {
+				return successOutcome(resourceTypeGroup, raw.ID, raw.Name, operationUpdate)
+			}
+			if !isNotFoundServiceError(svcErr) {
+				return serviceErrorOutcome(resourceTypeGroup, raw.ID, raw.Name, operationUpdate, svcErr)
+			}
+		}
+		return successOutcome(resourceTypeGroup, raw.ID, raw.Name, operationCreate)
+	}
+
+	if options.IsUpsertEnabled() && raw.ID != "" {
+		_, svcErr := s.groupService.GetGroup(ctx, raw.ID, false)
+		if svcErr == nil {
+			updated, updateErr := s.groupService.UpdateGroup(ctx, raw.ID, updateReq)
+			if updateErr != nil {
+				return serviceErrorOutcome(resourceTypeGroup, raw.ID, raw.Name, operationUpdate, updateErr)
+			}
+			if len(raw.Members) > 0 {
+				if _, memberErr := s.groupService.AddGroupMembers(ctx, updated.ID, raw.Members); memberErr != nil {
+					return serviceErrorOutcome(resourceTypeGroup, updated.ID, updated.Name, operationUpdate, memberErr)
+				}
+			}
+			return successOutcome(resourceTypeGroup, updated.ID, updated.Name, operationUpdate)
+		}
+		if !isNotFoundServiceError(svcErr) {
+			return serviceErrorOutcome(resourceTypeGroup, raw.ID, raw.Name, operationUpdate, svcErr)
+		}
+	}
+
+	grp, svcErr := s.groupService.CreateGroup(ctx, req)
+	if svcErr != nil {
+		return serviceErrorOutcome(resourceTypeGroup, raw.ID, raw.Name, operationCreate, svcErr)
+	}
+	if len(raw.Members) > 0 {
+		if _, memberErr := s.groupService.AddGroupMembers(ctx, grp.ID, raw.Members); memberErr != nil {
+			return serviceErrorOutcome(resourceTypeGroup, grp.ID, grp.Name, operationCreate, memberErr)
+		}
+	}
+	return successOutcome(resourceTypeGroup, grp.ID, grp.Name, operationCreate)
 }
 
 func (s *importService) importResourceServer(
@@ -349,6 +415,9 @@ func (s *importService) importResourceServer(
 	if options.IsUpsertEnabled() && req.ID != "" {
 		updated, svcErr := s.resourceService.UpdateResourceServer(ctx, req.ID, req)
 		if svcErr == nil {
+			if err := s.importResourceServerChildren(ctx, updated.ID, req); err != nil {
+				return serviceErrorOutcome(resourceTypeResourceServer, updated.ID, updated.Name, operationUpdate, err)
+			}
 			return successOutcome(resourceTypeResourceServer, updated.ID, updated.Name, operationUpdate)
 		}
 
@@ -360,6 +429,10 @@ func (s *importService) importResourceServer(
 	created, svcErr := s.resourceService.CreateResourceServer(ctx, req)
 	if svcErr != nil {
 		return serviceErrorOutcome(resourceTypeResourceServer, req.ID, req.Name, operationCreate, svcErr)
+	}
+
+	if err := s.importResourceServerChildren(ctx, created.ID, req); err != nil {
+		return serviceErrorOutcome(resourceTypeResourceServer, created.ID, created.Name, operationCreate, err)
 	}
 
 	return successOutcome(resourceTypeResourceServer, created.ID, created.Name, operationCreate)
@@ -642,6 +715,83 @@ func (s *importService) importTranslation(doc parsedDocument, dryRun bool) Impor
 	}
 
 	return successOutcome(resourceTypeTranslation, "", req.Language, operationUpdate)
+}
+
+// importResourceServerChildren creates resources and actions nested under a resource server.
+// It first computes permission strings via ProcessResourceServer, then calls the resource service
+// for each resource and action.  Existing resources/actions (on upsert paths) are silently skipped.
+func (s *importService) importResourceServerChildren(
+	ctx context.Context, serverID string, rs resource.ResourceServer,
+) *serviceerror.ServiceError {
+	if len(rs.Resources) == 0 {
+		return nil
+	}
+
+	// Compute permission strings in-place (mirrors declarative loader logic).
+	if err := resource.ProcessResourceServer(&rs); err != nil {
+		return &serviceerror.ServiceError{
+			Code: ErrorInvalidYAMLContent.Code,
+			Type: ErrorInvalidYAMLContent.Type,
+			Error: core.I18nMessage{
+				DefaultValue: fmt.Sprintf("failed to process resource server children: %v", err),
+			},
+		}
+	}
+
+	// handleToID maps resource handle → created/resolved ID for parent resolution.
+	handleToID := make(map[string]string)
+
+	for i := range rs.Resources {
+		res := rs.Resources[i]
+
+		// Resolve ParentHandle to the parent ID using handles seen so far in this import.
+		if res.ParentHandle != "" {
+			if parentID, ok := handleToID[res.ParentHandle]; ok {
+				res.Parent = &parentID
+			}
+		}
+
+		created, svcErr := s.resourceService.CreateResource(ctx, serverID, res)
+		if svcErr != nil {
+			if svcErr.Code != resource.ErrorHandleConflict.Code {
+				return svcErr
+			}
+			// Resource already exists — look it up under the same parent scope to get its ID.
+			var parentID *string
+			if res.ParentHandle != "" {
+				if pid, ok := handleToID[res.ParentHandle]; ok {
+					parentID = &pid
+				}
+			}
+			list, listErr := s.resourceService.GetResourceList(ctx, serverID, parentID, serverconst.MaxPageSize, 0)
+			if listErr != nil {
+				return listErr
+			}
+			var existingID string
+			for j := range list.Resources {
+				if list.Resources[j].Handle == res.Handle {
+					existingID = list.Resources[j].ID
+					break
+				}
+			}
+			if existingID == "" {
+				continue
+			}
+			created = &resource.Resource{ID: existingID}
+		}
+
+		handleToID[res.Handle] = created.ID
+
+		for j := range res.Actions {
+			action := res.Actions[j]
+			_, actionErr := s.resourceService.CreateAction(ctx, serverID, &created.ID, action)
+			if actionErr != nil && actionErr.Code != resource.ErrorHandleConflict.Code {
+				return actionErr
+			}
+		}
+	}
+
+	return nil
 }
 
 func unsupportedAdapterOutcome(resourceType, name string) ImportItemOutcome {

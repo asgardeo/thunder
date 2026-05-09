@@ -36,6 +36,8 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
+const schemeHTTPS = "https"
+
 // SecurityConfig holds the security-related configuration details.
 //
 // JWKSCacheTTL controls how long fetched JWKS responses are reused from the in-process
@@ -218,6 +220,7 @@ type OAuthConfig struct {
 	AuthorizationCode AuthorizationCodeConfig `yaml:"authorization_code" json:"authorization_code"`
 	DCR               DCRConfig               `yaml:"dcr" json:"dcr"`
 	PAR               PARConfig               `yaml:"par" json:"par"`
+	AuthClass         AuthClassConfig         `yaml:"auth_class" json:"auth_class"`
 	// AllowWildcardRedirectURI enables wildcard pattern matching for redirect URIs.
 	// When false (default), only exact redirect URI matching is performed.
 	AllowWildcardRedirectURI bool `yaml:"allow_wildcard_redirect_uri" json:"allow_wildcard_redirect_uri"`
@@ -363,6 +366,12 @@ type UserConfig struct {
 	Store string `yaml:"store" json:"store"`
 }
 
+// SystemResourceServerConfig holds configuration for the built-in system resource server.
+type SystemResourceServerConfig struct {
+	Handle     string `yaml:"handle" json:"handle"`
+	Identifier string `yaml:"identifier" json:"identifier"`
+}
+
 // ResourceConfig holds the resource management configuration details.
 type ResourceConfig struct {
 	DefaultDelimiter string `yaml:"default_delimiter" json:"default_delimiter"`
@@ -371,7 +380,8 @@ type ResourceConfig struct {
 	// If not specified, falls back to global DeclarativeResources.Enabled setting:
 	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
 	//   - If DeclarativeResources.Enabled = false: behaves as "mutable"
-	Store string `yaml:"store" json:"store"`
+	Store                string                     `yaml:"store" json:"store"`
+	SystemResourceServer SystemResourceServerConfig `yaml:"system_resource_server" json:"system_resource_server"`
 }
 
 // OrganizationUnitConfig holds the organization unit service configuration.
@@ -404,9 +414,9 @@ type ApplicationConfig struct {
 	Store string `yaml:"store" json:"store"`
 }
 
-// UserSchemaConfig holds the user schema service configuration.
-type UserSchemaConfig struct {
-	// Store defines the storage mode for user schemas.
+// EntityTypeConfig holds the entity type service configuration.
+type EntityTypeConfig struct {
+	// Store defines the storage mode for entity types.
 	// Valid values: "mutable", "declarative", "composite" (hybrid mode)
 	// If not specified, falls back to global DeclarativeResources.Enabled setting:
 	//   - If DeclarativeResources.Enabled = true: behaves as "declarative"
@@ -554,7 +564,7 @@ func (c *TrustedIssuerConfig) Validate() error {
 		return fmt.Errorf("trusted_issuer.jwks_url is not a valid URL: %w", err)
 	}
 	switch parsed.Scheme {
-	case "https":
+	case schemeHTTPS:
 		return nil
 	case "http":
 		host := parsed.Hostname()
@@ -567,6 +577,46 @@ func (c *TrustedIssuerConfig) Validate() error {
 	default:
 		return fmt.Errorf("trusted_issuer.jwks_url must use https scheme (got %q)", parsed.Scheme)
 	}
+}
+
+// AuthClassConfig holds the ACR-AMR mapping configuration.
+type AuthClassConfig struct {
+	Amrs   []string            `yaml:"amrs" json:"amrs"`
+	AcrAMR map[string][]string `yaml:"acr_amr" json:"acr_amr"`
+}
+
+// Validate checks the ACR-AMR mapping for configuration errors.
+func (c *AuthClassConfig) Validate() error {
+	amrSet := make(map[string]struct{}, len(c.Amrs))
+	for _, amr := range c.Amrs {
+		if strings.TrimSpace(amr) == "" {
+			return fmt.Errorf("auth_class: AMR entry must not be empty")
+		}
+		amrSet[amr] = struct{}{}
+	}
+
+	if len(c.AcrAMR) == 0 {
+		return nil
+	}
+
+	for acr, amrKeys := range c.AcrAMR {
+		if strings.TrimSpace(acr) == "" {
+			return fmt.Errorf("auth_class: ACR value must not be empty")
+		}
+		if len(amrKeys) == 0 {
+			return fmt.Errorf("auth_class: ACR %q has an empty AMR list", acr)
+		}
+		for _, amrKey := range amrKeys {
+			if strings.TrimSpace(amrKey) == "" {
+				return fmt.Errorf("auth_class: ACR %q references an empty AMR key", acr)
+			}
+			if _, ok := amrSet[amrKey]; !ok {
+				return fmt.Errorf("auth_class: ACR %q references unknown AMR key %q", acr, amrKey)
+			}
+		}
+	}
+
+	return nil
 }
 
 // Config holds the complete configuration details of the server.
@@ -587,7 +637,7 @@ type Config struct {
 	OrganizationUnit     OrganizationUnitConfig `yaml:"organization_unit" json:"organization_unit"`
 	IdentityProvider     IdentityProviderConfig `yaml:"identity_provider" json:"identity_provider"`
 	Application          ApplicationConfig      `yaml:"application" json:"application"`
-	UserSchema           UserSchemaConfig       `yaml:"user_schema" json:"user_schema"`
+	EntityType           EntityTypeConfig       `yaml:"user_type" json:"user_type"`
 	Observability        ObservabilityConfig    `yaml:"observability" json:"observability"`
 	Passkey              PasskeyConfig          `yaml:"passkey" json:"passkey"`
 	AuthnProvider        AuthnProviderConfig    `yaml:"authn_provider" json:"authn_provider"`
@@ -601,12 +651,12 @@ type Config struct {
 }
 
 // LoadConfig loads the configurations from the specified YAML file and applies defaults.
-func LoadConfig(configPath string, defaultPath string, thunderHome string) (*Config, error) {
+func LoadConfig(configPath string, defaultPath string, serverHome string) (*Config, error) {
 	var cfg Config
 
 	// Load default configuration if provided
 	if defaultPath != "" {
-		defaultCfg, err := loadDefaultConfig(defaultPath, thunderHome)
+		defaultCfg, err := loadDefaultConfig(defaultPath, serverHome)
 		if err != nil {
 			return nil, err
 		}
@@ -615,7 +665,7 @@ func LoadConfig(configPath string, defaultPath string, thunderHome string) (*Con
 
 	// Load user configuration
 	var userCfg Config
-	userCfg, err := loadUserConfig(configPath, thunderHome)
+	userCfg, err := loadUserConfig(configPath, serverHome)
 	if err != nil {
 		return nil, err
 	}
@@ -637,6 +687,11 @@ func LoadConfig(configPath string, defaultPath string, thunderHome string) (*Con
 		cfg.JWT.Issuer = GetServerURL(&cfg.Server)
 	}
 
+	// Default system resource server identifier to "system" if not set.
+	if cfg.Resource.SystemResourceServer.Identifier == "" {
+		cfg.Resource.SystemResourceServer.Identifier = "system"
+	}
+
 	if err := cfg.Server.SecurityConfig.Validate(); err != nil {
 		return nil, err
 	}
@@ -644,18 +699,23 @@ func LoadConfig(configPath string, defaultPath string, thunderHome string) (*Con
 		return nil, err
 	}
 
+	// Validate ACR-AMR mapping.
+	if err := cfg.OAuth.AuthClass.Validate(); err != nil {
+		return nil, err
+	}
+
 	return &cfg, nil
 }
 
 // loadDefaultConfig loads the default configuration from a JSON file.
-func loadDefaultConfig(path string, thunderHome string) (*Config, error) {
+func loadDefaultConfig(path string, serverHome string) (*Config, error) {
 	var cfg Config
 	configPath := filepath.Clean(path)
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, err
 	}
-	data, err = utils.SubstituteFilePaths(data, thunderHome)
+	data, err = utils.SubstituteFilePaths(data, serverHome)
 	if err != nil {
 		return nil, err
 	}
@@ -666,7 +726,7 @@ func loadDefaultConfig(path string, thunderHome string) (*Config, error) {
 	return &cfg, nil
 }
 
-func loadUserConfig(path string, thunderHome string) (Config, error) {
+func loadUserConfig(path string, serverHome string) (Config, error) {
 	var cfg Config
 	configPath := filepath.Clean(path)
 	data, err := os.ReadFile(configPath)
@@ -677,7 +737,7 @@ func loadUserConfig(path string, thunderHome string) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	data, err = utils.SubstituteFilePaths(data, thunderHome)
+	data, err = utils.SubstituteFilePaths(data, serverHome)
 	if err != nil {
 		return Config{}, err
 	}
@@ -696,7 +756,7 @@ func GetServerURL(server *ServerConfig) string {
 	if server.PublicURL != "" {
 		return server.PublicURL
 	}
-	scheme := "https"
+	scheme := schemeHTTPS
 	if server.HTTPOnly {
 		scheme = "http"
 	}

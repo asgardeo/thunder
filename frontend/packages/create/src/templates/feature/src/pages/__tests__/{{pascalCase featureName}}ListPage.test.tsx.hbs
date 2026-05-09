@@ -1,0 +1,131 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {render, screen, fireEvent} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {vi} from 'vitest';
+import {ReactNode} from 'react';
+import {{pascalCase featureName}}ListPage from '../{{pascalCase featureName}}ListPage';
+
+// Mock react-router
+const mockNavigate = vi.fn();
+vi.mock('react-router', () => ({
+  useNavigate: () => mockNavigate,
+}));
+
+// Mock react-i18next
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => {
+      if (key === '{{camelCase featureName}}s:listing.title') return '{{pascalCase featureName}}s';
+      if (key === '{{camelCase featureName}}s:listing.subtitle') return 'Manage your {{camelCase featureName}}s';
+      if (key === '{{camelCase featureName}}s:listing.actions.create') return 'Create {{pascalCase featureName}}';
+      if (key === '{{camelCase featureName}}s:listing.search.placeholder') return 'Search {{camelCase featureName}}s...';
+      return key;
+    },
+  }),
+}));
+
+// Mock logger
+vi.mock('@thunderid/logger/react', () => ({
+  useLogger: () => ({
+    info: vi.fn(),
+    error: vi.fn(),
+  }),
+}));
+
+// Mock {{pascalCase featureName}}List component
+vi.mock('../components/{{pascalCase featureName}}List', () => ({
+  default: () => <div data-testid="{{kebabCase featureName}}-list">{{pascalCase featureName}} List Component</div>,
+}));
+
+describe('{{pascalCase featureName}}ListPage', () => {
+  let queryClient: QueryClient;
+  let wrapper: ({children}: {children: ReactNode}) => JSX.Element;
+
+  beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+        },
+      },
+    });
+    wrapper = ({children}: {children: ReactNode}) => (
+      <QueryClientProvider client=\{{queryClient}}>{children}</QueryClientProvider>
+    );
+    vi.clearAllMocks();
+  });
+
+  it('should render page title and subtitle', () => {
+    render(<{{pascalCase featureName}}ListPage />, {wrapper});
+
+    expect(screen.getByRole('heading', {name: '{{pascalCase featureName}}s'})).toBeInTheDocument();
+    expect(screen.getByText('Manage your {{camelCase featureName}}s')).toBeInTheDocument();
+  });
+
+  it('should render create button', () => {
+    render(<{{pascalCase featureName}}ListPage />, {wrapper});
+
+    const createButton = screen.getByRole('button', {name: /create {{camelCase featureName}}/i});
+    expect(createButton).toBeInTheDocument();
+  });
+
+  it('should render search field', () => {
+    render(<{{pascalCase featureName}}ListPage />, {wrapper});
+
+    const searchField = screen.getByPlaceholderText('Search {{camelCase featureName}}s...');
+    expect(searchField).toBeInTheDocument();
+  });
+
+  it('should render {{pascalCase featureName}}List component', () => {
+    render(<{{pascalCase featureName}}ListPage />, {wrapper});
+
+    expect(screen.getByTestId('{{kebabCase featureName}}-list')).toBeInTheDocument();
+  });
+
+  it('should navigate to create page when create button is clicked', async () => {
+    const user = userEvent.setup();
+    render(<{{pascalCase featureName}}ListPage />, {wrapper});
+
+    const createButton = screen.getByRole('button', {name: /create {{camelCase featureName}}/i});
+    await user.click(createButton);
+
+    expect(mockNavigate).toHaveBeenCalledWith('/{{kebabCase featureName}}s/create');
+  });
+
+  it('should handle search input', async () => {
+    const user = userEvent.setup();
+    render(<{{pascalCase featureName}}ListPage />, {wrapper});
+
+    const searchField = screen.getByPlaceholderText('Search {{camelCase featureName}}s...');
+    await user.type(searchField, 'test search');
+
+    expect(searchField).toHaveValue('test search');
+  });
+
+  it('should call search handler on input change', () => {
+    render(<{{pascalCase featureName}}ListPage />, {wrapper});
+
+    const searchField = screen.getByPlaceholderText('Search {{camelCase featureName}}s...');
+    fireEvent.change(searchField, {target: {value: 'test'}});
+
+    expect(searchField).toHaveValue('test');
+  });
+});

@@ -26,6 +26,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/asgardeo/thunder/internal/system/error/apierror"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -193,11 +195,11 @@ func (suite *MiddlewareTestSuite) TestMiddleware_UnknownError() {
 	assert.Equal(suite.T(), "application/json", w.Header().Get("Content-Type"))
 	assert.Equal(suite.T(), "Bearer", w.Header().Get("WWW-Authenticate"))
 
-	var response map[string]string
+	var response apierror.ErrorResponse
 	err := json.NewDecoder(w.Body).Decode(&response)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "unauthorized", response["error"])
-	assert.Equal(suite.T(), "Authentication failed", response["error_description"])
+	assert.Equal(suite.T(), apierror.ErrUnauthorized.Code, response.Code)
+	assert.Equal(suite.T(), apierror.ErrUnauthorized.Description.DefaultValue, response.Description.DefaultValue)
 
 	assert.Nil(suite.T(), suite.testCtx)
 }
@@ -311,26 +313,24 @@ func (suite *MiddlewareTestSuite) assertUnauthorizedResponse(w *httptest.Respons
 	assert.Equal(suite.T(), "application/json", w.Header().Get("Content-Type"))
 	assert.Equal(suite.T(), "Bearer", w.Header().Get("WWW-Authenticate"))
 
-	var response map[string]string
+	var response apierror.ErrorResponse
 	err := json.NewDecoder(w.Body).Decode(&response)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "unauthorized", response["error"])
-	assert.Equal(suite.T(), "Authentication is required to access this resource", response["error_description"])
+	assert.Equal(suite.T(), apierror.ErrUnauthorized.Code, response.Code)
+	assert.Equal(suite.T(), apierror.ErrUnauthorized.Description.DefaultValue, response.Description.DefaultValue)
 }
 
 // Helper method to assert forbidden response
 func (suite *MiddlewareTestSuite) assertForbiddenResponse(w *httptest.ResponseRecorder) {
 	assert.Equal(suite.T(), http.StatusForbidden, w.Code)
 	assert.Equal(suite.T(), "application/json", w.Header().Get("Content-Type"))
-	assert.Empty(suite.T(), w.Header().Get("WWW-Authenticate")) // No WWW-Authenticate for 403
+	assert.Equal(suite.T(), "Bearer", w.Header().Get("WWW-Authenticate"))
 
-	var response map[string]string
+	var response apierror.ErrorResponse
 	err := json.NewDecoder(w.Body).Decode(&response)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "forbidden", response["error"])
-	assert.Equal(suite.T(),
-		"You do not have sufficient permissions to access this resource",
-		response["error_description"])
+	assert.Equal(suite.T(), apierror.ErrForbidden.Code, response.Code)
+	assert.Equal(suite.T(), apierror.ErrForbidden.Description.DefaultValue, response.Description.DefaultValue)
 }
 
 // Test writeSecurityError function directly
@@ -339,72 +339,63 @@ func TestWriteSecurityError(t *testing.T) {
 		name               string
 		err                error
 		expectedStatus     int
-		expectedErrorCode  string
-		expectedDesc       string
+		expectedErrResp    apierror.ErrorResponse
 		expectedAuthHeader bool
 	}{
 		{
 			name:               "Unauthorized error",
 			err:                errUnauthorized,
 			expectedStatus:     http.StatusUnauthorized,
-			expectedErrorCode:  "unauthorized",
-			expectedDesc:       "Authentication is required to access this resource",
+			expectedErrResp:    apierror.ErrUnauthorized,
 			expectedAuthHeader: true,
 		},
 		{
 			name:               "Invalid token error",
 			err:                errInvalidToken,
 			expectedStatus:     http.StatusUnauthorized,
-			expectedErrorCode:  "unauthorized",
-			expectedDesc:       "Authentication is required to access this resource",
+			expectedErrResp:    apierror.ErrUnauthorized,
 			expectedAuthHeader: true,
 		},
 		{
 			name:               "Missing auth header error",
 			err:                errMissingAuthHeader,
 			expectedStatus:     http.StatusUnauthorized,
-			expectedErrorCode:  "unauthorized",
-			expectedDesc:       "Authentication is required to access this resource",
+			expectedErrResp:    apierror.ErrUnauthorized,
 			expectedAuthHeader: true,
 		},
 		{
 			name:               "No handler found error",
 			err:                errNoHandlerFound,
 			expectedStatus:     http.StatusUnauthorized,
-			expectedErrorCode:  "unauthorized",
-			expectedDesc:       "Authentication is required to access this resource",
+			expectedErrResp:    apierror.ErrUnauthorized,
 			expectedAuthHeader: true,
 		},
 		{
 			name:               "Forbidden error",
 			err:                errForbidden,
 			expectedStatus:     http.StatusForbidden,
-			expectedErrorCode:  "forbidden",
-			expectedDesc:       "You do not have sufficient permissions to access this resource",
-			expectedAuthHeader: false,
+			expectedErrResp:    apierror.ErrForbidden,
+			expectedAuthHeader: true,
 		},
 		{
 			name:               "Insufficient permissions error",
 			err:                errInsufficientPermissions,
 			expectedStatus:     http.StatusForbidden,
-			expectedErrorCode:  "forbidden",
-			expectedDesc:       "You do not have sufficient permissions to access this resource",
-			expectedAuthHeader: false,
+			expectedErrResp:    apierror.ErrForbidden,
+			expectedAuthHeader: true,
 		},
 		{
 			name:               "Unknown error (default case)",
 			err:                errors.New("unexpected error"),
 			expectedStatus:     http.StatusUnauthorized,
-			expectedErrorCode:  "unauthorized",
-			expectedDesc:       "Authentication failed",
+			expectedErrResp:    apierror.ErrUnauthorized,
 			expectedAuthHeader: true,
 		},
 		{
 			name:               "Nil error (edge case)",
 			err:                nil,
 			expectedStatus:     http.StatusUnauthorized,
-			expectedErrorCode:  "unauthorized",
-			expectedDesc:       "Authentication failed",
+			expectedErrResp:    apierror.ErrUnauthorized,
 			expectedAuthHeader: true,
 		},
 	}
@@ -423,11 +414,12 @@ func TestWriteSecurityError(t *testing.T) {
 				assert.Empty(t, w.Header().Get("WWW-Authenticate"))
 			}
 
-			var response map[string]string
+			var response apierror.ErrorResponse
 			err := json.NewDecoder(w.Body).Decode(&response)
 			assert.NoError(t, err)
-			assert.Equal(t, tc.expectedErrorCode, response["error"])
-			assert.Equal(t, tc.expectedDesc, response["error_description"])
+			assert.Equal(t, tc.expectedErrResp.Code, response.Code)
+			assert.Equal(t, tc.expectedErrResp.Message.DefaultValue, response.Message.DefaultValue)
+			assert.Equal(t, tc.expectedErrResp.Description.DefaultValue, response.Description.DefaultValue)
 		})
 	}
 }

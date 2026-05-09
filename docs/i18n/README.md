@@ -1,6 +1,6 @@
-# Thunder Documentation Internationalization (i18n)
+# ThunderID Documentation Internationalization (i18n)
 
-This directory contains translations for the Thunder documentation.
+This directory contains translations for the ThunderID documentation.
 
 ## Directory Structure
 

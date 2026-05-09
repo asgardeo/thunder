@@ -47,13 +47,13 @@ func (suite *JWTAuthenticatorTestSuite) SetupTest() {
 	suite.authenticator = newJWTAuthenticator(suite.mockJWT)
 	// Initialize an empty runtime so verifyFederatedToken sees an unconfigured trusted issuer
 	// and returns false cleanly. Tests that need a specific trusted issuer config override this.
-	config.ResetThunderRuntime()
-	_ = config.InitializeThunderRuntime("", &config.Config{})
+	config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime("", &config.Config{})
 }
 
 func (suite *JWTAuthenticatorTestSuite) TearDownTest() {
 	suite.mockJWT.AssertExpectations(suite.T())
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 // Run the test suite
@@ -282,7 +282,7 @@ func (suite *JWTAuthenticatorTestSuite) TestExtractPermissionsFromJWTClaims() {
 			expectedPermissions: []string{"users:read"},
 		},
 		{
-			name: "Thunder assertion authorized_permissions attribute",
+			name: "ThunderID assertion authorized_permissions attribute",
 			attributes: map[string]interface{}{
 				"authorized_permissions": "perm1 perm2 perm3",
 			},
@@ -471,11 +471,11 @@ func buildFakeJWT(header, payload map[string]interface{}) string {
 }
 
 func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_Disabled() {
-	config.ResetThunderRuntime()
-	defer config.ResetThunderRuntime()
+	config.ResetServerRuntime()
+	defer config.ResetServerRuntime()
 
 	cfg := &config.Config{}
-	_ = config.InitializeThunderRuntime("", cfg)
+	_ = config.InitializeServerRuntime("", cfg)
 
 	token := buildFakeJWT(
 		map[string]interface{}{"alg": "RS256", "kid": "test-kid"},
@@ -487,8 +487,8 @@ func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_Disabled() {
 }
 
 func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_IssuerMismatch() {
-	config.ResetThunderRuntime()
-	defer config.ResetThunderRuntime()
+	config.ResetServerRuntime()
+	defer config.ResetServerRuntime()
 
 	cfg := &config.Config{
 		Server: config.ServerConfig{
@@ -501,7 +501,7 @@ func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_IssuerMismatch(
 			},
 		},
 	}
-	_ = config.InitializeThunderRuntime("", cfg)
+	_ = config.InitializeServerRuntime("", cfg)
 
 	token := buildFakeJWT(
 		map[string]interface{}{"alg": "RS256", "kid": "test-kid"},
@@ -513,8 +513,8 @@ func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_IssuerMismatch(
 }
 
 func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_JWKSVerificationSuccess() {
-	config.ResetThunderRuntime()
-	defer config.ResetThunderRuntime()
+	config.ResetServerRuntime()
+	defer config.ResetServerRuntime()
 
 	issuer := testFederatedIssuer
 	jwksURL := testFederatedJWKSURL
@@ -531,7 +531,7 @@ func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_JWKSVerificatio
 			},
 		},
 	}
-	_ = config.InitializeThunderRuntime("", cfg)
+	_ = config.InitializeServerRuntime("", cfg)
 
 	token := buildFakeJWT(
 		map[string]interface{}{"alg": "RS256", "kid": "test-kid"},
@@ -548,8 +548,8 @@ func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_JWKSVerificatio
 }
 
 func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_JWKSVerificationFailure() {
-	config.ResetThunderRuntime()
-	defer config.ResetThunderRuntime()
+	config.ResetServerRuntime()
+	defer config.ResetServerRuntime()
 
 	issuer := testFederatedIssuer
 	jwksURL := testFederatedJWKSURL
@@ -566,7 +566,7 @@ func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_JWKSVerificatio
 			},
 		},
 	}
-	_ = config.InitializeThunderRuntime("", cfg)
+	_ = config.InitializeServerRuntime("", cfg)
 
 	token := buildFakeJWT(
 		map[string]interface{}{"alg": "RS256", "kid": "test-kid"},
@@ -647,8 +647,8 @@ func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_RequiredClaims(
 
 	for _, tc := range tests {
 		suite.Run(tc.name, func() {
-			config.ResetThunderRuntime()
-			defer config.ResetThunderRuntime()
+			config.ResetServerRuntime()
+			defer config.ResetServerRuntime()
 
 			cfg := &config.Config{
 				Server: config.ServerConfig{
@@ -662,7 +662,7 @@ func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_RequiredClaims(
 					},
 				},
 			}
-			_ = config.InitializeThunderRuntime("", cfg)
+			_ = config.InitializeServerRuntime("", cfg)
 
 			token := buildFakeJWT(
 				map[string]interface{}{"alg": "RS256", "kid": "test-kid"},
@@ -719,8 +719,8 @@ func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_InvalidPayload(
 
 	for _, tc := range tests {
 		suite.Run(tc.name, func() {
-			config.ResetThunderRuntime()
-			defer config.ResetThunderRuntime()
+			config.ResetServerRuntime()
+			defer config.ResetServerRuntime()
 
 			cfg := &config.Config{
 				Server: config.ServerConfig{
@@ -733,7 +733,7 @@ func (suite *JWTAuthenticatorTestSuite) TestVerifyFederatedToken_InvalidPayload(
 					},
 				},
 			}
-			_ = config.InitializeThunderRuntime("", cfg)
+			_ = config.InitializeServerRuntime("", cfg)
 
 			mockJWT := jwtmock.NewJWTServiceInterfaceMock(suite.T())
 			auth := newJWTAuthenticator(mockJWT)
@@ -749,8 +749,8 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate_FederatedTokenFailure()
 	// When the trusted issuer is configured and federated verification fails
 	// (here, JWKS verification returns an error), Authenticate must reject the
 	// request with errInvalidToken and must NOT fall back to local-key verification.
-	config.ResetThunderRuntime()
-	defer config.ResetThunderRuntime()
+	config.ResetServerRuntime()
+	defer config.ResetServerRuntime()
 
 	issuer := testFederatedIssuer
 	jwksURL := testFederatedJWKSURL
@@ -767,7 +767,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate_FederatedTokenFailure()
 			},
 		},
 	}
-	_ = config.InitializeThunderRuntime("", cfg)
+	_ = config.InitializeServerRuntime("", cfg)
 
 	token := buildFakeJWT(
 		map[string]interface{}{"alg": "RS256", "kid": "test-kid"},
@@ -797,8 +797,8 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate_FederatedTokenFailure()
 }
 
 func (suite *JWTAuthenticatorTestSuite) TestAuthenticate_FederatedTokenSuccess() {
-	config.ResetThunderRuntime()
-	defer config.ResetThunderRuntime()
+	config.ResetServerRuntime()
+	defer config.ResetServerRuntime()
 
 	issuer := testFederatedIssuer
 	jwksURL := testFederatedJWKSURL
@@ -815,7 +815,7 @@ func (suite *JWTAuthenticatorTestSuite) TestAuthenticate_FederatedTokenSuccess()
 			},
 		},
 	}
-	_ = config.InitializeThunderRuntime("", cfg)
+	_ = config.InitializeServerRuntime("", cfg)
 
 	token := buildFakeJWT(
 		map[string]interface{}{"alg": "RS256", "kid": "test-kid"},

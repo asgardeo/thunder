@@ -169,7 +169,7 @@ var (
 		},
 	}
 
-	testUserSchema = testutils.UserSchema{
+	testUserType = testutils.UserType{
 		Name: "basic_auth_user",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -192,7 +192,7 @@ var (
 	}
 
 	testUser = testutils.User{
-		Type: testUserSchema.Name,
+		Type: testUserType.Name,
 		Attributes: json.RawMessage(`{
 			"username": "testuser",
 			"password": "testpassword",
@@ -205,7 +205,7 @@ var (
 
 var (
 	testAppID    string
-	userSchemaID string
+	entityTypeID string
 )
 
 type BasicAuthFlowTestSuite struct {
@@ -227,13 +227,13 @@ func (ts *BasicAuthFlowTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "Failed to create test organization unit")
 	ts.ouID = ouID
 
-	// Create test user schema
-	testUserSchema.OUID = ts.ouID
-	schemaID, err := testutils.CreateUserType(testUserSchema)
+	// Create test user type
+	testUserType.OUID = ts.ouID
+	schemaID, err := testutils.CreateUserType(testUserType)
 	if err != nil {
-		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
+		ts.T().Fatalf("Failed to create test user type during setup: %v", err)
 	}
-	userSchemaID = schemaID
+	entityTypeID = schemaID
 
 	// Create flows
 	flowID, err := testutils.CreateFlow(basicAuthTestFlow)
@@ -283,9 +283,9 @@ func (ts *BasicAuthFlowTestSuite) TearDownSuite() {
 		}
 	}
 
-	if userSchemaID != "" {
-		if err := testutils.DeleteUserType(userSchemaID); err != nil {
-			ts.T().Logf("Failed to delete test user schema during teardown: %v", err)
+	if entityTypeID != "" {
+		if err := testutils.DeleteUserType(entityTypeID); err != nil {
+			ts.T().Logf("Failed to delete test user type during teardown: %v", err)
 		}
 	}
 
@@ -350,7 +350,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccess() {
 	jwtClaims, err := testutils.ValidateJWTAssertionFields(
 		completeFlowStep.Assertion,
 		testAppID,
-		testUserSchema.Name,
+		testUserType.Name,
 		ts.ouID,
 		testOU.Name,
 		testOU.Handle,
@@ -390,7 +390,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowSuccessWithSingleRequest() {
 	jwtClaims, err := testutils.ValidateJWTAssertionFields(
 		flowStep.Assertion,
 		testAppID,
-		testUserSchema.Name,
+		testUserType.Name,
 		ts.ouID,
 		testOU.Name,
 		testOU.Handle,
@@ -459,7 +459,7 @@ func (ts *BasicAuthFlowTestSuite) TestBasicAuthFlowWithTwoStepInput() {
 	jwtClaims, err := testutils.ValidateJWTAssertionFields(
 		completeFlowStep.Assertion,
 		testAppID,
-		testUserSchema.Name,
+		testUserType.Name,
 		ts.ouID,
 		testOU.Name,
 		testOU.Handle,

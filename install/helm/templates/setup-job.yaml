@@ -25,10 +25,10 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "thunder.fullname" . }}-setup
+  name: {{ include "thunderid.fullname" . }}-setup
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "thunder.labels" . | nindent 4 }}
+    {{- include "thunderid.labels" . | nindent 4 }}
     app.kubernetes.io/component: setup
   annotations:
     "helm.sh/hook": pre-install
@@ -46,15 +46,15 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "thunder.selectorLabels" . | nindent 8 }}
+        {{- include "thunderid.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: setup
       annotations:
         checksum.deployment.yaml: {{ include (print $.Template.BasePath "/setup-config-map.yaml") . | sha256sum }}
-        {{- if include "thunder.shouldIncludeSecretChecksum" . }}
+        {{- if include "thunderid.shouldIncludeSecretChecksum" . }}
         checksum.secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
         {{- end }}
     spec:
-      serviceAccountName: {{ include "thunder.serviceAccountName" . }}
+      serviceAccountName: {{ include "thunderid.serviceAccountName" . }}
       restartPolicy: OnFailure
       securityContext:
         {{- if .Values.deployment.securityContext.enableRunAsUser }}
@@ -98,7 +98,7 @@ spec:
             - |
               if [ ! -f /data/.initialized ]; then
                 echo "Copying database directory from image..."
-                cp -r /opt/thunder/repository/database/* /data/
+                cp -r /opt/thunderid/repository/database/* /data/
                 touch /data/.initialized
                 echo "Database initialization complete"
               else
@@ -108,8 +108,8 @@ spec:
               if [ ! -f /data/consent/consentdb.db ]; then
                 echo "Copying consent database from image..."
                 mkdir -p /data/consent
-                if [ -d /opt/thunder/consent/repository/database ]; then
-                  cp -r /opt/thunder/consent/repository/database/* /data/consent/
+                if [ -d /opt/thunderid/consent/repository/database ]; then
+                  cp -r /opt/thunderid/consent/repository/database/* /data/consent/
                   echo "Consent database initialization complete"
                 else
                   echo "Error: consent database source directory not found" >&2
@@ -148,9 +148,9 @@ spec:
             - name: WITH_CONSENT
               value: "false"
             {{- end }}
-            {{- include "thunder.databasePasswordEnvVars" . | nindent 12 }}
-            {{- include "thunder.secretEnvVars" (dict "secretEnv" .Values.setup.secretEnv) | nindent 12 }}
-            {{- include "thunder.cacheRedisPasswordEnvVars" . | nindent 12 }}
+            {{- include "thunderid.databasePasswordEnvVars" . | nindent 12 }}
+            {{- include "thunderid.secretEnvVars" (dict "secretEnv" .Values.setup.secretEnv) | nindent 12 }}
+            {{- include "thunderid.cacheRedisPasswordEnvVars" . | nindent 12 }}
             {{- if .Values.setup.env }}
             {{- toYaml .Values.setup.env | nindent 12 }}
             {{- end }}
@@ -174,19 +174,19 @@ spec:
           volumeMounts:
             {{- if or .Values.persistence.enabled $usingSqlite }}
             - name: database-storage
-              mountPath: /opt/thunder/repository/database
+              mountPath: /opt/thunderid/repository/database
             {{- end }}
             {{- if and .Values.configuration.consent.enabled (eq .Values.configuration.consent.database.type "sqlite") }}
             - name: database-storage
-              mountPath: /opt/thunder/consent/repository/database
+              mountPath: /opt/thunderid/consent/repository/database
               subPath: consent
             {{- end }}
             - name: deployment-yaml-volume
-              mountPath: /opt/thunder/repository/conf/deployment.yaml
+              mountPath: /opt/thunderid/repository/conf/deployment.yaml
               subPath: deployment.yaml
             {{- if .Values.configuration.consent.enabled }}
             - name: deployment-yaml-volume
-              mountPath: /opt/thunder/consent/repository/conf/deployment.yaml
+              mountPath: /opt/thunderid/consent/repository/conf/deployment.yaml
               subPath: consent-deployment.yaml
             {{- end }}
             {{- /* Validate bootstrap configuration - patterns are mutually exclusive */ -}}
@@ -197,7 +197,7 @@ spec:
             {{- if and .Values.bootstrap.configMap.name (not .Values.bootstrap.configMap.files) }}
             # Pattern 3: Replace entire bootstrap directory (configMap without files list)
             - name: bootstrap-scripts
-              mountPath: /opt/thunder/bootstrap
+              mountPath: /opt/thunderid/bootstrap
             {{- else }}
             # Pattern 1 & 2: Mount individual scripts to preserve defaults
 
@@ -205,7 +205,7 @@ spec:
             {{- if .Values.bootstrap.scripts }}
             {{- range $filename, $content := .Values.bootstrap.scripts }}
             - name: bootstrap-scripts
-              mountPath: /opt/thunder/bootstrap/{{ $filename }}
+              mountPath: /opt/thunderid/bootstrap/{{ $filename }}
               subPath: {{ $filename }}
             {{- end }}
             {{- end }}
@@ -214,7 +214,7 @@ spec:
             {{- if and .Values.bootstrap.configMap.name .Values.bootstrap.configMap.files }}
             {{- range .Values.bootstrap.configMap.files }}
             - name: bootstrap-scripts
-              mountPath: /opt/thunder/bootstrap/{{ . }}
+              mountPath: /opt/thunderid/bootstrap/{{ . }}
               subPath: {{ . }}
             {{- end }}
             {{- end }}
@@ -225,9 +225,9 @@ spec:
             {{- end }}
             {{- if .Values.declarativeResources.enabled }}
             {{- if and .Values.declarativeResources.configMap.name .Values.declarativeResources.configMap.items }}
-{{ include "thunder.declarativeResourceVolumeMounts" (dict "items" .Values.declarativeResources.configMap.items "field" "declarativeResources.configMap.items" "mountPath" .Values.declarativeResources.mountPath "readOnly" .Values.declarativeResources.readOnly) | nindent 12 }}
+{{ include "thunderid.declarativeResourceVolumeMounts" (dict "items" .Values.declarativeResources.configMap.items "field" "declarativeResources.configMap.items" "mountPath" .Values.declarativeResources.mountPath "readOnly" .Values.declarativeResources.readOnly) | nindent 12 }}
             {{- else if and .Values.declarativeResources.secret.name .Values.declarativeResources.secret.items }}
-{{ include "thunder.declarativeResourceVolumeMounts" (dict "items" .Values.declarativeResources.secret.items "field" "declarativeResources.secret.items" "mountPath" .Values.declarativeResources.mountPath "readOnly" .Values.declarativeResources.readOnly) | nindent 12 }}
+{{ include "thunderid.declarativeResourceVolumeMounts" (dict "items" .Values.declarativeResources.secret.items "field" "declarativeResources.secret.items" "mountPath" .Values.declarativeResources.mountPath "readOnly" .Values.declarativeResources.readOnly) | nindent 12 }}
             {{- else }}
             - name: declarative-resources
               mountPath: {{ .Values.declarativeResources.mountPath }}
@@ -238,15 +238,15 @@ spec:
         {{- if or .Values.persistence.enabled $usingSqlite }}
         - name: database-storage
           persistentVolumeClaim:
-            claimName: {{ include "thunder.fullname" . }}-database-pvc
+            claimName: {{ include "thunderid.fullname" . }}-database-pvc
         {{- end }}
         - name: deployment-yaml-volume
           configMap:
-            name: {{ include "thunder.fullname" . }}-setup-config-map
+            name: {{ include "thunderid.fullname" . }}-setup-config-map
         {{- if or .Values.bootstrap.scripts .Values.bootstrap.configMap.name }}
         - name: bootstrap-scripts
           configMap:
-            name: {{ if .Values.bootstrap.configMap.name }}{{ .Values.bootstrap.configMap.name }}{{ else }}{{ include "thunder.fullname" . }}-bootstrap{{ end }}
+            name: {{ if .Values.bootstrap.configMap.name }}{{ .Values.bootstrap.configMap.name }}{{ else }}{{ include "thunderid.fullname" . }}-bootstrap{{ end }}
             defaultMode: 0755
         {{- end }}
         {{- if .Values.setup.extraVolumes }}
@@ -259,14 +259,14 @@ spec:
             name: {{ .Values.declarativeResources.configMap.name }}
             {{- if .Values.declarativeResources.configMap.items }}
             items:
-{{ include "thunder.declarativeResourceItems" (dict "items" .Values.declarativeResources.configMap.items "field" "declarativeResources.configMap.items") | nindent 14 }}
+{{ include "thunderid.declarativeResourceItems" (dict "items" .Values.declarativeResources.configMap.items "field" "declarativeResources.configMap.items") | nindent 14 }}
             {{- end }}
           {{- else }}
           secret:
             secretName: {{ .Values.declarativeResources.secret.name }}
             {{- if .Values.declarativeResources.secret.items }}
             items:
-{{ include "thunder.declarativeResourceItems" (dict "items" .Values.declarativeResources.secret.items "field" "declarativeResources.secret.items") | nindent 14 }}
+{{ include "thunderid.declarativeResourceItems" (dict "items" .Values.declarativeResources.secret.items "field" "declarativeResources.secret.items") | nindent 14 }}
             {{- end }}
           {{- end }}
         {{- end }}

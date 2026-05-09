@@ -32,7 +32,7 @@ import PostmanButton from './PostmanButton';
  *   static/api/<versionPath>/combined.yaml
  *
  * The Postman collection is expected to live at:
- *   static/api/<versionPath>/postman/thunder.json
+ *   static/api/<versionPath>/postman/thunderid-api-postman-collection.json
  *
  * The version path follows the convention:
  *   - Docusaurus "current" version (labeled "Next") → 'next'
@@ -93,9 +93,9 @@ export default function ApiVersionReference() {
   }, []);
 
   const versionPath = version === 'current' ? 'next' : version;
-  const thunderConfig = siteConfig.customFields?.thunder as {postman: {collection: {output: string}}};
+  const productConfig = siteConfig.customFields?.product as {postman: {collection: {output: string}}};
   const specUrl = `${siteConfig.baseUrl}api/${versionPath}/combined.yaml`;
-  const postmanCollectionUrl = `${siteConfig.baseUrl}api/${versionPath}/postman/collections/${thunderConfig.postman.collection.output}`;
+  const postmanCollectionUrl = `${siteConfig.baseUrl}api/${versionPath}/postman/collections/${productConfig.postman.collection.output}`;
 
   const topOffset = scalarScrolled ? 8 : SCALAR_TOOLBAR_HEIGHT + 8;
 
@@ -117,7 +117,7 @@ export default function ApiVersionReference() {
             >
               <PostmanButton
                 collectionUrl={postmanCollectionUrl}
-                downloadFileName={thunderConfig.postman.collection.output}
+                downloadFileName={productConfig.postman.collection.output}
               />
             </div>,
             document.body,

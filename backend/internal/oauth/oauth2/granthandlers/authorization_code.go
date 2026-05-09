@@ -185,6 +185,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(ctx context.Context, tokenRe
 
 	// Generate access token using tokenBuilder (attributes will be filtered in BuildAccessToken)
 	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
+		Context:          ctx,
 		Subject:          authCode.AuthorizedUserID,
 		Audiences:        accessTokenAudiences,
 		ClientID:         tokenRequest.ClientID,
@@ -215,6 +216,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(ctx context.Context, tokenRe
 	// Generate ID token if 'openid' scope is present
 	if slices.Contains(accessTokenScopes, constants.ScopeOpenID) {
 		idToken, err := h.tokenBuilder.BuildIDToken(&tokenservice.IDTokenBuildContext{
+			Context:        ctx,
 			Subject:        authCode.AuthorizedUserID,
 			Audience:       tokenRequest.ClientID,
 			Scopes:         accessTokenScopes,
@@ -223,6 +225,7 @@ func (h *authorizationCodeGrantHandler) HandleGrant(ctx context.Context, tokenRe
 			OAuthApp:       oauthApp,
 			ClaimsRequest:  authCode.ClaimsRequest,
 			Nonce:          authCode.Nonce,
+			CompletedACR:   authCode.CompletedACR,
 		})
 		if err != nil {
 			logger.Error("Failed to generate ID token", log.Error(err))

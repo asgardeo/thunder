@@ -69,8 +69,8 @@ func (suite *CompositeModeSuite) TearDownSuite() {
 				suite.deleteResource(fmt.Sprintf("%s/resource-servers/%s", testutils.TestServerURL, id))
 			case "flow":
 				suite.deleteResource(fmt.Sprintf("%s/flows/%s", testutils.TestServerURL, id))
-			case "user_schema":
-				suite.deleteResource(fmt.Sprintf("%s/user-schemas/%s", testutils.TestServerURL, id))
+			case "user_type":
+				suite.deleteResource(fmt.Sprintf("%s/user-types/%s", testutils.TestServerURL, id))
 			case "theme":
 				suite.deleteResource(fmt.Sprintf("%s/design/themes/%s", testutils.TestServerURL, id))
 			case "layout":
@@ -256,14 +256,14 @@ func (suite *CompositeModeSuite) TestFlowDeclarativeVisibility() {
 	suite.True(isReadOnly, "declarative flow should be marked as read-only in merged collection")
 }
 
-func (suite *CompositeModeSuite) TestUserSchemaDeclarativeVisibility() {
+func (suite *CompositeModeSuite) TestEntityTypeDeclarativeVisibility() {
 	client := testutils.GetHTTPClient()
-	resp, err := client.Get(fmt.Sprintf("%s/user-schemas/decl-schema-1", testutils.TestServerURL))
+	resp, err := client.Get(fmt.Sprintf("%s/user-types/decl-schema-1", testutils.TestServerURL))
 	suite.Require().NoError(err)
-	suite.Equal(http.StatusOK, resp.StatusCode, "declarative user schema should be visible")
+	suite.Equal(http.StatusOK, resp.StatusCode, "declarative user type should be visible")
 	resp.Body.Close()
 
-	suite.assertMergedCollectionContainsIDs("/user-schemas", "schemas", "decl-schema-1", "user_schema")
+	suite.assertMergedCollectionContainsIDs("/user-types", "schemas", "decl-schema-1", "user_type")
 }
 
 func (suite *CompositeModeSuite) TestThemeDeclarativeVisibility() {
@@ -650,12 +650,12 @@ func (suite *CompositeModeSuite) TestFlowCreate() {
 	suite.trackResource("flow", flowID)
 }
 
-func (suite *CompositeModeSuite) TestUserSchemaCreate() {
+func (suite *CompositeModeSuite) TestEntityTypeCreate() {
 	timestamp := time.Now().Unix()
 	schemaID := fmt.Sprintf("runtime-schema-%d", timestamp)
 	client := testutils.GetHTTPClient()
 
-	// User schema API requires ouId as a UUID; resolve the declarative OU handle first.
+	// User type API requires ouId as a UUID; resolve the declarative OU handle first.
 	ouResp, err := client.Get(fmt.Sprintf("%s/organization-units/decl-ou-1", testutils.TestServerURL))
 	suite.Require().NoError(err)
 	suite.Equal(http.StatusOK, ouResp.StatusCode)
@@ -677,7 +677,7 @@ func (suite *CompositeModeSuite) TestUserSchemaCreate() {
 
 	req, err := http.NewRequest(
 		"POST",
-		fmt.Sprintf("%s/user-schemas", testutils.TestServerURL),
+		fmt.Sprintf("%s/user-types", testutils.TestServerURL),
 		strings.NewReader(string(payload)),
 	)
 	suite.Require().NoError(err)
@@ -685,7 +685,7 @@ func (suite *CompositeModeSuite) TestUserSchemaCreate() {
 
 	resp, err := client.Do(req)
 	suite.Require().NoError(err)
-	suite.Equal(http.StatusCreated, resp.StatusCode, "user schema should be created")
+	suite.Equal(http.StatusCreated, resp.StatusCode, "user type should be created")
 	location := resp.Header.Get("Location")
 
 	// Parse server-assigned ID from response
@@ -704,13 +704,13 @@ func (suite *CompositeModeSuite) TestUserSchemaCreate() {
 	suite.Require().NotEmpty(schemaID, "schema ID should not be empty")
 
 	// Verify retrieval
-	getReq, _ := http.NewRequest("GET", fmt.Sprintf("%s/user-schemas/%s", testutils.TestServerURL, schemaID), nil)
+	getReq, _ := http.NewRequest("GET", fmt.Sprintf("%s/user-types/%s", testutils.TestServerURL, schemaID), nil)
 	resp, err = client.Do(getReq)
 	suite.Require().NoError(err)
-	suite.Equal(http.StatusOK, resp.StatusCode, "created user schema should be retrievable")
+	suite.Equal(http.StatusOK, resp.StatusCode, "created user type should be retrievable")
 	resp.Body.Close()
 
-	suite.trackResource("user_schema", schemaID)
+	suite.trackResource("user_type", schemaID)
 }
 
 func (suite *CompositeModeSuite) TestThemeCreate() {
@@ -1031,32 +1031,32 @@ func (suite *CompositeModeSuite) TestFlowDeclarativeDeleteReject() {
 	suite.Equal("FLM-1017", errCode, "error code should be FLM-1017 for immutable flow")
 }
 
-func (suite *CompositeModeSuite) TestUserSchemaDeclarativeUpdateReject() {
+func (suite *CompositeModeSuite) TestEntityTypeDeclarativeUpdateReject() {
 	client := testutils.GetHTTPClient()
 	payload := map[string]interface{}{"name": "Updated"}
 	jsonPayload, _ := json.Marshal(payload)
 
-	req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/user-schemas/decl-schema-1", testutils.TestServerURL), strings.NewReader(string(jsonPayload)))
+	req, _ := http.NewRequest("PUT", fmt.Sprintf("%s/user-types/decl-schema-1", testutils.TestServerURL), strings.NewReader(string(jsonPayload)))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	suite.Require().NoError(err)
-	suite.Equal(http.StatusForbidden, resp.StatusCode, "update of declarative user schema should be rejected")
+	suite.Equal(http.StatusForbidden, resp.StatusCode, "update of declarative user type should be rejected")
 
 	errCode := suite.extractErrorCode(resp)
-	suite.Equal("USRS-1008", errCode, "error code should be USRS-1008 for immutable user schema")
+	suite.Equal("USRS-1008", errCode, "error code should be USRS-1008 for immutable user type")
 }
 
-func (suite *CompositeModeSuite) TestUserSchemaDeclarativeDeleteReject() {
+func (suite *CompositeModeSuite) TestEntityTypeDeclarativeDeleteReject() {
 	client := testutils.GetHTTPClient()
-	req, _ := http.NewRequest("DELETE", fmt.Sprintf("%s/user-schemas/decl-schema-1", testutils.TestServerURL), nil)
+	req, _ := http.NewRequest("DELETE", fmt.Sprintf("%s/user-types/decl-schema-1", testutils.TestServerURL), nil)
 
 	resp, err := client.Do(req)
 	suite.Require().NoError(err)
-	suite.Equal(http.StatusForbidden, resp.StatusCode, "delete of declarative user schema should be rejected")
+	suite.Equal(http.StatusForbidden, resp.StatusCode, "delete of declarative user type should be rejected")
 
 	errCode := suite.extractErrorCode(resp)
-	suite.Equal("USRS-1008", errCode, "error code should be USRS-1008 for immutable user schema")
+	suite.Equal("USRS-1008", errCode, "error code should be USRS-1008 for immutable user type")
 }
 
 func (suite *CompositeModeSuite) TestThemeDeclarativeUpdateReject() {

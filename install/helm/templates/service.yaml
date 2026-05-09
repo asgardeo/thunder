@@ -17,13 +17,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "thunder.fullname" . }}-service
+  name: {{ include "thunderid.fullname" . }}-service
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "thunder.labels" . | nindent 4 }}
+    {{- include "thunderid.labels" . | nindent 4 }}
 spec:
   selector:
-    {{- include "thunder.selectorLabels" . | nindent 4 }}
+    {{- include "thunderid.selectorLabels" . | nindent 4 }}
   ports:
     - name: servlet-https
       port: {{ .Values.service.port }}

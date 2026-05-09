@@ -107,12 +107,12 @@ func (h *clientCredentialsGrantHandler) HandleGrant(ctx context.Context, tokenRe
 	if len(scopes) > 0 {
 		var groupIDs []string
 		if h.entityProv != nil {
-			groups, groupErr := h.entityProv.GetTransitiveEntityGroups(oauthApp.AppID)
+			groups, groupErr := h.entityProv.GetTransitiveEntityGroups(oauthApp.ID)
 			if groupErr != nil {
 				// Ignore unimplemented providers to preserve existing behavior.
 				if groupErr.Code != entityprovider.ErrorCodeNotImplemented {
 					logger.Error("Failed to resolve app group memberships",
-						log.String("appID", oauthApp.AppID), log.String("error", groupErr.Error()))
+						log.String("appID", oauthApp.ID), log.String("error", groupErr.Error()))
 					return nil, &model.ErrorResponse{
 						Error:            constants.ErrorServerError,
 						ErrorDescription: "Failed to generate token",
@@ -128,13 +128,13 @@ func (h *clientCredentialsGrantHandler) HandleGrant(ctx context.Context, tokenRe
 		}
 
 		authzResp, svcErr := h.authzService.GetAuthorizedPermissions(ctx, authz.GetAuthorizedPermissionsRequest{
-			EntityID:             oauthApp.AppID,
+			EntityID:             oauthApp.ID,
 			GroupIDs:             groupIDs,
 			RequestedPermissions: scopes,
 		})
 		if svcErr != nil {
 			logger.Error("Failed to get authorized permissions for app",
-				log.String("appID", oauthApp.AppID), log.String("error", svcErr.Error.DefaultValue))
+				log.String("appID", oauthApp.ID), log.String("error", svcErr.Error.DefaultValue))
 			return nil, &model.ErrorResponse{
 				Error:            constants.ErrorServerError,
 				ErrorDescription: "Failed to generate token",
@@ -161,6 +161,7 @@ func (h *clientCredentialsGrantHandler) HandleGrant(ctx context.Context, tokenRe
 	}
 
 	accessToken, err := h.tokenBuilder.BuildAccessToken(&tokenservice.AccessTokenBuildContext{
+		Context:          ctx,
 		Subject:          tokenRequest.ClientID,
 		Audiences:        audiences,
 		ClientID:         tokenRequest.ClientID,

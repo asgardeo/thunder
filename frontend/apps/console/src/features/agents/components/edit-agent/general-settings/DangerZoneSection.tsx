@@ -1,0 +1,76 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {SettingsCard} from '@thunderid/components';
+import {Typography, Button, Divider} from '@wso2/oxygen-ui';
+import type {JSX} from 'react';
+import {useTranslation} from 'react-i18next';
+
+interface DangerZoneSectionProps {
+  onRegenerateClick?: () => void;
+  showRegenerateSecret?: boolean;
+  onDeleteClick: () => void;
+}
+
+export default function DangerZoneSection({
+  onRegenerateClick = undefined,
+  showRegenerateSecret = false,
+  onDeleteClick,
+}: DangerZoneSectionProps): JSX.Element {
+  const {t} = useTranslation();
+
+  return (
+    <SettingsCard
+      title={t('applications:edit.general.sections.dangerZone.title', 'Danger Zone')}
+      description={t(
+        'applications:edit.general.sections.dangerZone.description',
+        'Actions in this section are irreversible. Proceed with caution.',
+      )}
+    >
+      {showRegenerateSecret && (
+        <>
+          <Typography variant="h6" gutterBottom color="error">
+            {t('applications:edit.general.sections.dangerZone.regenerateSecret.title', 'Regenerate Client Secret')}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{mb: 3}}>
+            {t(
+              'applications:edit.general.sections.dangerZone.regenerateSecret.description',
+              'Regenerating the client secret will immediately invalidate the current client secret and cannot be undone.',
+            )}
+          </Typography>
+          <Button variant="contained" color="error" onClick={onRegenerateClick}>
+            {t('applications:edit.general.sections.dangerZone.regenerateSecret.button', 'Regenerate Client Secret')}
+          </Button>
+          <Divider sx={{my: 3}} />
+        </>
+      )}
+      <Typography variant="h6" gutterBottom color="error">
+        {t('agents:edit.general.dangerZone.deleteAgent.title', 'Delete Agent')}
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{mb: 3}}>
+        {t(
+          'agents:edit.general.dangerZone.deleteAgent.description',
+          'Permanently delete this agent and all associated data. This action cannot be undone.',
+        )}
+      </Typography>
+      <Button data-testid="delete-agent-button" variant="contained" color="error" onClick={onDeleteClick}>
+        {t('agents:edit.general.dangerZone.deleteAgent.button', 'Delete Agent')}
+      </Button>
+    </SettingsCard>
+  );
+}

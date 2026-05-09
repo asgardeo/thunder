@@ -18,7 +18,14 @@
 
 /* eslint-disable no-underscore-dangle */
 
-window.__THUNDER_RUNTIME_CONFIG__ = {
+window.__THUNDERID_RUNTIME_CONFIG__ = {
+  brand: {
+    product_name: {{ .Values.configuration.brand.productName | default "ThunderID" | quote }},
+    favicon: {
+      light: {{ .Values.configuration.brand.favicon.light | default "assets/images/favicon.ico" | quote }},
+      dark: {{ .Values.configuration.brand.favicon.dark | default "assets/images/favicon-inverted.ico" | quote }},
+    },
+  },
   client: {
     base: {{ .Values.configuration.gateClient.path | quote }},
   },

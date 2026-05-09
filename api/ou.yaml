@@ -1599,6 +1599,8 @@ components:
       properties:
         code:
           type: string
+          description: "Error code. Codes follow the OU-XXXX convention."
+          example: "OU-1001"
         message:
           $ref: '#/components/schemas/I18nMessage'
         description:

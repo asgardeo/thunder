@@ -38,7 +38,7 @@ set -euo pipefail
 #
 #   # PostgreSQL
 #   ./cleanup_runtime_db.sh -type postgres -host localhost -port 5432 \
-#       -name thunderruntime -username thunder -password secret
+#       -name thunderidruntime -username thunderid -password secret
 #
 #   # With options
 #   ./cleanup_runtime_db.sh -type sqlite -path /path/to/runtimedb.db \
@@ -48,10 +48,10 @@ set -euo pipefail
 #   ./cleanup_runtime_db.sh -type sqlite -path /path/to/runtimedb.db -dry_run
 #
 #   # Cron (every 30 minutes)
-#   */30 * * * * /opt/thunder/scripts/cleanup_runtime_db.sh \
-#       -type postgres -host localhost -port 5432 -name thunderruntime \
-#       -username thunder -password "$THUNDER_DB_PASSWORD" \
-#       >> /var/log/thunder-cleanup.log 2>&1
+#   */30 * * * * /opt/thunderid/scripts/cleanup_runtime_db.sh \
+#       -type postgres -host localhost -port 5432 -name thunderidruntime \
+#       -username thunderid -password "$THUNDERID_DB_PASSWORD" \
+#       >> /var/log/thunderid-cleanup.log 2>&1
 # =============================================================================
 
 # Script common variables.
@@ -368,7 +368,7 @@ cleanup_all_tables() {
 
 main() {
   echo "============================================"
-  echo "Thunder Runtime Database Cleanup"
+  echo "ThunderID Runtime Database Cleanup"
   echo "$(date '+%Y-%m-%d %H:%M:%S')"
   echo "============================================"
   echo ""

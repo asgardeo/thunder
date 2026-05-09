@@ -48,20 +48,20 @@ func (s *DeclarativeResourceTestSuite) SetupSuite() {
 	// Create temporary directory for tests
 	tempDir := s.T().TempDir()
 
-	// Initialize ThunderRuntime once for all tests
+	// Initialize server runtime once for all tests
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime(tempDir, testConfig)
-	s.Require().NoError(err, "Failed to initialize ThunderRuntime")
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime(tempDir, testConfig)
+	s.Require().NoError(err, "Failed to initialize server runtime")
 }
 
 func (s *DeclarativeResourceTestSuite) TearDownSuite() {
-	// Clean up ThunderRuntime after all tests
-	config.ResetThunderRuntime()
+	// Clean up server runtime after all tests
+	config.ResetServerRuntime()
 }
 
 func (s *DeclarativeResourceTestSuite) TestLayoutExporter_GetResourceType() {
@@ -318,8 +318,8 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_Integration(
 }
 
 func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_WithDBStore() {
-	thunderHome := config.GetThunderRuntime().ThunderHome
-	resourceDir := filepath.Join(thunderHome, "repository", "resources", "layouts")
+	serverHome := config.GetServerRuntime().ServerHome
+	resourceDir := filepath.Join(serverHome, "repository", "resources", "layouts")
 	err := os.MkdirAll(resourceDir, 0o750)
 	s.Require().NoError(err)
 

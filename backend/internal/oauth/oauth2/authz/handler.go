@@ -65,7 +65,7 @@ func (ah *authorizeHandler) HandleAuthorizeGetRequest(w http.ResponseWriter, r *
 			queryParams := map[string]string{
 				oauth2const.RequestParamError:            authErr.Code,
 				oauth2const.RequestParamErrorDescription: authErr.Message,
-				oauth2const.RequestParamIss:              config.GetThunderRuntime().Config.JWT.Issuer,
+				oauth2const.RequestParamIss:              config.GetServerRuntime().Config.JWT.Issuer,
 			}
 			if authErr.State != "" {
 				queryParams[oauth2const.RequestParamState] = authErr.State
@@ -208,7 +208,7 @@ func (ah *authorizeHandler) getOAuthMessageForPostRequest(r *http.Request) (*OAu
 
 // getLoginPageRedirectURI constructs the login page URL with the provided query parameters.
 func getLoginPageRedirectURI(queryParams map[string]string) (string, error) {
-	gateClientConfig := config.GetThunderRuntime().Config.GateClient
+	gateClientConfig := config.GetServerRuntime().Config.GateClient
 	loginPageURL := (&url.URL{
 		Scheme: gateClientConfig.Scheme,
 		Host:   fmt.Sprintf("%s:%d", gateClientConfig.Hostname, gateClientConfig.Port),
@@ -241,7 +241,7 @@ func (ah *authorizeHandler) redirectToLoginPage(w http.ResponseWriter, r *http.R
 
 // getErrorPageRedirectURL constructs the error page URL with the provided error code and message.
 func getErrorPageRedirectURL(code, msg string) (string, error) {
-	gateClientConfig := config.GetThunderRuntime().Config.GateClient
+	gateClientConfig := config.GetServerRuntime().Config.GateClient
 	errorPageURL := (&url.URL{
 		Scheme: gateClientConfig.Scheme,
 		Host:   fmt.Sprintf("%s:%d", gateClientConfig.Hostname, gateClientConfig.Port),
@@ -313,7 +313,7 @@ func (ah *authorizeHandler) writeAuthZResponseToClientRedirect(w http.ResponseWr
 	queryParams := map[string]string{
 		oauth2const.RequestParamError:            authErr.Code,
 		oauth2const.RequestParamErrorDescription: authErr.Message,
-		oauth2const.RequestParamIss:              config.GetThunderRuntime().Config.JWT.Issuer,
+		oauth2const.RequestParamIss:              config.GetServerRuntime().Config.JWT.Issuer,
 	}
 	if authErr.State != "" {
 		queryParams[oauth2const.RequestParamState] = authErr.State

@@ -27,4 +27,5 @@ exceptions:
   - via
   - with
   - without
+  - v7
   - Per-Cache

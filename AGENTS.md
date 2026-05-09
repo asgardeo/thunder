@@ -1,6 +1,6 @@
 # Project Overview
 
-Thunder is a lightweight user and identity management product. Go backend + React frontend in a monorepo. It provides authentication and authorization via OAuth2/OIDC, flexible orchestration flows, and individual auth mechanisms (password, passwordless, social login).
+ThunderID is a lightweight user and identity management product. Go backend + React frontend in a monorepo. It provides authentication and authorization via OAuth2/OIDC, flexible orchestration flows, and individual auth mechanisms (password, passwordless, social login).
 
 - [ARCHITECTURE.md](ARCHITECTURE.md)
 - For build and running - [Makefile](Makefile) and [README.md](README.md)
@@ -39,9 +39,18 @@ Clone the SDK repository only if you are developing or debugging the SDK itself,
 ## Agent Skills
 
 - [Console Navigator](.agent/skills/console/SKILL.md) — Browse and interact with the Console UI using `playwright-cli`. Use when asked to navigate the console, test UI changes, or create/edit resources through the browser.
+- [Database](.agent/skills/db/SKILL.md) — Database schema design principles and query conventions. Use for any database-related work.
 
 ## Contributing Guidelines
 
-- [`docs/contributing/backend-guidelines.md`](docs/contributing/backend-guidelines.md) — Go backend: package structure, database patterns, error handling, service initialization, transactions, testing
-- [`docs/contributing/frontend-guidelines.md`](docs/contributing/frontend-guidelines.md) — React/TypeScript: component patterns, testing, linting
+- [`docs/content/community/contributing/contributing-code/backend-development/overview.mdx`](docs/content/community/contributing/contributing-code/backend-development/overview.mdx) — Go backend: package structure, database patterns, error handling, service initialization, transactions, testing
+- [`docs/content/community/contributing/contributing-code/frontend-development/overview.mdx`](docs/content/community/contributing/contributing-code/frontend-development/overview.mdx) — React/TypeScript: component patterns, testing, linting
 - [`docs/AGENTS.md`](/docs/AGENTS.md) — Documentation authoring standards
+
+# Agent Guidance Index
+
+Agent skills live under `.agent/skills/`.
+
+- Database schema and query conventions: `.agent/skills/db/SKILL.md`
+
+For any database-related work, follow `.agent/skills/db/SKILL.md`.

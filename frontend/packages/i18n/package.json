@@ -1,0 +1,60 @@
+{
+  "name": "@thunderid/i18n",
+  "version": "0.0.0",
+  "description": "Translation resources for ThunderID applications",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./locales/en-US": {
+      "types": "./dist/locales/en-US.d.ts",
+      "import": "./dist/locales/en-US.js",
+      "require": "./dist/locales/en-US.cjs"
+    }
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.lib.json --emitDeclarationOnly && rolldown --config rolldown.config.js",
+    "dev": "rolldown --config rolldown.config.js --watch",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@asgardeo/react": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "@thunderid/contexts": "workspace:^",
+    "i18next": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-i18next": "catalog:"
+  },
+  "devDependencies": {
+    "@thunderid/eslint-plugin": "workspace:^",
+    "@thunderid/prettier-config": "workspace:^",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "rolldown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "i18n",
+    "internationalization",
+    "react-i18next",
+    "thunderid",
+    "translations"
+  ],
+  "author": "WSO2",
+  "license": "Apache-2.0"
+}

@@ -8,8 +8,8 @@ IAM
 [Ii][Aa][Mm]
 IdP
 PKCE
-Thunder
-@thunder
+ThunderID
+@thunderid
 npm
 pnpm
 [Vv]ite
@@ -43,6 +43,7 @@ DTOs
 [Mm]iddleware
 [Vv]itest
 ESLint
+DBQuery
 templated
 OTPs
 [Bb]reakpoint[s]?
@@ -65,3 +66,5 @@ ACLs
 [Ss]andboxed
 DCR
 BCP
+[Aa]llowlist
+Memorystore

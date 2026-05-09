@@ -1,0 +1,189 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {useState, useCallback, useMemo, useEffect} from 'react';
+import {useLogger} from '@thunderid/logger/react';
+import type Basic{{pascalCase featureName}} from '../models/{{camelCase featureName}}';
+import {filter{{pascalCase featureName}}s, sort{{pascalCase featureName}}s} from '../utils/{{camelCase featureName}}Utils';
+
+/**
+ * Search and filter options for {{camelCase featureName}}s.
+ */
+export interface {{pascalCase featureName}}SearchOptions {
+  /** Search term to filter by */
+  searchTerm: string;
+  /** Field to sort by */
+  sortField: keyof Basic{{pascalCase featureName}};
+  /** Sort direction */
+  sortDirection: 'asc' | 'desc';
+  /** Items per page for pagination */
+  itemsPerPage: number;
+  /** Current page number */
+  currentPage: number;
+}
+
+/**
+ * Result of the {{camelCase featureName}} search hook.
+ */
+export interface {{pascalCase featureName}}SearchResult {
+  /** Filtered and paginated {{camelCase featureName}}s */
+  {{camelCase featureName}}s: Basic{{pascalCase featureName}}[];
+  /** Total number of filtered {{camelCase featureName}}s */
+  totalCount: number;
+  /** Total number of pages */
+  totalPages: number;
+  /** Current search options */
+  options: {{pascalCase featureName}}SearchOptions;
+  /** Update search term */
+  setSearchTerm: (term: string) => void;
+  /** Update sort field */
+  setSortField: (field: keyof Basic{{pascalCase featureName}}) => void;
+  /** Update sort direction */
+  setSortDirection: (direction: 'asc' | 'desc') => void;
+  /** Update items per page */
+  setItemsPerPage: (count: number) => void;
+  /** Update current page */
+  setCurrentPage: (page: number) => void;
+  /** Reset all filters to defaults */
+  resetFilters: () => void;
+}
+
+const DEFAULT_OPTIONS: {{pascalCase featureName}}SearchOptions = {
+  searchTerm: '',
+  sortField: 'name',
+  sortDirection: 'asc',
+  itemsPerPage: 10,
+  currentPage: 1,
+};
+
+/**
+ * Custom hook for searching, filtering, and paginating {{camelCase featureName}}s.
+ *
+ * @param {{camelCase featureName}}s - Array of {{camelCase featureName}}s to search through
+ * @param initialOptions - Initial search options
+ * @returns Search result with filtered {{camelCase featureName}}s and control functions
+ *
+ * @example
+ * ```tsx
+ * function {{pascalCase featureName}}SearchComponent({ {{camelCase featureName}}s }: { {{camelCase featureName}}s: Basic{{pascalCase featureName}}[] }) {
+ *   const {
+ *     {{camelCase featureName}}s: filtered{{pascalCase featureName}}s,
+ *     totalCount,
+ *     options,
+ *     setSearchTerm,
+ *     setCurrentPage
+ *   } = use{{pascalCase featureName}}Search({{camelCase featureName}}s);
+ *
+ *   return (
+ *     <div>
+ *       <input
+ *         value={options.searchTerm}
+ *         onChange={(e) => setSearchTerm(e.target.value)}
+ *         placeholder="Search {{camelCase featureName}}s..."
+ *       />
+ *       <div>Found {totalCount} {{camelCase featureName}}s</div>
+ *       {filtered{{pascalCase featureName}}s.map({{camelCase featureName}} => (
+ *         // Render each {{camelCase featureName}} item
+ *       ))}
+ *     </div>
+ *   );
+ * }
+ * ```
+ */
+export default function use{{pascalCase featureName}}Search(
+  {{camelCase featureName}}s: Basic{{pascalCase featureName}}[],
+  initialOptions: Partial<{{pascalCase featureName}}SearchOptions> = {}
+): {{pascalCase featureName}}SearchResult {
+  const logger = useLogger('use{{pascalCase featureName}}Search');
+  const [options, setOptions] = useState<{{pascalCase featureName}}SearchOptions>({
+    ...DEFAULT_OPTIONS,
+    ...initialOptions,
+  });
+
+  // Filter and sort {{camelCase featureName}}s based on current options
+  const filteredAndSorted{{pascalCase featureName}}s = useMemo(() => {
+    const filtered = filter{{pascalCase featureName}}s({{camelCase featureName}}s, options.searchTerm);
+    const sorted = sort{{pascalCase featureName}}s(filtered, options.sortField, options.sortDirection);
+
+    logger.info('Filtered {{camelCase featureName}}s from ' + {{camelCase featureName}}s.length + ' to ' + filtered.length);
+    return sorted;
+  }, [{{camelCase featureName}}s, options.searchTerm, options.sortField, options.sortDirection, logger]);
+
+  // Calculate pagination
+  const totalCount = filteredAndSorted{{pascalCase featureName}}s.length;
+  const totalPages = Math.ceil(totalCount / options.itemsPerPage);
+
+  // Get {{camelCase featureName}}s for current page
+  const paginated{{pascalCase featureName}}s = useMemo(() => {
+    const startIndex = (options.currentPage - 1) * options.itemsPerPage;
+    const endIndex = startIndex + options.itemsPerPage;
+    return filteredAndSorted{{pascalCase featureName}}s.slice(startIndex, endIndex);
+  }, [filteredAndSorted{{pascalCase featureName}}s, options.currentPage, options.itemsPerPage]);
+
+  // Reset to first page when search term changes
+  useEffect(() => {
+    if (options.currentPage > 1) {
+      setOptions(prev => ({...prev, currentPage: 1}));
+    }
+  }, [options.searchTerm]);
+
+  // Ensure current page is valid when total pages change
+  useEffect(() => {
+    if (totalPages > 0 && options.currentPage > totalPages) {
+      setOptions(prev => ({...prev, currentPage: totalPages}));
+    }
+  }, [totalPages, options.currentPage]);
+
+  const setSearchTerm = useCallback((searchTerm: string) => {
+    setOptions(prev => ({...prev, searchTerm}));
+  }, []);
+
+  const setSortField = useCallback((sortField: keyof Basic{{pascalCase featureName}}) => {
+    setOptions(prev => ({...prev, sortField}));
+  }, []);
+
+  const setSortDirection = useCallback((sortDirection: 'asc' | 'desc') => {
+    setOptions(prev => ({...prev, sortDirection}));
+  }, []);
+
+  const setItemsPerPage = useCallback((itemsPerPage: number) => {
+    setOptions(prev => ({...prev, itemsPerPage, currentPage: 1}));
+  }, []);
+
+  const setCurrentPage = useCallback((currentPage: number) => {
+    setOptions(prev => ({...prev, currentPage}));
+  }, []);
+
+  const resetFilters = useCallback(() => {
+    setOptions(DEFAULT_OPTIONS);
+    logger.info('Reset {{camelCase featureName}} search filters');
+  }, [logger]);
+
+  return {
+    {{camelCase featureName}}s: paginated{{pascalCase featureName}}s,
+    totalCount,
+    totalPages,
+    options,
+    setSearchTerm,
+    setSortField,
+    setSortDirection,
+    setItemsPerPage,
+    setCurrentPage,
+    resetFilters,
+  };
+}

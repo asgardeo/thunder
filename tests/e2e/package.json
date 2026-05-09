@@ -1,7 +1,7 @@
 {
-  "name": "@thunder/e2e",
+  "name": "@thunderid/e2e",
   "version": "1.0.0",
-  "description": "End-to-end tests for Thunder using Playwright",
+  "description": "End-to-end tests for ThunderID using Playwright",
   "main": "index.js",
   "scripts": {
     "pretest": "npm run clean-reports",
@@ -30,7 +30,7 @@
     "playwright",
     "automation",
     "wso2",
-    "thunder"
+    "thunderid"
   ],
   "author": "WSO2 LLC",
   "license": "Apache-2.0",

@@ -37,7 +37,7 @@ var fileStoreDirectoryByResourceType = map[string]string{
 	resourceTypeIdentityProvider: "identity_providers",
 	resourceTypeFlow:             "flows",
 	resourceTypeOrganizationUnit: "organization_units",
-	resourceTypeUserSchema:       "user_schemas",
+	resourceTypeEntityType:       "user_types",
 	resourceTypeRole:             "roles",
 	resourceTypeResourceServer:   "resource_servers",
 	resourceTypeTheme:            "themes",
@@ -58,13 +58,13 @@ func deleteFileBackedResource(resourceType, resourceKey string) (string, *servic
 		)
 	}
 
-	thunderHome, err := getThunderHome()
+	serverHome, err := getThunderHome()
 	if err != nil {
 		return "", serviceerror.CustomServiceError(serviceerror.InternalServerError,
 			core.I18nMessage{Key: "error.import.dynamic", DefaultValue: err.Error()})
 	}
 
-	targetDir := filepath.Join(thunderHome, "repository", "resources", directory)
+	targetDir := filepath.Join(serverHome, "repository", "resources", directory)
 	entries, readErr := os.ReadDir(targetDir)
 	if readErr != nil {
 		if errors.Is(readErr, os.ErrNotExist) {
@@ -139,7 +139,7 @@ func getStringField(node *yaml.Node, field string) string {
 }
 
 func fileMatchesResourceKey(filePath, resourceType, resourceKey string) (bool, error) {
-	// #nosec G304 -- path is derived from thunderHome/resource directory and enumerated directory entries.
+	// #nosec G304 -- path is derived from server_home/resource directory and enumerated directory entries.
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return false, err
@@ -184,17 +184,17 @@ func documentMatchesKey(doc parsedDocument, resourceKey string) bool {
 	return false
 }
 
-func getThunderHome() (thunderHome string, err error) {
+func getThunderHome() (serverHome string, err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
-			err = fmt.Errorf("thunder runtime is not initialized")
+			err = fmt.Errorf("Server runtime is not initialized")
 		}
 	}()
 
-	runtime := config.GetThunderRuntime()
-	if runtime == nil || strings.TrimSpace(runtime.ThunderHome) == "" {
-		return "", fmt.Errorf("thunder runtime is not initialized")
+	runtime := config.GetServerRuntime()
+	if runtime == nil || strings.TrimSpace(runtime.ServerHome) == "" {
+		return "", fmt.Errorf("Server runtime is not initialized")
 	}
 
-	return runtime.ThunderHome, nil
+	return runtime.ServerHome, nil
 }

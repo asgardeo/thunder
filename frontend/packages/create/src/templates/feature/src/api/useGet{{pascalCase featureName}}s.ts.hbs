@@ -1,0 +1,121 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {useQuery, type UseQueryResult} from '@tanstack/react-query';
+import {useConfig} from '@thunderid/contexts';
+import {useAsgardeo} from '@asgardeo/react';
+import type Basic{{pascalCase featureName}} from '../models/{{camelCase featureName}}';
+import {{pascalCase featureName}}QueryKeys from '../constants/{{camelCase featureName}}-query-keys';
+
+/**
+ * Parameters for the {{camelCase featureName}}s list query.
+ */
+export interface UseGet{{pascalCase featureName}}sParams {
+  /** Number of {{camelCase featureName}}s to fetch per page */
+  limit?: number;
+  /** Offset for pagination */
+  offset?: number;
+  /** Search filter for {{camelCase featureName}} names */
+  search?: string;
+}
+
+/**
+ * Response structure for the {{camelCase featureName}}s list API.
+ */
+export interface {{pascalCase featureName}}sListResponse {
+  /** Array of {{camelCase featureName}}s */
+  {{camelCase featureName}}s: Basic{{pascalCase featureName}}[];
+  /** Total count of {{camelCase featureName}}s */
+  totalCount: number;
+  /** Number of {{camelCase featureName}}s per page */
+  limit: number;
+  /** Current offset */
+  offset: number;
+}
+
+/**
+ * Custom React hook to fetch a paginated list of {{camelCase featureName}}s from the server.
+ *
+ * This hook uses TanStack Query to manage the server state and provides automatic
+ * caching, refetching, and background updates. It supports pagination and search filtering.
+ *
+ * @param params - Query parameters for filtering and pagination
+ * @returns TanStack Query result object containing {{camelCase featureName}}s data, loading state, and error information
+ *
+ * @example
+ * ```tsx
+ * function {{pascalCase featureName}}sPage() {
+ *   const { data, isLoading, error } = useGet{{pascalCase featureName}}s({
+ *     limit: 10,
+ *     offset: 0,
+ *     search: 'my-{{kebabCase featureName}}'
+ *   });
+ *
+ *   if (isLoading) return <div>Loading...</div>;
+ *   if (error) return <div>Error: {error.message}</div>;
+ *   if (!data) return <div>No {{camelCase featureName}}s found</div>;
+ *
+ *   return (
+ *     <div>
+ *       <h1>{{pascalCase featureName}}s ({data.totalCount})</h1>
+ *       {data.{{camelCase featureName}}s.map(item => (
+ *         <div key=\{{item.id}}>{item.name}</div>
+ *       ))}
+ *     </div>
+ *   );
+ * }
+ * ```
+ *
+ * @public
+ */
+export default function useGet{{pascalCase featureName}}s(
+  params: UseGet{{pascalCase featureName}}sParams = {}
+): UseQueryResult<{{pascalCase featureName}}sListResponse> {
+  const {http} = useAsgardeo();
+  const {getServerUrl} = useConfig();
+
+  const {limit = 10, offset = 0, search = ''} = params;
+
+  return useQuery<{{pascalCase featureName}}sListResponse>({
+    queryKey: [{{pascalCase featureName}}QueryKeys.{{constantCase featureName}}S, {limit, offset, search}],
+    queryFn: async (): Promise<{{pascalCase featureName}}sListResponse> => {
+      const serverUrl: string = getServerUrl();
+
+      // Build query parameters
+      const searchParams = new URLSearchParams();
+      searchParams.append('limit', limit.toString());
+      searchParams.append('offset', offset.toString());
+      if (search.trim()) {
+        searchParams.append('search', search.trim());
+      }
+
+      const response: {
+        data: {{pascalCase featureName}}sListResponse;
+      } = await http.request({
+        url: serverUrl + '/{{kebabCase featureName}}s?' + searchParams.toString(),
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      } as unknown as Parameters<typeof http.request>[0]);
+
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}

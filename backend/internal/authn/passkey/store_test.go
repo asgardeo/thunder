@@ -94,9 +94,9 @@ func (suite *SessionStoreTestSuite) SetupSuite() {
 			Identifier: "test-deployment-id",
 		},
 	}
-	err := config.InitializeThunderRuntime("", testConfig)
+	err := config.InitializeServerRuntime("", testConfig)
 	if err != nil {
-		suite.T().Fatalf("Failed to initialize ThunderRuntime: %v", err)
+		suite.T().Fatalf("Failed to initialize server runtime: %v", err)
 	}
 }
 
@@ -112,15 +112,15 @@ func (suite *SessionStoreTestSuite) SetupTest() {
 }
 
 func (suite *SessionStoreTestSuite) TestNewSessionStore() {
-	// Initialize ThunderRuntime for the test
+	// Initialize server runtime for the test
 	testConfig := &config.Config{
 		Server: config.ServerConfig{
 			Identifier: "test-deployment-id",
 		},
 	}
-	err := config.InitializeThunderRuntime("", testConfig)
+	err := config.InitializeServerRuntime("", testConfig)
 	if err != nil {
-		suite.T().Fatalf("Failed to initialize ThunderRuntime: %v", err)
+		suite.T().Fatalf("Failed to initialize server runtime: %v", err)
 	}
 
 	store := newSessionStore()

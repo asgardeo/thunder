@@ -46,11 +46,11 @@ func TestHandlerTestSuite(t *testing.T) {
 
 func (s *HandlerTestSuite) SetupTest() {
 	testConfig := &config.Config{}
-	_ = config.InitializeThunderRuntime("", testConfig)
+	_ = config.InitializeServerRuntime("", testConfig)
 }
 
 func (s *HandlerTestSuite) TearDownTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 func (s *HandlerTestSuite) TestHandlePAR_Success() {

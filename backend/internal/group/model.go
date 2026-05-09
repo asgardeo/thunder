@@ -52,9 +52,9 @@ func (t MemberType) IsEntityType() bool {
 
 // Member represents a member of a group (either user or another group).
 type Member struct {
-	ID      string     `json:"id"`
-	Type    MemberType `json:"type"`
-	Display string     `json:"display,omitempty"`
+	ID      string     `json:"id" yaml:"id"`
+	Type    MemberType `json:"type" yaml:"type"`
+	Display string     `json:"display,omitempty" yaml:"display,omitempty"`
 }
 
 // GroupBasic represents the basic information of a group.
@@ -100,6 +100,7 @@ type MembersRequest struct {
 
 // CreateGroupRequest represents the request body for creating a group.
 type CreateGroupRequest struct {
+	ID          string   `json:"-"`
 	Name        string   `json:"name"`
 	Description string   `json:"description,omitempty"`
 	OUID        string   `json:"ouId"`

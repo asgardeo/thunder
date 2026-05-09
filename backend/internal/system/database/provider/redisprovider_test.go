@@ -38,8 +38,8 @@ func TestRedisProviderTestSuite(t *testing.T) {
 }
 
 func (suite *RedisProviderTestSuite) TestGetKeyPrefix() {
-	p := &redisProvider{keyPrefix: "thunder"}
-	suite.Equal("thunder", p.GetKeyPrefix())
+	p := &redisProvider{keyPrefix: "thunderid"}
+	suite.Equal("thunderid", p.GetKeyPrefix())
 }
 
 func (suite *RedisProviderTestSuite) TestGetRedisClient_Nil() {

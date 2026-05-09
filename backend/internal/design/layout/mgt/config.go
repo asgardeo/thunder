@@ -37,7 +37,7 @@ import (
 //
 // Returns normalized store mode: "mutable", "declarative", or "composite"
 func getLayoutStoreMode() serverconst.StoreMode {
-	cfg := config.GetThunderRuntime().Config
+	cfg := config.GetServerRuntime().Config
 	// Check if service-level configuration is explicitly set
 	if cfg.Layout.Store != "" {
 		mode := serverconst.StoreMode(strings.ToLower(strings.TrimSpace(cfg.Layout.Store)))

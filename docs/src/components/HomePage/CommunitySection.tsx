@@ -16,33 +16,25 @@
  * under the License.
  */
 
-import React, {JSX, useEffect, useState} from 'react';
-import {Box, Typography, AvatarGroup, Avatar, Tooltip, Skeleton, Card, Container} from '@wso2/oxygen-ui';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
+import {Box, Card, Container, Typography, useTheme} from '@wso2/oxygen-ui';
+import React, {JSX} from 'react';
 import useIsDarkMode from '../../hooks/useIsDarkMode';
 import useScrollAnimation from '../../hooks/useScrollAnimation';
-import {MessagesSquare, CircleDot} from '@wso2/oxygen-ui-icons-react';
-import {useLogger} from '@thunder/logger';
 
-interface Contributor {
-  login: string;
-}
-
-function CommunityCard({
-  icon,
-  iconBg,
-  title,
-  description,
-  linkLabel,
-  href,
-}: {
+interface CommunityCardProps {
   icon: JSX.Element;
   iconBg: string;
   title: string;
   description: string;
   linkLabel: string;
   href: string;
-}) {
+}
+
+function CommunityCard({icon, iconBg, title, description, linkLabel, href}: CommunityCardProps) {
   const isDark = useIsDarkMode();
+  const theme = useTheme();
 
   return (
     <Card
@@ -59,12 +51,12 @@ function CommunityCard({
         transition: 'all 0.3s ease',
         bgcolor: isDark ? 'rgba(255, 255, 255, 0.025)' : 'rgba(0, 0, 0, 0.02)',
         border: '1px solid',
-        borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+        borderColor: 'divider',
         borderRadius: '16px',
         '&:hover': {
           transform: 'translateY(-4px)',
           boxShadow: isDark ? '0 12px 32px rgba(0, 0, 0, 0.4)' : '0 12px 32px rgba(0, 0, 0, 0.1)',
-          borderColor: 'rgba(255, 140, 0, 0.25)',
+          borderColor: `rgba(${theme.vars?.palette.primary.main} / 0.25)`,
           bgcolor: isDark ? 'rgba(255, 255, 255, 0.035)' : 'rgba(0, 0, 0, 0.03)',
         },
       }}
@@ -79,38 +71,27 @@ function CommunityCard({
           alignItems: 'center',
           justifyContent: 'center',
           background: iconBg,
-          color: '#ffffff',
+          color: 'common.white',
           mb: 3,
         }}
       >
         {icon}
       </Box>
-      <Typography
-        variant="h6"
-        sx={{fontWeight: 600, mb: 1, color: isDark ? '#ffffff' : '#1a1a2e', fontSize: '1.1rem'}}
-      >
+      <Typography variant="h6" sx={{fontWeight: 600, mb: 1, color: 'text.primary', fontSize: '1.1rem'}}>
         {title}
       </Typography>
-      <Typography
-        variant="body2"
-        sx={{
-          mb: 3,
-          color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.45)',
-          lineHeight: 1.7,
-          fontSize: '0.9rem',
-        }}
-      >
+      <Typography variant="body2" sx={{mb: 3, color: 'text.secondary', lineHeight: 1.7, fontSize: '0.9rem'}}>
         {description}
       </Typography>
       <Typography
         variant="body2"
         sx={{
           mt: 'auto',
-          color: '#FF8C00',
+          color: 'primary.main',
           fontWeight: 500,
           fontSize: '0.9rem',
           transition: 'color 0.2s ease',
-          '&:hover': {color: '#FF6B00'},
+          '&:hover': {color: 'primary.dark'},
         }}
       >
         {linkLabel} &rarr;
@@ -119,64 +100,89 @@ function CommunityCard({
   );
 }
 
+function GitForkIcon() {
+  return (
+    <svg
+      width="26"
+      height="26"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="18" r="3" />
+      <circle cx="6" cy="6" r="3" />
+      <circle cx="18" cy="6" r="3" />
+      <path d="M18 9v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9" />
+      <path d="M12 12v3" />
+    </svg>
+  );
+}
+
+function IssueIcon() {
+  return (
+    <svg
+      width="26"
+      height="26"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  );
+}
+
+function DiscordIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.032.055a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+    </svg>
+  );
+}
+
 export default function CommunitySection(): JSX.Element {
-  const logger = useLogger('CommunitySection');
-  const isDark = useIsDarkMode();
-  const {ref: sectionRef, isVisible: sectionVisible} = useScrollAnimation({threshold: 0.15});
-
-  const [contributors, setContributors] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
-
-  const handleImageError = (username: string) => {
-    setFailedImages((prev) => new Set(prev).add(username));
-  };
-
-  useEffect(() => {
-    fetch('https://api.github.com/repos/asgardeo/thunder/contributors?per_page=12')
-      .then((response) => response.json())
-      .then((data: Contributor[]) => {
-        setContributors(data.map((contributor) => contributor.login));
-        setLoading(false);
-      })
-      .catch((error) => {
-        logger.error('Error fetching contributors:', {error});
-        setLoading(false);
-      });
-  }, [logger]);
-
-  const hasContributors = !loading && contributors.length > 0;
+  const theme = useTheme();
+  const {ref, isVisible} = useScrollAnimation({threshold: 0.15});
+  const {siteConfig} = useDocusaurusContext();
+  const productName = (siteConfig.customFields?.product as DocusaurusProductConfig).project.name;
 
   return (
-    <Box component="section" sx={{py: {xs: 8, lg: 12}, background: isDark ? '#0a0a0a' : 'transparent'}}>
+    <Box component="section" sx={{py: {xs: 8, lg: 12}}}>
       <Container maxWidth="lg" sx={{px: {xs: 2, sm: 4}}}>
         <Box
-          ref={sectionRef}
+          ref={ref}
           sx={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             textAlign: 'center',
-            opacity: sectionVisible ? 1 : 0,
-            transform: sectionVisible ? 'translateY(0)' : 'translateY(32px)',
+            opacity: isVisible ? 1 : 0,
+            transform: isVisible ? 'translateY(0)' : 'translateY(32px)',
             transition: 'opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
           }}
         >
-          {/* Heading */}
           <Typography
             variant="h3"
             sx={{
               mb: 2,
               fontSize: {xs: '1.75rem', sm: '2.25rem', md: '2.5rem'},
               fontWeight: 700,
-              color: isDark ? '#ffffff' : '#1a1a2e',
+              color: 'text.primary',
             }}
           >
-            Join the{' '}
+            Join the {productName}{' '}
             <Box
               component="span"
               sx={{
-                background: 'linear-gradient(90deg, #FF6B00 0%, #FF8C00 100%)',
+                background: `linear-gradient(90deg, ${theme.vars?.palette.primary.dark} 0%, ${theme.vars?.palette.primary.main} 100%)`,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
@@ -185,106 +191,52 @@ export default function CommunitySection(): JSX.Element {
               community
             </Box>
           </Typography>
-
           <Typography
             variant="body1"
             sx={{
-              mb: hasContributors || loading ? 6 : 5,
+              mb: 6,
               fontSize: {xs: '0.95rem', sm: '1.05rem'},
-              color: isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.55)',
+              color: 'text.secondary',
               lineHeight: 1.7,
               maxWidth: '600px',
             }}
           >
-            Engage with our ever-growing community to get the latest updates, product support, and more.
+            We're building {productName} with you. Engage with our ever-growing community to get the latest updates,
+            product support, and more.
           </Typography>
 
-          {/* Contributor avatars — only show when we have data */}
-          {loading && (
-            <Box
-              sx={{
-                mx: 'auto',
-                mb: 6,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexWrap: 'wrap',
-                gap: 0.5,
-              }}
-            >
-              {Array.from({length: 10}).map((_, index) => (
-                <Skeleton
-                  key={`${index + 1}-skeleton`}
-                  variant="circular"
-                  sx={{
-                    height: {xs: 44, lg: 52},
-                    width: {xs: 44, lg: 52},
-                    bgcolor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)',
-                  }}
-                />
-              ))}
-            </Box>
-          )}
-
-          {hasContributors && (
-            <AvatarGroup
-              max={12}
-              sx={{
-                mx: 'auto',
-                mb: 6,
-                '& .MuiAvatar-root': {
-                  width: {xs: 44, lg: 52},
-                  height: {xs: 44, lg: 52},
-                  border: isDark ? '2px solid #141414' : '2px solid #ffffff',
-                  transition: 'all 0.2s ease',
-                  cursor: 'pointer',
-                  '&:hover': {
-                    transform: 'translateY(-6px) scale(1.15)',
-                    zIndex: 1000,
-                  },
-                },
-              }}
-            >
-              {contributors
-                .filter((username) => !failedImages.has(username))
-                .map((username) => (
-                  <Tooltip key={username} title={username} arrow>
-                    <Avatar
-                      alt={username}
-                      src={`https://github.com/${username}.png?size=96`}
-                      imgProps={{loading: 'lazy'}}
-                      onError={() => handleImageError(username)}
-                    />
-                  </Tooltip>
-                ))}
-            </AvatarGroup>
-          )}
-
-          {/* Cards */}
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: {xs: '1fr', md: '1fr 1fr'},
+              gridTemplateColumns: {xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)'},
               width: '100%',
-              maxWidth: 800,
+              maxWidth: 900,
               gap: 3,
             }}
           >
             <CommunityCard
-              icon={<MessagesSquare size={26} />}
-              iconBg="linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%)"
-              title="Join the Discussions"
-              description="Connect with the community, ask questions, and share your ideas"
-              linkLabel="Join Discussions"
-              href="https://github.com/asgardeo/thunder/discussions"
+              icon={<GitForkIcon />}
+              iconBg={`linear-gradient(135deg, ${theme.vars?.palette.primary.dark} 0%, ${theme.vars?.palette.primary.main} 100%)`}
+              title="Contribute"
+              description={`Help shape ${productName} by submitting features, fixes, or improvements.`}
+              linkLabel="Start Contributing"
+              href="https://github.com/asgardeo/thunder/blob/main/CONTRIBUTING.md"
             />
             <CommunityCard
-              icon={<CircleDot size={26} />}
+              icon={<IssueIcon />}
               iconBg="linear-gradient(135deg, #22c55e 0%, #16a34a 100%)"
-              title="Good First Issues"
-              description="Start contributing with beginner-friendly issues to get involved"
-              linkLabel="View Issues"
-              href="https://github.com/asgardeo/thunder/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22"
+              title="Report issues"
+              description={`Identify bugs and suggest enhancements to make ${productName} better for everyone.`}
+              linkLabel="Open an Issue"
+              href="https://github.com/asgardeo/thunder/issues"
+            />
+            <CommunityCard
+              icon={<DiscordIcon />}
+              iconBg="linear-gradient(135deg, #5865F2 0%, #4752C4 100%)"
+              title="Join Discord"
+              description="Join Discord to get real-time support, ask questions, and engage with other users"
+              linkLabel="Join Discord"
+              href="https://discord.gg/wso2"
             />
           </Box>
         </Box>

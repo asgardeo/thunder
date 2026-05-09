@@ -78,7 +78,7 @@ func newFlowStore() (flowStoreInterface, transaction.Transactioner, error) {
 	}
 	return &flowStore{
 		dbProvider:        dbProvider,
-		deploymentID:      config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID:      config.GetServerRuntime().Config.Server.Identifier,
 		maxVersionHistory: getMaxVersionHistory(),
 		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, "FlowStore")),
 	}, transactioner, nil
@@ -681,7 +681,7 @@ func (s *flowStore) buildFlowVersionFromRow(row map[string]interface{}) (*FlowVe
 // getMaxVersionHistory retrieves the maximum version history size from configuration.
 // If not set or invalid, returns the default value.
 func getMaxVersionHistory() int {
-	flowConfig := config.GetThunderRuntime().Config.Flow
+	flowConfig := config.GetServerRuntime().Config.Flow
 	if flowConfig.MaxVersionHistory <= 0 {
 		return defaultVersionHistory
 	}

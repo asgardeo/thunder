@@ -6,7 +6,7 @@ description: Generate feature packages and shared packages with Create CLI tool
 
 # Scaffolding Tool
 
-<ProductName /> Create (`@thunder/create`) is a CLI scaffolding tool that automates the creation of feature packages and shared packages in the <ProductName /> frontend workspace. The tool generates complete, production-ready package structures with pre-configured build tools, testing infrastructure, and best practices.
+<ProductName /> Create (`@thunderid/create`) is a CLI scaffolding tool that automates the creation of feature packages and shared packages in the <ProductName /> frontend workspace. The tool generates complete, production-ready package structures with pre-configured build tools, testing infrastructure, and best practices.
 
 ## Overview
 
@@ -35,10 +35,10 @@ Package creation and build typically completes in approximately 5 minutes.
 
 ### Linking the Package
 
-Since we haven't published `@thunder/create` to npm yet, link it locally:
+Since we haven't published `@thunderid/create` to npm yet, link it locally:
 
 ```bash
-cd frontend/packages/thunder-create
+cd frontend/packages/create
 pnpm link --global
 ```
 
@@ -47,7 +47,7 @@ pnpm link --global
 Execute from anywhere in the <ProductName /> workspace:
 
 ```bash
-thunder-create
+create-thunderid
 ```
 
 ### Creating Feature Packages
@@ -57,7 +57,7 @@ Feature packages are domain-specific modules containing business logic, UI compo
 To create a feature package, follow the interactive prompts:
 
 ```bash
-thunder-create feature
+create-thunderid feature
 ```
 
 #### Step 1: Select Feature Type
@@ -66,13 +66,13 @@ Choose the feature type:
 
 ```bash
 ◆  Feature type:
-│  ● Admin feature (thunder-admin-xxx)
-│  ○ Gate feature (gate-xxx)
+│  ● Configuration feature (configure-xxx)
+│  ○ Gateway feature (gateway-xxx)
 └
 ```
 
-- **Admin feature**: Administrative console features
-- **Gate feature**: Authentication and registration features
+- **Configuration feature**: Features related to system configuration
+- **Gateway feature**: Features related to authentication and registration
 
 #### Step 2: Provide Feature Name
 
@@ -110,11 +110,11 @@ build the feature now?
 
 #### Generated Package Structure
 
-The tool generates a feature package (e.g., `thunder-admin-user-management`) with the following structure:
+The tool generates a feature package (e.g., `configure-user-management`) with the following structure:
 
 ```bash
-thunder-admin-user-management/
-├── package.json                 # Package manifest (@thunder/admin-user-management)
+configure-user-management/
+├── package.json                 # Package manifest
 ├── tsconfig.json               # Base TypeScript configuration
 ├── tsconfig.lib.json           # Library build configuration
 ├── tsconfig.spec.json          # Test configuration

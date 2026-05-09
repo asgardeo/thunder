@@ -61,7 +61,7 @@ func (suite *HealthCheckServiceTestSuite) SetupTest() {
 			},
 		},
 	}
-	_ = config.InitializeThunderRuntime("test", testConfig)
+	_ = config.InitializeServerRuntime("test", testConfig)
 
 	suite.service = Initialize(nil, nil)
 }

@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/entity"
+	"github.com/asgardeo/thunder/internal/entitytype"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
@@ -35,7 +36,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/security"
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 const loggerComponentName = "UserService"
@@ -65,7 +65,7 @@ type userService struct {
 	authzService      sysauthz.SystemAuthorizationServiceInterface
 	entityService     entity.EntityServiceInterface
 	ouService         oupkg.OrganizationUnitServiceInterface
-	userSchemaService userschema.UserSchemaServiceInterface
+	entityTypeService entitytype.EntityTypeServiceInterface
 }
 
 // newUserService creates a new instance of userService with injected dependencies.
@@ -73,13 +73,13 @@ func newUserService(
 	authzService sysauthz.SystemAuthorizationServiceInterface,
 	entityService entity.EntityServiceInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	entityTypeService entitytype.EntityTypeServiceInterface,
 ) UserServiceInterface {
 	return &userService{
 		authzService:      authzService,
 		entityService:     entityService,
 		ouService:         ouService,
-		userSchemaService: userSchemaService,
+		entityTypeService: entityTypeService,
 	}
 }
 
@@ -260,7 +260,7 @@ func (us *userService) GetUsersByPath(
 			for _, u := range fetchedUsers {
 				userTypes = append(userTypes, u.Type)
 			}
-			displayAttrPaths := ResolveDisplayAttributePaths(ctx, userTypes, us.userSchemaService, logger)
+			displayAttrPaths := ResolveDisplayAttributePaths(ctx, userTypes, us.entityTypeService, logger)
 
 			users = make([]User, len(ouResponse.Users))
 			for i, ouUser := range ouResponse.Users {
@@ -403,7 +403,7 @@ func (us *userService) GetUser(
 
 	if includeDisplay {
 		displayAttrPaths := ResolveDisplayAttributePaths(
-			ctx, []string{user.Type}, us.userSchemaService, logger)
+			ctx, []string{user.Type}, us.entityTypeService, logger)
 		user.Display = utils.ResolveDisplay(
 			user.ID, user.Type, user.Attributes, displayAttrPaths)
 
@@ -585,14 +585,15 @@ func (us *userService) UpdateUserAttributes(
 
 	// Reject credential fields here: this endpoint is for attribute updates only.
 	// Credentials must go through UpdateUserCredentials, which enforces its own authz and validation.
-	if us.userSchemaService == nil {
-		logger.Error("User schema service is not configured for user operations")
+	if us.entityTypeService == nil {
+		logger.Error("Entity type service is not configured for user operations")
 		return nil, &serviceerror.InternalServerError
 	}
-	schemaCredentialAttributes, svcErr := us.userSchemaService.GetCredentialAttributes(ctx, existingUser.Type)
+	schemaCredentialAttributes, svcErr := us.entityTypeService.GetCredentialAttributes(ctx,
+		entitytype.TypeCategoryUser, existingUser.Type)
 	if svcErr != nil {
-		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
-			return nil, &ErrorUserSchemaNotFound
+		if svcErr.Code == entitytype.ErrorEntityTypeNotFound.Code {
+			return nil, &ErrorEntityTypeNotFound
 		}
 		return nil, logErrorAndReturnServerError(logger, "Failed to get credential attributes from schema",
 			fmt.Errorf("schema service error: %s", svcErr.ErrorDescription.DefaultValue),
@@ -772,7 +773,7 @@ func (us *userService) DeleteUser(ctx context.Context, userID string) *serviceer
 }
 
 // populateUserDisplayNames resolves display names for a slice of users in-place.
-// It batch-fetches display attribute paths from the user schema service and extracts the
+// It batch-fetches display attribute paths from the entity type service and extracts the
 // display value from each user's attributes. Falls back to user ID if extraction fails.
 func (us *userService) populateUserDisplayNames(ctx context.Context, users []User, logger *log.Logger) {
 	// Collect user types for display attribute resolution.
@@ -782,7 +783,7 @@ func (us *userService) populateUserDisplayNames(ctx context.Context, users []Use
 	}
 
 	displayAttrPaths := ResolveDisplayAttributePaths(
-		ctx, userTypes, us.userSchemaService, logger)
+		ctx, userTypes, us.entityTypeService, logger)
 
 	// Resolve display for each user.
 	for i := range users {
@@ -820,7 +821,7 @@ func (us *userService) validateOrganizationUnitForUserType(
 	ctx context.Context, userType, oUID string, logger *log.Logger,
 ) *serviceerror.ServiceError {
 	if strings.TrimSpace(userType) == "" {
-		return &ErrorUserSchemaNotFound
+		return &ErrorEntityTypeNotFound
 	}
 
 	if strings.TrimSpace(oUID) == "" {
@@ -850,31 +851,32 @@ func (us *userService) validateOrganizationUnitForUserType(
 		return &ErrorOrganizationUnitNotFound
 	}
 
-	if us.userSchemaService == nil {
-		logger.Error("User schema service is not configured for user operations")
+	if us.entityTypeService == nil {
+		logger.Error("Entity type service is not configured for user operations")
 		return &serviceerror.InternalServerError
 	}
 
-	userSchema, svcErr := us.userSchemaService.GetUserSchemaByName(ctx, userType)
+	entityType, svcErr := us.entityTypeService.GetEntityTypeByName(ctx,
+		entitytype.TypeCategoryUser, userType)
 	if svcErr != nil {
-		if svcErr.Code == userschema.ErrorUserSchemaNotFound.Code {
-			return &ErrorUserSchemaNotFound
+		if svcErr.Code == entitytype.ErrorEntityTypeNotFound.Code {
+			return &ErrorEntityTypeNotFound
 		}
-		logger.Error("Failed to retrieve user schema",
+		logger.Error("Failed to retrieve user type",
 			log.String("userType", userType), log.Any("error", svcErr))
 		return &serviceerror.InternalServerError
 	}
 
-	if userSchema == nil {
-		logger.Error("User schema service returned nil response", log.String("userType", userType))
+	if entityType == nil {
+		logger.Error("Entity type service returned nil response", log.String("userType", userType))
 		return &serviceerror.InternalServerError
 	}
 
-	if userSchema.OUID == oUID {
+	if entityType.OUID == oUID {
 		return nil
 	}
 
-	isParent, svcErr := us.ouService.IsParent(ctx, userSchema.OUID, oUID)
+	isParent, svcErr := us.ouService.IsParent(ctx, entityType.OUID, oUID)
 	if svcErr != nil {
 		return mapOUServiceError(
 			svcErr,
@@ -885,7 +887,7 @@ func (us *userService) validateOrganizationUnitForUserType(
 			},
 			log.String("userType", userType),
 			log.String("oUID", oUID),
-			log.String("schemaOUID", userSchema.OUID),
+			log.String("schemaOUID", entityType.OUID),
 		)
 	}
 
@@ -893,7 +895,7 @@ func (us *userService) validateOrganizationUnitForUserType(
 		logger.Debug("Organization unit mismatch for user type",
 			log.String("userType", userType),
 			log.String("oUID", oUID),
-			log.String("schemaOUID", userSchema.OUID))
+			log.String("schemaOUID", entityType.OUID))
 		return &ErrorOrganizationUnitMismatch
 	}
 

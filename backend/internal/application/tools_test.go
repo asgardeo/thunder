@@ -158,7 +158,7 @@ func (suite *ApplicationToolsTestSuite) TestGetApplicationByClientID_Success() {
 	tools := &applicationTools{appService: mockService}
 
 	oauthApp := &inboundmodel.OAuthClient{
-		AppID:    "app123",
+		ID:       "app123",
 		ClientID: "client123",
 	}
 
@@ -210,7 +210,7 @@ func (suite *ApplicationToolsTestSuite) TestGetApplicationByClientID_AppError() 
 	tools := &applicationTools{appService: mockService}
 
 	oauthApp := &inboundmodel.OAuthClient{
-		AppID:    "app123",
+		ID:       "app123",
 		ClientID: "client123",
 	}
 

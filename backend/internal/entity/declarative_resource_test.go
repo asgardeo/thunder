@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/cryptolab/hash"
 	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/tests/mocks/crypto/hashmock"
 )
@@ -43,11 +43,11 @@ func TestDeclarativeResourceTestSuite(t *testing.T) {
 }
 
 func (s *DeclarativeResourceTestSuite) SetupTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 func (s *DeclarativeResourceTestSuite) TearDownTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_MutableStore_Skipped() {
@@ -64,7 +64,7 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_FileStore_Em
 	resourceDir := filepath.Join(tmpDir, "repository", "resources", "users")
 	s.Require().NoError(os.MkdirAll(resourceDir, 0750))
 
-	s.Require().NoError(config.InitializeThunderRuntime(tmpDir, &config.Config{}))
+	s.Require().NoError(config.InitializeServerRuntime(tmpDir, &config.Config{}))
 
 	fileStore := newEntityFileBasedStore()
 	mockSvc := newEntityServiceMock(s.T())
@@ -85,7 +85,7 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_CompositeSto
 	tmpDir := s.T().TempDir()
 	resourceDir := filepath.Join(tmpDir, "repository", "resources", "users")
 	s.Require().NoError(os.MkdirAll(resourceDir, 0750))
-	s.Require().NoError(config.InitializeThunderRuntime(tmpDir, &config.Config{}))
+	s.Require().NoError(config.InitializeServerRuntime(tmpDir, &config.Config{}))
 
 	fileStore := newEntityFileBasedStore()
 	dbStoreMock := newEntityStoreInterfaceMock(s.T())
@@ -127,7 +127,7 @@ category: "user"
 attributes: {}
 `)
 	s.Require().NoError(os.WriteFile(filepath.Join(resourceDir, "item1.yaml"), entityYAML, 0600))
-	s.Require().NoError(config.InitializeThunderRuntime(tmpDir, &config.Config{}))
+	s.Require().NoError(config.InitializeServerRuntime(tmpDir, &config.Config{}))
 
 	fileStore := newEntityFileBasedStore()
 	mockSvc := newEntityServiceMock(s.T())
@@ -160,7 +160,7 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_ParserError(
 	resourceDir := filepath.Join(tmpDir, "repository", "resources", "items")
 	s.Require().NoError(os.MkdirAll(resourceDir, 0750))
 	s.Require().NoError(os.WriteFile(filepath.Join(resourceDir, "bad.yaml"), []byte("id: x"), 0600))
-	s.Require().NoError(config.InitializeThunderRuntime(tmpDir, &config.Config{}))
+	s.Require().NoError(config.InitializeServerRuntime(tmpDir, &config.Config{}))
 
 	fileStore := newEntityFileBasedStore()
 	mockSvc := newEntityServiceMock(s.T())
@@ -182,7 +182,7 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_ValidatorErr
 	resourceDir := filepath.Join(tmpDir, "repository", "resources", "items")
 	s.Require().NoError(os.MkdirAll(resourceDir, 0750))
 	s.Require().NoError(os.WriteFile(filepath.Join(resourceDir, "item.yaml"), []byte("id: x"), 0600))
-	s.Require().NoError(config.InitializeThunderRuntime(tmpDir, &config.Config{}))
+	s.Require().NoError(config.InitializeServerRuntime(tmpDir, &config.Config{}))
 
 	fileStore := newEntityFileBasedStore()
 	mockSvc := newEntityServiceMock(s.T())
@@ -207,7 +207,7 @@ func (s *DeclarativeResourceTestSuite) TestLoadDeclarativeResources_HashesSystem
 	resourceDir := filepath.Join(tmpDir, "repository", "resources", "applications")
 	s.Require().NoError(os.MkdirAll(resourceDir, 0750))
 	s.Require().NoError(os.WriteFile(filepath.Join(resourceDir, "app.yaml"), []byte("id: x"), 0600))
-	s.Require().NoError(config.InitializeThunderRuntime(tmpDir, &config.Config{}))
+	s.Require().NoError(config.InitializeServerRuntime(tmpDir, &config.Config{}))
 
 	fileStore := newEntityFileBasedStore()
 	hashService := hashmock.NewHashServiceInterfaceMock(s.T())

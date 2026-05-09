@@ -43,7 +43,7 @@ var oidcAuthTestOU = testutils.OrganizationUnit{
 	Parent:      nil,
 }
 
-var oidcUserSchema = testutils.UserSchema{
+var oidcEntityType = testutils.UserType{
 	Name: "oidc_user",
 	Schema: map[string]interface{}{
 		"username": map[string]interface{}{
@@ -73,7 +73,7 @@ type OIDCAuthTestSuite struct {
 	mockOIDCServer *testutils.MockOIDCServer
 	idpID          string
 	userID         string
-	userSchemaID   string
+	entityTypeID   string
 	ouID           string
 }
 
@@ -108,10 +108,10 @@ func (suite *OIDCAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err, "Failed to create test organization unit")
 	suite.ouID = ouID
 
-	oidcUserSchema.OUID = suite.ouID
-	schemaID, err := testutils.CreateUserType(oidcUserSchema)
-	suite.Require().NoError(err, "Failed to create OIDC user schema")
-	suite.userSchemaID = schemaID
+	oidcEntityType.OUID = suite.ouID
+	schemaID, err := testutils.CreateUserType(oidcEntityType)
+	suite.Require().NoError(err, "Failed to create OIDC user type")
+	suite.entityTypeID = schemaID
 
 	userAttributes := map[string]interface{}{
 		"username":   "oidcuser",
@@ -126,7 +126,7 @@ func (suite *OIDCAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err)
 
 	user := testutils.User{
-		Type:       oidcUserSchema.Name,
+		Type:       oidcEntityType.Name,
 		OUID:       suite.ouID,
 		Attributes: json.RawMessage(attributesJSON),
 	}
@@ -193,8 +193,8 @@ func (suite *OIDCAuthTestSuite) TearDownSuite() {
 		_ = testutils.DeleteUser(suite.userID)
 	}
 
-	if suite.userSchemaID != "" {
-		_ = testutils.DeleteUserType(suite.userSchemaID)
+	if suite.entityTypeID != "" {
+		_ = testutils.DeleteUserType(suite.entityTypeID)
 	}
 
 	if suite.idpID != "" {

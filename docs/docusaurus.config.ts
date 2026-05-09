@@ -19,17 +19,42 @@
 import type * as Preset from '@docusaurus/preset-classic';
 import type {Config} from '@docusaurus/types';
 import {themes as prismThemes} from 'prism-react-renderer';
+import productConfig from './docusaurus.product.config';
 import personaPlugin from './plugins/personaPlugin';
-import thunderConfig from './docusaurus.thunder.config';
+import rehypeProductName from './plugins/rehypeProductName';
 import webpackPlugin from './plugins/webpackPlugin';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
-const baseUrl = `/${thunderConfig.documentation.deployment.production.baseUrl}/`;
+/**
+ * Recursively replaces `{{ProductName}}` and `{{productSlug}}` in every string
+ * value inside a frontmatter object so authors can use these placeholders in
+ * frontmatter fields (e.g. `title`, `description`) without hard-coding the
+ * product name or slug.
+ */
+function replaceProductNameInObject(value: unknown, productName: string, productSlug: string): unknown {
+  if (typeof value === 'string') {
+    return value.replaceAll('{{ProductName}}', productName).replaceAll('{{productSlug}}', productSlug);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => replaceProductNameInObject(item, productName, productSlug));
+  }
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [
+        k,
+        replaceProductNameInObject(v, productName, productSlug),
+      ]),
+    );
+  }
+  return value;
+}
+
+const baseUrl = `/${productConfig.documentation.deployment.production.baseUrl}/`;
 
 const config: Config = {
-  title: thunderConfig.project.name,
-  tagline: thunderConfig.project.description,
+  title: productConfig.project.name,
+  tagline: productConfig.project.description,
   favicon: 'assets/images/favicon.ico',
 
   // Prevent search engine indexing
@@ -42,15 +67,30 @@ const config: Config = {
     v4: true, // Improve compatibility with the upcoming Docusaurus v4
   },
 
-  url: thunderConfig.documentation.deployment.production.url,
+  url: productConfig.documentation.deployment.production.url,
   // Since we use GitHub pages, the base URL is the repository name.
   baseUrl,
 
   // GitHub pages deployment config.
-  organizationName: thunderConfig.project.source.github.owner.name, // Usually your GitHub org/user name.
-  projectName: thunderConfig.project.source.github.name, // Usually your repo name.
+  organizationName: productConfig.project.source.github.owner.name, // Usually your GitHub org/user name.
+  projectName: productConfig.project.source.github.name, // Usually your repo name.
 
   onBrokenLinks: 'throw',
+
+  markdown: {
+    // Replace {{ProductName}} placeholders in frontmatter values at build time.
+    // This applies globally to all content (docs, pages, etc.).
+    // See: https://docusaurus.io/docs/api/docusaurus-config#markdown
+    parseFrontMatter: async (params) => {
+      const result = await params.defaultParseFrontMatter(params);
+      result.frontMatter = replaceProductNameInObject(
+        result.frontMatter,
+        productConfig.project.name,
+        productConfig.project.name.toLowerCase(),
+      ) as Record<string, unknown>;
+      return result;
+    },
+  },
 
   // Internationalization (i18n) configuration.
   // See: https://docusaurus.io/docs/i18n/introduction
@@ -77,7 +117,7 @@ const config: Config = {
           path: 'content',
           sidebarPath: './sidebars.ts',
           // Edit URL for the "edit this page" feature.
-          editUrl: thunderConfig.project.source.github.editUrls.content,
+          editUrl: productConfig.project.source.github.editUrls.content,
           // Versioning.
           lastVersion: 'current',
           versions: {
@@ -86,8 +126,21 @@ const config: Config = {
               path: 'next',
             },
           },
+          // Replace {{ProductName}} and {{productSlug}} placeholders inside fenced code blocks at build time.
+          rehypePlugins: [
+            [
+              rehypeProductName,
+              {productName: productConfig.project.name, productSlug: productConfig.project.name.toLowerCase()},
+            ],
+          ],
         },
-        blog: false,
+        blog: {
+          path: 'blog',
+          routeBasePath: 'blog',
+          showReadingTime: true,
+          blogSidebarTitle: 'All posts',
+          blogSidebarCount: 'ALL',
+        },
         theme: {
           customCss: './src/css/custom.css',
         },
@@ -96,12 +149,7 @@ const config: Config = {
   ],
 
   themeConfig: {
-    announcementBar: {
-      id: 'docs_wip',
-      content: '🚧 WIP: Docs are under active development and may change frequently.',
-      isCloseable: false,
-    },
-    image: 'assets/images/thunder-social-card.png',
+    image: 'assets/images/social-card.png',
     colorMode: {
       respectPrefersColorScheme: true,
     },
@@ -111,9 +159,9 @@ const config: Config = {
         href: '/',
         src: '/assets/images/logo.svg',
         srcDark: '/assets/images/logo-inverted.svg',
-        alt: `${thunderConfig.project.name} Logo`,
-        height: '40px',
-        width: '101px',
+        alt: `${productConfig.project.name} Logo`,
+        height: '40',
+        width: '150',
       },
       items: [
         {
@@ -146,6 +194,11 @@ const config: Config = {
           label: 'SDKs',
         },
         {
+          to: '/blog',
+          label: 'Blog',
+          position: 'right',
+        },
+        {
           label: 'Resources',
           type: 'dropdown',
           position: 'right',
@@ -159,12 +212,12 @@ const config: Config = {
             },
             {
               label: 'Discussions',
-              href: thunderConfig.project.source.github.discussionsUrl,
+              href: productConfig.project.source.github.discussionsUrl,
               className: 'navbar-resources__discussions',
             },
             {
               label: 'Report an Issue',
-              href: thunderConfig.project.source.github.issuesUrl,
+              href: productConfig.project.source.github.issuesUrl,
               className: 'navbar-resources__issues',
             },
           ],
@@ -176,7 +229,7 @@ const config: Config = {
           label: 'Community',
         },
         {
-          href: `https://github.com/${thunderConfig.project.source.github.fullName}`,
+          href: `https://github.com/${productConfig.project.source.github.fullName}`,
           position: 'right',
           className: 'navbar__github--link',
           'aria-label': 'GitHub repository',
@@ -197,7 +250,7 @@ const config: Config = {
             },
           ],
         },
-        ...(thunderConfig.documentation.versioning.enabled
+        ...(productConfig.documentation.versioning.enabled
           ? [
               {
                 type: 'docsVersionDropdown',
@@ -210,7 +263,7 @@ const config: Config = {
     footer: {
       style: 'dark',
       links: [],
-      copyright: `Copyright © ${new Date().getFullYear()} ${thunderConfig.project.name}.`,
+      copyright: `Copyright © ${new Date().getFullYear()} ${productConfig.project.name}.`,
     },
     prism: {
       theme: prismThemes.nightOwlLight,
@@ -218,9 +271,9 @@ const config: Config = {
     },
   } satisfies Preset.ThemeConfig,
 
-  /* -------------------------------- Thunder Config ------------------------------- */
+  /* -------------------------------- Product Config ------------------------------- */
   customFields: {
-    thunder: thunderConfig,
+    product: productConfig,
   },
 };
 

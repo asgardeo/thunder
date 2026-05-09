@@ -320,7 +320,7 @@ func TestGetThunderHome_UsesFlagValue(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	os.Args = []string{origArgs[0], "-thunderHome", tmpDir}
+	os.Args = []string{origArgs[0], "-serverHome", tmpDir}
 
 	got := getThunderHome(log.GetLogger())
 	assert.Equal(t, tmpDir, got)

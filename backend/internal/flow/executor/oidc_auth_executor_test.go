@@ -19,6 +19,7 @@
 package executor
 
 import (
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 
 	"testing"
@@ -29,23 +30,23 @@ import (
 
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
+	"github.com/asgardeo/thunder/internal/entitytype"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oidcmock"
 	"github.com/asgardeo/thunder/tests/mocks/authnprovider/managermock"
+	"github.com/asgardeo/thunder/tests/mocks/entitytypemock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
 
 type OIDCAuthExecutorTestSuite struct {
 	suite.Suite
 	mockOIDCService       *oidcmock.OIDCAuthnCoreServiceInterfaceMock
 	mockIDPService        *idpmock.IDPServiceInterfaceMock
-	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
+	mockEntityTypeService *entitytypemock.EntityTypeServiceInterfaceMock
 	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
 	mockAuthnProvider     *managermock.AuthnProviderManagerInterfaceMock
 	executor              oidcAuthExecutorInterface
@@ -58,7 +59,7 @@ func TestOIDCAuthExecutorSuite(t *testing.T) {
 func (suite *OIDCAuthExecutorTestSuite) SetupTest() {
 	suite.mockOIDCService = oidcmock.NewOIDCAuthnCoreServiceInterfaceMock(suite.T())
 	suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockEntityTypeService = entitytypemock.NewEntityTypeServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
 
@@ -68,7 +69,7 @@ func (suite *OIDCAuthExecutorTestSuite) SetupTest() {
 		defaultInputs, []common.Input{}).Return(mockExec)
 
 	suite.executor = newOIDCAuthExecutor(ExecutorNameOIDCAuth, defaultInputs, []common.Input{},
-		suite.mockFlowFactory, suite.mockIDPService, suite.mockUserSchemaService, suite.mockOIDCService,
+		suite.mockFlowFactory, suite.mockIDPService, suite.mockEntityTypeService, suite.mockOIDCService,
 		suite.mockAuthnProvider, idp.IDPTypeOIDC)
 }
 
@@ -690,7 +691,9 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWit
 			"allowAuthenticationWithoutLocalUser": true,
 		},
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"INTERNAL"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"INTERNAL"},
+			},
 		},
 	}
 
@@ -712,8 +715,8 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWit
 			},
 			IsExistingUser: false,
 		}, (*serviceerror.ServiceError)(nil))
-	suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
-		Return(&userschema.UserSchema{
+	suite.mockEntityTypeService.On("GetEntityTypeByName", mock.Anything, mock.Anything, "INTERNAL").
+		Return(&entitytype.EntityType{
 			Name:                  "INTERNAL",
 			AllowSelfRegistration: true,
 			OUID:                  "ou-123",
@@ -728,7 +731,7 @@ func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWit
 	assert.Equal(suite.T(), "new-user-sub", execResp.RuntimeData["sub"])
 	assert.NotNil(suite.T(), execResp.AuthenticatedUser.Attributes)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockEntityTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *OIDCAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthWithoutLocalUser() {

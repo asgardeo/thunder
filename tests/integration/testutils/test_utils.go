@@ -49,9 +49,9 @@ var ServerBinary string
 
 func init() {
 	if runtime.GOOS == "windows" {
-		ServerBinary = "thunder.exe"
+		ServerBinary = "thunderid.exe"
 	} else {
-		ServerBinary = "thunder"
+		ServerBinary = "thunderid"
 	}
 }
 
@@ -252,7 +252,7 @@ func findMatchingZipFile(zipFilePattern string) ([]string, error) {
 		return nil, err
 	}
 
-	// Filter the files to only include those that have a version number or 'v' after 'thunder-'
+	// Filter the files to only include those that have a version number or 'v' after 'thunderid-'
 	var matchingFiles []string
 	for _, file := range files {
 		baseName := filepath.Base(file)
@@ -422,7 +422,7 @@ func CopyDeclarativeResources(zipFilePattern string) error {
 		"resource_servers",
 		"roles",
 		"themes",
-		"user_schemas",
+		"user_types",
 		"users",
 	}
 
@@ -603,7 +603,7 @@ func pidFilePath() string {
 	if extractedProductHome == "" {
 		return ""
 	}
-	return filepath.Join(extractedProductHome, "thunder.pid")
+	return filepath.Join(extractedProductHome, "thunderid.pid")
 }
 
 // writePidFile writes the given PID to the the server PID file.
@@ -648,7 +648,7 @@ func StartServer(port string, zipFilePattern string) error {
 	log.Println("Starting server...")
 
 	serverPath := filepath.Join(extractedProductHome, ServerBinary)
-	cmd := exec.Command(serverPath, "-thunderHome="+extractedProductHome)
+	cmd := exec.Command(serverPath, "-serverHome="+extractedProductHome)
 
 	// logFile is non-nil only when subprocessMode opens a log file. The parent
 	// must close its copy after cmd.Start() so it does not leak the FD.
@@ -659,7 +659,7 @@ func StartServer(port string, zipFilePattern string) error {
 		// drain before declaring the test done, and the long-lived server process
 		// would keep those pipes open indefinitely, causing a 60s WaitDelay timeout.
 		// Redirect to a log file in the extracted product home so output is not lost.
-		logPath := filepath.Join(extractedProductHome, "thunder-restart.log")
+		logPath := filepath.Join(extractedProductHome, "thunderid-restart.log")
 		var openErr error
 		logFile, openErr = os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if openErr != nil {
@@ -878,6 +878,25 @@ func PatchDeploymentConfig(patch map[string]interface{}) error {
 	return nil
 }
 
+// ReadDeploymentConfigKey returns a top-level key from the deployment.yaml, or nil if missing.
+func ReadDeploymentConfigKey(key string) (interface{}, error) {
+	ensureInitialized()
+
+	configPath := filepath.Join(extractedProductHome, "repository", "conf", "deployment.yaml")
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read deployment.yaml: %w", err)
+	}
+
+	var cfg map[string]interface{}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("failed to parse deployment.yaml: %w", err)
+	}
+
+	return cfg[key], nil
+}
+
 // RunSetupScript runs the setup script from the extracted product directory.
 // This script starts the server without security, runs bootstrap scripts, and stops the server.
 func RunSetupScript() error {
@@ -913,7 +932,7 @@ func RunSetupScript() error {
 func GetZipFilePattern() string {
 	goos, goarch := detectOSAndArchitecture()
 	// Use a more general pattern, the filtering will happen in findMatchingZipFile
-	return fmt.Sprintf("thunder-*-%s-%s.zip", goos, goarch)
+	return fmt.Sprintf("thunderid-*-%s-%s.zip", goos, goarch)
 }
 
 // GetDBType returns the configured database type ("sqlite" or "postgres").

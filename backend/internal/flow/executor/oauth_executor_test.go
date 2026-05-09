@@ -19,6 +19,7 @@
 package executor
 
 import (
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
 
 	"testing"
@@ -30,23 +31,23 @@ import (
 	appmodel "github.com/asgardeo/thunder/internal/application/model"
 	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/entityprovider"
+	"github.com/asgardeo/thunder/internal/entitytype"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/userschema"
 	"github.com/asgardeo/thunder/tests/mocks/authn/oauthmock"
 	"github.com/asgardeo/thunder/tests/mocks/authnprovider/managermock"
+	"github.com/asgardeo/thunder/tests/mocks/entitytypemock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
 	"github.com/asgardeo/thunder/tests/mocks/idp/idpmock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
 
 type OAuthExecutorTestSuite struct {
 	suite.Suite
 	mockOAuthService      *oauthmock.OAuthAuthnCoreServiceInterfaceMock
 	mockIDPService        *idpmock.IDPServiceInterfaceMock
-	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
+	mockEntityTypeService *entitytypemock.EntityTypeServiceInterfaceMock
 	mockFlowFactory       *coremock.FlowFactoryInterfaceMock
 	mockAuthnProvider     *managermock.AuthnProviderManagerInterfaceMock
 	executor              oAuthExecutorInterface
@@ -59,7 +60,7 @@ func TestOAuthExecutorSuite(t *testing.T) {
 func (suite *OAuthExecutorTestSuite) SetupTest() {
 	suite.mockOAuthService = oauthmock.NewOAuthAuthnCoreServiceInterfaceMock(suite.T())
 	suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockEntityTypeService = entitytypemock.NewEntityTypeServiceInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
 
@@ -69,7 +70,7 @@ func (suite *OAuthExecutorTestSuite) SetupTest() {
 		defaultInputs, []common.Input{}).Return(mockExec)
 
 	suite.executor = newOAuthExecutor(ExecutorNameOAuth, defaultInputs, []common.Input{},
-		suite.mockFlowFactory, suite.mockIDPService, suite.mockUserSchemaService, suite.mockOAuthService,
+		suite.mockFlowFactory, suite.mockIDPService, suite.mockEntityTypeService, suite.mockOAuthService,
 		suite.mockAuthnProvider, idp.IDPTypeOAuth)
 }
 
@@ -99,8 +100,10 @@ func (suite *OAuthExecutorTestSuite) TestExecute_CodeNotProvided_BuildsAuthorize
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecExternalRedirection, resp.Status)
-	assert.Equal(suite.T(), "https://oauth.provider.com/authorize?client_id=abc", resp.RedirectURL)
+	assert.Contains(suite.T(), resp.RedirectURL, "https://oauth.provider.com/authorize?client_id=abc")
+	assert.Contains(suite.T(), resp.RedirectURL, "state=")
 	assert.Equal(suite.T(), "TestIDP", resp.AdditionalData[common.DataIDPName])
+	assert.NotEmpty(suite.T(), resp.RuntimeData[common.RuntimeKeyOAuthState])
 	suite.mockOAuthService.AssertExpectations(suite.T())
 	suite.mockIDPService.AssertExpectations(suite.T())
 }
@@ -164,8 +167,10 @@ func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_Success() {
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecExternalRedirection, execResp.Status)
-	assert.Equal(suite.T(), "https://oauth.provider.com/authorize", execResp.RedirectURL)
+	assert.Contains(suite.T(), execResp.RedirectURL, "https://oauth.provider.com/authorize")
+	assert.Contains(suite.T(), execResp.RedirectURL, "state=")
 	assert.Equal(suite.T(), "GoogleIDP", execResp.AdditionalData[common.DataIDPName])
+	assert.NotEmpty(suite.T(), execResp.RuntimeData[common.RuntimeKeyOAuthState])
 	suite.mockOAuthService.AssertExpectations(suite.T())
 	suite.mockIDPService.AssertExpectations(suite.T())
 }
@@ -651,7 +656,9 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWithou
 			"allowAuthenticationWithoutLocalUser": true,
 		},
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"INTERNAL"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"INTERNAL"},
+			},
 		},
 	}
 
@@ -668,8 +675,8 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWithou
 				"sub": "new-user-sub", "email": "newuser@example.com", "name": "New User"},
 			IsExistingUser: false,
 		}, (*serviceerror.ServiceError)(nil))
-	suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
-		Return(&userschema.UserSchema{
+	suite.mockEntityTypeService.On("GetEntityTypeByName", mock.Anything, mock.Anything, "INTERNAL").
+		Return(&entitytype.EntityType{
 			Name:                  "INTERNAL",
 			AllowSelfRegistration: true,
 			OUID:                  "ou-123",
@@ -684,7 +691,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AllowAuthWithou
 	assert.Equal(suite.T(), "new-user-sub", execResp.RuntimeData["sub"])
 	assert.NotNil(suite.T(), execResp.AuthenticatedUser.Attributes)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockEntityTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthWithoutLocalUser() {
@@ -801,7 +808,9 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning() {
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeAuthentication,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"INTERNAL"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"INTERNAL"},
+			},
 		},
 	}
 
@@ -810,8 +819,8 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning() {
 		RuntimeData:    make(map[string]string),
 	}
 
-	suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
-		Return(&userschema.UserSchema{
+	suite.mockEntityTypeService.On("GetEntityTypeByName", mock.Anything, mock.Anything, "INTERNAL").
+		Return(&entitytype.EntityType{
 			Name:                  "INTERNAL",
 			AllowSelfRegistration: true,
 			OUID:                  "ou-123",
@@ -823,7 +832,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning() {
 	assert.NotEqual(suite.T(), common.ExecFailure, execResp.Status)
 	assert.Equal(suite.T(), "INTERNAL", execResp.RuntimeData[userTypeKey])
 	assert.Equal(suite.T(), "ou-123", execResp.RuntimeData[defaultOUIDKey])
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	suite.mockEntityTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Failures() {
@@ -843,8 +852,8 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 			name:             "NoSelfRegistrationEnabled",
 			allowedUserTypes: []string{"INTERNAL"},
 			mockSetup: func() {
-				suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
-					Return(&userschema.UserSchema{
+				suite.mockEntityTypeService.On("GetEntityTypeByName", mock.Anything, mock.Anything, "INTERNAL").
+					Return(&entitytype.EntityType{
 						Name:                  "INTERNAL",
 						AllowSelfRegistration: false,
 						OUID:                  "ou-123",
@@ -856,14 +865,14 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 			name:             "MultipleSelfRegistrationEnabled",
 			allowedUserTypes: []string{"INTERNAL", "CUSTOMER"},
 			mockSetup: func() {
-				suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
-					Return(&userschema.UserSchema{
+				suite.mockEntityTypeService.On("GetEntityTypeByName", mock.Anything, mock.Anything, "INTERNAL").
+					Return(&entitytype.EntityType{
 						Name:                  "INTERNAL",
 						AllowSelfRegistration: true,
 						OUID:                  "ou-123",
 					}, nil).Once()
-				suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "CUSTOMER").
-					Return(&userschema.UserSchema{
+				suite.mockEntityTypeService.On("GetEntityTypeByName", mock.Anything, mock.Anything, "CUSTOMER").
+					Return(&entitytype.EntityType{
 						Name:                  "CUSTOMER",
 						AllowSelfRegistration: true,
 						OUID:                  "ou-456",
@@ -879,7 +888,9 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 				ExecutionID: "flow-123",
 				FlowType:    common.FlowTypeAuthentication,
 				Application: appmodel.Application{
-					AllowedUserTypes: tt.allowedUserTypes,
+					InboundAuthProfile: inboundmodel.InboundAuthProfile{
+						AllowedUserTypes: tt.allowedUserTypes,
+					},
 				},
 			}
 
@@ -895,17 +906,19 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 			assert.NoError(suite.T(), err)
 			assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
 			assert.Equal(suite.T(), tt.expectedFailureReason, execResp.FailureReason)
-			suite.mockUserSchemaService.AssertExpectations(suite.T())
+			suite.mockEntityTypeService.AssertExpectations(suite.T())
 		})
 	}
 }
 
-func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_GetUserSchemaError() {
+func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_GetEntityTypeError() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeAuthentication,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"INTERNAL"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"INTERNAL"},
+			},
 		},
 	}
 
@@ -914,7 +927,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_GetU
 		RuntimeData:    make(map[string]string),
 	}
 
-	suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, "INTERNAL").
+	suite.mockEntityTypeService.On("GetEntityTypeByName", mock.Anything, mock.Anything, "INTERNAL").
 		Return(nil, &serviceerror.ServiceError{
 			Type:             serviceerror.ServerErrorType,
 			Code:             "SCHEMA-5000",
@@ -924,8 +937,8 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_GetU
 	err := suite.executor.(*oAuthExecutor).resolveUserTypeForAutoProvisioning(ctx, execResp)
 
 	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "error while retrieving user schema")
-	suite.mockUserSchemaService.AssertExpectations(suite.T())
+	assert.Contains(suite.T(), err.Error(), "error while retrieving user type")
+	suite.mockEntityTypeService.AssertExpectations(suite.T())
 }
 
 func (suite *OAuthExecutorTestSuite) TestGetContextUserForRegistration_WithExistingUser_SkipProvisioningFlag() {
@@ -1020,19 +1033,19 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 	tests := []struct {
 		name                  string
 		allowedUserTypes      []string
-		userSchemas           map[string]*userschema.UserSchema
+		entityTypes           map[string]*entitytype.EntityType
 		expectedFailureReason string
 	}{
 		{
 			name:                  "NoAllowedUserTypes",
 			allowedUserTypes:      []string{},
-			userSchemas:           nil,
+			entityTypes:           nil,
 			expectedFailureReason: errCannotProvisionUserAutomatically,
 		},
 		{
 			name:             "NoSelfRegistrationEnabled",
 			allowedUserTypes: []string{"TYPE1", "TYPE2"},
-			userSchemas: map[string]*userschema.UserSchema{
+			entityTypes: map[string]*entitytype.EntityType{
 				"TYPE1": {
 					Name:                  "TYPE1",
 					AllowSelfRegistration: false,
@@ -1047,7 +1060,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 		{
 			name:             "MultipleEligibleTypes",
 			allowedUserTypes: []string{"TYPE1", "TYPE2"},
-			userSchemas: map[string]*userschema.UserSchema{
+			entityTypes: map[string]*entitytype.EntityType{
 				"TYPE1": {
 					Name:                  "TYPE1",
 					AllowSelfRegistration: true,
@@ -1066,12 +1079,14 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
 			// Clear expectations before each test
-			suite.mockUserSchemaService.ExpectedCalls = nil
+			suite.mockEntityTypeService.ExpectedCalls = nil
 
 			ctx := &core.NodeContext{
 				ExecutionID: "flow-123",
 				Application: appmodel.Application{
-					AllowedUserTypes: tt.allowedUserTypes,
+					InboundAuthProfile: inboundmodel.InboundAuthProfile{
+						AllowedUserTypes: tt.allowedUserTypes,
+					},
 				},
 			}
 
@@ -1080,9 +1095,11 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 				RuntimeData:    make(map[string]string),
 			}
 
-			if tt.userSchemas != nil {
-				for userType, schema := range tt.userSchemas {
-					suite.mockUserSchemaService.On("GetUserSchemaByName", mock.Anything, userType).Return(schema, nil)
+			if tt.entityTypes != nil {
+				for userType, schema := range tt.entityTypes {
+					suite.mockEntityTypeService.On(
+						"GetEntityTypeByName", mock.Anything, mock.Anything, userType).
+						Return(schema, nil)
 				}
 			}
 
@@ -1092,8 +1109,8 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 			assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
 			assert.Equal(suite.T(), tt.expectedFailureReason, execResp.FailureReason)
 
-			if tt.userSchemas != nil {
-				suite.mockUserSchemaService.AssertExpectations(suite.T())
+			if tt.entityTypes != nil {
+				suite.mockEntityTypeService.AssertExpectations(suite.T())
 			}
 		})
 	}

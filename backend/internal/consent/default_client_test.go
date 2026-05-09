@@ -47,7 +47,7 @@ func TestDefaultClientTestSuite(t *testing.T) {
 	suite.Run(t, new(DefaultClientTestSuite))
 }
 
-// initClientRuntime initializes a ThunderRuntime for default client tests.
+// initClientRuntime initializes a server runtime for default client tests.
 func initClientRuntime(t *testing.T) {
 	t.Helper()
 	cfg := &config.Config{
@@ -56,9 +56,9 @@ func initClientRuntime(t *testing.T) {
 			BaseURL: testBaseURL,
 		},
 	}
-	config.ResetThunderRuntime()
-	require.NoError(t, config.InitializeThunderRuntime("/tmp/test", cfg))
-	t.Cleanup(config.ResetThunderRuntime)
+	config.ResetServerRuntime()
+	require.NoError(t, config.InitializeServerRuntime("/tmp/test", cfg))
+	t.Cleanup(config.ResetServerRuntime)
 }
 
 // buildHTTPResponse returns a mock *http.Response with the given status code and JSON body.
@@ -101,9 +101,9 @@ func (s *DefaultClientTestSuite) TestNewDefaultClient_TrailingSlashTrimmed() {
 			BaseURL: testBaseURL + "/",
 		},
 	}
-	config.ResetThunderRuntime()
-	require.NoError(s.T(), config.InitializeThunderRuntime("/tmp/test", cfg))
-	s.T().Cleanup(config.ResetThunderRuntime)
+	config.ResetServerRuntime()
+	require.NoError(s.T(), config.InitializeServerRuntime("/tmp/test", cfg))
+	s.T().Cleanup(config.ResetServerRuntime)
 
 	httpMock := httpmock.NewHTTPClientInterfaceMock(s.T())
 	c := newDefaultClient(httpMock).(*defaultClient)
@@ -1526,9 +1526,9 @@ func newTestClientWithConfig(t *testing.T, httpMock *httpmock.HTTPClientInterfac
 			MaxRetries: maxRetries,
 		},
 	}
-	config.ResetThunderRuntime()
-	require.NoError(t, config.InitializeThunderRuntime("/tmp/test", cfg))
-	t.Cleanup(config.ResetThunderRuntime)
+	config.ResetServerRuntime()
+	require.NoError(t, config.InitializeServerRuntime("/tmp/test", cfg))
+	t.Cleanup(config.ResetServerRuntime)
 	return newDefaultClient(httpMock).(*defaultClient)
 }
 
@@ -1538,9 +1538,9 @@ func (s *DefaultClientTestSuite) TestGetClientConfig_DefaultsTimeout_WhenZero() 
 	cfg := &config.Config{
 		Consent: config.ConsentConfig{Enabled: true, BaseURL: testBaseURL, Timeout: 0},
 	}
-	config.ResetThunderRuntime()
-	require.NoError(s.T(), config.InitializeThunderRuntime("/tmp/test", cfg))
-	s.T().Cleanup(config.ResetThunderRuntime)
+	config.ResetServerRuntime()
+	require.NoError(s.T(), config.InitializeServerRuntime("/tmp/test", cfg))
+	s.T().Cleanup(config.ResetServerRuntime)
 
 	c := getClientConfig()
 
@@ -1551,9 +1551,9 @@ func (s *DefaultClientTestSuite) TestGetClientConfig_DefaultsMaxRetries_WhenNega
 	cfg := &config.Config{
 		Consent: config.ConsentConfig{Enabled: true, BaseURL: testBaseURL, MaxRetries: -1},
 	}
-	config.ResetThunderRuntime()
-	require.NoError(s.T(), config.InitializeThunderRuntime("/tmp/test", cfg))
-	s.T().Cleanup(config.ResetThunderRuntime)
+	config.ResetServerRuntime()
+	require.NoError(s.T(), config.InitializeServerRuntime("/tmp/test", cfg))
+	s.T().Cleanup(config.ResetServerRuntime)
 
 	c := getClientConfig()
 
@@ -1564,9 +1564,9 @@ func (s *DefaultClientTestSuite) TestGetClientConfig_ExplicitValues() {
 	cfg := &config.Config{
 		Consent: config.ConsentConfig{Enabled: true, BaseURL: testBaseURL, Timeout: 10, MaxRetries: 2},
 	}
-	config.ResetThunderRuntime()
-	require.NoError(s.T(), config.InitializeThunderRuntime("/tmp/test", cfg))
-	s.T().Cleanup(config.ResetThunderRuntime)
+	config.ResetServerRuntime()
+	require.NoError(s.T(), config.InitializeServerRuntime("/tmp/test", cfg))
+	s.T().Cleanup(config.ResetServerRuntime)
 
 	c := getClientConfig()
 

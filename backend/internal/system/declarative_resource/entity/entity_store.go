@@ -34,7 +34,7 @@ const (
 	KeyTypeNotification       KeyType = "notification"
 	KeyTypeIDP                KeyType = "idp"
 	KeyTypeNotificationSender KeyType = "notification-sender"
-	KeyTypeUserSchema         KeyType = "user-schema"
+	KeyTypeEntityType         KeyType = "user-type"
 	KeyTypeOU                 KeyType = "ou"
 	KeyTypeFlow               KeyType = "flow"
 	KeyTypeTranslation        KeyType = "translation"
@@ -59,7 +59,7 @@ func (kt KeyType) String() string {
 func (kt KeyType) IsValid() bool {
 	switch kt {
 	case KeyTypeApplication, KeyTypeNotification, KeyTypeIDP, KeyTypeNotificationSender,
-		KeyTypeUserSchema, KeyTypeOU, KeyTypeFlow, KeyTypeTranslation, KeyTypeTheme, KeyTypeLayout,
+		KeyTypeEntityType, KeyTypeOU, KeyTypeFlow, KeyTypeTranslation, KeyTypeTheme, KeyTypeLayout,
 		KeyTypeResourceServer, KeyTypeResource, KeyTypeAction, KeyTypeRole, KeyTypeUser, KeyTypeTemplate,
 		KeyTypeInboundAuth,
 		KeyTypeEntity:

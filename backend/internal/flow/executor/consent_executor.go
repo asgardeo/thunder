@@ -107,7 +107,7 @@ func (e *consentExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRespon
 
 	// TODO: Replace with application's actual OU when OU support is added
 	ouID := "default"
-	appID := ctx.AppID
+	appID := ctx.EntityID
 	userID := ctx.AuthenticatedUser.UserID
 
 	if !e.HasRequiredInputs(ctx, execResp) {

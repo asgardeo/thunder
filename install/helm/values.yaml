@@ -76,7 +76,7 @@ deployment:
   # Example:
   # secretEnv:
   #   - name: EXTERNAL_API_TOKEN
-  #     secretName: thunder-runtime-secrets
+  #     secretName: thunderid-runtime-secrets
   #     secretKey: external-api-token
   #     optional: false
   secretEnv: []
@@ -96,7 +96,7 @@ fullnameOverride: ""
 serviceAccount:
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
-  name: "thunder-service-account"
+  name: "thunderid-service-account"
   create: true
 
 service:
@@ -121,20 +121,20 @@ ingress:
   combinedAnnotations:
     !!merge <<: *commonAnnotations
     !!merge <<: *customAnnotations
-  hostname: thunder.local
+  hostname: thunderid.local
   paths:
     - path: /
       pathType: Prefix
-  tlsSecretsName: "thunder-tls"
+  tlsSecretsName: "thunderid-tls"
 
 # Gateway API configuration (Envoy Gateway)
 gateway:
   enabled: false
-  name: "thunder-gateway"
+  name: "thunderid-gateway"
   className: "eg"
   tls:
     enabled: true
-    secretName: "thunder-tls"
+    secretName: "thunderid-tls"
     mode: Terminate
 
 # Gateway API HTTPRoute configuration (alternative to Ingress)
@@ -143,18 +143,18 @@ httproute:
   annotations: {}
   # parentRefs specify which Gateway(s) this route attaches to
   parentRefs:
-    - name: "thunder-gateway"
+    - name: "thunderid-gateway"
     #   namespace: gateway-ns
   hostnames: []
-    # - thunder.example.com
+    # - thunderid.example.com
 
-# Thunder specific configurations
+# ThunderID specific configurations
 configuration:
   # Server configuration
   server:
     port: 8090
     httpOnly: false
-    publicUrl: "https://thunder.local"
+    publicUrl: "https://thunderid.local"
     # Security configuration.
     # jwksCacheTtl controls how long fetched JWKS responses are cached in-process for
     # every JWKS consumer in the server (trusted issuer validation, federated OIDC
@@ -176,16 +176,26 @@ configuration:
 
   # Gate client configuration
   gateClient:
-    hostname: "thunder.local"
+    hostname: "thunderid.local"
     port: 443
     scheme: "https"
     path: "/gate"
+
+  # Branding configuration for the Console and Gate frontends.
+  # productName: Display name shown in the browser tab and UI.
+  # favicon: Path or URL to the favicon icons. Use an object with `light` and `dark`
+  #          keys for color-scheme-aware icons (both keys are required).
+  brand:
+    productName: "ThunderID"
+    favicon:
+      light: "assets/images/favicon.ico"
+      dark: "assets/images/favicon-inverted.ico"
 
   # Console client configuration
   consoleClient:
     path: "/console"
     clientId: "CONSOLE"
-    scopes: "['openid', 'profile', 'email', 'ou', 'system', 'system:user', 'system:group', 'system:ou:view', 'system:userschema:view']"
+    scopes: "['openid', 'profile', 'email', 'ou', 'system', 'system:user', 'system:group', 'system:ou:view', 'system:usertype:view']"
     # Trusted issuer for console authentication (for federated/DP deployments).
     # When set, the console authenticates against this external server instead of
     # the local server.
@@ -195,13 +205,13 @@ configuration:
     #   httpOnly: false
     #   publicUrl: "https://cp.example.com"
     #   clientId: "FEDERATED_CONSOLE"
-    #   scopes: "['openid', 'profile', 'email', 'group', 'ou', 'system', 'system:user', 'system:group', 'system:ou:view', 'system:userschema:view']"
+    #   scopes: "['openid', 'profile', 'email', 'group', 'ou', 'system', 'system:user', 'system:group', 'system:ou:view', 'system:usertype:view']"
     #   # Type of external authorization server. Set to `generic` when the trusted
     #   # issuer is a generic OIDC provider. When `generic`, the console skips
-    #   # Thunder-specific bootstrap calls (flow metadata, branding preferences)
+    #   # ThunderID-specific bootstrap calls (flow metadata, branding preferences)
     #   # that would otherwise fail against a generic OIDC provider.
-    #   # Defaults to `thunder`.
-    #   type: "thunder"
+    #   # Defaults to `thunderid`.
+    #   type: "thunderid"
 
   # TLS configuration
   tls:
@@ -300,7 +310,7 @@ configuration:
           name: ""
           key: ""
         db: 0             # Redis logical database index (0-15)
-        key_prefix: ""   # Prefix for all Redis keys, e.g. "thunder:"
+        key_prefix: ""   # Prefix for all Redis keys, e.g. "thunderid:"
     user:
       # WARNING: Use sqlite only if you are running a single pod.
       type: "postgres" # postgres or sqlite
@@ -343,7 +353,7 @@ configuration:
       username: ""
       password: ""
       db: 0
-      keyPrefix: "thunder"
+      keyPrefix: "thunderid"
 
   # Token Configuration
   jwt:
@@ -416,12 +426,12 @@ persistence:
   annotations: {}
 
 # Declarative resources mount configuration.
-# Mounts files under Thunder's repository/resources directory.
+# Mounts files under ThunderID's repository/resources directory.
 declarativeResources:
-  # Enable mounting declarative resources into Thunder pods.
+  # Enable mounting declarative resources into ThunderID pods.
   enabled: false
-  # Mount path inside Thunder container.
-  mountPath: /opt/thunder/repository/resources
+  # Mount path inside ThunderID container.
+  mountPath: /opt/thunderid/repository/resources
   # Mount resources as read-only.
   readOnly: true
   # Source from an existing ConfigMap.
@@ -431,21 +441,21 @@ declarativeResources:
   #   - object: explicit key/path mapping
   configMap:
     # Name of an existing ConfigMap in the same namespace.
-    # Example: thunder-declarative-resources (see install/helm/examples/declarative-resources-configmap.yaml)
+    # Example: thunderid-declarative-resources (see install/helm/examples/declarative-resources-configmap.yaml)
     name: ""
     items: []
     # Example — references the bundled sample ConfigMap:
-    # name: thunder-declarative-resources
+    # name: thunderid-declarative-resources
     # items:
     #   - key: my-web-app
     #     path: applications/my-web-app.yaml
-    #     mountPath: /opt/thunder/repository/resources/applications/my-web-app.yaml
+    #     mountPath: /opt/thunderid/repository/resources/applications/my-web-app.yaml
     #   - key: google-idp
     #     path: identity_providers/google.yaml
-    #     mountPath: /opt/thunder/repository/resources/identity_providers/google.yaml
+    #     mountPath: /opt/thunderid/repository/resources/identity_providers/google.yaml
     #   - key: default-org
     #     path: organization_units/default.yaml
-    #     mountPath: /opt/thunder/repository/resources/organization_units/default.yaml
+    #     mountPath: /opt/thunderid/repository/resources/organization_units/default.yaml
   # Source from an existing Secret.
   # Use this when resource files contain sensitive values (e.g. pre-substituted secrets).
   # Supports the same string/object item formats as configMap above.
@@ -453,14 +463,14 @@ declarativeResources:
     name: ""
     items: []
     # Example:
-    # name: thunder-declarative-resources-secret
+    # name: thunderid-declarative-resources-secret
     # items:
     #   - key: my-app-with-secrets
     #     path: applications/my-app.yaml
-    #     mountPath: /opt/thunder/repository/resources/applications/my-app.yaml
+    #     mountPath: /opt/thunderid/repository/resources/applications/my-app.yaml
     #   - key: google-idp
     #     path: identity_providers/google.yaml
-    #     mountPath: /opt/thunder/repository/resources/identity_providers/google.yaml
+    #     mountPath: /opt/thunderid/repository/resources/identity_providers/google.yaml
 
 # Setup Job configuration
 # Runs setup.sh as a one-time initialization job during Helm install
@@ -516,10 +526,10 @@ setup:
     # Example:
     # - name: secrets
     #   secret:
-    #     secretName: thunder-secrets
+    #     secretName: thunderid-secrets
 
 # Bootstrap configuration
-# Custom bootstrap scripts extend Thunder's setup process by adding initialization logic.
+# Custom bootstrap scripts extend ThunderID's setup process by adding initialization logic.
 #
 # ⚠️ IMPORTANT: Bootstrap patterns are MUTUALLY EXCLUSIVE
 #   Choose ONE pattern only. Using both 'scripts' and 'configMap' will fail validation.
@@ -535,12 +545,12 @@ bootstrap:
     # 20-custom-users.sh: |
     #   #!/bin/bash
     #   set -e
-    #   # Source common functions (provides log_* and thunder_api_call)
+    #   # Source common functions (provides log_* and thunderid_api_call)
     #   SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]:-$0}")"
     #   source "${SCRIPT_DIR}/common.sh"
     #
     #   log_info "Creating custom users..."
-    #   thunder_api_call POST "/users" '{
+    #   thunderid_api_call POST "/users" '{
     #     "type": "person",
     #     "attributes": {
     #       "username": "alice",

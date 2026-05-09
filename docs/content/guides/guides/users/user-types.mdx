@@ -23,7 +23,7 @@ User types work alongside **Organization Units (OUs)** to model your real-world 
 
 Each user type belongs to a single OU. Users of that type can only exist under that OU or one of its descendants. Learn more in [Organization Units](../organization-units/).
 
-<ProductName /> ships with two default user types. Learn more about the schemas of these default user types in [User Schema Reference](./user-schema-reference).
+<ProductName /> ships with two default user types. Learn more about the schemas of these default user types in [User Type Reference](./user-type-reference).
 
 | User Type | Description | Organization Unit | Self-Registration |
 |-----------|-------------|-------------------|-------------------|
@@ -37,7 +37,7 @@ Each user type belongs to a single OU. Users of that type can only exist under t
 2. Enter a **Name** for the user type. The name is used as the type identifier and must be unique.
 3. Select the **Organization Unit** this user type should belong. A user of this type can only be created under this OU or one of its descendants in the hierarchy. See [Organization Units](../organization-units/) for more information.
 4. Select whether to allow self-registration. Enabling this allows users of this type to sign up through the registration flow assigned to your application.
-5. Set the attributes that the user type should have, including data types and constraint modifiers. See [User Schema Reference](./user-schema-reference) for details on available settings and attribute options.
+5. Set the attributes that the user type should have, including data types and constraint modifiers. See [User Type Reference](./user-type-reference) for details on available settings and attribute options.
 7. Click **Create User Attribute**. 
 
 ## Update a User Type
@@ -62,7 +62,7 @@ Deletion fails if users of this type exist. Delete or reassign all users of this
 
 ## Related Guides
 
-- [User Schema Reference](./user-schema-reference) - Schema settings, attribute types, and constraint modifiers
+- [User Type Reference](./user-type-reference) - Schema settings, attribute types, and constraint modifiers
 - [Manage Users](./manage-users) - Create and manage users of each type
 - [Organization Units](../organization-units) - Understand the OU structure that binds user types.
 - [Flows](../flows/what-is-flows) - Configure registration flows for self-service sign-up

@@ -52,7 +52,7 @@ func newRedisAuthorizationRequestStore(p provider.RedisProviderInterface) author
 	return &redisAuthorizationRequestStore{
 		client:         p.GetRedisClient(),
 		keyPrefix:      p.GetKeyPrefix(),
-		deploymentID:   config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID:   config.GetServerRuntime().Config.Server.Identifier,
 		validityPeriod: 10 * time.Minute,
 	}
 }

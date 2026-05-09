@@ -472,4 +472,32 @@ var (
 			DefaultValue: "An entity with the same client ID already exists",
 		},
 	}
+
+	// ErrorMultipleOAuthConfigs is returned when more than one OAuth inbound auth config is supplied.
+	ErrorMultipleOAuthConfigs = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "AGT-1038",
+		Error: core.I18nMessage{
+			Key:          "error.agentservice.multiple_oauth_configs",
+			DefaultValue: "Multiple OAuth inbound auth configs are not allowed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.agentservice.multiple_oauth_configs_description",
+			DefaultValue: "An entity may have at most one inbound auth config per protocol",
+		},
+	}
+
+	// ErrorOwnerNotFound is returned when the supplied owner identifier does not resolve to a known entity.
+	ErrorOwnerNotFound = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "AGT-1039",
+		Error: core.I18nMessage{
+			Key:          "error.agentservice.owner_not_found",
+			DefaultValue: "Owner not found",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.agentservice.owner_not_found_description",
+			DefaultValue: "The specified owner does not match any known user, application, or agent",
+		},
+	}
 )

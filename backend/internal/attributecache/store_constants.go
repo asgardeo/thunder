@@ -24,27 +24,27 @@ var (
 	// queryInsertAttributeCache inserts a new attribute cache entry.
 	queryInsertAttributeCache = dbmodel.DBQuery{
 		ID: "ACS-01",
-		Query: "INSERT INTO ATTRIBUTE_CACHE (ID, ATTRIBUTES, EXPIRY_TIME, CREATED_AT, DEPLOYMENT_ID) " +
-			"VALUES ($1, $2, $3, $4, $5)",
+		Query: `INSERT INTO "ATTRIBUTE_CACHE" (ID, ATTRIBUTES, EXPIRY_TIME, CREATED_AT, DEPLOYMENT_ID) ` +
+			`VALUES ($1, $2, $3, $4, $5)`,
 	}
 
 	// queryGetAttributeCache retrieves an attribute cache entry by ID.
 	queryGetAttributeCache = dbmodel.DBQuery{
 		ID: "ACS-02",
-		Query: "SELECT ID, ATTRIBUTES, EXPIRY_TIME FROM ATTRIBUTE_CACHE " +
-			"WHERE ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: `SELECT ID, ATTRIBUTES, EXPIRY_TIME FROM "ATTRIBUTE_CACHE" ` +
+			`WHERE ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryUpdateAttributeCacheExpiry updates the expiry time of an attribute cache entry.
 	queryUpdateAttributeCacheExpiry = dbmodel.DBQuery{
 		ID: "ACS-03",
-		Query: "UPDATE ATTRIBUTE_CACHE SET EXPIRY_TIME = $2 " +
-			"WHERE ID = $1 AND DEPLOYMENT_ID = $3",
+		Query: `UPDATE "ATTRIBUTE_CACHE" SET EXPIRY_TIME = $2 ` +
+			`WHERE ID = $1 AND DEPLOYMENT_ID = $3`,
 	}
 
 	// queryDeleteAttributeCache deletes an attribute cache entry by ID.
 	queryDeleteAttributeCache = dbmodel.DBQuery{
 		ID:    "ACS-04",
-		Query: "DELETE FROM ATTRIBUTE_CACHE WHERE ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: `DELETE FROM "ATTRIBUTE_CACHE" WHERE ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 )

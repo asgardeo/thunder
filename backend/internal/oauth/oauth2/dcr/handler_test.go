@@ -50,14 +50,14 @@ func TestDCRHandlerTestSuite(t *testing.T) {
 
 func (s *DCRHandlerTestSuite) SetupTest() {
 	s.mockService = NewDCRServiceInterfaceMock(s.T())
-	_ = config.InitializeThunderRuntime("test", &config.Config{
+	_ = config.InitializeServerRuntime("test", &config.Config{
 		OAuth: config.OAuthConfig{DCR: config.DCRConfig{Insecure: true}},
 	})
 	s.handler = newDCRHandler(s.mockService)
 }
 
 func (s *DCRHandlerTestSuite) TearDownTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 // TestHandleDCRRegistration_InvalidRequestFormat tests handling of invalid JSON in request body
@@ -298,8 +298,8 @@ func TestWriteServiceErrorResponse_DirectCall(t *testing.T) {
 // TestHandleDCRRegistration_ClosedDCR_NoToken tests that a missing token is rejected when insecure=false.
 // Uses the default config where Insecure defaults to false (secure by default).
 func TestHandleDCRRegistration_ClosedDCR_NoToken(t *testing.T) {
-	_ = config.InitializeThunderRuntime("test", &config.Config{})
-	defer config.ResetThunderRuntime()
+	_ = config.InitializeServerRuntime("test", &config.Config{})
+	defer config.ResetServerRuntime()
 
 	mockService := NewDCRServiceInterfaceMock(t)
 	handler := newDCRHandler(mockService)
@@ -321,8 +321,8 @@ func TestHandleDCRRegistration_ClosedDCR_NoToken(t *testing.T) {
 // permission is rejected when insecure=false.
 // Uses the default config where Insecure defaults to false (secure by default).
 func TestHandleDCRRegistration_ClosedDCR_InsufficientPermissions(t *testing.T) {
-	_ = config.InitializeThunderRuntime("test", &config.Config{})
-	defer config.ResetThunderRuntime()
+	_ = config.InitializeServerRuntime("test", &config.Config{})
+	defer config.ResetServerRuntime()
 
 	mockService := NewDCRServiceInterfaceMock(t)
 	handler := newDCRHandler(mockService)
@@ -348,8 +348,10 @@ func TestHandleDCRRegistration_ClosedDCR_InsufficientPermissions(t *testing.T) {
 // permission is accepted when insecure=false.
 // Uses the default config where Insecure defaults to false (secure by default).
 func TestHandleDCRRegistration_ClosedDCR_WithSystemPermission(t *testing.T) {
-	_ = config.InitializeThunderRuntime("test", &config.Config{})
-	defer config.ResetThunderRuntime()
+	_ = config.InitializeServerRuntime("test", &config.Config{})
+	defer config.ResetServerRuntime()
+	security.InitSystemPermissions("")
+	defer security.InitSystemPermissions("")
 
 	mockService := NewDCRServiceInterfaceMock(t)
 	handler := newDCRHandler(mockService)

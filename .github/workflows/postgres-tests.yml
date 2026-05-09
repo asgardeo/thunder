@@ -27,8 +27,8 @@ on:
 
 env:
   GOFLAGS: "-mod=readonly"
-  PRODUCT_NAME: "Thunder"
-  PRODUCT_NAME_LOWER: "thunder"
+  PRODUCT_NAME: "ThunderID"
+  PRODUCT_NAME_LOWER: "thunderid"
 
 jobs:
   dependency-guard:
@@ -135,7 +135,7 @@ jobs:
         env:
           POSTGRES_USER: dbuser
           POSTGRES_PASSWORD: dbpassword
-          POSTGRES_DB: thunderdb
+          POSTGRES_DB: postgredb
         ports:
           - 5432:5432
         options: >-

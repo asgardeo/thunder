@@ -31,6 +31,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/github"
 	"github.com/asgardeo/thunder/internal/authn/google"
+	"github.com/asgardeo/thunder/internal/authn/magiclink"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
@@ -89,6 +90,7 @@ type authenticationService struct {
 	authAssertionGenerator assert.AuthAssertGeneratorInterface
 	authnProvider          authnprovidermgr.AuthnProviderManagerInterface
 	otpService             otp.OTPAuthnServiceInterface
+	magicLinkService       magiclink.MagicLinkAuthnServiceInterface
 	oauthService           oauth.OAuthAuthnServiceInterface
 	oidcService            oidc.OIDCAuthnServiceInterface
 	googleService          google.GoogleOIDCAuthnServiceInterface
@@ -103,6 +105,7 @@ func newAuthenticationService(
 	authAssertGen assert.AuthAssertGeneratorInterface,
 	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 	otpAuthnSvc otp.OTPAuthnServiceInterface,
+	magicLinkSvc magiclink.MagicLinkAuthnServiceInterface,
 	oauthAuthnSvc oauth.OAuthAuthnServiceInterface,
 	oidcAuthnSvc oidc.OIDCAuthnServiceInterface,
 	googleAuthnSvc google.GoogleOIDCAuthnServiceInterface,
@@ -115,6 +118,7 @@ func newAuthenticationService(
 		authAssertionGenerator: authAssertGen,
 		authnProvider:          authnProvider,
 		otpService:             otpAuthnSvc,
+		magicLinkService:       magicLinkSvc,
 		oauthService:           oauthAuthnSvc,
 		oidcService:            oidcAuthnSvc,
 		googleService:          googleAuthnSvc,
@@ -176,8 +180,8 @@ func (as *authenticationService) AuthenticateWithCredentials(ctx context.Context
 			OUID:       basicResult.OUID,
 			Attributes: authUserAttributesJSON,
 		}
-		svcErr = as.validateAndAppendAuthAssertion(authResponse, authenticatedUser, common.AuthenticatorCredentials,
-			existingAssertion, logger)
+		svcErr = as.validateAndAppendAuthAssertion(
+			ctx, authResponse, authenticatedUser, common.AuthenticatorCredentials, existingAssertion, logger)
 		if svcErr != nil {
 			return nil, svcErr
 		}
@@ -230,7 +234,7 @@ func (as *authenticationService) VerifyOTP(ctx context.Context, sessionToken str
 			OUID:       basicResult.OUID,
 			Attributes: nil, // Attributes not needed for assertion generation in OTP flow
 		}
-		svcErr = as.validateAndAppendAuthAssertion(authResponse, userForAssertion, common.AuthenticatorSMSOTP,
+		svcErr = as.validateAndAppendAuthAssertion(ctx, authResponse, userForAssertion, common.AuthenticatorSMSOTP,
 			existingAssertion, logger)
 		if svcErr != nil {
 			return nil, svcErr
@@ -282,7 +286,7 @@ func (as *authenticationService) StartIDPAuthentication(ctx context.Context, req
 	}
 
 	// Generate session token
-	sessionToken, err := as.createSessionToken(idpID, identityProvider.Type)
+	sessionToken, err := as.createSessionToken(ctx, idpID, identityProvider.Type)
 	if err != nil {
 		logger.Error("Failed to create session token", log.String("idpId", idpID),
 			log.String("error", err.Error.DefaultValue))
@@ -363,7 +367,7 @@ func (as *authenticationService) FinishIDPAuthentication(ctx context.Context, re
 			return nil, &serviceerror.InternalServerError
 		}
 
-		svcErr = as.validateAndAppendAuthAssertion(authResponse, user, authenticatorName,
+		svcErr = as.validateAndAppendAuthAssertion(ctx, authResponse, user, authenticatorName,
 			existingAssertion, logger)
 		if svcErr != nil {
 			return nil, svcErr
@@ -374,9 +378,10 @@ func (as *authenticationService) FinishIDPAuthentication(ctx context.Context, re
 }
 
 // validateAndAppendAuthAssertion validates and appends a generated auth assertion to the authentication response.
-func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *common.AuthenticationResponse,
-	user *entityprovider.Entity, authenticator string, existingAssertion string,
-	logger *log.Logger) *serviceerror.ServiceError {
+func (as *authenticationService) validateAndAppendAuthAssertion(
+	ctx context.Context, authResponse *common.AuthenticationResponse, user *entityprovider.Entity, authenticator string,
+	existingAssertion string, logger *log.Logger,
+) *serviceerror.ServiceError {
 	logger.Debug("Generating auth assertion", log.MaskedString(log.LoggerKeyUserID, user.ID))
 
 	authenticatorRef := &common.AuthenticatorReference{
@@ -430,9 +435,9 @@ func (as *authenticationService) validateAndAppendAuthAssertion(authResponse *co
 	}
 
 	// Generate auth assertion JWT
-	jwtConfig := config.GetThunderRuntime().Config.JWT
+	jwtConfig := config.GetServerRuntime().Config.JWT
 	jwtClaims["aud"] = jwtConfig.Audience
-	token, _, err := as.jwtService.GenerateJWT(user.ID, jwtConfig.Issuer,
+	token, _, err := as.jwtService.GenerateJWT(ctx, user.ID, jwtConfig.Issuer,
 		jwtConfig.ValidityPeriod, jwtClaims, jwt.TokenTypeJWT, "")
 	if err != nil {
 		logger.Error("Failed to generate auth assertion", log.String("error", err.Error.DefaultValue))
@@ -465,7 +470,7 @@ func (as *authenticationService) getAssertionResult(existingContext *assert.Assu
 // extractClaimsFromAssertion extracts assurance context and subject from an existing JWT assertion.
 func (as *authenticationService) extractClaimsFromAssertion(assertion string,
 	logger *log.Logger) (*assert.AssuranceContext, string, *serviceerror.ServiceError) {
-	jwtConfig := config.GetThunderRuntime().Config.JWT
+	jwtConfig := config.GetServerRuntime().Config.JWT
 
 	if err := as.jwtService.VerifyJWT(assertion, "", jwtConfig.Issuer); err != nil {
 		logger.Debug("Failed to verify JWT signature of the assertion", log.String("error", err.Error.DefaultValue))
@@ -598,7 +603,7 @@ func (as *authenticationService) validateIDPType(requestedType, actualType idp.I
 }
 
 // createSessionToken creates a JWT session token with authentication session data.
-func (as *authenticationService) createSessionToken(idpID string, idpType idp.IDPType) (
+func (as *authenticationService) createSessionToken(ctx context.Context, idpID string, idpType idp.IDPType) (
 	string, *serviceerror.ServiceError) {
 	sessionData := AuthSessionData{
 		IDPID:   idpID,
@@ -608,9 +613,9 @@ func (as *authenticationService) createSessionToken(idpID string, idpType idp.ID
 		"auth_data": sessionData,
 	}
 
-	jwtConfig := config.GetThunderRuntime().Config.JWT
+	jwtConfig := config.GetServerRuntime().Config.JWT
 	claims["aud"] = "auth-svc"
-	token, _, err := as.jwtService.GenerateJWT("auth-svc", jwtConfig.Issuer, 600, claims, jwt.TokenTypeJWT, "")
+	token, _, err := as.jwtService.GenerateJWT(ctx, "auth-svc", jwtConfig.Issuer, 600, claims, jwt.TokenTypeJWT, "")
 	if err != nil {
 		return "", err
 	}
@@ -622,7 +627,7 @@ func (as *authenticationService) createSessionToken(idpID string, idpType idp.ID
 func (as *authenticationService) verifyAndDecodeSessionToken(token string, logger *log.Logger) (
 	*AuthSessionData, *serviceerror.ServiceError) {
 	// Verify JWT signature and claims
-	jwtConfig := config.GetThunderRuntime().Config.JWT
+	jwtConfig := config.GetServerRuntime().Config.JWT
 	svcErr := as.jwtService.VerifyJWT(token, "auth-svc", jwtConfig.Issuer)
 	if svcErr != nil {
 		logger.Debug("Error verifying session token", log.String("error", svcErr.Error.DefaultValue))
@@ -764,7 +769,7 @@ func (as *authenticationService) FinishPasskeyAuthentication(ctx context.Context
 			OUID: basicResult.OUID,
 		}
 
-		svcErr = as.validateAndAppendAuthAssertion(authResponse, userForAssertion, common.AuthenticatorPasskey,
+		svcErr = as.validateAndAppendAuthAssertion(ctx, authResponse, userForAssertion, common.AuthenticatorPasskey,
 			existingAssertion, logger)
 		if svcErr != nil {
 			return nil, svcErr

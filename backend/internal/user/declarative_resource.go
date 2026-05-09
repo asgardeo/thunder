@@ -23,12 +23,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 
 	"github.com/asgardeo/thunder/internal/entity"
+	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/cryptolab/hash"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
@@ -293,7 +295,11 @@ func parseCredentials(credentialsMap map[string]interface{}) (Credentials, error
 	}
 
 	credentials := make(Credentials)
-	hashService, err := hash.Initialize()
+	hashCfg, err := buildHashCfgForUser()
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize hash service: %w", err)
+	}
+	hashService, err := hash.Initialize(hashCfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize hash service: %w", err)
 	}
@@ -322,9 +328,11 @@ func parseCredentials(credentialsMap map[string]interface{}) (Credentials, error
 				StorageType: "hash",
 				StorageAlgo: hashedCred.Algorithm,
 				StorageAlgoParams: hash.CredParameters{
-					Iterations: hashedCred.Parameters.Iterations,
-					KeySize:    hashedCred.Parameters.KeySize,
-					Salt:       hashedCred.Parameters.Salt,
+					Iterations:  hashedCred.Parameters.Iterations,
+					Memory:      hashedCred.Parameters.Memory,
+					Parallelism: hashedCred.Parameters.Parallelism,
+					KeySize:     hashedCred.Parameters.KeySize,
+					Salt:        hashedCred.Parameters.Salt,
 				},
 				Value: hashedCred.Hash,
 			}
@@ -404,9 +412,11 @@ func parseCredentialObject(
 			StorageType: "hash",
 			StorageAlgo: hashedCred.Algorithm,
 			StorageAlgoParams: hash.CredParameters{
-				Iterations: hashedCred.Parameters.Iterations,
-				KeySize:    hashedCred.Parameters.KeySize,
-				Salt:       hashedCred.Parameters.Salt,
+				Iterations:  hashedCred.Parameters.Iterations,
+				Memory:      hashedCred.Parameters.Memory,
+				Parallelism: hashedCred.Parameters.Parallelism,
+				KeySize:     hashedCred.Parameters.KeySize,
+				Salt:        hashedCred.Parameters.Salt,
 			},
 			Value: hashedCred.Hash,
 		}, nil
@@ -440,4 +450,23 @@ func parseCredentialObject(
 		},
 		Value: value,
 	}, nil
+}
+
+// buildHashCfgForUser constructs a hash.HashConfig from the server's password hashing config.
+func buildHashCfgForUser() (hash.HashConfig, error) {
+	cfg := config.GetServerRuntime().Config.Crypto.PasswordHashing
+	alg := hash.CredAlgorithm(strings.ToUpper(cfg.Algorithm))
+	switch alg {
+	case "", hash.SHA256:
+		return hash.HashConfig{Algorithm: hash.SHA256, SaltSize: cfg.SHA256.SaltSize}, nil
+	case hash.PBKDF2:
+		return hash.HashConfig{Algorithm: alg, SaltSize: cfg.PBKDF2.SaltSize,
+			Iterations: cfg.PBKDF2.Iterations, KeySize: cfg.PBKDF2.KeySize}, nil
+	case hash.ARGON2ID:
+		return hash.HashConfig{Algorithm: alg, SaltSize: cfg.Argon2ID.SaltSize,
+			Iterations: cfg.Argon2ID.Iterations, Memory: cfg.Argon2ID.Memory,
+			Parallelism: cfg.Argon2ID.Parallelism, KeySize: cfg.Argon2ID.KeySize}, nil
+	default:
+		return hash.HashConfig{}, fmt.Errorf("unrecognized password hashing algorithm %q", cfg.Algorithm)
+	}
 }

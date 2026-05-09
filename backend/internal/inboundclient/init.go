@@ -24,36 +24,43 @@ import (
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	"github.com/asgardeo/thunder/internal/entityprovider"
+	"github.com/asgardeo/thunder/internal/entitytype"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
+	"github.com/asgardeo/thunder/internal/system/cache"
 	dre "github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
 	"github.com/asgardeo/thunder/internal/system/transaction"
-	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 // Initialize initializes the inbound client service.
-func Initialize(certService cert.CertificateServiceInterface,
+func Initialize(
+	cacheManager cache.CacheManagerInterface,
+	certService cert.CertificateServiceInterface,
 	entityProvider entityprovider.EntityProviderInterface,
 	themeMgt thememgt.ThemeMgtServiceInterface,
 	layoutMgt layoutmgt.LayoutMgtServiceInterface,
 	flowMgt flowmgt.FlowMgtServiceInterface,
-	userSchema userschema.UserSchemaServiceInterface,
+	entityType entitytype.EntityTypeServiceInterface,
 	consentService consent.ConsentServiceInterface,
 ) (InboundClientServiceInterface, error) {
-	store, transactioner, err := initializeStore()
+	store, transactioner, err := initializeStore(cacheManager)
 	if err != nil {
 		return nil, err
 	}
 	return newInboundClientService(store, transactioner, certService, entityProvider,
-		themeMgt, layoutMgt, flowMgt, userSchema, consentService), nil
+		themeMgt, layoutMgt, flowMgt, entityType, consentService), nil
 }
 
 // initializeStore always creates a composite store (DB + in-memory file store).
-func initializeStore() (inboundClientStoreInterface, transaction.Transactioner, error) {
+func initializeStore(cacheManager cache.CacheManagerInterface) (
+	inboundClientStoreInterface, transaction.Transactioner, error) {
 	fileStore := newFileBasedStore(dre.KeyTypeInboundAuth)
 	dbStore, transactioner, err := newStore()
 	if err != nil {
 		return nil, nil, err
 	}
-	cached := newCachedBackStore(dbStore)
+	inboundClientCache := cache.GetCache[*inboundmodel.InboundClient](cacheManager, inboundClientCacheName)
+	oauthProfileCache := cache.GetCache[*inboundmodel.OAuthProfile](cacheManager, oauthProfileCacheName)
+	cached := newCachedBackStore(dbStore, inboundClientCache, oauthProfileCache)
 	return newCompositeStore(fileStore, cached), transactioner, nil
 }

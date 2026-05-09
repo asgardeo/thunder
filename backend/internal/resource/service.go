@@ -210,10 +210,23 @@ func (rs *resourceService) CreateResourceServer(
 		}
 	}
 
-	id, err := utils.GenerateUUIDv7()
-	if err != nil {
-		rs.logger.Error("Failed to generate UUID", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+	id := resourceServer.ID
+	if id == "" {
+		var err error
+		id, err = utils.GenerateUUIDv7()
+		if err != nil {
+			rs.logger.Error("Failed to generate UUID", log.Error(err))
+			return nil, &serviceerror.InternalServerError
+		}
+	} else {
+		_, svcErr := rs.GetResourceServer(ctx, id)
+		if svcErr != nil && svcErr.Code != ErrorResourceServerNotFound.Code {
+			return nil, svcErr
+		}
+		if svcErr == nil {
+			rs.logger.Debug("Resource server ID already exists", log.String("id", id))
+			return nil, &ErrorResourceServerIDConflict
+		}
 	}
 
 	// Use transaction for write operation
@@ -1479,7 +1492,7 @@ func validateHandle(handle string, delimiter string) *serviceerror.ServiceError 
 
 // getDefaultDelimiter returns the default delimiter from configuration.
 func getDefaultDelimiter() string {
-	delimiter := config.GetThunderRuntime().Config.Resource.DefaultDelimiter
+	delimiter := config.GetServerRuntime().Config.Resource.DefaultDelimiter
 	if delimiter == "" {
 		return ":" // Fallback default if not configured
 	}

@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/asgardeo/thunder/internal/entity"
-	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/cryptolab/hash"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 

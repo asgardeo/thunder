@@ -20,7 +20,7 @@
 # Common functions for bootstrap scripts
 # Dot-source this file at the beginning of each bootstrap script
 
-$PRODUCT_NAME = "Thunder"
+$PRODUCT_NAME = "ThunderID"
 
 # Configure TLS to use modern protocols (required for HTTPS requests on Windows)
 try {

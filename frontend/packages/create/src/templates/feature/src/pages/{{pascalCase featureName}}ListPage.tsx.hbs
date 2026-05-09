@@ -1,0 +1,90 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {Box, Typography, Stack, Button, TextField, InputAdornment} from '@wso2/oxygen-ui';
+import {Plus, Search} from '@wso2/oxygen-ui-icons-react';
+import type {JSX} from 'react';
+import {useTranslation} from 'react-i18next';
+import {useNavigate} from 'react-router';
+import {useLogger} from '@thunderid/logger/react';
+import {{pascalCase featureName}}List from '../components/{{pascalCase featureName}}List';
+
+export default function {{pascalCase featureName}}ListPage(): JSX.Element {
+  const navigate = useNavigate();
+  const {t} = useTranslation();
+  const logger = useLogger('{{pascalCase featureName}}ListPage');
+
+  const handleCreate = () => {
+    logger.info('Navigate to create {{camelCase featureName}} page');
+    navigate('/{{kebabCase featureName}}s/create');
+  };
+
+  const handleSearch = (searchTerm: string) => {
+    logger.info('Search {{camelCase featureName}}s with term: ' + searchTerm);
+    // TODO: Implement search functionality
+  };
+
+  return (
+    <Box sx=\{{p: 3}}>
+      <Stack spacing=\{{3}}>
+        {/* Header */}
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Box>
+            <Typography variant="h4" component="h1">
+              {t('{{camelCase featureName}}s:listing.title')}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {t('{{camelCase featureName}}s:listing.subtitle')}
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            startIcon=\{{<Plus />}}
+            onClick=\{{handleCreate}}
+            sx=\{{minWidth: 'auto'}}
+          >
+            {t('{{camelCase featureName}}s:listing.actions.create')}
+          </Button>
+        </Stack>
+
+        {/* Search and Filters */}
+        <Stack direction="row" spacing=\{{2}} alignItems="center">
+          <TextField
+            placeholder=\{{t('{{camelCase featureName}}s:listing.search.placeholder')}}
+            variant="outlined"
+            size="small"
+            sx=\{{minWidth: 300}}
+            InputProps=\{{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search size=\{{16}} />
+                </InputAdornment>
+              ),
+            }}
+            onChange=\{{(e) => handleSearch(e.target.value)}}
+          />
+        </Stack>
+
+        {/* {{pascalCase featureName}}s List */}
+        <Box sx=\{{height: 600}}>
+          <{{pascalCase featureName}}List />
+        </Box>
+      </Stack>
+    </Box>
+  );
+}

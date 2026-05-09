@@ -55,11 +55,11 @@ flags:
   frontend-apps-console-unit:
     carryforward: false
     paths:
-      - frontend/apps/thunder-console/
+      - frontend/apps/console/
   frontend-apps-gate-unit:
     carryforward: false
     paths:
-      - frontend/apps/thunder-gate/
+      - frontend/apps/gate/
 
 coverage:
   status:
@@ -68,7 +68,7 @@ coverage:
         enabled: true
         target: auto
         threshold: 1%
-        informational: true
+        informational: false
       backend-unit:
         flags:
           - backend-unit
@@ -105,7 +105,7 @@ coverage:
       default:
         target: 80%
         threshold: 1%
-        informational: true
+        informational: false
 
 ignore:
   - "backend/tests/**"

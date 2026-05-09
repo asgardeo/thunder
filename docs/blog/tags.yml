@@ -1,0 +1,34 @@
+thunderid:
+  label: ThunderID
+  permalink: /thunderid
+  description: ThunderID platform related posts
+
+community:
+  label: Community
+  permalink: /community
+  description: Community updates and events
+
+release:
+  label: Release
+  permalink: /release
+  description: Release announcements and changelogs
+
+identity:
+  label: Identity
+  permalink: /identity
+  description: Identity and access management topics
+
+security:
+  label: Security
+  permalink: /security
+  description: Security and cryptography topics
+
+developers:
+  label: Developers
+  permalink: /developers
+  description: Developer experience and SDK posts
+
+"2026":
+  label: "2026"
+  permalink: /2026
+  description: Posts from 2026

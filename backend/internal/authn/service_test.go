@@ -96,9 +96,9 @@ func (suite *AuthenticationServiceTestSuite) SetupSuite() {
 			Audience:       "application",
 		},
 	}
-	err := config.InitializeThunderRuntime("", testConfig)
+	err := config.InitializeServerRuntime("", testConfig)
 	if err != nil {
-		suite.T().Fatalf("Failed to initialize ThunderRuntime: %v", err)
+		suite.T().Fatalf("Failed to initialize server runtime: %v", err)
 	}
 
 	// Register authenticators for IDP types
@@ -206,7 +206,7 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 							IAL: assert.IALLevel1,
 						},
 					}, nil).Once()
-				suite.mockJWTService.On("GenerateJWT", testUserID, mock.Anything, mock.Anything,
+				suite.mockJWTService.On("GenerateJWT", mock.Anything, testUserID, mock.Anything, mock.Anything,
 					mock.MatchedBy(func(claims map[string]interface{}) bool {
 						// Verify that assurance claims are present
 						_, hasAssurance := claims["assurance"]
@@ -242,7 +242,7 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentials() {
 							IAL: assert.IALLevel1,
 						},
 					}, nil).Once()
-				suite.mockJWTService.On("GenerateJWT", testUserID, mock.Anything, mock.Anything,
+				suite.mockJWTService.On("GenerateJWT", mock.Anything, testUserID, mock.Anything, mock.Anything,
 					mock.Anything, mock.Anything, mock.Anything).Return(testJWTToken, int64(3600), nil).Once()
 			},
 			validateAssertion: func(result *common.AuthenticationResponse) {
@@ -318,7 +318,7 @@ func (suite *AuthenticationServiceTestSuite) TestAuthenticateWithCredentialsJWTG
 				IAL: assert.IALLevel1,
 			},
 		}, nil).Once()
-	suite.mockJWTService.On("GenerateJWT", testUserID, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, testUserID, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return("", int64(0), &serviceerror.ServiceError{
 			Type: serviceerror.ServerErrorType,
@@ -514,7 +514,7 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTP() {
 							IAL: assert.IALLevel1,
 						},
 					}, nil).Once()
-				suite.mockJWTService.On("GenerateJWT", testUserID, mock.Anything, mock.Anything,
+				suite.mockJWTService.On("GenerateJWT", mock.Anything, testUserID, mock.Anything, mock.Anything,
 					mock.MatchedBy(func(claims map[string]interface{}) bool {
 						// Verify that assurance claims are present
 						_, hasAssurance := claims["assurance"]
@@ -543,7 +543,7 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTP() {
 							IAL: assert.IALLevel1,
 						},
 					}, nil).Once()
-				suite.mockJWTService.On("GenerateJWT", testUserID, mock.Anything, mock.Anything,
+				suite.mockJWTService.On("GenerateJWT", mock.Anything, testUserID, mock.Anything, mock.Anything,
 					mock.MatchedBy(func(claims map[string]interface{}) bool {
 						// Verify that assurance claims are present for MFA
 						_, hasAssurance := claims["assurance"]
@@ -598,7 +598,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationOAuthSucc
 
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
 	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, idpID).Return(redirectURL, nil)
-	suite.mockJWTService.On("GenerateJWT", "auth-svc",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "auth-svc",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(testSessionTkn, int64(600), nil)
 
@@ -620,7 +620,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationOIDCSucce
 
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
 	suite.mockOIDCService.On("BuildAuthorizeURL", mock.Anything, idpID).Return(redirectURL, nil)
-	suite.mockJWTService.On("GenerateJWT", "auth-svc",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "auth-svc",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(testSessionTkn, int64(600), nil)
 
@@ -641,7 +641,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationGoogleSuc
 
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
 	suite.mockGoogleService.On("BuildAuthorizeURL", mock.Anything, idpID).Return(redirectURL, nil)
-	suite.mockJWTService.On("GenerateJWT", "auth-svc",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "auth-svc",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(testSessionTkn, int64(600), nil)
 
@@ -662,7 +662,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationGitHubSuc
 
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
 	suite.mockGithubService.On("BuildAuthorizeURL", mock.Anything, idpID).Return(redirectURL, nil)
-	suite.mockJWTService.On("GenerateJWT", "auth-svc",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "auth-svc",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(testSessionTkn, int64(600), nil)
 
@@ -727,7 +727,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationCrossType
 
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
 	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, idpID).Return(redirectURL, nil)
-	suite.mockJWTService.On("GenerateJWT", "auth-svc",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "auth-svc",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(testSessionTkn, int64(600), nil)
 
@@ -747,7 +747,7 @@ func (suite *AuthenticationServiceTestSuite) TestStartIDPAuthenticationJWTGenera
 
 	suite.mockIDPService.On("GetIdentityProvider", mock.Anything, idpID).Return(identityProvider, nil)
 	suite.mockOAuthService.On("BuildAuthorizeURL", mock.Anything, idpID).Return(redirectURL, nil)
-	suite.mockJWTService.On("GenerateJWT", "auth-svc",
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, "auth-svc",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return("", int64(0), &serviceerror.ServiceError{
 			Type: serviceerror.ServerErrorType,
@@ -854,7 +854,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationWithAsse
 							IAL: assert.IALLevel1,
 						},
 					}, nil).Once()
-				suite.mockJWTService.On("GenerateJWT",
+				suite.mockJWTService.On("GenerateJWT", mock.Anything,
 					testUserID, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 				).Return(testJWTToken, int64(3600), nil).Once()
 			},
@@ -889,7 +889,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishIDPAuthenticationWithAsse
 							IAL: assert.IALLevel1,
 						},
 					}, nil).Once()
-				suite.mockJWTService.On("GenerateJWT", testUserID, mock.Anything, mock.Anything,
+				suite.mockJWTService.On("GenerateJWT", mock.Anything, testUserID, mock.Anything, mock.Anything,
 					mock.MatchedBy(func(claims map[string]interface{}) bool {
 						_, hasAssurance := claims["assurance"]
 						return hasAssurance
@@ -1176,7 +1176,7 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionE
 
 	suite.mockJWTService.On("VerifyJWT", invalidAssertion, "", mock.Anything).Return(nil).Once()
 
-	svcErr := suite.service.validateAndAppendAuthAssertion(
+	svcErr := suite.service.validateAndAppendAuthAssertion(context.Background(),
 		authResponse, testUser, common.AuthenticatorSMSOTP, invalidAssertion, logger)
 
 	suite.NotNil(svcErr)
@@ -1236,12 +1236,12 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionS
 				IAL: assert.IALLevel1,
 			},
 		}, nil).Once()
-	suite.mockJWTService.On("GenerateJWT", testUserID, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, testUserID, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return(testJWTToken, int64(3600), nil).Once()
 
 	// Test with empty existingAssertion
-	svcErr := suite.service.validateAndAppendAuthAssertion(
+	svcErr := suite.service.validateAndAppendAuthAssertion(context.Background(),
 		authResponse, testUser, common.AuthenticatorCredentials, "", logger)
 	suite.Nil(svcErr)
 	suite.Equal(testJWTToken, authResponse.Assertion)
@@ -1264,7 +1264,7 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionS
 
 	suite.mockJWTService.On("VerifyJWT", existingAssertion, "", mock.Anything).Return(nil)
 
-	svcErr := suite.service.validateAndAppendAuthAssertion(
+	svcErr := suite.service.validateAndAppendAuthAssertion(context.Background(),
 		authResponse, testUser, common.AuthenticatorSMSOTP, existingAssertion, log.GetLogger())
 
 	suite.NotNil(svcErr)
@@ -1433,7 +1433,7 @@ func (suite *AuthenticationServiceTestSuite) TestVerifyOTPJWTGenerationError() {
 				IAL: assert.IALLevel1,
 			},
 		}, nil).Once()
-	suite.mockJWTService.On("GenerateJWT", testUserID, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, testUserID, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		Return("", int64(0), &serviceerror.ServiceError{
 			Type: serviceerror.ServerErrorType,
@@ -1528,7 +1528,8 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionG
 		jwtService:             suite.mockJWTService,
 	}
 
-	err := service.validateAndAppendAuthAssertion(authResponse, testUser, common.AuthenticatorCredentials, "", logger)
+	err := service.validateAndAppendAuthAssertion(
+		context.Background(), authResponse, testUser, common.AuthenticatorCredentials, "", logger)
 
 	suite.NotNil(err)
 	suite.Equal("ASSERTION_ERROR", err.Code)
@@ -1569,8 +1570,8 @@ func (suite *AuthenticationServiceTestSuite) TestValidateAndAppendAuthAssertionU
 		jwtService:             suite.mockJWTService,
 	}
 
-	err := service.validateAndAppendAuthAssertion(authResponse, testUser, common.AuthenticatorSMSOTP,
-		existingAssertion, logger)
+	err := service.validateAndAppendAuthAssertion(
+		context.Background(), authResponse, testUser, common.AuthenticatorSMSOTP, existingAssertion, logger)
 
 	suite.NotNil(err)
 	suite.Equal("UPDATE_ERROR", err.Code)
@@ -1796,7 +1797,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Suc
 		return len(refs) == 1 && refs[0].Authenticator == common.AuthenticatorPasskey
 	})).Return(mockAssertionResult, nil).Once()
 
-	suite.mockJWTService.On("GenerateJWT", testUserID, mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, testUserID, mock.Anything, mock.Anything,
 		mock.MatchedBy(func(claims map[string]interface{}) bool {
 			return claims["userType"] == "person" && claims["ouId"] == testOrgUnit
 		}), mock.Anything, mock.Anything).Return(testJWTToken, int64(3600), nil).Once()
@@ -1878,7 +1879,7 @@ func (suite *AuthenticationServiceTestSuite) TestFinishPasskeyAuthentication_Wit
 	suite.mockAssertGenerator.On("UpdateAssertion", mock.Anything, mock.Anything).
 		Return(mockUpdatedResult, nil).Once()
 
-	suite.mockJWTService.On("GenerateJWT", testUserID, mock.Anything, mock.Anything,
+	suite.mockJWTService.On("GenerateJWT", mock.Anything, testUserID, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).Return("updated.jwt.token", int64(3600), nil).Once()
 
 	result, err := suite.service.FinishPasskeyAuthentication(

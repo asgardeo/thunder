@@ -30,7 +30,7 @@ import (
 	"time"
 
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/system/crypto/sign"
+	"github.com/asgardeo/thunder/internal/system/cryptolab"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
 
@@ -118,7 +118,10 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_InvalidSignatur
 	claimsEncoded := base64.RawURLEncoding.EncodeToString(claimsBytes)
 
 	signingInput := headerEncoded + "." + claimsEncoded
-	signature, _ := sign.Generate([]byte(signingInput), sign.RSASHA256, differentKey)
+	signature, err := cryptolab.Generate([]byte(signingInput), cryptolab.RSASHA256, differentKey)
+	if err != nil {
+		s.T().Fatal("Error signing token:", err)
+	}
 	signatureEncoded := base64.RawURLEncoding.EncodeToString(signature)
 
 	invalidToken := signingInput + "." + signatureEncoded
@@ -387,7 +390,7 @@ func (s *TokenIntrospectionServiceTestSuite) createToken(claims map[string]inter
 	claimsEncoded := base64.RawURLEncoding.EncodeToString(claimsBytes)
 
 	signingInput := headerEncoded + "." + claimsEncoded
-	signature, err := sign.Generate([]byte(signingInput), sign.RSASHA256, s.privateKey)
+	signature, err := cryptolab.Generate([]byte(signingInput), cryptolab.RSASHA256, s.privateKey)
 	if err != nil {
 		s.T().Fatal("Error signing token:", err)
 	}

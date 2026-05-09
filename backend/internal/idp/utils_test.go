@@ -602,3 +602,87 @@ func (s *IDPUtilsTestSuite) TestEnsureOpenIDScope_WithEmptyStringInScopes() {
 	// Should not have consecutive commas
 	s.NotContains(value, ",,")
 }
+
+func (s *IDPUtilsTestSuite) TestValidateIDPProperties_TokenExchangeOnly_OIDC_Succeeds() {
+	// OIDC IDP with only the token-exchange required props and token_exchange_enabled=true should succeed.
+	// client_id is no longer required for token exchange; issuer and jwks_endpoint are sufficient.
+	prop1, _ := cmodels.NewProperty(PropIssuer, "https://api.asgardeo.io/t/myorg/oauth2/token", false)
+	prop2, _ := cmodels.NewProperty(PropJwksEndpoint, "https://api.asgardeo.io/t/myorg/oauth2/jwks", false)
+	prop3, _ := cmodels.NewProperty(PropTokenExchangeEnabled, "true", false)
+
+	properties := []cmodels.Property{*prop1, *prop2, *prop3}
+
+	result, err := validateIDPProperties(IDPTypeOIDC, properties, s.logger)
+
+	s.Nil(err)
+	s.NotNil(result)
+}
+
+func (s *IDPUtilsTestSuite) TestValidateIDPProperties_TokenExchangeEnabled_MissingIssuer_Fails() {
+	// OIDC IDP with token_exchange_enabled=true but missing issuer should fail.
+	prop1, _ := cmodels.NewProperty(PropClientID, "your_client_id", false)
+	prop2, _ := cmodels.NewProperty(PropJwksEndpoint, "https://api.asgardeo.io/t/myorg/oauth2/jwks", false)
+	prop3, _ := cmodels.NewProperty(PropTokenExchangeEnabled, "true", false)
+
+	properties := []cmodels.Property{*prop1, *prop2, *prop3}
+
+	result, err := validateIDPProperties(IDPTypeOIDC, properties, s.logger)
+
+	s.NotNil(err)
+	s.Nil(result)
+	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
+	s.Contains(err.ErrorDescription.DefaultValue, "required property")
+	s.Contains(err.ErrorDescription.DefaultValue, PropIssuer)
+}
+
+func (s *IDPUtilsTestSuite) TestValidateIDPProperties_TokenExchangeEnabled_MissingJWKS_Fails() {
+	// OIDC IDP with token_exchange_enabled=true but missing jwks_endpoint should fail.
+	prop1, _ := cmodels.NewProperty(PropClientID, "your_client_id", false)
+	prop2, _ := cmodels.NewProperty(PropIssuer, "https://api.asgardeo.io/t/myorg/oauth2/token", false)
+	prop3, _ := cmodels.NewProperty(PropTokenExchangeEnabled, "true", false)
+
+	properties := []cmodels.Property{*prop1, *prop2, *prop3}
+
+	result, err := validateIDPProperties(IDPTypeOIDC, properties, s.logger)
+
+	s.NotNil(err)
+	s.Nil(result)
+	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
+	s.Contains(err.ErrorDescription.DefaultValue, "required property")
+	s.Contains(err.ErrorDescription.DefaultValue, PropJwksEndpoint)
+}
+
+func (s *IDPUtilsTestSuite) TestValidateIDPProperties_OIDCWithoutTokenExchange_StillRequiresRedirectProps() {
+	// OIDC IDP without token_exchange_enabled must still require all 5 redirect-flow props.
+	prop1, _ := cmodels.NewProperty(PropClientID, "your_client_id", false)
+	prop2, _ := cmodels.NewProperty(PropIssuer, "https://api.asgardeo.io/t/myorg/oauth2/token", false)
+	prop3, _ := cmodels.NewProperty(PropJwksEndpoint, "https://api.asgardeo.io/t/myorg/oauth2/jwks", false)
+
+	properties := []cmodels.Property{*prop1, *prop2, *prop3}
+
+	result, err := validateIDPProperties(IDPTypeOIDC, properties, s.logger)
+
+	s.NotNil(err)
+	s.Nil(result)
+	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
+	s.Contains(err.ErrorDescription.DefaultValue, "required property")
+}
+
+func (s *IDPUtilsTestSuite) TestValidateIDPProperties_OIDCWithoutTokenExchange_MissingClientSecret_Fails() {
+	// OIDC IDP without token_exchange_enabled must fail when client_secret is missing.
+	prop1, _ := cmodels.NewProperty(PropClientID, "your_client_id", false)
+	prop2, _ := cmodels.NewProperty(PropRedirectURI, "https://thunder.example.com/callback", false)
+	prop3, _ := cmodels.NewProperty(PropAuthorizationEndpoint, "https://api.asgardeo.io/t/myorg/oauth2/authorize",
+		false)
+	prop4, _ := cmodels.NewProperty(PropTokenEndpoint, "https://api.asgardeo.io/t/myorg/oauth2/token", false)
+
+	properties := []cmodels.Property{*prop1, *prop2, *prop3, *prop4}
+
+	result, err := validateIDPProperties(IDPTypeOIDC, properties, s.logger)
+
+	s.NotNil(err)
+	s.Nil(result)
+	s.Equal(ErrorInvalidIDPProperty.Code, err.Code)
+	s.Contains(err.ErrorDescription.DefaultValue, "required property")
+	s.Contains(err.ErrorDescription.DefaultValue, PropClientSecret)
+}

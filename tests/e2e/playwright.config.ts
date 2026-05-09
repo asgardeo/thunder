@@ -120,7 +120,7 @@ export default defineConfig({
     {
       name: "setup",
       testMatch: "**/*.setup.ts",
-      use: { ...devices["Desktop Chrome"] },
+      use: { ...devices["Desktop Chrome"], ignoreHTTPSErrors: true },
     },
 
     /** Main test project - runs .spec.ts files with authenticated session */

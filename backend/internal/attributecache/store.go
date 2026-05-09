@@ -55,7 +55,7 @@ type attributeCacheStore struct {
 func newAttributeCacheStore() attributeCacheStoreInterface {
 	return &attributeCacheStore{
 		dbProvider:   dbprovider.GetDBProvider(),
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
 	}
 }
 

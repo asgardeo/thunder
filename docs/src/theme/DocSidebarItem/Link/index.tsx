@@ -16,9 +16,9 @@
  * under the License.
  */
 
-import React from 'react';
-import OriginalDocSidebarItemLink from '@theme-original/DocSidebarItem/Link';
 import {usePluginData} from '@docusaurus/useGlobalData';
+import OriginalDocSidebarItemLink from '@theme-original/DocSidebarItem/Link';
+import React from 'react';
 
 type OriginalProps = React.ComponentProps<typeof OriginalDocSidebarItemLink>;
 
@@ -27,7 +27,7 @@ interface PersonaPluginData {
 }
 
 export default function DocSidebarItemLink(props: OriginalProps): React.ReactElement {
-  const {personaMap} = usePluginData('thunder-persona-plugin') as PersonaPluginData;
+  const {personaMap} = usePluginData('product-persona-plugin') as PersonaPluginData;
   const docId = (props.item as {docId?: string}).docId;
   const persona = docId ? personaMap[docId] : undefined;
 

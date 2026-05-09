@@ -24,9 +24,9 @@ import (
 	"github.com/asgardeo/thunder/internal/attributecache"
 	"github.com/asgardeo/thunder/internal/inboundclient"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/jwksresolver"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
 	"github.com/asgardeo/thunder/internal/ou"
-	syshttp "github.com/asgardeo/thunder/internal/system/http"
 	"github.com/asgardeo/thunder/internal/system/jose/jwe"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
 	"github.com/asgardeo/thunder/internal/system/middleware"
@@ -38,14 +38,14 @@ func Initialize(
 	mux *http.ServeMux,
 	jwtService jwt.JWTServiceInterface,
 	jweService jwe.JWEServiceInterface,
-	httpClient syshttp.HTTPClientInterface,
+	resolver *jwksresolver.Resolver,
 	tokenValidator tokenservice.TokenValidatorInterface,
 	inboundClient inboundclient.InboundClientServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	transactioner transaction.Transactioner,
 ) userInfoServiceInterface {
-	userInfoService := newUserInfoService(jwtService, jweService, httpClient, tokenValidator,
+	userInfoService := newUserInfoService(jwtService, jweService, resolver, tokenValidator,
 		inboundClient, ouService, attributeCacheSvc, transactioner)
 	userInfoHandler := newUserInfoHandler(userInfoService)
 	registerRoutes(mux, userInfoHandler)

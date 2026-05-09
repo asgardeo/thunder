@@ -53,7 +53,7 @@ type sessionStore struct {
 func newSessionStore() sessionStoreInterface {
 	return &sessionStore{
 		dbProvider:   provider.GetDBProvider(),
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
 		logger:       log.GetLogger().With(log.String(log.LoggerKeyComponentName, "WebAuthnSessionStore")),
 	}
 }

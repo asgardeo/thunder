@@ -27,6 +27,7 @@ import (
 	"encoding/json"
 
 	"github.com/asgardeo/thunder/internal/entity"
+	"github.com/asgardeo/thunder/internal/entitytype"
 	"github.com/asgardeo/thunder/internal/group"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	resourcepkg "github.com/asgardeo/thunder/internal/resource"
@@ -35,7 +36,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/transaction"
 	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 const loggerComponentName = "RoleMgtService"
@@ -69,7 +69,7 @@ type roleService struct {
 	groupService      group.GroupServiceInterface
 	ouService         oupkg.OrganizationUnitServiceInterface
 	resourceService   resourcepkg.ResourceServiceInterface
-	userSchemaService userschema.UserSchemaServiceInterface
+	entityTypeService entitytype.EntityTypeServiceInterface
 	transactioner     transaction.Transactioner
 }
 
@@ -80,7 +80,7 @@ func newRoleService(
 	groupService group.GroupServiceInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	resourceService resourcepkg.ResourceServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	entityTypeService entitytype.EntityTypeServiceInterface,
 	transactioner transaction.Transactioner,
 ) RoleServiceInterface {
 	return &roleService{
@@ -89,7 +89,7 @@ func newRoleService(
 		groupService:      groupService,
 		ouService:         ouService,
 		resourceService:   resourceService,
-		userSchemaService: userSchemaService,
+		entityTypeService: entityTypeService,
 		transactioner:     transactioner,
 	}
 }
@@ -208,10 +208,23 @@ func (rs *roleService) CreateRole(
 		return nil, &ErrorRoleNameConflict
 	}
 
-	id, err := utils.GenerateUUIDv7()
-	if err != nil {
-		logger.Error("Failed to generate UUID", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+	id := role.ID
+	if id == "" {
+		id, err = utils.GenerateUUIDv7()
+		if err != nil {
+			logger.Error("Failed to generate UUID", log.Error(err))
+			return nil, &serviceerror.InternalServerError
+		}
+	} else {
+		_, err = rs.roleStore.GetRole(ctx, id)
+		if err != nil && !errors.Is(err, ErrRoleNotFound) {
+			logger.Error("Failed to check role ID existence", log.Error(err))
+			return nil, &serviceerror.InternalServerError
+		}
+		if err == nil {
+			logger.Debug("Role ID already exists", log.String("id", id))
+			return nil, &ErrorRoleIDConflict
+		}
 	}
 
 	serviceRole := &RoleWithPermissionsAndAssignments{
@@ -920,7 +933,7 @@ func (rs *roleService) resolveAssignments(
 				userTypes = append(userTypes, e.Type)
 			}
 		}
-		displayAttrPaths = resolveDisplayAttributePaths(ctx, userTypes, rs.userSchemaService, logger)
+		displayAttrPaths = resolveDisplayAttributePaths(ctx, userTypes, rs.entityTypeService, logger)
 	}
 
 	// Build the result slice, skipping orphaned entity assignments.
@@ -966,9 +979,9 @@ func (rs *roleService) resolveAssignments(
 }
 
 // resolveDisplayAttributePaths collects unique user types and resolves their display
-// attribute paths from the user schema service.
+// attribute paths from the entity type service.
 func resolveDisplayAttributePaths(
-	ctx context.Context, userTypes []string, schemaService userschema.UserSchemaServiceInterface,
+	ctx context.Context, userTypes []string, schemaService entitytype.EntityTypeServiceInterface,
 	logger *log.Logger,
 ) map[string]string {
 	if schemaService == nil || len(userTypes) == 0 {
@@ -980,7 +993,7 @@ func resolveDisplayAttributePaths(
 		return nil
 	}
 
-	displayPaths, svcErr := schemaService.GetDisplayAttributesByNames(ctx, uniqueTypes)
+	displayPaths, svcErr := schemaService.GetDisplayAttributesByNames(ctx, entitytype.TypeCategoryUser, uniqueTypes)
 	if svcErr != nil {
 		if logger != nil {
 			logger.Warn("Failed to resolve display attribute paths, skipping display resolution",

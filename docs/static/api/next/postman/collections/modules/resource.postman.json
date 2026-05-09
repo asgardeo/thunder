@@ -1,7 +1,7 @@
 {
   "item": [
     {
-      "id": "c238b48e-8b64-413d-b8ee-0072141cdc4b",
+      "id": "664235df-7231-4983-a20b-4d3c4b459679",
       "name": "resource-servers",
       "description": {
         "content": "Operations related to resource server management",
@@ -9,7 +9,7 @@
       },
       "item": [
         {
-          "id": "69919219-fa41-4165-9f36-1f68f76d664f",
+          "id": "d69e3cba-6df5-47b6-9c47-62cf5098eb3f",
           "name": "List resource servers",
           "request": {
             "name": "List resource servers",
@@ -67,7 +67,7 @@
           },
           "response": [
             {
-              "id": "12e3bad0-fc86-438b-a4ef-32a2bbeec52f",
+              "id": "7ee6c8a5-8a9b-41aa-8ed9-faf6728e4bb1",
               "name": "List of resource servers",
               "originalRequest": {
                 "url": {
@@ -133,12 +133,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"totalResults\": \"<integer>\",\n  \"startIndex\": \"<integer>\",\n  \"count\": \"<integer>\",\n  \"resourceServers\": [\n    {\n      \"id\": \"<uuid>\",\n      \"name\": \"<string>\",\n      \"ouId\": \"<uuid>\",\n      \"delimiter\": \"<string>\",\n      \"description\": \"<string>\",\n      \"identifier\": \"<string>\"\n    },\n    {\n      \"id\": \"<uuid>\",\n      \"name\": \"<string>\",\n      \"ouId\": \"<uuid>\",\n      \"delimiter\": \"<string>\",\n      \"description\": \"<string>\",\n      \"identifier\": \"<string>\"\n    }\n  ],\n  \"links\": [\n    {\n      \"href\": \"<string>\",\n      \"rel\": \"<string>\"\n    },\n    {\n      \"href\": \"<string>\",\n      \"rel\": \"<string>\"\n    }\n  ]\n}",
+              "body": "{\n  \"totalResults\": \"<integer>\",\n  \"startIndex\": \"<integer>\",\n  \"count\": \"<integer>\",\n  \"resourceServers\": [\n    {\n      \"id\": \"<uuid>\",\n      \"name\": \"<string>\",\n      \"handle\": \"<string>\",\n      \"ouId\": \"<uuid>\",\n      \"delimiter\": \"<string>\",\n      \"description\": \"<string>\",\n      \"identifier\": \"<string>\",\n      \"isReadOnly\": \"<boolean>\"\n    },\n    {\n      \"id\": \"<uuid>\",\n      \"name\": \"<string>\",\n      \"handle\": \"<string>\",\n      \"ouId\": \"<uuid>\",\n      \"delimiter\": \"<string>\",\n      \"description\": \"<string>\",\n      \"identifier\": \"<string>\",\n      \"isReadOnly\": \"<boolean>\"\n    }\n  ],\n  \"links\": [\n    {\n      \"href\": \"<string>\",\n      \"rel\": \"<string>\"\n    },\n    {\n      \"href\": \"<string>\",\n      \"rel\": \"<string>\"\n    }\n  ]\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "1892c5ff-e50b-4115-bc83-79502e0a8686",
+              "id": "1eb7eff9-ca03-43a0-b9ea-d79144a52403",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -209,7 +209,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "7a51bf75-fc5d-411b-8074-78c2acb5980b",
+              "id": "4ca22bde-8c06-4735-bce4-0ac852cab51f",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -286,7 +286,7 @@
           }
         },
         {
-          "id": "d1c31cbf-c098-4ae2-85a3-20ce05f3b46f",
+          "id": "4937de3c-a73e-4182-a08f-9551c5ebacff",
           "name": "Create a new resource server",
           "request": {
             "name": "Create a new resource server",
@@ -337,7 +337,7 @@
             "auth": null,
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"<string>\",\n  \"ouId\": \"<uuid>\",\n  \"description\": \"<string>\",\n  \"identifier\": \"<string>\",\n  \"delimiter\": \"<string>\"\n}",
+              "raw": "{\n  \"name\": \"<string>\",\n  \"ouId\": \"<uuid>\",\n  \"description\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"identifier\": \"<string>\",\n  \"delimiter\": \"<string>\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -347,7 +347,7 @@
           },
           "response": [
             {
-              "id": "c61f896f-6683-420b-aa49-ffee6b86613f",
+              "id": "a03d9468-ccbb-4091-87f8-f82b56f2beda",
               "name": "Resource server created",
               "originalRequest": {
                 "url": {
@@ -396,7 +396,7 @@
                 "method": "POST",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"<string>\",\n  \"ouId\": \"<uuid>\",\n  \"description\": \"<string>\",\n  \"identifier\": \"<string>\",\n  \"delimiter\": \"<string>\"\n}",
+                  "raw": "{\n  \"name\": \"<string>\",\n  \"ouId\": \"<uuid>\",\n  \"description\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"identifier\": \"<string>\",\n  \"delimiter\": \"<string>\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -412,12 +412,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"id\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"ouId\": \"<uuid>\",\n  \"delimiter\": \"<string>\",\n  \"description\": \"<string>\",\n  \"identifier\": \"<string>\"\n}",
+              "body": "{\n  \"id\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"ouId\": \"<uuid>\",\n  \"delimiter\": \"<string>\",\n  \"description\": \"<string>\",\n  \"identifier\": \"<string>\",\n  \"isReadOnly\": \"<boolean>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "4e306da4-9fea-403d-9807-7188d0affd21",
+              "id": "11cae184-3bf2-410e-9e7f-b8d09aa678a0",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -466,7 +466,7 @@
                 "method": "POST",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"<string>\",\n  \"ouId\": \"<uuid>\",\n  \"description\": \"<string>\",\n  \"identifier\": \"<string>\",\n  \"delimiter\": \"<string>\"\n}",
+                  "raw": "{\n  \"name\": \"<string>\",\n  \"ouId\": \"<uuid>\",\n  \"description\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"identifier\": \"<string>\",\n  \"delimiter\": \"<string>\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -487,7 +487,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "db7738f9-b611-4579-b44b-c9f3bf333623",
+              "id": "67bb0400-3a24-4857-9be5-5e427787f979",
               "name": "Conflict",
               "originalRequest": {
                 "url": {
@@ -536,7 +536,7 @@
                 "method": "POST",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"<string>\",\n  \"ouId\": \"<uuid>\",\n  \"description\": \"<string>\",\n  \"identifier\": \"<string>\",\n  \"delimiter\": \"<string>\"\n}",
+                  "raw": "{\n  \"name\": \"<string>\",\n  \"ouId\": \"<uuid>\",\n  \"description\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"identifier\": \"<string>\",\n  \"delimiter\": \"<string>\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -557,7 +557,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "53342831-8f2c-47be-88c2-967a8e32d956",
+              "id": "d5bc9cfd-8d55-4983-b0ea-657f76e7da55",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -606,7 +606,7 @@
                 "method": "POST",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"<string>\",\n  \"ouId\": \"<uuid>\",\n  \"description\": \"<string>\",\n  \"identifier\": \"<string>\",\n  \"delimiter\": \"<string>\"\n}",
+                  "raw": "{\n  \"name\": \"<string>\",\n  \"ouId\": \"<uuid>\",\n  \"description\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"identifier\": \"<string>\",\n  \"delimiter\": \"<string>\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -633,7 +633,7 @@
           }
         },
         {
-          "id": "7fad479e-60ea-4ac4-a865-046070dd833d",
+          "id": "048eb414-8e3b-4c94-83a4-d4b2278ec449",
           "name": "Get resource server details",
           "request": {
             "name": "Get resource server details",
@@ -689,7 +689,7 @@
           },
           "response": [
             {
-              "id": "0a263de3-a39a-4b7e-8912-c6ff3e30a9da",
+              "id": "a1a5933e-cd13-4c61-a7ef-593f0b7fbd85",
               "name": "Resource server details",
               "originalRequest": {
                 "url": {
@@ -754,12 +754,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"id\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"ouId\": \"<uuid>\",\n  \"delimiter\": \"<string>\",\n  \"description\": \"<string>\",\n  \"identifier\": \"<string>\"\n}",
+              "body": "{\n  \"id\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"ouId\": \"<uuid>\",\n  \"delimiter\": \"<string>\",\n  \"description\": \"<string>\",\n  \"identifier\": \"<string>\",\n  \"isReadOnly\": \"<boolean>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "012c4224-1e4e-474d-89a3-93e2225a1a90",
+              "id": "a8d518a2-531a-485d-bd32-34be0f8b3586",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -829,7 +829,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "80387cd4-2232-4f65-a45c-7ede0c481534",
+              "id": "d18c7d34-f414-4414-a1bd-92807c1172b1",
               "name": "Resource server not found",
               "originalRequest": {
                 "url": {
@@ -899,7 +899,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "a82c253d-60ce-492e-8e0a-22126210a1bf",
+              "id": "7237dc8c-abd2-498c-95a5-ae6d956ee280",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -975,7 +975,7 @@
           }
         },
         {
-          "id": "e3a499da-0206-4727-94b9-f0a3a3372951",
+          "id": "783c4118-3acb-48df-a6e0-42d06d947431",
           "name": "Update resource server",
           "request": {
             "name": "Update resource server",
@@ -1044,7 +1044,7 @@
           },
           "response": [
             {
-              "id": "5def081c-a752-4a63-a12a-ff50459769c7",
+              "id": "256ce04a-279e-4a2c-8678-c2034000ab46",
               "name": "Resource server updated",
               "originalRequest": {
                 "url": {
@@ -1117,12 +1117,12 @@
                   "value": "application/json"
                 }
               ],
-              "body": "{\n  \"id\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"ouId\": \"<uuid>\",\n  \"delimiter\": \"<string>\",\n  \"description\": \"<string>\",\n  \"identifier\": \"<string>\"\n}",
+              "body": "{\n  \"id\": \"<uuid>\",\n  \"name\": \"<string>\",\n  \"handle\": \"<string>\",\n  \"ouId\": \"<uuid>\",\n  \"delimiter\": \"<string>\",\n  \"description\": \"<string>\",\n  \"identifier\": \"<string>\",\n  \"isReadOnly\": \"<boolean>\"\n}",
               "cookie": [],
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "1afc1e5b-d16e-4c7a-84e9-4af50716a1e4",
+              "id": "cdba50bb-fbf3-45f7-a1ec-4eddccc358de",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -1200,7 +1200,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "ae5fc941-0835-4a32-9acb-0a37d8cf630f",
+              "id": "fba69ee7-15d8-449a-9c80-f5327095effa",
               "name": "Resource server not found",
               "originalRequest": {
                 "url": {
@@ -1278,7 +1278,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "0a3ac1ab-465b-4b3d-ad3b-2ded733ca09d",
+              "id": "ea16ea6b-5526-4a2c-b637-ca3642e1472f",
               "name": "Conflict",
               "originalRequest": {
                 "url": {
@@ -1356,7 +1356,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "539af8fc-27e7-4020-ba31-64ea10917566",
+              "id": "2acd2145-22f0-4185-814f-76adb729b538",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -1440,7 +1440,7 @@
           }
         },
         {
-          "id": "53084009-4d39-44bf-9209-a388a70725ff",
+          "id": "f7e12566-b13d-4bd3-9d9d-ae7c7ab039ac",
           "name": "Delete a resource server by id",
           "request": {
             "name": "Delete a resource server by id",
@@ -1496,7 +1496,7 @@
           },
           "response": [
             {
-              "id": "bb20fec9-fce9-47da-8688-5aa0b0154592",
+              "id": "a28435e3-7cf6-4c1f-8a15-df6ddb19678f",
               "name": "Resource server deleted",
               "originalRequest": {
                 "url": {
@@ -1562,7 +1562,7 @@
               "_postman_previewlanguage": "text"
             },
             {
-              "id": "10fe0723-c991-45d7-a51c-f5e44e5d9f2b",
+              "id": "d71ac091-658f-49ef-9864-0c3b20fb650f",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -1632,7 +1632,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "dc89d72a-2b31-455a-82fa-d3a78d332c08",
+              "id": "d627a932-43f4-4a64-9dcb-e8c112cc5a0b",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -1711,7 +1711,7 @@
       "event": []
     },
     {
-      "id": "0fc19f13-8ba2-45db-a386-5d21e8dc9a2a",
+      "id": "be4945b4-1eb9-4b45-bca4-75f1319f2e79",
       "name": "resources",
       "description": {
         "content": "Operations related to resource management within resource servers",
@@ -1719,7 +1719,7 @@
       },
       "item": [
         {
-          "id": "75dc961d-ed0e-4a10-8e83-20f0c109d39d",
+          "id": "42248fb9-eb26-4720-b78a-0559d78d57e8",
           "name": "List resources in resource server",
           "request": {
             "name": "List resources in resource server",
@@ -1795,7 +1795,7 @@
           },
           "response": [
             {
-              "id": "54059280-a4a3-432c-a077-c26fb105d52c",
+              "id": "24c8a726-98cd-4d6a-aaf7-c12d6515e37a",
               "name": "List of resources",
               "originalRequest": {
                 "url": {
@@ -1879,7 +1879,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "de2346e0-8f61-4cf5-a2c8-1067bddabfa9",
+              "id": "a1d92711-ac6a-4244-bdd3-4e2285d24827",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -1963,7 +1963,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "d289506b-538d-4a43-af48-42d91843d31a",
+              "id": "7bf9b7d1-42a8-453b-b981-c4ba688d6ffb",
               "name": "Resource server not found",
               "originalRequest": {
                 "url": {
@@ -2047,7 +2047,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "e263e0a2-a0e0-4af8-bdfc-d396dddef502",
+              "id": "b8f9d7c8-cde9-4264-8ba1-97edd7a84a51",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -2137,7 +2137,7 @@
           }
         },
         {
-          "id": "2fb012c4-616a-4b09-862f-5c9cbd2b0b0d",
+          "id": "0091768d-8391-48de-8026-61229c6485bb",
           "name": "Create a new resource",
           "request": {
             "name": "Create a new resource",
@@ -2207,7 +2207,7 @@
           },
           "response": [
             {
-              "id": "bc6826a6-c208-4eb6-9eec-ed1987bd7ef2",
+              "id": "300af0e7-6c3e-4c86-9d39-d6e8d35883d9",
               "name": "Resource created",
               "originalRequest": {
                 "url": {
@@ -2286,7 +2286,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "70b26bea-67f5-426c-b823-26dc7f74335a",
+              "id": "707f0d04-6888-47df-8689-b093007bb745",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -2365,7 +2365,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "254c34f0-0a98-440e-8be5-03da77f77b9f",
+              "id": "b2f69a01-0c43-4014-9435-15c804a641a9",
               "name": "Resource server not found",
               "originalRequest": {
                 "url": {
@@ -2444,7 +2444,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "0b5c71fe-9a4d-4db2-b8bd-9d9ecc291a61",
+              "id": "fe413caf-6e1a-4877-a430-53b40f796134",
               "name": "Conflict",
               "originalRequest": {
                 "url": {
@@ -2523,7 +2523,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "752b2d34-8323-471d-8685-a5610a456645",
+              "id": "c35616f5-9207-4514-a1b1-22c476506b94",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -2608,7 +2608,7 @@
           }
         },
         {
-          "id": "d7588258-4dc5-497d-a46d-b8232a3a6a4d",
+          "id": "88f93e64-5ae4-4e46-892c-fe4def8af0f8",
           "name": "Get resource details",
           "request": {
             "name": "Get resource details",
@@ -2673,7 +2673,7 @@
           },
           "response": [
             {
-              "id": "52e13b3d-5046-413e-a271-fb58ff840238",
+              "id": "b15e4401-4d65-41eb-95a8-f3dd1fdcf5cf",
               "name": "Resource details",
               "originalRequest": {
                 "url": {
@@ -2752,7 +2752,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "8829ea82-627b-4c88-90b7-ca27fb571e2e",
+              "id": "11df130d-03f9-4d0d-bf5d-c392b1bc9a13",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -2831,7 +2831,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "37a7205e-f1b2-4c8a-84b8-c49c932e70da",
+              "id": "f7882fa2-90aa-475a-b851-2c53f058cffe",
               "name": "Resource or resource server not found",
               "originalRequest": {
                 "url": {
@@ -2910,7 +2910,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "5d47eccc-ed49-4bec-9499-fa6dbcf04f77",
+              "id": "c23c54c6-3ef4-47ae-b1d2-2bc720dc0694",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -2995,7 +2995,7 @@
           }
         },
         {
-          "id": "217a5c7b-e2e7-4478-a6f7-b141f2319a01",
+          "id": "54e74894-d685-42e9-bb10-7a374b910e2f",
           "name": "Update resource",
           "request": {
             "name": "Update resource",
@@ -3073,7 +3073,7 @@
           },
           "response": [
             {
-              "id": "37a3df2a-deb6-4621-8256-6434fcd543e7",
+              "id": "c75111d8-253d-4b9f-9520-5cc386aff12f",
               "name": "Resource updated",
               "originalRequest": {
                 "url": {
@@ -3160,7 +3160,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "4f3443db-ea3c-48ec-9de5-76d54d7f6960",
+              "id": "803b51bf-f7be-4266-a0a2-670979ecbbd2",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -3247,7 +3247,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "b847480e-9574-4210-918e-c334647c47fa",
+              "id": "fc2abb10-7f1b-43c4-991d-bb8a25a5301c",
               "name": "Resource or resource server not found",
               "originalRequest": {
                 "url": {
@@ -3334,7 +3334,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "e7257e55-5de3-43c7-b2df-2d0db5c61d7c",
+              "id": "b59b8a8a-2ef6-4bbb-a614-78da3f3096f3",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -3427,7 +3427,7 @@
           }
         },
         {
-          "id": "551f8fa8-1ca7-4854-b733-296f15ca02f1",
+          "id": "6e005bf1-8bf7-497a-8bff-0f97c7c7196a",
           "name": "Delete a resource by id",
           "request": {
             "name": "Delete a resource by id",
@@ -3492,7 +3492,7 @@
           },
           "response": [
             {
-              "id": "6bde3f0a-db88-4ec8-9cca-6079b2730c15",
+              "id": "49830198-b549-462e-a82c-1ff1c5380c82",
               "name": "Resource deleted",
               "originalRequest": {
                 "url": {
@@ -3567,7 +3567,7 @@
               "_postman_previewlanguage": "text"
             },
             {
-              "id": "30bd160b-ba65-4c4b-969e-d8b7dfe2b74d",
+              "id": "c305bf64-2faf-4dc4-b2df-10f28494a3f0",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -3646,7 +3646,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "3529bdd4-f152-460b-9235-87abfd941b31",
+              "id": "2657a9f1-d7e6-40a1-9455-f44505c84c14",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -3734,7 +3734,7 @@
       "event": []
     },
     {
-      "id": "098bd4f5-fde1-4e9c-86c5-664347c4abf4",
+      "id": "7ee0dba5-aef7-4ba9-8e59-7ca435e87089",
       "name": "actions",
       "description": {
         "content": "Operations related to action management at resource server and resource levels",
@@ -3742,7 +3742,7 @@
       },
       "item": [
         {
-          "id": "e53d6e93-892b-4d54-9a80-54a218c02a27",
+          "id": "6e9eafdc-3e39-4b9a-9372-f9aeac9c9ffc",
           "name": "List actions at resource server level",
           "request": {
             "name": "List actions at resource server level",
@@ -3812,7 +3812,7 @@
           },
           "response": [
             {
-              "id": "64b4bc0c-3b97-4f56-8f8f-4af3e2fd2221",
+              "id": "95823126-a3b5-4213-a183-4a424e635c61",
               "name": "List of actions",
               "originalRequest": {
                 "url": {
@@ -3892,7 +3892,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "c229e436-205f-420c-8158-e59471319c39",
+              "id": "9a6f2dcb-274a-4dd5-b714-8dae9217a598",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -3972,7 +3972,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "36dd0c1e-289a-4074-9cf5-7ca09e5d41b6",
+              "id": "e7e13380-945f-42d2-9784-1ce6667be9e0",
               "name": "Resource server not found",
               "originalRequest": {
                 "url": {
@@ -4052,7 +4052,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "6791648b-777f-4857-a6e6-aaba917d5c5c",
+              "id": "023a0720-838b-41da-b703-3631c5541af7",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -4138,7 +4138,7 @@
           }
         },
         {
-          "id": "d5cefeef-0ced-4d87-9258-056e0b3b3a4d",
+          "id": "7b01fb82-5fa9-4e8a-b6df-b546eda51acb",
           "name": "Create an action at resource server level",
           "request": {
             "name": "Create an action at resource server level",
@@ -4208,7 +4208,7 @@
           },
           "response": [
             {
-              "id": "20692237-ad2b-49be-b1fc-0d6aa2d21571",
+              "id": "c99ff85f-1f7b-4ef1-8b1c-bfc3cfe55ab9",
               "name": "Action created",
               "originalRequest": {
                 "url": {
@@ -4287,7 +4287,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "55c91988-ee70-40cf-ac23-2be83c639b3e",
+              "id": "127892ee-117c-45fd-98d5-ef9476df94af",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -4366,7 +4366,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "cd70c811-f3cf-4827-aa10-1075c9656c81",
+              "id": "b706d5eb-c0ff-470c-bd8f-9bee5fc73cac",
               "name": "Resource server not found",
               "originalRequest": {
                 "url": {
@@ -4445,7 +4445,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "566cbd3e-557b-4d05-97b0-6d92c0908aab",
+              "id": "0bc0f85d-a3b2-4b3d-9d0f-2f59a375b6e1",
               "name": "Conflict",
               "originalRequest": {
                 "url": {
@@ -4524,7 +4524,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "f37b10ac-e6dc-4677-9e3a-7f7eed122050",
+              "id": "8f975217-1850-4060-9b7b-807719addee5",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -4609,7 +4609,7 @@
           }
         },
         {
-          "id": "63d8a3ae-72de-4a54-a7c3-e559a05c56cd",
+          "id": "dc360541-4c58-46c6-a3f5-4c0ddc858100",
           "name": "Get action details at resource server level",
           "request": {
             "name": "Get action details at resource server level",
@@ -4674,7 +4674,7 @@
           },
           "response": [
             {
-              "id": "f2cf9df4-b36e-41e0-95f6-e9117961441f",
+              "id": "cfd62e5a-396e-4be2-bf82-691af08b5685",
               "name": "Action details",
               "originalRequest": {
                 "url": {
@@ -4753,7 +4753,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "cf94bd3c-1fe1-49c2-96b5-3c48c8318402",
+              "id": "ce9f2af5-3bb2-45d7-bdbe-64a9a8950a12",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -4832,7 +4832,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "ed21c363-225e-4dd9-8bc5-3e02b67b1f66",
+              "id": "7172231a-2328-4a71-8778-f56b194c6864",
               "name": "Action or resource server not found",
               "originalRequest": {
                 "url": {
@@ -4911,7 +4911,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "45f37fd7-1c56-4059-82a8-1ec2d1acd427",
+              "id": "1c330d2e-ec5f-4ef1-91ce-a17db732f86c",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -4996,7 +4996,7 @@
           }
         },
         {
-          "id": "ff9d4fc2-ac96-4e63-8a8d-ace56cddf07f",
+          "id": "3615b6c7-c0bf-45f0-b73c-cb73d020d029",
           "name": "Update action at resource server level",
           "request": {
             "name": "Update action at resource server level",
@@ -5074,7 +5074,7 @@
           },
           "response": [
             {
-              "id": "9a060458-f1d0-4f4f-9859-1e7d562ae164",
+              "id": "8c33795b-ace0-4a76-9494-b697037a3627",
               "name": "Action updated",
               "originalRequest": {
                 "url": {
@@ -5161,7 +5161,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "602d13bb-ba74-4035-a587-8b2644c4d57c",
+              "id": "d25f27c5-6034-453e-9569-5cb5d21802ff",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -5248,7 +5248,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "5341fe68-53cb-436e-af35-928e6a778afa",
+              "id": "5de4d886-6c10-4e76-921a-7bdd91153b1b",
               "name": "Action or resource server not found",
               "originalRequest": {
                 "url": {
@@ -5335,7 +5335,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "9fdad5ec-f46f-42ce-a0ba-52de879650ac",
+              "id": "5c24347f-68aa-491d-8c54-eaef07819eef",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -5428,7 +5428,7 @@
           }
         },
         {
-          "id": "88e89768-746f-4e5d-91b6-5b267a685fc6",
+          "id": "e78fcd3d-b23e-43be-820c-166acdb041b9",
           "name": "Delete an action at resource server level",
           "request": {
             "name": "Delete an action at resource server level",
@@ -5493,7 +5493,7 @@
           },
           "response": [
             {
-              "id": "21bae016-bffe-47ec-b30b-2f948820b248",
+              "id": "e16d6708-5e25-4ae7-bb54-6d9f8c4a1bd5",
               "name": "Action deleted",
               "originalRequest": {
                 "url": {
@@ -5568,7 +5568,7 @@
               "_postman_previewlanguage": "text"
             },
             {
-              "id": "fe21f30a-45bd-4728-b958-9b2d85979dbe",
+              "id": "62af3c80-3ea8-4d20-bc67-3bcb119097ff",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -5647,7 +5647,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "9c7ac0b6-631a-4503-8430-f5e7813f7873",
+              "id": "0a688efd-958c-44c4-9ae7-4a02db1e5cd8",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -5732,7 +5732,7 @@
           }
         },
         {
-          "id": "4af9710a-e42a-4037-b7e8-69dfaf2dd148",
+          "id": "6bd5509d-0fda-4e48-b8ca-4efcf9b6b92e",
           "name": "List actions at resource level",
           "request": {
             "name": "List actions at resource level",
@@ -5811,7 +5811,7 @@
           },
           "response": [
             {
-              "id": "3c289be2-372a-41ae-bf11-c671a077017d",
+              "id": "d1f4a451-6a3f-496b-ad8c-931f0fbff186",
               "name": "List of actions",
               "originalRequest": {
                 "url": {
@@ -5900,7 +5900,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "acfd0bf1-9945-4b64-93ff-877323d8403a",
+              "id": "8c623811-f98c-45bc-8382-15467cefdbc1",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -5989,7 +5989,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "beea9817-f61f-42c0-91ed-a8ee6d8aae10",
+              "id": "3e76fe89-07fb-4742-92f7-5bac7914c8d4",
               "name": "Resource or resource server not found",
               "originalRequest": {
                 "url": {
@@ -6078,7 +6078,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "f1e0bcc5-b6ef-4cea-b82b-c667c6b1a387",
+              "id": "eef95e59-037a-4871-b9df-6e8de209b673",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -6173,7 +6173,7 @@
           }
         },
         {
-          "id": "f4fee251-702e-467d-9fb8-3b1da3c1d6c6",
+          "id": "55013bd5-ca3a-491c-bbf9-7e3c13a2cf52",
           "name": "Create an action at resource level",
           "request": {
             "name": "Create an action at resource level",
@@ -6252,7 +6252,7 @@
           },
           "response": [
             {
-              "id": "f395459b-92cc-4910-a1dd-54d6b515fd22",
+              "id": "d5d38a74-c75d-4ca1-ac06-159b522d1dfb",
               "name": "Action created",
               "originalRequest": {
                 "url": {
@@ -6340,7 +6340,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "e7b04a4a-3286-4bc1-9559-c52c18a19470",
+              "id": "54773e3c-fd91-47cf-9f5e-259b7a1d65f5",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -6428,7 +6428,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "0c87519f-7ffc-4c88-ac80-378e03cb4437",
+              "id": "fa31b20c-8ef0-42d5-916d-4ef026c10d82",
               "name": "Resource or resource server not found",
               "originalRequest": {
                 "url": {
@@ -6516,7 +6516,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "2b3003d9-f31b-407a-a36f-700825bffd25",
+              "id": "cc5a4aeb-cd5d-4724-9227-e9255f8a0207",
               "name": "Conflict",
               "originalRequest": {
                 "url": {
@@ -6604,7 +6604,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "76a7197f-aaf8-4718-8667-1389be10b953",
+              "id": "2c651a2f-b46e-4a69-bfd5-03fde40c97e8",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -6698,7 +6698,7 @@
           }
         },
         {
-          "id": "cd6a6f3b-9615-4947-b43a-ac56fbf3f576",
+          "id": "4c102947-635a-4354-b7db-b66c37e877c7",
           "name": "Get action details at resource level",
           "request": {
             "name": "Get action details at resource level",
@@ -6772,7 +6772,7 @@
           },
           "response": [
             {
-              "id": "05d16a46-7b40-470b-a7db-0cf8b3510f00",
+              "id": "72ec0bcf-cd05-4dc0-8cbc-7d5c3875c401",
               "name": "Action details",
               "originalRequest": {
                 "url": {
@@ -6860,7 +6860,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "5620fc50-8d3b-4d5a-a063-5c8ab75ae726",
+              "id": "d0544ce6-08a7-4487-8336-de4f7dcecbb4",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -6948,7 +6948,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "384d9fa3-21f7-4ccb-9f00-2517dc12646e",
+              "id": "38fc39b1-7cde-4e0d-89a9-77c79f294e4f",
               "name": "Action, resource, or resource server not found",
               "originalRequest": {
                 "url": {
@@ -7036,7 +7036,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "3792c1d2-5fda-45e6-aab5-b173e83f7b62",
+              "id": "22e02ae3-19a3-4f47-9a84-938b9f1f7c4f",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -7130,7 +7130,7 @@
           }
         },
         {
-          "id": "38c53b54-ae6b-439f-a41f-dd8ba0cc6f49",
+          "id": "ef0ae819-1eae-4bbc-9d9d-db10c04be42a",
           "name": "Update action at resource level",
           "request": {
             "name": "Update action at resource level",
@@ -7217,7 +7217,7 @@
           },
           "response": [
             {
-              "id": "9dd5aa9b-49cf-4cfa-95b7-375903727d09",
+              "id": "769e244b-95ec-4fe0-8b30-5f1bc24b0d52",
               "name": "Action updated",
               "originalRequest": {
                 "url": {
@@ -7313,7 +7313,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "5f07a4ae-bc1e-4263-a9a6-8fb44d6d8b36",
+              "id": "f9d9bece-e4ee-4cc3-bebf-c4a27f67fb13",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -7409,7 +7409,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "8522349d-da0b-4622-89bf-4c40fe811568",
+              "id": "5ac69553-ff7d-4137-9f49-2b218d14f762",
               "name": "Action, resource, or resource server not found",
               "originalRequest": {
                 "url": {
@@ -7505,7 +7505,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "53e272e0-f0ac-4e87-880d-ce42812ac1b1",
+              "id": "caa4b9a8-751b-4bcb-8252-953c88acea7a",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -7607,7 +7607,7 @@
           }
         },
         {
-          "id": "32f48950-bcc0-4a93-986e-e3635f74762d",
+          "id": "5c3f6092-eef3-4798-9260-d961e5027d76",
           "name": "Delete an action at resource level",
           "request": {
             "name": "Delete an action at resource level",
@@ -7681,7 +7681,7 @@
           },
           "response": [
             {
-              "id": "029efe2e-0623-4dc2-a698-494c6acfb54f",
+              "id": "513f9809-ca68-48a3-97c9-7d6d9b1e1234",
               "name": "Action deleted",
               "originalRequest": {
                 "url": {
@@ -7765,7 +7765,7 @@
               "_postman_previewlanguage": "text"
             },
             {
-              "id": "feccd012-6030-4b03-85e4-286b650b454c",
+              "id": "a70b015e-1078-4071-8918-f7fbceae6b53",
               "name": "Bad request",
               "originalRequest": {
                 "url": {
@@ -7853,7 +7853,7 @@
               "_postman_previewlanguage": "json"
             },
             {
-              "id": "6892fb8a-404f-424d-9ace-4ea6504efffb",
+              "id": "dbd3f462-2e6e-44b1-8856-47681df37074",
               "name": "Internal server error",
               "originalRequest": {
                 "url": {
@@ -7950,7 +7950,7 @@
       "event": []
     },
     {
-      "id": "a0004242-62ba-4b92-840b-43807961761b",
+      "id": "f7a53bfa-5bfa-4090-8bd6-f689bd40b5d8",
       "name": "permissions",
       "description": {
         "content": "Operations to preview and retrieve derived permissions",
@@ -8008,7 +8008,7 @@
     ]
   },
   "info": {
-    "_postman_id": "1d9c5487-7404-4771-819b-57e8c53b8182",
+    "_postman_id": "6e021d03-c458-4043-891d-46b9ae2ecd77",
     "name": "Resource Server Management API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": {

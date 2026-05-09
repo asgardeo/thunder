@@ -41,7 +41,7 @@ import (
 //	    Enabled:      true,
 //	    ExporterType: "otlp",
 //	    OTLPEndpoint: "localhost:4317",
-//	    ServiceName:  "thunder-iam",
+//	    ServiceName:  "thunderid-iam",
 //	}
 //	provider, err := opentelemetry.Initialize(ctx, cfg)
 //	if err != nil {

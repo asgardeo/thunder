@@ -221,8 +221,8 @@ func (s *smsOTPAuthExecutor) InitiateOTP(ctx *core.NodeContext,
 	}
 
 	logger.Debug("SMS OTP sent successfully")
-	execResp.RuntimeData[runtimeKeySMSOTPMobileNumber] = mobileNumber
-	execResp.RuntimeData[runtimeKeySMSOTPPhoneAttr] = phoneAttr
+	execResp.RuntimeData[common.RuntimeKeySMSOTPMobileNumber] = mobileNumber
+	execResp.RuntimeData[common.RuntimeKeySMSOTPPhoneAttr] = phoneAttr
 	execResp.Status = common.ExecComplete
 
 	return nil
@@ -578,11 +578,11 @@ func (s *smsOTPAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 	execResp *common.ExecutorResponse) (*authncm.AuthenticatedUser, error) {
 	logger := s.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
-	phoneAttr := ctx.RuntimeData[runtimeKeySMSOTPPhoneAttr]
+	phoneAttr := ctx.RuntimeData[common.RuntimeKeySMSOTPPhoneAttr]
 	if phoneAttr == "" {
 		phoneAttr = s.resolvePhoneInput(ctx, mobileNumberInput).Identifier
 	}
-	mobileNumber := ctx.RuntimeData[runtimeKeySMSOTPMobileNumber]
+	mobileNumber := ctx.RuntimeData[common.RuntimeKeySMSOTPMobileNumber]
 	if mobileNumber == "" {
 		return nil, errors.New("mobile number not found in context")
 	}

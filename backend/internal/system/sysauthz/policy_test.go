@@ -431,22 +431,22 @@ func TestOuInheritancePolicy_GetAccessibleResources(t *testing.T) {
 			wantApplicable: false,
 		},
 		{
-			// UserSchema resource, no caller OU → applicable, empty IDs.
-			name:           "UserSchemaResource_EmptyCallerOU_RestrictedEmpty",
+			// EntityType resource, no caller OU → applicable, empty IDs.
+			name:           "EntityTypeResource_EmptyCallerOU_RestrictedEmpty",
 			ctx:            context.Background(),
-			resourceType:   security.ResourceTypeUserSchema,
-			action:         security.ActionListUserSchemas,
+			resourceType:   security.ResourceTypeUserType,
+			action:         security.ActionListUserTypes,
 			resolver:       &stubOUHierarchyResolver{},
 			wantApplicable: true,
 			wantAllAllowed: false,
 			wantIDs:        []string{},
 		},
 		{
-			// UserSchema resource, caller in child OU → resolver returns self + ancestors.
-			name:           "UserSchemaResource_CallerInChildOU_ReturnsAncestors",
+			// EntityType resource, caller in child OU → resolver returns self + ancestors.
+			name:           "EntityTypeResource_CallerInChildOU_ReturnsAncestors",
 			ctx:            buildCtxWithOU("", "child-ou"),
-			resourceType:   security.ResourceTypeUserSchema,
-			action:         security.ActionListUserSchemas,
+			resourceType:   security.ResourceTypeUserType,
+			action:         security.ActionListUserTypes,
 			resolver:       &stubOUHierarchyResolver{ancestorIDs: []string{"parent-ou", "root-ou"}},
 			wantApplicable: true,
 			wantAllAllowed: false,
@@ -454,10 +454,10 @@ func TestOuInheritancePolicy_GetAccessibleResources(t *testing.T) {
 		},
 		{
 			// Resolver error for GetAncestorOUIDs → applicable true, nil result, error returned.
-			name:           "UserSchemaResource_ResolverError_PropagatedAsError",
+			name:           "EntityTypeResource_ResolverError_PropagatedAsError",
 			ctx:            buildCtxWithOU("", "ou1"),
-			resourceType:   security.ResourceTypeUserSchema,
-			action:         security.ActionListUserSchemas,
+			resourceType:   security.ResourceTypeUserType,
+			action:         security.ActionListUserTypes,
 			resolver:       &stubOUHierarchyResolver{ancestorIDsErr: errSvc},
 			wantApplicable: true,
 			wantErr:        true,
@@ -496,11 +496,11 @@ func TestIsInheritanceEligible(t *testing.T) {
 		action security.Action
 		want   bool
 	}{
-		{"UserSchema_Read_Eligible", security.ActionReadUserSchema, true},
-		{"UserSchema_List_Eligible", security.ActionListUserSchemas, true},
-		{"UserSchema_Create_NotEligible", security.ActionCreateUserSchema, false},
-		{"UserSchema_Update_NotEligible", security.ActionUpdateUserSchema, false},
-		{"UserSchema_Delete_NotEligible", security.ActionDeleteUserSchema, false},
+		{"EntityType_Read_Eligible", security.ActionReadUserType, true},
+		{"EntityType_List_Eligible", security.ActionListUserTypes, true},
+		{"EntityType_Create_NotEligible", security.ActionCreateUserType, false},
+		{"EntityType_Update_NotEligible", security.ActionUpdateUserType, false},
+		{"EntityType_Delete_NotEligible", security.ActionDeleteUserType, false},
 		{"OU_Read_NotEligible", security.ActionReadOU, false},
 		{"User_List_NotEligible", security.ActionListUsers, false},
 	}
@@ -518,7 +518,7 @@ func TestSelectPolicies_InheritanceEligible_UsesInheritancePolicy(t *testing.T) 
 		membershipPolicy:  &ouMembershipPolicy{},
 		inheritancePolicy: inh,
 	}
-	chain := selectPolicies(security.ActionReadUserSchema, p)
+	chain := selectPolicies(security.ActionReadUserType, p)
 	assert.Len(t, chain, 1)
 	_, ok := chain[0].(*ouInheritancePolicy)
 	assert.True(t, ok, "expected ouInheritancePolicy for inheritance-eligible action")
@@ -527,7 +527,7 @@ func TestSelectPolicies_InheritanceEligible_UsesInheritancePolicy(t *testing.T) 
 func TestSelectPolicies_NilInheritance_UsesMembershipPolicy(t *testing.T) {
 	membership := &ouMembershipPolicy{}
 	p := &policies{membershipPolicy: membership}
-	chain := selectPolicies(security.ActionReadUserSchema, p)
+	chain := selectPolicies(security.ActionReadUserType, p)
 	assert.Len(t, chain, 1)
 	assert.Equal(t, membership, chain[0])
 }
@@ -538,8 +538,8 @@ func TestSelectPolicies_NonEligibleAction_UsesMembershipPolicy(t *testing.T) {
 		membershipPolicy:  membership,
 		inheritancePolicy: &ouInheritancePolicy{resolver: &stubOUHierarchyResolver{}},
 	}
-	// Write action on UserSchema → not in inheritanceReadActions → membership policy.
-	chain := selectPolicies(security.ActionCreateUserSchema, p)
+	// Write action on EntityType → not in inheritanceReadActions → membership policy.
+	chain := selectPolicies(security.ActionCreateUserType, p)
 	assert.Len(t, chain, 1)
 	assert.Equal(t, membership, chain[0])
 }

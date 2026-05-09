@@ -1,0 +1,1497 @@
+/*
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package entitytype
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"sort"
+	"testing"
+
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+
+	"github.com/asgardeo/thunder/internal/entitytype/model"
+	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/sysauthz"
+	"github.com/asgardeo/thunder/tests/mocks/consentmock"
+	"github.com/asgardeo/thunder/tests/mocks/oumock"
+	"github.com/asgardeo/thunder/tests/mocks/sysauthzmock"
+)
+
+const (
+	testOUID1 = "00000000-0000-0000-0000-000000000001"
+	testOUID2 = "00000000-0000-0000-0000-000000000002"
+	testOUID3 = "00000000-0000-0000-0000-000000000003"
+)
+
+// newAllowAllAuthz returns a mock SystemAuthorizationServiceInterface that allows all actions.
+func newAllowAllAuthz(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *sysauthzmock.SystemAuthorizationServiceInterfaceMock {
+	authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
+	authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
+		Return(true, nil).Maybe()
+	authzMock.On("GetAccessibleResources", mock.Anything, mock.Anything, mock.Anything).
+		Return(&sysauthz.AccessibleResources{AllAllowed: true}, nil).Maybe()
+	return authzMock
+}
+
+// newConsentServiceMockEnabled creates a new consent service mock with IsEnabled returning true.
+func newConsentServiceMockEnabled(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *consentmock.ConsentServiceInterfaceMock {
+	consentMock := consentmock.NewConsentServiceInterfaceMock(t)
+	consentMock.On("IsEnabled").Return(true)
+	return consentMock
+}
+
+// newConsentServiceMockDisabled creates a new consent service mock with IsEnabled returning false.
+func newConsentServiceMockDisabled(t interface {
+	mock.TestingT
+	Cleanup(func())
+}) *consentmock.ConsentServiceInterfaceMock {
+	consentMock := consentmock.NewConsentServiceInterfaceMock(t)
+	consentMock.On("IsEnabled").Return(false)
+	return consentMock
+}
+
+func TestCreateEntityTypeReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
+	// Initialize server runtime with default config
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("/tmp/test", testConfig)
+	require.NoError(t, err)
+	defer config.ResetServerRuntime()
+
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	ouID := testOUID1
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, ouID).
+		Return(false, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		ouService:       ouServiceMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	request := CreateEntityTypeRequestWithID{
+		Name:   "test-schema",
+		OUID:   ouID,
+		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
+	}
+
+	createdSchema, svcErr := service.CreateEntityType(context.Background(), TypeCategoryUser, request)
+
+	require.Nil(t, createdSchema)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, svcErr.Code)
+	require.Contains(t, svcErr.ErrorDescription.DefaultValue, "organization unit id does not exist")
+}
+
+func TestCreateEntityTypeReturnsInternalErrorWhenOUValidationFails(t *testing.T) {
+	// Initialize server runtime with default config
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("/tmp/test", testConfig)
+	require.NoError(t, err)
+	defer config.ResetServerRuntime()
+
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	ouID := testOUID2
+	ouServiceMock.
+		On("IsOrganizationUnitExists", mock.Anything, ouID).
+		Return(false, &serviceerror.ServiceError{Code: "OUS-5000"}).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		ouService:       ouServiceMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	request := CreateEntityTypeRequestWithID{
+		Name:   "test-schema",
+		OUID:   ouID,
+		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
+	}
+
+	createdSchema, svcErr := service.CreateEntityType(context.Background(), TypeCategoryUser, request)
+
+	require.Nil(t, createdSchema)
+	require.NotNil(t, svcErr)
+	require.Equal(t, serviceerror.InternalServerError, *svcErr)
+}
+
+func TestUpdateEntityTypeReturnsErrorWhenOrganizationUnitMissing(t *testing.T) {
+	// Initialize server runtime with default config
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("/tmp/test", testConfig)
+	require.NoError(t, err)
+	defer config.ResetServerRuntime()
+
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	ouServiceMock := oumock.NewOrganizationUnitServiceInterfaceMock(t)
+
+	ouID := testOUID3
+	storeMock.On("IsEntityTypeDeclarative", TypeCategoryUser, "schema-id").Return(false).Once()
+	ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, ouID).
+		Return(false, (*serviceerror.ServiceError)(nil)).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		ouService:       ouServiceMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	request := UpdateEntityTypeRequest{
+		Name:   "test-schema",
+		OUID:   ouID,
+		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
+	}
+
+	updatedSchema, svcErr := service.UpdateEntityType(context.Background(), TypeCategoryUser, "schema-id", request)
+
+	require.Nil(t, updatedSchema)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, svcErr.Code)
+}
+
+func TestGetEntityTypeByNameReturnsSchema(t *testing.T) {
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	expectedSchema := EntityType{
+		ID:   "schema-id",
+		Name: "employee",
+	}
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "employee").
+		Return(expectedSchema, nil).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+		authzService:    newAllowAllAuthz(t),
+	}
+
+	entityType, svcErr := service.GetEntityTypeByName(context.Background(), TypeCategoryUser, "employee")
+
+	require.Nil(t, svcErr)
+	require.NotNil(t, entityType)
+	require.Equal(t, &expectedSchema, entityType)
+}
+
+func TestGetEntityTypeByNameReturnsNotFound(t *testing.T) {
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "employee").
+		Return(EntityType{}, ErrEntityTypeNotFound).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	entityType, svcErr := service.GetEntityTypeByName(context.Background(), TypeCategoryUser, "employee")
+
+	require.Nil(t, entityType)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorEntityTypeNotFound.Code, svcErr.Code)
+}
+
+func TestGetEntityTypeByNameReturnsInternalErrorOnStoreFailure(t *testing.T) {
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "employee").
+		Return(EntityType{}, errors.New("db failure")).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	entityType, svcErr := service.GetEntityTypeByName(context.Background(), TypeCategoryUser, "employee")
+
+	require.Nil(t, entityType)
+	require.NotNil(t, svcErr)
+	require.Equal(t, serviceerror.InternalServerError, *svcErr)
+}
+
+func TestGetEntityTypeByNameRequiresName(t *testing.T) {
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	entityType, svcErr := service.GetEntityTypeByName(context.Background(), TypeCategoryUser, "")
+
+	require.Nil(t, entityType)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, svcErr.Code)
+}
+
+func TestValidateEntityReturnsTrueWhenValidationPasses(t *testing.T) {
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "employee").
+		Return(EntityType{
+			Name:   "employee",
+			Schema: json.RawMessage(`{"email":{"type":"string","required":true}}`),
+		}, nil).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	ok, svcErr := service.ValidateEntity(
+		context.Background(), TypeCategoryUser,
+		"employee",
+		json.RawMessage(`{"email":"employee@example.com"}`),
+		false,
+	)
+
+	require.True(t, ok)
+	require.Nil(t, svcErr)
+}
+
+func TestValidateEntityReturnsInternalErrorWhenSchemaLoadFails(t *testing.T) {
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "employee").
+		Return(EntityType{}, errors.New("db failure")).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	ok, svcErr := service.ValidateEntity(
+		context.Background(), TypeCategoryUser, "employee", json.RawMessage(`{}`), false)
+
+	require.False(t, ok)
+	require.NotNil(t, svcErr)
+	require.Equal(t, serviceerror.InternalServerError, *svcErr)
+}
+
+func TestValidateEntityUniquenessReturnsTrueWhenNoConflicts(t *testing.T) {
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "employee").
+		Return(EntityType{
+			Name:   "employee",
+			Schema: json.RawMessage(`{"email":{"type":"string","unique":true}}`),
+		}, nil).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	ok, svcErr := service.ValidateEntityUniqueness(
+		context.Background(), TypeCategoryUser,
+		"employee",
+		json.RawMessage(`{"email":"unique@example.com"}`),
+		func(filters map[string]interface{}) (bool, error) {
+			require.Equal(t, map[string]interface{}{"email": "unique@example.com"}, filters)
+			return false, nil
+		},
+	)
+
+	require.True(t, ok)
+	require.Nil(t, svcErr)
+}
+
+func TestValidateEntityReturnsSchemaNotFoundWhenSchemaMissing(t *testing.T) {
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "employee").
+		Return(EntityType{}, ErrEntityTypeNotFound).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	ok, svcErr := service.ValidateEntity(
+		context.Background(), TypeCategoryUser,
+		"employee",
+		json.RawMessage(`{"email":"employee@example.com"}`),
+		false,
+	)
+
+	require.False(t, ok)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorEntityTypeNotFound.Code, svcErr.Code)
+}
+
+func TestValidateEntityUniquenessReturnsSchemaNotFoundWhenSchemaMissing(t *testing.T) {
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "employee").
+		Return(EntityType{}, ErrEntityTypeNotFound).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	ok, svcErr := service.ValidateEntityUniqueness(
+		context.Background(), TypeCategoryUser,
+		"employee",
+		json.RawMessage(`{}`),
+		func(map[string]interface{}) (bool, error) { return false, nil },
+	)
+
+	require.False(t, ok)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorEntityTypeNotFound.Code, svcErr.Code)
+}
+
+func TestValidateEntityUniquenessReturnsInternalErrorWhenSchemaLoadFails(t *testing.T) {
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "employee").
+		Return(EntityType{}, errors.New("db failure")).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	ok, svcErr := service.ValidateEntityUniqueness(
+		context.Background(), TypeCategoryUser,
+		"employee",
+		json.RawMessage(`{}`),
+		func(map[string]interface{}) (bool, error) { return false, nil },
+	)
+
+	require.False(t, ok)
+	require.NotNil(t, svcErr)
+	require.Equal(t, serviceerror.InternalServerError, *svcErr)
+}
+
+func TestValidateEntityTypeDefinitionSuccess(t *testing.T) {
+	validOUID := testOUID1
+	validSchema := json.RawMessage(`{"email":{"type":"string","required":true}}`)
+
+	schema := EntityType{
+		Name:   "test-schema",
+		OUID:   validOUID,
+		Schema: validSchema,
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.Nil(t, err)
+}
+
+func TestValidateEntityTypeDefinitionReturnsErrorWhenNameIsEmpty(t *testing.T) {
+	validOUID := testOUID1
+	validSchema := json.RawMessage(`{"email":{"type":"string"}}`)
+
+	schema := EntityType{
+		Name:   "",
+		OUID:   validOUID,
+		Schema: validSchema,
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
+	require.Contains(t, err.ErrorDescription.DefaultValue, "entity type name must not be empty")
+}
+
+func TestValidateEntityTypeDefinitionReturnsErrorWhenOUIDIsEmpty(t *testing.T) {
+	validSchema := json.RawMessage(`{"email":{"type":"string"}}`)
+
+	schema := EntityType{
+		Name:   "test-schema",
+		OUID:   "",
+		Schema: validSchema,
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
+	require.Contains(t, err.ErrorDescription.DefaultValue, "organization unit id must not be empty")
+}
+
+func TestValidateEntityTypeDefinitionAllowsNonUUIDOUID(t *testing.T) {
+	validSchema := json.RawMessage(`{"email":{"type":"string"}}`)
+
+	schema := EntityType{
+		Name:   "test-schema",
+		OUID:   "not-a-uuid",
+		Schema: validSchema,
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.Nil(t, err)
+}
+
+func TestValidateEntityTypeDefinitionReturnsErrorWhenSchemaIsEmpty(t *testing.T) {
+	validOUID := testOUID1
+
+	schema := EntityType{
+		Name:   "test-schema",
+		OUID:   validOUID,
+		Schema: json.RawMessage{},
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
+	require.Contains(t, err.ErrorDescription.DefaultValue, "schema definition must not be empty")
+}
+
+func TestValidateEntityTypeDefinitionReturnsErrorWhenSchemaIsNil(t *testing.T) {
+	validOUID := testOUID1
+
+	schema := EntityType{
+		Name:   "test-schema",
+		OUID:   validOUID,
+		Schema: nil,
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
+	require.Contains(t, err.ErrorDescription.DefaultValue, "schema definition must not be empty")
+}
+
+func TestValidateEntityTypeDefinitionReturnsErrorWhenSchemaCompilationFails(t *testing.T) {
+	validOUID := testOUID1
+	invalidSchema := json.RawMessage(`{"email":"invalid"}`)
+
+	schema := EntityType{
+		Name:   "test-schema",
+		OUID:   validOUID,
+		Schema: invalidSchema,
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
+	require.Contains(t, err.ErrorDescription.DefaultValue, "property definition must be an object")
+}
+
+func TestValidateEntityTypeDefinitionReturnsErrorForInvalidJSON(t *testing.T) {
+	validOUID := testOUID1
+	invalidSchema := json.RawMessage(`{invalid json}`)
+
+	schema := EntityType{
+		Name:   "test-schema",
+		OUID:   validOUID,
+		Schema: invalidSchema,
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
+}
+
+func TestValidateEntityTypeDefinitionReturnsErrorForEmptySchemaObject(t *testing.T) {
+	validOUID := testOUID1
+	emptySchema := json.RawMessage(`{}`)
+
+	schema := EntityType{
+		Name:   "test-schema",
+		OUID:   validOUID,
+		Schema: emptySchema,
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
+	require.Contains(t, err.ErrorDescription.DefaultValue, "schema cannot be empty")
+}
+
+func TestValidateEntityTypeDefinitionWithComplexSchema(t *testing.T) {
+	validOUID := testOUID1
+	complexSchema := json.RawMessage(`{
+		"email": {
+			"type": "string",
+			"required": true,
+			"unique": true,
+			"pattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+		},
+		"age": {
+			"type": "number",
+			"required": false
+		},
+		"isActive": {
+			"type": "boolean",
+			"required": true
+		},
+		"address": {
+			"type": "object",
+			"properties": {
+				"street": {"type": "string"},
+				"city": {"type": "string"}
+			}
+		},
+		"tags": {
+			"type": "array",
+			"items": {"type": "string"}
+		}
+	}`)
+
+	schema := EntityType{
+		Name:   "complex-schema",
+		OUID:   validOUID,
+		Schema: complexSchema,
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.Nil(t, err)
+}
+
+func TestValidateEntityTypeDefinitionReturnsErrorForMissingTypeField(t *testing.T) {
+	validOUID := testOUID1
+	schemaWithoutType := json.RawMessage(`{"email":{"required":true}}`)
+
+	schema := EntityType{
+		Name:   "test-schema",
+		OUID:   validOUID,
+		Schema: schemaWithoutType,
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
+	require.Contains(t, err.ErrorDescription.DefaultValue, "missing required 'type' field")
+}
+
+func TestValidateEntityTypeDefinitionReturnsErrorForInvalidType(t *testing.T) {
+	validOUID := testOUID1
+	schemaWithInvalidType := json.RawMessage(`{"email":{"type":"invalid-type"}}`)
+
+	schema := EntityType{
+		Name:   "test-schema",
+		OUID:   validOUID,
+		Schema: schemaWithInvalidType,
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
+}
+
+func TestValidateEntityTypeDefinitionWithMultipleValidationErrors(t *testing.T) {
+	testCases := []struct {
+		name          string
+		schema        EntityType
+		expectedError string
+	}{
+		{
+			name: "Empty name and empty OU ID",
+			schema: EntityType{
+				Name:   "",
+				OUID:   "",
+				Schema: json.RawMessage(`{"email":{"type":"string"}}`),
+			},
+			expectedError: "entity type name must not be empty",
+		},
+		{
+			name: "Non-UUID OU ID still validates schema payload",
+			schema: EntityType{
+				Name:   "test",
+				OUID:   "123",
+				Schema: json.RawMessage{},
+			},
+			expectedError: "schema definition must not be empty",
+		},
+		{
+			name: "Valid OU ID but empty schema",
+			schema: EntityType{
+				Name:   "test",
+				OUID:   testOUID1,
+				Schema: json.RawMessage{},
+			},
+			expectedError: "schema definition must not be empty",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateEntityTypeDefinition(TypeCategoryUser, tc.schema)
+
+			require.NotNil(t, err)
+			require.Equal(t, ErrorInvalidEntityTypeRequest.Code, err.Code)
+			require.Contains(t, err.ErrorDescription.DefaultValue, tc.expectedError)
+		})
+	}
+}
+
+func TestValidateEntityTypeDefinitionWithValidDisplayAttribute(t *testing.T) {
+	schema := EntityType{
+		Name:             "test-schema",
+		OUID:             testOUID1,
+		SystemAttributes: &SystemAttributes{Display: "email"},
+		Schema:           json.RawMessage(`{"email":{"type":"string"}}`),
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.Nil(t, err)
+}
+
+func TestValidateEntityTypeDefinitionRejectsNonExistentDisplayAttribute(t *testing.T) {
+	schema := EntityType{
+		Name:             "test-schema",
+		OUID:             testOUID1,
+		SystemAttributes: &SystemAttributes{Display: "unknown"},
+		Schema:           json.RawMessage(`{"email":{"type":"string"}}`),
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.NotNil(t, err)
+	require.Equal(t, ErrorInvalidDisplayAttribute.Code, err.Code)
+}
+
+func TestValidateEntityTypeDefinitionRejectsNonDisplayableDisplayAttribute(t *testing.T) {
+	schema := EntityType{
+		Name:             "test-schema",
+		OUID:             testOUID1,
+		SystemAttributes: &SystemAttributes{Display: "active"},
+		Schema:           json.RawMessage(`{"active":{"type":"boolean"}}`),
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.NotNil(t, err)
+	require.Equal(t, ErrorNonDisplayableAttribute.Code, err.Code)
+}
+
+func TestValidateEntityTypeDefinitionRejectsCredentialDisplayAttribute(t *testing.T) {
+	schema := EntityType{
+		Name:             "test-schema",
+		OUID:             testOUID1,
+		SystemAttributes: &SystemAttributes{Display: "password"},
+		Schema:           json.RawMessage(`{"password":{"type":"string","credential":true}}`),
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.NotNil(t, err)
+	require.Equal(t, ErrorCredentialDisplayAttribute.Code, err.Code)
+}
+
+func TestValidateEntityTypeDefinitionWithNilSystemAttributes(t *testing.T) {
+	schema := EntityType{
+		Name:   "test-schema",
+		OUID:   testOUID1,
+		Schema: json.RawMessage(`{"email":{"type":"string"}}`),
+	}
+
+	err := validateEntityTypeDefinition(TypeCategoryUser, schema)
+
+	require.Nil(t, err)
+}
+
+type EntityTypeServiceTestSuite struct {
+	suite.Suite
+}
+
+func TestEntityTypeServiceTestSuite(t *testing.T) {
+	suite.Run(t, new(EntityTypeServiceTestSuite))
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetCredentialAttributes_ReturnsCredentialFieldNames() {
+	storeMock := newEntityTypeStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "customer").
+		Return(EntityType{
+			Schema: json.RawMessage(
+				`{"password":{"type":"string","credential":true},` +
+					`"apiKey":{"type":"string","credential":true},` +
+					`"email":{"type":"string","unique":true}}`,
+			),
+		}, nil).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetCredentialAttributes(
+		context.Background(), TypeCategoryUser, "customer",
+	)
+
+	s.Require().Nil(svcErr)
+	sort.Strings(fields)
+	s.Require().Equal([]string{"apiKey", "password"}, fields)
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetCredentialAttributes_TestNoCredentials_ReturnsEmpty() {
+	storeMock := newEntityTypeStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "customer").
+		Return(EntityType{
+			Schema: json.RawMessage(
+				`{"email":{"type":"string"},"age":{"type":"number"}}`,
+			),
+		}, nil).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetCredentialAttributes(
+		context.Background(), TypeCategoryUser, "customer",
+	)
+
+	s.Require().Nil(svcErr)
+	s.Require().Empty(fields)
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetCredentialAttributes_TestSchemaNotFound_ReturnsError() {
+	storeMock := newEntityTypeStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "unknown").
+		Return(EntityType{}, ErrEntityTypeNotFound).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetCredentialAttributes(
+		context.Background(), TypeCategoryUser, "unknown",
+	)
+
+	s.Require().Nil(fields)
+	s.Require().NotNil(svcErr)
+	s.Require().Equal(ErrorEntityTypeNotFound.Code, svcErr.Code)
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetCredentialAttributes_TestEmptyUserType_ReturnsError() {
+	storeMock := newEntityTypeStoreInterfaceMock(s.T())
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetCredentialAttributes(
+		context.Background(), TypeCategoryUser, "",
+	)
+
+	s.Require().Nil(fields)
+	s.Require().NotNil(svcErr)
+	s.Require().Equal(ErrorEntityTypeNotFound.Code, svcErr.Code)
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetCredentialAttributes_TestStoreError_ReturnsInternalError() {
+	storeMock := newEntityTypeStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "customer").
+		Return(EntityType{}, errors.New("db failure")).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetCredentialAttributes(
+		context.Background(), TypeCategoryUser, "customer",
+	)
+
+	s.Require().Nil(fields)
+	s.Require().NotNil(svcErr)
+	s.Require().Equal(serviceerror.InternalServerError, *svcErr)
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetUniqueAttributes_ReturnsUniqueFieldNames() {
+	storeMock := newEntityTypeStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "customer").
+		Return(EntityType{
+			Schema: json.RawMessage(
+				`{"email":{"type":"string","unique":true},` +
+					`"username":{"type":"string","unique":true},` +
+					`"given_name":{"type":"string"}}`,
+			),
+		}, nil).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetUniqueAttributes(context.Background(), TypeCategoryUser, "customer")
+
+	s.Require().Nil(svcErr)
+	sort.Strings(fields)
+	s.Require().Equal([]string{"email", "username"}, fields)
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetUniqueAttributes_TestNoUniqueAttributes_ReturnsEmpty() {
+	storeMock := newEntityTypeStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "customer").
+		Return(EntityType{
+			Schema: json.RawMessage(`{"given_name":{"type":"string"},"age":{"type":"number"}}`),
+		}, nil).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetUniqueAttributes(context.Background(), TypeCategoryUser, "customer")
+
+	s.Require().Nil(svcErr)
+	s.Require().Empty(fields)
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetUniqueAttributes_TestSchemaNotFound_ReturnsError() {
+	storeMock := newEntityTypeStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "unknown").
+		Return(EntityType{}, ErrEntityTypeNotFound).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetUniqueAttributes(context.Background(), TypeCategoryUser, "unknown")
+
+	s.Require().Nil(fields)
+	s.Require().NotNil(svcErr)
+	s.Require().Equal(ErrorEntityTypeNotFound.Code, svcErr.Code)
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetUniqueAttributes_TestEmptyUserType_ReturnsError() {
+	storeMock := newEntityTypeStoreInterfaceMock(s.T())
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	fields, svcErr := service.GetUniqueAttributes(context.Background(), TypeCategoryUser, "")
+
+	s.Require().Nil(fields)
+	s.Require().NotNil(svcErr)
+	s.Require().Equal(ErrorEntityTypeNotFound.Code, svcErr.Code)
+}
+
+// ----- DeleteEntityType Tests -----
+
+func TestDeleteEntityType(t *testing.T) {
+	tests := []struct {
+		name           string
+		schemaID       string
+		schema         json.RawMessage
+		consentService *consentmock.ConsentServiceInterfaceMock
+	}{
+		{
+			name:     "succeeds when attribute extraction fails but consent is enabled",
+			schemaID: "schema-123",
+			// Use invalid JSON to cause extractAttributeNames to fail
+			schema:         json.RawMessage(`{invalid json}`),
+			consentService: newConsentServiceMockEnabled(t),
+		},
+		{
+			name:           "succeeds when consent is disabled",
+			schemaID:       "schema-456",
+			schema:         json.RawMessage(`{"email":{"type":"string"}}`),
+			consentService: newConsentServiceMockDisabled(t),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			testConfig := &config.Config{
+				DeclarativeResources: config.DeclarativeResources{
+					Enabled: false,
+				},
+			}
+			config.ResetServerRuntime()
+			err := config.InitializeServerRuntime("/tmp/test", testConfig)
+			require.NoError(t, err)
+			defer config.ResetServerRuntime()
+
+			storeMock := newEntityTypeStoreInterfaceMock(t)
+			storeMock.On("GetEntityTypeByID", mock.Anything, mock.Anything, tc.schemaID).Return(EntityType{
+				ID:     tc.schemaID,
+				OUID:   testOUID1,
+				Schema: tc.schema,
+			}, nil).Once()
+			storeMock.On("IsEntityTypeDeclarative", TypeCategoryUser, tc.schemaID).Return(false).Once()
+			storeMock.On("DeleteEntityTypeByID", mock.Anything, mock.Anything, tc.schemaID).Return(nil).Once()
+
+			service := &entityTypeService{
+				entityTypeStore: storeMock,
+				transactioner:   &mockTransactioner{},
+				consentService:  tc.consentService,
+				authzService:    newAllowAllAuthz(t),
+			}
+
+			svcErr := service.DeleteEntityType(context.Background(), TypeCategoryUser, tc.schemaID)
+
+			require.Nil(t, svcErr)
+			storeMock.AssertExpectations(t)
+		})
+	}
+}
+
+func TestCreateEntityType_AgentTypeRejectsNonDefaultName(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	require.NoError(t, config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	service := &entityTypeService{
+		entityTypeStore: newEntityTypeStoreInterfaceMock(t),
+		transactioner:   &mockTransactioner{},
+		authzService:    newAllowAllAuthz(t),
+	}
+
+	req := CreateEntityTypeRequestWithID{
+		Name:   "tool-agent",
+		OUID:   testOUID1,
+		Schema: json.RawMessage(`{"name":{"type":"string"}}`),
+	}
+	_, svcErr := service.CreateEntityType(context.Background(), TypeCategoryAgent, req)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorAgentTypeOnlyDefaultAllowed.Code, svcErr.Code)
+}
+
+func TestUpdateEntityType_AgentTypeRejectsNonDefaultName(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	require.NoError(t, config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	service := &entityTypeService{
+		entityTypeStore: newEntityTypeStoreInterfaceMock(t),
+		transactioner:   &mockTransactioner{},
+		authzService:    newAllowAllAuthz(t),
+	}
+
+	req := UpdateEntityTypeRequest{
+		Name:   "tool-agent",
+		OUID:   testOUID1,
+		Schema: json.RawMessage(`{"name":{"type":"string"}}`),
+	}
+	_, svcErr := service.UpdateEntityType(context.Background(), TypeCategoryAgent, "schema-1", req)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorAgentTypeOnlyDefaultAllowed.Code, svcErr.Code)
+}
+
+func TestDeleteEntityType_AgentTypeAlwaysRejected(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{Enabled: false},
+	}
+	config.ResetServerRuntime()
+	require.NoError(t, config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	service := &entityTypeService{
+		entityTypeStore: newEntityTypeStoreInterfaceMock(t),
+		authzService:    newAllowAllAuthz(t),
+	}
+
+	svcErr := service.DeleteEntityType(context.Background(), TypeCategoryAgent, "schema-1")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorAgentTypeCannotDelete.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_NilSystemAttributes(t *testing.T) {
+	compiled, err := model.CompileSchema(json.RawMessage(`{"email":{"type":"string"}}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "")
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_EmptyDisplay(t *testing.T) {
+	compiled, err := model.CompileSchema(json.RawMessage(`{"email":{"type":"string"}}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "")
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_ValidStringAttribute(t *testing.T) {
+	compiled, err := model.CompileSchema(json.RawMessage(`{
+		"email":{"type":"string"},
+		"password":{"type":"string","credential":true}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "email")
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_ValidNumberAttribute(t *testing.T) {
+	compiled, err := model.CompileSchema(json.RawMessage(`{
+		"email":{"type":"string"},
+		"age":{"type":"number"}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "age")
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_BooleanAttributeRejected(t *testing.T) {
+	compiled, err := model.CompileSchema(json.RawMessage(`{
+		"email":{"type":"string"},
+		"active":{"type":"boolean"}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "active")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorNonDisplayableAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_ObjectAttributeRejected(t *testing.T) {
+	compiled, err := model.CompileSchema(json.RawMessage(`{
+		"address":{"type":"object","properties":{"city":{"type":"string"}}}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "address")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorNonDisplayableAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_ArrayAttributeRejected(t *testing.T) {
+	compiled, err := model.CompileSchema(json.RawMessage(`{
+		"tags":{"type":"array","items":{"type":"string"}}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "tags")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorNonDisplayableAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_CredentialAttributeRejected(t *testing.T) {
+	compiled, err := model.CompileSchema(json.RawMessage(`{
+		"password":{"type":"string","credential":true}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "password")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorCredentialDisplayAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_NonExistentAttribute(t *testing.T) {
+	compiled, err := model.CompileSchema(json.RawMessage(`{
+		"email":{"type":"string"}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "username")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidDisplayAttribute.Code, svcErr.Code)
+}
+
+func TestCreateEntityTypeReturnsErrorForInvalidDisplayAttribute(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("/tmp/test", testConfig)
+	require.NoError(t, err)
+	defer config.ResetServerRuntime()
+
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	request := CreateEntityTypeRequestWithID{
+		Name:             "test-schema",
+		OUID:             testOUID1,
+		Schema:           json.RawMessage(`{"email":{"type":"string"}}`),
+		SystemAttributes: &SystemAttributes{Display: "nonexistent"},
+	}
+
+	createdSchema, svcErr := service.CreateEntityType(context.Background(), TypeCategoryUser, request)
+
+	require.Nil(t, createdSchema)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidDisplayAttribute.Code, svcErr.Code)
+}
+
+func TestUpdateEntityTypeReturnsErrorForInvalidDisplayAttribute(t *testing.T) {
+	testConfig := &config.Config{
+		DeclarativeResources: config.DeclarativeResources{
+			Enabled: false,
+		},
+	}
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("/tmp/test", testConfig)
+	require.NoError(t, err)
+	defer config.ResetServerRuntime()
+
+	storeMock := newEntityTypeStoreInterfaceMock(t)
+	storeMock.On("IsEntityTypeDeclarative", TypeCategoryUser, "schema-id").Return(false).Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	request := UpdateEntityTypeRequest{
+		Name:             "test-schema",
+		OUID:             testOUID1,
+		Schema:           json.RawMessage(`{"email":{"type":"string"}}`),
+		SystemAttributes: &SystemAttributes{Display: "nonexistent"},
+	}
+
+	updatedSchema, svcErr := service.UpdateEntityType(context.Background(), TypeCategoryUser, "schema-id", request)
+
+	require.Nil(t, updatedSchema)
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidDisplayAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_DottedPath_ValidNestedString(t *testing.T) {
+	compiled, err := model.CompileSchema(json.RawMessage(`{
+		"address":{"type":"object","properties":{"city":{"type":"string"}}}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "address.city")
+	require.Nil(t, svcErr)
+}
+
+func TestValidateDisplayAttribute_DottedPath_NestedObjectRejected(t *testing.T) {
+	compiled, err := model.CompileSchema(json.RawMessage(`{
+		"profile":{"type":"object","properties":{
+			"address":{"type":"object","properties":{"city":{"type":"string"}}}
+		}}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "profile.address")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorNonDisplayableAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_DottedPath_NestedCredentialRejected(t *testing.T) {
+	compiled, err := model.CompileSchema(json.RawMessage(`{
+		"auth":{"type":"object","properties":{
+			"password":{"type":"string","credential":true}
+		}}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "auth.password")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorCredentialDisplayAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_DottedPath_NonExistentNested(t *testing.T) {
+	compiled, err := model.CompileSchema(json.RawMessage(`{
+		"address":{"type":"object","properties":{"city":{"type":"string"}}}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "address.zip")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidDisplayAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_DottedPath_TraverseIntoNonObject(t *testing.T) {
+	compiled, err := model.CompileSchema(json.RawMessage(`{
+		"email":{"type":"string"}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "email.domain")
+	require.NotNil(t, svcErr)
+	require.Equal(t, ErrorInvalidDisplayAttribute.Code, svcErr.Code)
+}
+
+func TestValidateDisplayAttribute_DottedPath_DeeplyNestedValid(t *testing.T) {
+	compiled, err := model.CompileSchema(json.RawMessage(`{
+		"profile":{"type":"object","properties":{
+			"name":{"type":"object","properties":{
+				"first":{"type":"string"}
+			}}
+		}}
+	}`))
+	require.NoError(t, err)
+
+	svcErr := validateDisplayAttribute(compiled, "profile.name.first")
+	require.Nil(t, svcErr)
+}
+
+// GetDisplayAttributesByNames tests
+
+func (s *EntityTypeServiceTestSuite) TestGetDisplayAttributesByNames_ReturnsDisplayAttributes() {
+	storeMock := newEntityTypeStoreInterfaceMock(s.T())
+	expected := map[string]string{"SchemaA": "email", "SchemaB": "given_name"}
+	storeMock.
+		On("GetDisplayAttributesByNames", mock.Anything, TypeCategoryUser, []string{"SchemaA", "SchemaB"}).
+		Return(expected, nil).
+		Once()
+
+	service := &entityTypeService{entityTypeStore: storeMock}
+
+	result, svcErr := service.GetDisplayAttributesByNames(
+		context.Background(), TypeCategoryUser, []string{"SchemaA", "SchemaB"})
+
+	s.Require().Nil(svcErr)
+	s.Require().Equal(expected, result)
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetDisplayAttributesByNames_TestEmptyInput_ReturnsEmptyMap() {
+	service := &entityTypeService{}
+
+	result, svcErr := service.GetDisplayAttributesByNames(context.Background(), TypeCategoryUser, []string{})
+
+	s.Require().Nil(svcErr)
+	s.Require().Empty(result)
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetDisplayAttributesByNames_TestStoreError_ReturnsServerError() {
+	storeMock := newEntityTypeStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetDisplayAttributesByNames", mock.Anything, TypeCategoryUser, []string{"SchemaA"}).
+		Return(map[string]string(nil), errors.New("db error")).
+		Once()
+
+	service := &entityTypeService{entityTypeStore: storeMock}
+
+	_, svcErr := service.GetDisplayAttributesByNames(context.Background(), TypeCategoryUser, []string{"SchemaA"})
+
+	s.Require().NotNil(svcErr)
+	s.Require().Equal(serviceerror.InternalServerError, *svcErr)
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetNonCredentialAttributes_RequiredOnly_ReturnsAttributes() {
+	storeMock := newEntityTypeStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "INTERNAL").
+		Return(EntityType{
+			Schema: json.RawMessage(
+				`{"email":{"type":"string","required":true},` +
+					`"firstName":{"type":"string","required":true,"displayName":"First Name"},` +
+					`"password":{"type":"string","required":true,"credential":true},` +
+					`"age":{"type":"number"}}`,
+			),
+		}, nil).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	attrs, svcErr := service.GetNonCredentialAttributes(context.Background(), TypeCategoryUser, "INTERNAL", true)
+
+	s.Require().Nil(svcErr)
+	s.Require().Len(attrs, 2)
+
+	attrMap := make(map[string]AttributeInfo, len(attrs))
+	for _, a := range attrs {
+		attrMap[a.Attribute] = a
+	}
+
+	email, ok := attrMap["email"]
+	s.Require().True(ok, "email should be returned")
+	s.Equal("", email.DisplayName)
+
+	firstName, ok := attrMap["firstName"]
+	s.Require().True(ok, "firstName should be returned")
+	s.Equal("First Name", firstName.DisplayName)
+
+	_, hasPassword := attrMap["password"]
+	s.False(hasPassword, "password is credential and must be excluded")
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetNonCredentialAttributes_TestUnknownUserType_ReturnsError() {
+	storeMock := newEntityTypeStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "unknown").
+		Return(EntityType{}, ErrEntityTypeNotFound).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	attrs, svcErr := service.GetNonCredentialAttributes(context.Background(), TypeCategoryUser, "unknown", true)
+
+	s.Require().NotNil(svcErr)
+	s.Require().Equal(ErrorEntityTypeNotFound.Code, svcErr.Code)
+	s.Require().Nil(attrs)
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetNonCredentialAttributes_TestEmptyUserType_ReturnsError() {
+	service := &entityTypeService{
+		entityTypeStore: newEntityTypeStoreInterfaceMock(s.T()),
+		transactioner:   &mockTransactioner{},
+	}
+
+	attrs, svcErr := service.GetNonCredentialAttributes(context.Background(), TypeCategoryUser, "", true)
+
+	s.Require().NotNil(svcErr)
+	s.Require().Equal(ErrorEntityTypeNotFound.Code, svcErr.Code)
+	s.Require().Nil(attrs)
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetNonCredentialAttributes_TestAllCredentials_ReturnsEmpty() {
+	storeMock := newEntityTypeStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "INTERNAL").
+		Return(EntityType{
+			Schema: json.RawMessage(
+				`{"password":{"type":"string","required":true,"credential":true}}`,
+			),
+		}, nil).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	attrs, svcErr := service.GetNonCredentialAttributes(context.Background(), TypeCategoryUser, "INTERNAL", true)
+
+	s.Require().Nil(svcErr)
+	s.Require().Empty(attrs)
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetNonCredentialAttributes_AllAttrs_IncludesOptional() {
+	storeMock := newEntityTypeStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "INTERNAL").
+		Return(EntityType{
+			Schema: json.RawMessage(
+				`{"email":{"type":"string","required":true},` +
+					`"mobileNumber":{"type":"string"},` +
+					`"password":{"type":"string","required":true,"credential":true}}`,
+			),
+		}, nil).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	attrs, svcErr := service.GetNonCredentialAttributes(context.Background(), TypeCategoryUser, "INTERNAL", false)
+
+	s.Require().Nil(svcErr)
+	s.Require().Len(attrs, 2, "email and mobileNumber should be returned; password excluded as credential")
+
+	attrMap := make(map[string]AttributeInfo, len(attrs))
+	for _, a := range attrs {
+		attrMap[a.Attribute] = a
+	}
+	s.True(attrMap["email"].Required)
+	s.False(attrMap["mobileNumber"].Required, "optional attribute must be included with Required=false")
+	_, hasPassword := attrMap["password"]
+	s.False(hasPassword, "credential must always be excluded")
+}
+
+func (s *EntityTypeServiceTestSuite) TestGetNonCredentialAttributes_StoreError_ReturnsServerError() {
+	storeMock := newEntityTypeStoreInterfaceMock(s.T())
+	storeMock.
+		On("GetEntityTypeByName", context.Background(), TypeCategoryUser, "INTERNAL").
+		Return(EntityType{}, errors.New("db failure")).
+		Once()
+
+	service := &entityTypeService{
+		entityTypeStore: storeMock,
+		transactioner:   &mockTransactioner{},
+	}
+
+	attrs, svcErr := service.GetNonCredentialAttributes(context.Background(), TypeCategoryUser, "INTERNAL", false)
+
+	s.Require().NotNil(svcErr)
+	s.Require().Equal(serviceerror.InternalServerError, *svcErr)
+	s.Require().Nil(attrs)
+}

@@ -18,12 +18,12 @@
  * under the License.
  */
 
-/* eslint-disable @thunder/copyright-header, import/no-extraneous-dependencies */
+/* eslint-disable @thunderid/copyright-header, import/no-extraneous-dependencies */
 
 import {readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync} from 'fs';
 import {join, dirname} from 'path';
 import {fileURLToPath} from 'url';
-import {createLogger} from '@thunder/logger';
+import {createLogger} from '@thunderid/logger';
 import {parse, stringify} from 'yaml';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -33,15 +33,15 @@ const logger = createLogger('merge-openapi-specs');
 
 const API_DIR = join(__dirname, '..', '..', 'api');
 const STATIC_DIR = join(__dirname, '..', 'static', 'api');
-const THUNDER_CONFIG_PATH = join(__dirname, '..', 'docusaurus.thunder.config.ts');
+const PRODUCT_CONFIG_PATH = join(__dirname, '..', 'docusaurus.product.config.ts');
 
-function readThunderConfig(configPath) {
+function readProductConfig(configPath) {
   const content = readFileSync(configPath, 'utf8');
   const nameMatch = content.match(/project\s*:\s*\{[^}]*?name\s*:\s*['"]([^'"]+)['"]/s);
   return nameMatch ? nameMatch[1] : 'Unknown Project';
 }
 
-const projectName = readThunderConfig(THUNDER_CONFIG_PATH);
+const projectName = readProductConfig(PRODUCT_CONFIG_PATH);
 
 // Resolve version path from --version-path <path> CLI arg, defaulting to 'next'
 const versionPathArgIndex = process.argv.indexOf('--version-path');

@@ -28,12 +28,14 @@ import (
 	"github.com/asgardeo/thunder/internal/authz"
 	"github.com/asgardeo/thunder/internal/entityprovider"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
+	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/inboundclient"
 	"github.com/asgardeo/thunder/internal/oauth/jwks"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/dcr"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/discovery"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/granthandlers"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/introspect"
+	"github.com/asgardeo/thunder/internal/oauth/oauth2/jwksresolver"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/par"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/token"
 	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
@@ -41,12 +43,12 @@ import (
 	"github.com/asgardeo/thunder/internal/oauth/scope"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/resource"
-	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/database/provider"
 	syshttp "github.com/asgardeo/thunder/internal/system/http"
 	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
 	"github.com/asgardeo/thunder/internal/system/jose/jwe"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
+	"github.com/asgardeo/thunder/internal/system/kmprovider/defaultkm/pkiservice"
 	"github.com/asgardeo/thunder/internal/system/observability"
 )
 
@@ -60,13 +62,14 @@ func Initialize(
 	jweService jwe.JWEServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
-	pkiService pki.PKIServiceInterface,
+	pkiService pkiservice.PKIServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	authzService authz.AuthorizationServiceInterface,
 	entityProvider entityprovider.EntityProviderInterface,
 	resourceService resource.ResourceServiceInterface,
 	i18nService i18nmgt.I18nServiceInterface,
+	idpService idp.IDPServiceInterface,
 ) error {
 	// Fetch runtime transactioner for OAuth services.
 	transactioner, err := provider.GetDBProvider().GetRuntimeDBTransactioner()
@@ -75,7 +78,11 @@ func Initialize(
 	}
 
 	jwks.Initialize(mux, pkiService)
-	tokenBuilder, tokenValidator := tokenservice.Initialize(jwtService)
+	httpClient := syshttp.NewHTTPClientWithCheckRedirect(func(req *http.Request, _ []*http.Request) error {
+		return syshttp.IsSSRFSafeURL(req.URL.String())
+	})
+	resolver := jwksresolver.Initialize(httpClient)
+	tokenBuilder, tokenValidator := tokenservice.Initialize(jwtService, jweService, resolver, idpService)
 	scopeValidator := scope.Initialize()
 	discoveryService := discovery.Initialize(mux, pkiService)
 	parService := par.Initialize(mux, inboundClient, authnProvider, jwtService, discoveryService,
@@ -89,10 +96,7 @@ func Initialize(
 	token.Initialize(mux, jwtService, inboundClient, authnProvider, grantHandlerProvider,
 		scopeValidator, observabilitySvc, discoveryService, transactioner)
 	introspect.Initialize(mux, jwtService, inboundClient, authnProvider, discoveryService)
-	userinfo.Initialize(mux, jwtService, jweService,
-		syshttp.NewHTTPClientWithCheckRedirect(func(req *http.Request, _ []*http.Request) error {
-			return syshttp.IsSSRFSafeURL(req.URL.String())
-		}),
+	userinfo.Initialize(mux, jwtService, jweService, resolver,
 		tokenValidator, inboundClient, ouService, attributeCacheSvc, transactioner)
 	dcr.Initialize(mux, applicationService, ouService, i18nService, transactioner)
 	return nil

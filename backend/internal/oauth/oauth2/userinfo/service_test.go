@@ -84,8 +84,8 @@ func (s *UserInfoServiceTestSuite) SetupTest() {
 		s.mockAttributeCacheService, s.mockTransactioner)
 
 	// Initialize server runtime for tests
-	config.ResetThunderRuntime()
-	_ = config.InitializeThunderRuntime(
+	config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime(
 		"test-home",
 		&config.Config{
 			JWT: config.JWTConfig{
@@ -1096,9 +1096,10 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_ResponseType() {
 	// JWT generation
 	s.mockJWTService.On(
 		"GenerateJWT",
+		mock.Anything,
 		"user123",
 		issuer,
-		config.GetThunderRuntime().Config.JWT.ValidityPeriod,
+		config.GetServerRuntime().Config.JWT.ValidityPeriod,
 		mock.Anything,
 		mock.Anything,
 		"RS256",
@@ -1156,9 +1157,10 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_GenerateJWTFailure() {
 	// Simulate signing failure
 	s.mockJWTService.On(
 		"GenerateJWT",
+		mock.Anything,
 		"user123",
 		issuer,
-		config.GetThunderRuntime().Config.JWT.ValidityPeriod,
+		config.GetServerRuntime().Config.JWT.ValidityPeriod,
 		mock.Anything,
 		mock.Anything,
 		"RS256",

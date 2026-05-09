@@ -302,7 +302,7 @@ components:
               login.button: Login
               login.title: Welcome
 
-    ErrorResponse:
+    Error:
       type: object
       required:
         - code
@@ -310,7 +310,7 @@ components:
       properties:
         code:
           type: string
-          description: Error code
+          description: "Error code. Codes follow the FLM-XXXX convention."
           example: "FLM-1001"
         message:
           $ref: '#/components/schemas/I18nMessage'
@@ -337,7 +337,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
           examples:
             invalid-type:
               summary: Invalid type parameter
@@ -375,7 +375,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
           examples:
             application-not-found:
               summary: Application not found
@@ -403,7 +403,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
           examples:
             application-fetch-failed:
               summary: Application fetch failed

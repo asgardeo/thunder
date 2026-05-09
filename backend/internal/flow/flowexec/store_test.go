@@ -31,9 +31,6 @@ import (
 	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
 	managerpkg "github.com/asgardeo/thunder/internal/authnprovider/manager"
 	"github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/crypto"
-	cryptoruntime "github.com/asgardeo/thunder/internal/system/crypto/runtime"
 
 	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
 	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
@@ -44,31 +41,12 @@ type StoreTestSuite struct {
 }
 
 func TestStoreTestSuite(t *testing.T) {
-	// Setup test config with encryption key
-	testConfig := &config.Config{
-		Crypto: config.CryptoConfig{
-			Encryption: config.EncryptionConfig{
-				Key: "2729a7928c79371e5f312167269294a14bb0660fd166b02a408a20fa73271580",
-			},
-		},
-		Server: config.ServerConfig{
-			Identifier: "test-deployment",
-		},
-	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/test/thunder/home", testConfig)
-	if err != nil {
-		t.Fatalf("Failed to initialize Thunder runtime: %v", err)
-	}
-
 	suite.Run(t, new(StoreTestSuite))
 }
 
 func (s *StoreTestSuite) getContextContent(dbModel *FlowContextDB) flowContextContent {
-	err := dbModel.decrypt(context.Background())
-	s.NoError(err)
 	var content flowContextContent
-	err = json.Unmarshal([]byte(dbModel.Context), &content)
+	err := json.Unmarshal([]byte(dbModel.Context), &content)
 	s.NoError(err)
 	return content
 }
@@ -113,7 +91,9 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithToken() {
 	}
 
 	// Execute
-	err := store.StoreFlowContext(context.Background(), ctx, expirySeconds)
+	dbModel, err := FromEngineContext(ctx)
+	s.NoError(err)
+	err = store.StoreFlowContext(context.Background(), *dbModel, expirySeconds)
 
 	// Verify
 	s.NoError(err)
@@ -158,7 +138,9 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithoutToken() {
 	}
 
 	// Execute
-	err := store.StoreFlowContext(context.Background(), ctx, expirySeconds)
+	dbModel, err := FromEngineContext(ctx)
+	s.NoError(err)
+	err = store.StoreFlowContext(context.Background(), *dbModel, expirySeconds)
 
 	// Verify
 	s.NoError(err)
@@ -202,7 +184,9 @@ func (s *StoreTestSuite) TestUpdateFlowContext_WithToken() {
 	}
 
 	// Execute
-	err := store.UpdateFlowContext(context.Background(), ctx)
+	dbModel, err := FromEngineContext(ctx)
+	s.NoError(err)
+	err = store.UpdateFlowContext(context.Background(), *dbModel)
 
 	// Verify
 	s.NoError(err)
@@ -239,9 +223,6 @@ func (s *StoreTestSuite) TestGetFlowContext_WithToken() {
 	dbModel, err := FromEngineContext(ctx)
 	s.NoError(err)
 
-	// Save encrypted context before getContextContent decrypts it in place
-	encryptedContext := dbModel.Context
-
 	content := s.getContextContent(dbModel)
 	s.NotNil(content.Token)
 
@@ -252,7 +233,7 @@ func (s *StoreTestSuite) TestGetFlowContext_WithToken() {
 	results := []map[string]interface{}{
 		{
 			"flow_id":     "test-flow-id",
-			"context":     encryptedContext,
+			"context":     dbModel.Context,
 			"expiry_time": expiryTime,
 		},
 	}
@@ -274,7 +255,6 @@ func (s *StoreTestSuite) TestGetFlowContext_WithToken() {
 	s.NotNil(result)
 	s.Equal("test-flow-id", result.ExecutionID)
 
-	// getContextContent decrypts result in place; ToEngineContext works on the decrypted context
 	content = s.getContextContent(result)
 	s.True(content.IsAuthenticated)
 	s.NotNil(content.Token)
@@ -294,22 +274,17 @@ func (s *StoreTestSuite) TestGetFlowContext_WithoutToken() {
 
 	expiryTime := time.Now().Add(30 * time.Minute)
 
-	// Create and encrypt context
 	contextJSON, err := json.Marshal(flowContextContent{
 		AppID:           "test-app-id",
 		IsAuthenticated: false,
 		GraphID:         "test-graph-id",
 	})
 	s.NoError(err)
-	encryptedContextBytes, _, err := cryptoruntime.GetRuntimeCryptoService().Encrypt(
-		context.Background(), crypto.KeyRef{}, crypto.AlgorithmParams{Algorithm: crypto.AlgorithmAESGCM}, contextJSON)
-	s.NoError(err)
-	encryptedContext := string(encryptedContextBytes)
 
 	results := []map[string]interface{}{
 		{
 			"flow_id":     "test-flow-id",
-			"context":     encryptedContext,
+			"context":     string(contextJSON),
 			"expiry_time": expiryTime,
 		},
 	}
@@ -378,24 +353,17 @@ func (s *StoreTestSuite) TestStoreAndRetrieve_TokenRoundTrip() {
 		Graph: mockGraph,
 	}
 
-	// Step 1: Convert to DB model (encrypts entire context)
+	// Step 1: Convert to DB model (serializes context to plain JSON)
 	dbModel, err := FromEngineContext(originalCtx)
 	s.NoError(err)
 	s.NotNil(dbModel)
 
-	// Verify the context is encrypted
-	s.Contains(dbModel.Context, `"ct"`, "context should be encrypted")
-
-	// Step 2: Simulate storing and retrieving from DB
-	// In a real scenario, this would be inserted into DB and read back
-	// For this test, we'll directly use the dbModel
-
-	// Step 3: Decrypt context and read the content
+	// Step 2: Verify token is serialized in context
 	content := s.getContextContent(dbModel)
 	s.NotNil(content.Token)
 	s.Equal(originalToken, *content.Token)
 
-	// Step 4: Convert to EngineContext (context already decrypted by getContextContent)
+	// Step 3: Convert to EngineContext
 	retrievedCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
 	s.NoError(err)
 
@@ -448,19 +416,12 @@ func (s *StoreTestSuite) TestStoreAndRetrieve_ContextEncryptionRoundTrip() {
 		Graph: mockGraph,
 	}
 
-	// Step 1: Convert to DB model (encrypts entire context)
+	// Step 1: Convert to DB model (serializes context to plain JSON)
 	dbModel, err := FromEngineContext(originalCtx)
 	s.NoError(err)
 	s.NotNil(dbModel)
 
-	// Step 2: Verify entire context is encrypted — no plain fields visible
-	s.Contains(dbModel.Context, `"ct"`, "encrypted context should contain ciphertext field")
-	s.NotContains(dbModel.Context, sensitiveAppID, "appId should not be visible in encrypted context")
-	s.NotContains(dbModel.Context, sensitiveUserID, "userId should not be visible in encrypted context")
-	s.NotContains(dbModel.Context, sensitiveInput, "userInputs should not be visible in encrypted context")
-	s.NotContains(dbModel.Context, sensitiveRuntimeData, "runtimeData should not be visible in encrypted context")
-
-	// Step 3: Decrypt and verify all fields are restored
+	// Step 2: Verify all fields are serialized correctly
 	content := s.getContextContent(dbModel)
 	s.Equal(sensitiveAppID, content.AppID)
 	s.NotNil(content.UserID)
@@ -479,6 +440,7 @@ func (s *StoreTestSuite) TestStoreAndRetrieve_ContextEncryptionRoundTrip() {
 	retrievedCtx, err := dbModel.ToEngineContext(context.Background(), mockGraph)
 	s.NoError(err)
 	s.Equal(originalCtx.ExecutionID, retrievedCtx.ExecutionID)
+
 	s.Equal(originalCtx.AppID, retrievedCtx.AppID)
 	s.Equal(originalCtx.AuthenticatedUser.IsAuthenticated, retrievedCtx.AuthenticatedUser.IsAuthenticated)
 	s.Equal(originalCtx.AuthenticatedUser.UserID, retrievedCtx.AuthenticatedUser.UserID)
@@ -626,7 +588,9 @@ func (s *StoreTestSuite) TestStoreFlowContext_WithAvailableAttributes() {
 	}
 
 	// Execute
-	err := store.StoreFlowContext(context.Background(), ctx, expirySeconds)
+	dbModel, err := FromEngineContext(ctx)
+	s.NoError(err)
+	err = store.StoreFlowContext(context.Background(), *dbModel, expirySeconds)
 
 	// Verify
 	s.NoError(err)
@@ -684,7 +648,9 @@ func (s *StoreTestSuite) TestUpdateFlowContext_WithAvailableAttributes() {
 	}
 
 	// Execute
-	err := store.UpdateFlowContext(context.Background(), ctx)
+	dbModel, err := FromEngineContext(ctx)
+	s.NoError(err)
+	err = store.UpdateFlowContext(context.Background(), *dbModel)
 
 	// Verify
 	s.NoError(err)
@@ -735,9 +701,6 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 	dbModel, err := FromEngineContext(ctx)
 	s.NoError(err)
 
-	// Save encrypted context before getContextContent decrypts it in place
-	encryptedContext := dbModel.Context
-
 	content := s.getContextContent(dbModel)
 	s.NotNil(content.AvailableAttributes)
 
@@ -748,7 +711,7 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 	results := []map[string]interface{}{
 		{
 			"flow_id":     "test-flow-id",
-			"context":     encryptedContext,
+			"context":     dbModel.Context,
 			"expiry_time": expiryTime,
 		},
 	}
@@ -770,7 +733,6 @@ func (s *StoreTestSuite) TestGetFlowContext_WithAvailableAttributes() {
 	s.NotNil(result)
 	s.Equal("test-flow-id", result.ExecutionID)
 
-	// getContextContent decrypts result in place; ToEngineContext works on the decrypted context
 	content = s.getContextContent(result)
 	s.True(content.IsAuthenticated)
 	s.NotNil(content.AvailableAttributes)

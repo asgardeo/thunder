@@ -46,44 +46,30 @@ func (suite *CacheManagerTestSuite) SetupSuite() {
 			Disabled: true, // Disable cache globally for tests
 		},
 	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/test/thunder/home", mockConfig)
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("/test/thunderid/home", mockConfig)
 	if err != nil {
-		suite.T().Fatal("Failed to initialize ThunderRuntime:", err)
+		suite.T().Fatal("Failed to initialize server runtime:", err)
 	}
 }
 
 func (suite *CacheManagerTestSuite) TearDownSuite() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
-func (suite *CacheManagerTestSuite) SetupTest() {
-	// Reset the singleton instance for each test
-	instance = nil
-	once = sync.Once{}
-}
-
-func (suite *CacheManagerTestSuite) TestGetCacheManager() {
+func (suite *CacheManagerTestSuite) TestInitialize() {
 	t := suite.T()
 
-	// Get cache manager instance
-	manager1 := GetCacheManager()
-	assert.NotNil(t, manager1, "Cache manager should not be nil")
-	assert.IsType(t, &CacheManager{}, manager1, "Cache manager should be of type *CacheManager")
-
-	// Get another instance to verify singleton pattern
-	manager2 := GetCacheManager()
-	assert.Same(t, manager1, manager2, "GetCacheManager should return the same instance (singleton)")
+	manager := Initialize()
+	assert.NotNil(t, manager, "Cache manager should not be nil")
+	assert.IsType(t, &CacheManager{}, manager, "Cache manager should be of type *CacheManager")
 }
 
 func (suite *CacheManagerTestSuite) TestCacheManagerInit() {
 	t := suite.T()
 
-	// Test with cache disabled
-	manager := &CacheManager{
-		caches: make(map[string]interface{}),
-	}
-	manager.Init()
+	// Test with cache disabled (default config has cache disabled)
+	manager := Initialize()
 	assert.False(t, manager.IsEnabled(), "Cache should be disabled")
 
 	// Test with cache enabled
@@ -96,16 +82,14 @@ func (suite *CacheManagerTestSuite) TestCacheManagerInit() {
 			CleanupInterval: 60,
 		},
 	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/test/thunder/home", enabledConfig)
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("/test/thunderid/home", enabledConfig)
 	assert.NoError(t, err)
 
-	manager = &CacheManager{
-		caches: make(map[string]interface{}),
-	}
-	manager.Init()
+	manager = Initialize()
 	assert.True(t, manager.IsEnabled(), "Cache should be enabled")
-	assert.Equal(t, time.Duration(60)*time.Second, manager.cleanupInterval, "Cleanup interval should be set")
+	assert.Equal(t, time.Duration(60)*time.Second, manager.(*CacheManager).cleanupInterval,
+		"Cleanup interval should be set")
 }
 
 func (suite *CacheManagerTestSuite) TestGetMutex() {
@@ -150,18 +134,16 @@ func (suite *CacheManagerTestSuite) TestAddAndGetCache() {
 func (suite *CacheManagerTestSuite) TestGetCache() {
 	t := suite.T()
 
-	// Get a cache for string type
+	manager := Initialize()
 	cacheName := "testCache"
-	cache1 := GetCache[string](cacheName)
+	cache1 := GetCache[string](manager, cacheName)
 	assert.NotNil(t, cache1, "Cache should not be nil")
 
-	// Get the same cache again
-	cache2 := GetCache[string](cacheName)
+	cache2 := GetCache[string](manager, cacheName)
 	assert.Same(t, cache1, cache2, "GetCache should return the same instance for the same type and name")
 
-	// Test with a different cache name but same type
 	differentCacheName := "anotherCache"
-	cache3 := GetCache[string](differentCacheName)
+	cache3 := GetCache[string](manager, differentCacheName)
 	assert.NotNil(t, cache3, "Cache should not be nil")
 	assert.NotSame(t, cache1, cache3, "Different cache names should create different caches")
 }
@@ -169,51 +151,41 @@ func (suite *CacheManagerTestSuite) TestGetCache() {
 func (suite *CacheManagerTestSuite) TestGetCacheMultipleTypes() {
 	t := suite.T()
 
+	manager := Initialize()
 	cacheName := "testMultiTypeCache"
 
-	// Get caches for different types
-	cacheString := GetCache[string](cacheName)
-	cacheInt := GetCache[int](cacheName)
-	cacheTestString := GetCache[TestString](cacheName)
-	cacheTestInt := GetCache[TestInt](cacheName)
+	cacheString := GetCache[string](manager, cacheName)
+	cacheInt := GetCache[int](manager, cacheName)
+	cacheTestString := GetCache[TestString](manager, cacheName)
+	cacheTestInt := GetCache[TestInt](manager, cacheName)
 
-	// Verify all caches are not nil
 	assert.NotNil(t, cacheString, "String cache should not be nil")
 	assert.NotNil(t, cacheInt, "Int cache should not be nil")
 	assert.NotNil(t, cacheTestString, "TestString cache should not be nil")
 	assert.NotNil(t, cacheTestInt, "TestInt cache should not be nil")
 
-	// Verify different types create different instances even with the same cache name
 	assert.NotSame(t, cacheString, cacheInt, "Different types should create different caches")
 	assert.NotSame(t, cacheString, cacheTestString, "Different types should create different caches")
 	assert.NotSame(t, cacheInt, cacheTestInt, "Different types should create different caches")
 	assert.NotSame(t, cacheTestString, cacheTestInt, "Different types should create different caches")
 
-	// Verify same type returns same instance
-	cacheStringSame := GetCache[string](cacheName)
+	cacheStringSame := GetCache[string](manager, cacheName)
 	assert.Same(t, cacheString, cacheStringSame, "Same type and name should return the same cache")
 }
 
 func (suite *CacheManagerTestSuite) TestResetCacheManager() {
 	t := suite.T()
 
-	// Create a cache
+	manager := Initialize().(*CacheManager)
 	cacheName := "testResetCache"
-	cm := GetCache[string](cacheName)
+	cm := GetCache[string](manager, cacheName)
 	assert.NotNil(t, cm, "Cache should not be nil")
-
-	// Verify cache manager has an entry
-	manager := GetCacheManager().(*CacheManager)
 	assert.NotEmpty(t, manager.caches, "Cache map should not be empty after creating a cache")
 
-	// Reset the cache manager
 	manager.reset()
-
-	// Verify cache manager is now empty
 	assert.Empty(t, manager.caches, "Cache map should be empty after reset")
 
-	// Create a new cache and verify it's different
-	cmNew := GetCache[string](cacheName)
+	cmNew := GetCache[string](manager, cacheName)
 	assert.NotNil(t, cmNew, "New cache should not be nil")
 	assert.NotSame(t, cm, cmNew, "After reset, should get a new cache instance")
 }
@@ -257,13 +229,11 @@ func (suite *CacheManagerTestSuite) TestConcurrentAccess() {
 			Disabled: false,
 		},
 	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/test/thunder/home", enabledConfig)
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("/test/thunderid/home", enabledConfig)
 	assert.NoError(t, err)
 
-	// Reset cache manager
-	instance = nil
-	once = sync.Once{}
+	cm := Initialize()
 
 	// Number of goroutines to use
 	numGoroutines := 10
@@ -277,7 +247,7 @@ func (suite *CacheManagerTestSuite) TestConcurrentAccess() {
 			defer wg.Done()
 			// Use different cache names to avoid collisions
 			cacheName := "concurrentCache" + string(rune('A'+index))
-			cache := GetCache[string](cacheName)
+			cache := GetCache[string](cm, cacheName)
 			assert.NotNil(t, cache, "Cache should not be nil even with concurrent access")
 			done <- true
 		}(i)
@@ -297,29 +267,24 @@ func (suite *CacheManagerTestSuite) TestConcurrentAccess() {
 	assert.Equal(t, numGoroutines, completedCount, "All goroutines should complete successfully")
 
 	// Verify manager has the expected number of entries
-	manager := GetCacheManager().(*CacheManager)
-	assert.Equal(t, numGoroutines, len(manager.caches), "Cache map should have an entry for each goroutine")
+	assert.Equal(t, numGoroutines, len(cm.(*CacheManager).caches), "Cache map should have an entry for each goroutine")
 }
 
 func (suite *CacheManagerTestSuite) TestTypeMismatch() {
 	t := suite.T()
 
 	cacheName := "typeMismatchCache"
-
-	// Create a cache manager and manually inject a cache with mismatched type
-	manager := GetCacheManager().(*CacheManager)
+	manager := Initialize().(*CacheManager)
 
 	var mockCache interface{} = &Cache[int]{} // Int type
 	typeName := "string"
 	cacheKey := cacheName + ":" + typeName
 
-	// Directly inject the mismatched type
 	manager.mu.Lock()
 	manager.caches[cacheKey] = mockCache
 	manager.mu.Unlock()
 
-	// Try to get a string cache
-	cache := GetCache[string](cacheName)
+	cache := GetCache[string](manager, cacheName)
 	assert.Nil(t, cache, "Should return nil when there's a type mismatch")
 }
 
@@ -327,11 +292,11 @@ func (suite *CacheManagerTestSuite) TestNewCache() {
 	t := suite.T()
 
 	// Save and restore original config
-	originalConfig := config.GetThunderRuntime().Config
+	originalConfig := config.GetServerRuntime().Config
 	defer func() {
 		// Reset config to original
-		config.ResetThunderRuntime()
-		err := config.InitializeThunderRuntime("/test/thunder/home", &originalConfig)
+		config.ResetServerRuntime()
+		err := config.InitializeServerRuntime("/test/thunderid/home", &originalConfig)
 		assert.NoError(t, err)
 	}()
 
@@ -341,11 +306,11 @@ func (suite *CacheManagerTestSuite) TestNewCache() {
 			Disabled: true,
 		},
 	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/test/thunder/home", &disabledConfig)
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("/test/thunderid/home", &disabledConfig)
 	assert.NoError(t, err)
 
-	cache1 := newCache[string]("testDisabledCache")
+	cache1 := newCache[string](Initialize(), "testDisabledCache")
 	assert.NotNil(t, cache1)
 	assert.False(t, cache1.IsEnabled())
 
@@ -361,11 +326,11 @@ func (suite *CacheManagerTestSuite) TestNewCache() {
 			},
 		},
 	}
-	config.ResetThunderRuntime()
-	err = config.InitializeThunderRuntime("/test/thunder/home", &enabledConfig)
+	config.ResetServerRuntime()
+	err = config.InitializeServerRuntime("/test/thunderid/home", &enabledConfig)
 	assert.NoError(t, err)
 
-	cache2 := newCache[string]("testSpecificDisabledCache")
+	cache2 := newCache[string](Initialize(), "testSpecificDisabledCache")
 	assert.NotNil(t, cache2)
 	assert.False(t, cache2.IsEnabled())
 
@@ -383,11 +348,11 @@ func (suite *CacheManagerTestSuite) TestNewCache() {
 			},
 		},
 	}
-	config.ResetThunderRuntime()
-	err = config.InitializeThunderRuntime("/test/thunder/home", &inMemConfig)
+	config.ResetServerRuntime()
+	err = config.InitializeServerRuntime("/test/thunderid/home", &inMemConfig)
 	assert.NoError(t, err)
 
-	cache3 := newCache[string]("testInMemCache")
+	cache3 := newCache[string](Initialize(), "testInMemCache")
 	assert.NotNil(t, cache3)
 	assert.True(t, cache3.IsEnabled())
 
@@ -398,11 +363,11 @@ func (suite *CacheManagerTestSuite) TestNewCache() {
 			Type:     "unknown-type",
 		},
 	}
-	config.ResetThunderRuntime()
-	err = config.InitializeThunderRuntime("/test/thunder/home", &unknownTypeConfig)
+	config.ResetServerRuntime()
+	err = config.InitializeServerRuntime("/test/thunderid/home", &unknownTypeConfig)
 	assert.NoError(t, err)
 
-	cache4 := newCache[string]("testUnknownTypeCache")
+	cache4 := newCache[string](Initialize(), "testUnknownTypeCache")
 	assert.NotNil(t, cache4)
 	assert.True(t, cache4.IsEnabled())
 }
@@ -419,10 +384,10 @@ func (suite *CacheManagerTestSuite) TestBuildRedisKeyPrefix() {
 	t := suite.T()
 
 	// Preserve runtime config because this test mutates the global runtime singleton.
-	originalConfig := config.GetThunderRuntime().Config
+	originalConfig := config.GetServerRuntime().Config
 	defer func() {
-		config.ResetThunderRuntime()
-		err := config.InitializeThunderRuntime("/test/thunder/home", &originalConfig)
+		config.ResetServerRuntime()
+		err := config.InitializeServerRuntime("/test/thunderid/home", &originalConfig)
 		assert.NoError(t, err)
 	}()
 
@@ -434,9 +399,9 @@ func (suite *CacheManagerTestSuite) TestBuildRedisKeyPrefix() {
 	}{
 		{
 			name:         "both basePrefix and deploymentID",
-			basePrefix:   "thunder",
+			basePrefix:   "thunderid",
 			deploymentID: "deployment-1",
-			expected:     "thunder:deployment-1",
+			expected:     "thunderid:deployment-1",
 		},
 		{
 			name:         "only deploymentID",
@@ -446,9 +411,9 @@ func (suite *CacheManagerTestSuite) TestBuildRedisKeyPrefix() {
 		},
 		{
 			name:         "only basePrefix",
-			basePrefix:   "thunder",
+			basePrefix:   "thunderid",
 			deploymentID: "",
-			expected:     "thunder",
+			expected:     "thunderid",
 		},
 		{
 			name:         "both empty",
@@ -462,8 +427,8 @@ func (suite *CacheManagerTestSuite) TestBuildRedisKeyPrefix() {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := originalConfig
 			cfg.Server.Identifier = tc.deploymentID
-			config.ResetThunderRuntime()
-			err := config.InitializeThunderRuntime("/test/thunder/home", &cfg)
+			config.ResetServerRuntime()
+			err := config.InitializeServerRuntime("/test/thunderid/home", &cfg)
 			assert.NoError(t, err)
 
 			result := buildRedisKeyPrefix(tc.basePrefix)

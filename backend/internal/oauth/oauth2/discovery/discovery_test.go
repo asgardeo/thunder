@@ -78,11 +78,20 @@ func (suite *DiscoveryTestSuite) SetupTest() {
 			HTTPOnly: false,
 		},
 		JWT: config.JWTConfig{
-			Issuer:         "https://test.thunder.io",
+			Issuer:         "https://auth.example.com",
 			ValidityPeriod: 3600,
 		},
+		OAuth: config.OAuthConfig{
+			AuthClass: config.AuthClassConfig{
+				Amrs: []string{"PWD", "OTP"},
+				AcrAMR: map[string][]string{
+					"urn:thunder:acr:password":       {"PWD"},
+					"urn:thunder:acr:generated-code": {"OTP"},
+				},
+			},
+		},
 	}
-	_ = config.InitializeThunderRuntime("test", testConfig)
+	_ = config.InitializeServerRuntime("test", testConfig)
 
 	suite.pkiService = &testPKIService{
 		algorithms: []string{"RS256"},
@@ -92,7 +101,7 @@ func (suite *DiscoveryTestSuite) SetupTest() {
 }
 
 func (suite *DiscoveryTestSuite) TearDownTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 func (suite *DiscoveryTestSuite) TestOAuth2AuthorizationServerMetadata() {
@@ -161,6 +170,8 @@ func (suite *DiscoveryTestSuite) TestOIDCDiscovery() {
 
 	// Verify RFC 9207 advertisement (inherited from embedded OAuth2AuthorizationServerMetadata)
 	assert.True(suite.T(), metadata.AuthorizationResponseIssParameterSupported)
+	assert.Contains(suite.T(), metadata.AcrValuesSupported, "urn:thunder:acr:password")
+	assert.Contains(suite.T(), metadata.AcrValuesSupported, "urn:thunder:acr:generated-code")
 }
 
 // TestGrantTypeIsValid tests the GrantType.IsValid() method
@@ -303,7 +314,7 @@ func (suite *DiscoveryTestSuite) TestInitialize() {
 }
 
 func (suite *DiscoveryTestSuite) TestGetBaseURL_WithPublicHostname() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		Server: config.ServerConfig{
 			PublicURL: "https://public.thunder.io",
@@ -311,19 +322,19 @@ func (suite *DiscoveryTestSuite) TestGetBaseURL_WithPublicHostname() {
 			Port:      8080,
 		},
 		JWT: config.JWTConfig{
-			Issuer: "https://test.thunder.io",
+			Issuer: "https://auth.example.com",
 		},
 	}
-	_ = config.InitializeThunderRuntime("test", testConfig)
+	_ = config.InitializeServerRuntime("test", testConfig)
 
 	service := newDiscoveryService(suite.pkiService)
 	metadata := service.GetOAuth2AuthorizationServerMetadata(context.Background())
 	assert.Contains(suite.T(), metadata.AuthorizationEndpoint, "public.thunder.io")
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 func (suite *DiscoveryTestSuite) TestGetBaseURL_WithHTTPOnly() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		Server: config.ServerConfig{
 			Hostname: "localhost",
@@ -331,15 +342,15 @@ func (suite *DiscoveryTestSuite) TestGetBaseURL_WithHTTPOnly() {
 			HTTPOnly: true,
 		},
 		JWT: config.JWTConfig{
-			Issuer: "https://test.thunder.io",
+			Issuer: "https://auth.example.com",
 		},
 	}
-	_ = config.InitializeThunderRuntime("test", testConfig)
+	_ = config.InitializeServerRuntime("test", testConfig)
 
 	service := newDiscoveryService(suite.pkiService)
 	metadata := service.GetOAuth2AuthorizationServerMetadata(context.Background())
 	assert.Contains(suite.T(), metadata.AuthorizationEndpoint, "http://")
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 func (suite *DiscoveryTestSuite) TestOIDCDiscovery_MultipleKeyAlgorithms() {

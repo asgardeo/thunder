@@ -19,10 +19,10 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "thunder.fullname" . }}-pdb
+  name: {{ include "thunderid.fullname" . }}-pdb
 spec:
   minAvailable: {{ .Values.pdb.minAvailable | quote }}
   selector:
     matchLabels:
-      {{- include "thunder.selectorLabels" . | nindent 6 }}
+      {{- include "thunderid.selectorLabels" . | nindent 6 }}
 {{- end }}

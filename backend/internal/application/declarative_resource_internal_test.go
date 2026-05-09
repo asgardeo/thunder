@@ -22,6 +22,8 @@ import (
 	"context"
 	"encoding/json"
 
+	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
+
 	"github.com/stretchr/testify/mock"
 
 	"testing"
@@ -229,9 +231,9 @@ inbound_auth_config:
 
 	// Verify OAuth configuration was parsed correctly
 	assert.Len(s.T(), appDTO.InboundAuthConfig, 1)
-	assert.Equal(s.T(), model.OAuthInboundAuthType, appDTO.InboundAuthConfig[0].Type)
+	assert.Equal(s.T(), inboundmodel.OAuthInboundAuthType, appDTO.InboundAuthConfig[0].Type)
 
-	oauthConfig := appDTO.InboundAuthConfig[0].OAuthAppConfig
+	oauthConfig := appDTO.InboundAuthConfig[0].OAuthConfig
 	assert.NotNil(s.T(), oauthConfig)
 	assert.Equal(s.T(), "client-123", oauthConfig.ClientID)
 	assert.Equal(s.T(), "secret-456", oauthConfig.ClientSecret)
@@ -344,9 +346,9 @@ inbound_auth_config:
 	mockAppService := NewApplicationServiceInterfaceMock(s.T())
 	mockAppService.EXPECT().ValidateApplication(mock.Anything, mock.Anything).Return(
 		&model.ApplicationProcessedDTO{ID: "public-oauth-app", Name: "Public OAuth Application"},
-		&model.InboundAuthConfigDTO{
-			Type: model.OAuthInboundAuthType,
-			OAuthAppConfig: &model.OAuthAppConfigDTO{
+		&inboundmodel.InboundAuthConfigWithSecret{
+			Type: inboundmodel.OAuthInboundAuthType,
+			OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 				ClientID: "public-client-id-123",
 			},
 		},
@@ -381,9 +383,9 @@ inbound_auth_config:
 	mockAppService := NewApplicationServiceInterfaceMock(s.T())
 	mockAppService.EXPECT().ValidateApplication(mock.Anything, mock.Anything).Return(
 		&model.ApplicationProcessedDTO{ID: "confidential-oauth-app", Name: "Confidential OAuth Application"},
-		&model.InboundAuthConfigDTO{
-			Type: model.OAuthInboundAuthType,
-			OAuthAppConfig: &model.OAuthAppConfigDTO{
+		&inboundmodel.InboundAuthConfigWithSecret{
+			Type: inboundmodel.OAuthInboundAuthType,
+			OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 				ClientID:     "confidential-client-id-123",
 				ClientSecret: "confidential-secret-456",
 			},
@@ -428,9 +430,9 @@ inbound_auth_config:
 		},
 	).Return(
 		&model.ApplicationProcessedDTO{ID: "generated-credentials-app", Name: "Generated Credentials App"},
-		&model.InboundAuthConfigDTO{
-			Type: model.OAuthInboundAuthType,
-			OAuthAppConfig: &model.OAuthAppConfigDTO{
+		&inboundmodel.InboundAuthConfigWithSecret{
+			Type: inboundmodel.OAuthInboundAuthType,
+			OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 				ClientID:     "generated-client-id",
 				ClientSecret: "generated-client-secret",
 			},
@@ -473,14 +475,14 @@ inbound_auth_config:
 	mockAppService.EXPECT().ValidateApplication(mock.Anything, mock.Anything).Run(
 		func(_ context.Context, app *model.ApplicationDTO) {
 			assert.Len(s.T(), app.InboundAuthConfig, 1)
-			assert.Equal(s.T(), model.OAuthInboundAuthType, app.InboundAuthConfig[0].Type)
-			assert.Equal(s.T(), "oauth-client-id", app.InboundAuthConfig[0].OAuthAppConfig.ClientID)
+			assert.Equal(s.T(), inboundmodel.OAuthInboundAuthType, app.InboundAuthConfig[0].Type)
+			assert.Equal(s.T(), "oauth-client-id", app.InboundAuthConfig[0].OAuthConfig.ClientID)
 		},
 	).Return(
 		&model.ApplicationProcessedDTO{ID: "mixed-inbound-app", Name: "Mixed Inbound App"},
-		&model.InboundAuthConfigDTO{
-			Type: model.OAuthInboundAuthType,
-			OAuthAppConfig: &model.OAuthAppConfigDTO{
+		&inboundmodel.InboundAuthConfigWithSecret{
+			Type: inboundmodel.OAuthInboundAuthType,
+			OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 				ClientID:     "oauth-client-id",
 				ClientSecret: "oauth-client-secret",
 			},

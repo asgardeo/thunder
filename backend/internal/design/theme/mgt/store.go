@@ -54,7 +54,7 @@ type themeMgtStore struct {
 func newThemeMgtStore() themeMgtStoreInterface {
 	return &themeMgtStore{
 		dbProvider:   provider.GetDBProvider(),
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
 	}
 }
 

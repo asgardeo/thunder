@@ -139,6 +139,11 @@ func InitiateAuthFlowWithError(appID string, inputs map[string]string) (*ErrorRe
 	return &errorResponse, nil
 }
 
+// ResumeFlow resumes a flow without new inputs or an action selection.
+func ResumeFlow(flowID string) (*FlowStep, error) {
+	return CompleteFlow(flowID, map[string]string{}, "", "")
+}
+
 // CompleteFlow completes the flow with given inputs, action and challenge token
 func CompleteFlow(executionId string, inputs map[string]string, action string, challengeToken string) (
 	*FlowStep, error) {

@@ -17,7 +17,7 @@
 # under the License.
 # ----------------------------------------------------------------------------
 
-$PRODUCT_NAME = "Thunder"
+$PRODUCT_NAME = "ThunderID"
 $PRODUCT_NAME_LOWERCASE = $PRODUCT_NAME.ToLower()
 $BINARY_NAME = $PRODUCT_NAME_LOWERCASE
 

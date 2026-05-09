@@ -40,7 +40,7 @@
 --   3. OS cron (every 60 minutes):
 -- --      */60 * * * * postgres PGPASSWORD=<pass> psql -h <host> -p <port> \
 -- --        -U <user> -d <runtimedb> -c "CALL cleanup_expired_runtimedb_data();" \
--- --        >> /var/log/thunder-cleanup.log 2>&1
+-- --        >> /var/log/thunderid-cleanup.log 2>&1
 -- ============================================================
 
 CREATE OR REPLACE PROCEDURE cleanup_expired_runtimedb_data()
@@ -50,11 +50,11 @@ DECLARE
     v_now TIMESTAMP := NOW() AT TIME ZONE 'UTC';
 BEGIN
     -- FLOW_USER_DATA is cascade-deleted via FK when FLOW_CONTEXT rows are deleted.
-    DELETE FROM FLOW_CONTEXT          WHERE EXPIRY_TIME < v_now;
-    DELETE FROM AUTHORIZATION_CODE    WHERE EXPIRY_TIME < v_now;
-    DELETE FROM AUTHORIZATION_REQUEST WHERE EXPIRY_TIME < v_now;
-    DELETE FROM WEBAUTHN_SESSION      WHERE EXPIRY_TIME < v_now;
-    DELETE FROM ATTRIBUTE_CACHE       WHERE EXPIRY_TIME < v_now;
-    DELETE FROM PAR_REQUEST           WHERE EXPIRY_TIME < v_now;
+    DELETE FROM "FLOW_CONTEXT"          WHERE EXPIRY_TIME < v_now;
+    DELETE FROM "AUTHORIZATION_CODE"    WHERE EXPIRY_TIME < v_now;
+    DELETE FROM "AUTHORIZATION_REQUEST" WHERE EXPIRY_TIME < v_now;
+    DELETE FROM "WEBAUTHN_SESSION"      WHERE EXPIRY_TIME < v_now;
+    DELETE FROM "ATTRIBUTE_CACHE"       WHERE EXPIRY_TIME < v_now;
+    DELETE FROM "PAR_REQUEST"           WHERE EXPIRY_TIME < v_now;
 END;
 $$;

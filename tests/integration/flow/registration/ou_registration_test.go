@@ -338,7 +338,7 @@ var (
 		ClientID:                  "ou_reg_flow_test_client",
 		ClientSecret:              "ou_reg_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
-		AllowedUserTypes:          []string{dynamicUserSchema.Name},
+		AllowedUserTypes:          []string{dynamicEntityType.Name},
 		AssertionConfig: map[string]interface{}{
 			"userAttributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
@@ -351,7 +351,7 @@ var (
 		ClientID:                  "ou_sms_reg_flow_test_client",
 		ClientSecret:              "ou_sms_reg_flow_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},
-		AllowedUserTypes:          []string{dynamicUserSchema.Name},
+		AllowedUserTypes:          []string{dynamicEntityType.Name},
 		AssertionConfig: map[string]interface{}{
 			"userAttributes": []string{"userType", "ouId", "ouName", "ouHandle"},
 		},
@@ -371,7 +371,7 @@ var (
 		Parent:      nil,
 	}
 
-	dynamicUserSchema = testutils.UserSchema{
+	dynamicEntityType = testutils.UserType{
 		Name: "dynamic-user-type",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -406,7 +406,7 @@ type OURegistrationFlowTestSuite struct {
 	basicFlowTestOUID  string
 	smsFlowTestAppID   string
 	smsFlowTestOUID    string
-	userSchemaID       string
+	entityTypeID       string
 }
 
 func TestOURegistrationFlowTestSuite(t *testing.T) {
@@ -430,14 +430,14 @@ func (ts *OURegistrationFlowTestSuite) SetupSuite() {
 	}
 	ts.smsFlowTestOUID = smsOUID
 
-	// Create dynamic user schema
-	dynamicUserSchema.OUID = ts.basicFlowTestOUID
-	dynamicUserSchema.AllowSelfRegistration = true
-	schemaID, err := testutils.CreateUserType(dynamicUserSchema)
+	// Create dynamic user type
+	dynamicEntityType.OUID = ts.basicFlowTestOUID
+	dynamicEntityType.AllowSelfRegistration = true
+	schemaID, err := testutils.CreateUserType(dynamicEntityType)
 	if err != nil {
-		ts.T().Fatalf("Failed to create dynamic user schema during setup: %v", err)
+		ts.T().Fatalf("Failed to create dynamic user type during setup: %v", err)
 	}
-	ts.userSchemaID = schemaID
+	ts.entityTypeID = schemaID
 
 	// Start mock notification server for SMS flow
 	ts.mockServer = testutils.NewMockNotificationServer(mockNotificationServerPortOU)
@@ -567,10 +567,10 @@ func (ts *OURegistrationFlowTestSuite) TearDownSuite() {
 		}
 	}
 
-	// Delete user schema
-	if ts.userSchemaID != "" {
-		if err := testutils.DeleteUserType(ts.userSchemaID); err != nil {
-			ts.T().Logf("Failed to delete dynamic user schema during teardown: %v", err)
+	// delete user type
+	if ts.entityTypeID != "" {
+		if err := testutils.DeleteUserType(ts.entityTypeID); err != nil {
+			ts.T().Logf("Failed to delete dynamic user type during teardown: %v", err)
 		}
 	}
 }
@@ -617,7 +617,7 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOU() {
 
 			jwtClaims, err := testutils.DecodeJWT(flowStep.Assertion)
 			ts.Require().NoError(err)
-			ts.Require().Equal(dynamicUserSchema.Name, jwtClaims.UserType)
+			ts.Require().Equal(dynamicEntityType.Name, jwtClaims.UserType)
 			ts.Require().NotEmpty(jwtClaims.OUID)
 
 			user, err := testutils.FindUserByAttribute("username", username)
@@ -635,7 +635,7 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOU() {
 			ts.Require().Equal(tc.ouHandle, ou.Handle)
 			ts.Require().NotNil(ou.Parent, "Created OU should have a parent")
 			ts.Require().Equal(ts.basicFlowTestOUID, *ou.Parent,
-				"Created OU should be a child of the user schema's OU")
+				"Created OU should be a child of the user type's OU")
 
 			if tc.ouDescription != "" {
 				ts.Require().Equal(tc.ouDescription, ou.Description)
@@ -797,7 +797,7 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 
 			jwtClaims, err := testutils.DecodeJWT(flowStep.Assertion)
 			ts.Require().NoError(err)
-			ts.Require().Equal(dynamicUserSchema.Name, jwtClaims.UserType)
+			ts.Require().Equal(dynamicEntityType.Name, jwtClaims.UserType)
 			ts.Require().NotEmpty(jwtClaims.OUID)
 
 			user, err := testutils.FindUserByAttribute("mobileNumber", mobileNumber)
@@ -815,7 +815,7 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 			ts.Require().Equal(tc.ouHandle, ou.Handle)
 			ts.Require().NotNil(ou.Parent, "Created OU should have a parent")
 			ts.Require().Equal(ts.basicFlowTestOUID, *ou.Parent,
-				"Created OU should be a child of the user schema's OU")
+				"Created OU should be a child of the user type's OU")
 
 			if tc.ouDescription != "" {
 				ts.Require().Equal(tc.ouDescription, ou.Description)

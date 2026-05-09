@@ -1,6 +1,6 @@
 # Authentication Demo - Postman Collection
 
-This Postman collection demonstrates the main authentication/registration capabilities in Thunder. It showcases three different approaches to authenticate users and includes resources setup for running the demos. Additionally, it includes one scenario for user registration.
+This Postman collection demonstrates the main authentication/registration capabilities in ThunderID. It showcases three different approaches to authenticate users and includes resources setup for running the demos. Additionally, it includes one scenario for user registration.
 
 ## Demo Scenarios
 
@@ -54,7 +54,7 @@ User self-registration flows:
 
 ## Prerequisites
 
-1. A running Thunder server
+1. A running ThunderID server
 2. Postman desktop app or web version
 3. External service credentials (for social login demos):
    - Google OAuth credentials

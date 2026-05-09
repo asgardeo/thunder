@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/asgardeo/thunder/internal/entity"
+	"github.com/asgardeo/thunder/internal/entitytype"
 	"github.com/asgardeo/thunder/internal/group"
 	oupkg "github.com/asgardeo/thunder/internal/ou"
 	resourcepkg "github.com/asgardeo/thunder/internal/resource"
@@ -30,7 +31,6 @@ import (
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/system/transaction"
-	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 // Initialize initializes the role service and registers its routes.
@@ -40,7 +40,7 @@ func Initialize(
 	groupService group.GroupServiceInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	resourceService resourcepkg.ResourceServiceInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	entityTypeService entitytype.EntityTypeServiceInterface,
 ) (RoleServiceInterface, declarativeresource.ResourceExporter, error) {
 	// Step 1: Initialize store and transactioner based on store mode
 	roleStore, transactioner, err := initializeStore()
@@ -51,7 +51,7 @@ func Initialize(
 	// Step 2: Create service with store
 	roleService := newRoleService(
 		roleStore, entityService, groupService, ouService, resourceService,
-		userSchemaService, transactioner,
+		entityTypeService, transactioner,
 	)
 	roleHandler := newRoleHandler(roleService)
 	registerRoutes(mux, roleHandler)

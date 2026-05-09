@@ -36,6 +36,7 @@ import (
 // every logger.IsDebugEnabled() branch in service.go is exercised.
 func TestMain(m *testing.M) {
 	_ = os.Setenv("LOG_LEVEL", "debug")
+	security.InitSystemPermissions("")
 	os.Exit(m.Run())
 }
 
@@ -446,15 +447,15 @@ func (s *SystemAuthzTestSuite) TestSetOUHierarchyResolver_EnablesInheritancePoli
 	s.service.SetOUHierarchyResolver(resolver)
 	defer s.service.SetOUHierarchyResolver(nil) // restore nil for subsequent tests
 
-	ctx := buildCtxWithOU("system:userschema:view", "child-ou")
+	ctx := buildCtxWithOU("system:usertype:view", "child-ou")
 	actionCtx := &ActionContext{
 		OUID:         "parent-ou",
-		ResourceType: security.ResourceTypeUserSchema,
+		ResourceType: security.ResourceTypeUserType,
 		ResourceID:   "schema-1",
 	}
 
 	// IsActionAllowed: child-ou caller reading a schema owned by parent-ou → allowed.
-	allowed, svcErr := s.service.IsActionAllowed(ctx, security.ActionReadUserSchema, actionCtx)
+	allowed, svcErr := s.service.IsActionAllowed(ctx, security.ActionReadUserType, actionCtx)
 	assert.True(s.T(), allowed)
 	assert.Nil(s.T(), svcErr)
 }
@@ -468,15 +469,15 @@ func (s *SystemAuthzTestSuite) TestInheritancePolicy_DeniesWriteFromChildOU() {
 	s.service.SetOUHierarchyResolver(resolver)
 	defer s.service.SetOUHierarchyResolver(nil)
 
-	ctx := buildCtxWithOU("system:userschema", "child-ou")
+	ctx := buildCtxWithOU("system:usertype", "child-ou")
 	actionCtx := &ActionContext{
 		OUID:         "parent-ou",
-		ResourceType: security.ResourceTypeUserSchema,
+		ResourceType: security.ResourceTypeUserType,
 	}
 
-	// UpdateUserSchema is a write action → not inheritance-eligible → falls back to
+	// UpdateEntityType is a write action → not inheritance-eligible → falls back to
 	// ouMembershipPolicy → child-ou ≠ parent-ou → denied.
-	allowed, svcErr := s.service.IsActionAllowed(ctx, security.ActionUpdateUserSchema, actionCtx)
+	allowed, svcErr := s.service.IsActionAllowed(ctx, security.ActionUpdateUserType, actionCtx)
 	assert.False(s.T(), allowed)
 	assert.Nil(s.T(), svcErr)
 }
@@ -488,10 +489,10 @@ func (s *SystemAuthzTestSuite) TestGetAccessibleResources_InheritancePolicy_Retu
 	s.service.SetOUHierarchyResolver(resolver)
 	defer s.service.SetOUHierarchyResolver(nil)
 
-	ctx := buildCtxWithOU("system:userschema:view", "child-ou")
+	ctx := buildCtxWithOU("system:usertype:view", "child-ou")
 
 	result, svcErr := s.service.GetAccessibleResources(
-		ctx, security.ActionListUserSchemas, security.ResourceTypeUserSchema)
+		ctx, security.ActionListUserTypes, security.ResourceTypeUserType)
 	assert.Nil(s.T(), svcErr)
 	assert.NotNil(s.T(), result)
 	assert.False(s.T(), result.AllAllowed)
@@ -500,20 +501,20 @@ func (s *SystemAuthzTestSuite) TestGetAccessibleResources_InheritancePolicy_Retu
 
 func (s *SystemAuthzTestSuite) TestSetOUHierarchyResolver_NilResolver_FallsBackToMembershipPolicy() {
 	// No resolver set (nil) → ouMembershipPolicy is used, same-OU access only.
-	ctx := buildCtxWithOU("system:userschema:view", "ou1")
+	ctx := buildCtxWithOU("system:usertype:view", "ou1")
 	actionCtx := &ActionContext{
 		OUID:         "ou1",
-		ResourceType: security.ResourceTypeUserSchema,
+		ResourceType: security.ResourceTypeUserType,
 	}
 
 	// Same OU → ouMembershipPolicy allows.
-	allowed, svcErr := s.service.IsActionAllowed(ctx, security.ActionReadUserSchema, actionCtx)
+	allowed, svcErr := s.service.IsActionAllowed(ctx, security.ActionReadUserType, actionCtx)
 	assert.True(s.T(), allowed)
 	assert.Nil(s.T(), svcErr)
 
 	// Different OU → ouMembershipPolicy denies.
 	actionCtx.OUID = "other-ou"
-	allowed, svcErr = s.service.IsActionAllowed(ctx, security.ActionReadUserSchema, actionCtx)
+	allowed, svcErr = s.service.IsActionAllowed(ctx, security.ActionReadUserType, actionCtx)
 	assert.False(s.T(), allowed)
 	assert.Nil(s.T(), svcErr)
 }

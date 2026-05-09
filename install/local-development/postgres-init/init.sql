@@ -9,7 +9,7 @@ CREATE DATABASE userdb;
 
 -- Run db2 initialization
 \connect configdb
-\i /docker-entrypoint-initdb.d/thunder-postgres.sql
+\i /docker-entrypoint-initdb.d/config-postgres.sql
 
 -- Run db3 initialization
 \connect userdb

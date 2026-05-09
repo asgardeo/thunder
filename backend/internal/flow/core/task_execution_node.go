@@ -166,8 +166,8 @@ func (n *taskExecutionNode) enrichRuntimeData(ctx *NodeContext) {
 		ctx.RuntimeData = make(map[string]string)
 	}
 
-	if ctx.AppID != "" {
-		ctx.RuntimeData["applicationId"] = ctx.AppID
+	if ctx.EntityID != "" {
+		ctx.RuntimeData["applicationId"] = ctx.EntityID
 	}
 
 	if idpID, ok := ctx.NodeProperties["idpId"].(string); ok && idpID != "" {

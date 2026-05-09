@@ -68,7 +68,7 @@ func newSMTPClient(config smtpConfig) (EmailClientInterface, error) {
 // Returns an error if the configuration is invalid (e.g., missing sender address)
 // or if the runtime is not initialized.
 func NewSMTPClientFromConfig() (EmailClientInterface, error) {
-	emailConfig := config.GetThunderRuntime().Config.Email.SMTP
+	emailConfig := config.GetServerRuntime().Config.Email.SMTP
 
 	enableStartTLS := true
 	if emailConfig.EnableStartTLS != nil {

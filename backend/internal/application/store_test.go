@@ -41,26 +41,28 @@ func TestApplicationStoreTestSuite(t *testing.T) {
 
 func (suite *ApplicationStoreTestSuite) createTestApplication() model.ApplicationProcessedDTO {
 	return model.ApplicationProcessedDTO{
-		ID:                        "app1",
-		Name:                      "Test App 1",
-		Description:               "Test application description",
-		AuthFlowID:                "auth_flow_1",
-		RegistrationFlowID:        "reg_flow_1",
-		IsRegistrationFlowEnabled: true,
-		URL:                       "https://example.com",
-		LogoURL:                   "https://example.com/logo.png",
-		TosURI:                    "https://example.com/tos",
-		PolicyURI:                 "https://example.com/policy",
-		Contacts:                  []string{"contact@example.com", "support@example.com"},
-		Assertion: &inboundmodel.AssertionConfig{
-			ValidityPeriod: 3600,
-			UserAttributes: []string{"email", "name", "sub"},
+		ID:          "app1",
+		Name:        "Test App 1",
+		Description: "Test application description",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:                "auth_flow_1",
+			RegistrationFlowID:        "reg_flow_1",
+			IsRegistrationFlowEnabled: true,
+			Assertion: &inboundmodel.AssertionConfig{
+				ValidityPeriod: 3600,
+				UserAttributes: []string{"email", "name", "sub"},
+			},
 		},
-		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+		URL:       "https://example.com",
+		LogoURL:   "https://example.com/logo.png",
+		TosURI:    "https://example.com/tos",
+		PolicyURI: "https://example.com/policy",
+		Contacts:  []string{"contact@example.com", "support@example.com"},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &inboundmodel.OAuthClient{
-					AppID:        "app1",
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthClient{
+					ID:           "app1",
 					ClientID:     "client_app1",
 					RedirectURIs: []string{"https://example.com/callback", "https://example.com/cb2"},
 					GrantTypes: []oauth2const.GrantType{
@@ -92,13 +94,13 @@ func (suite *ApplicationStoreTestSuite) createTestApplication() model.Applicatio
 	}
 }
 
-// --- Tests for buildOAuthConfigData ---
+// --- Tests for buildOAuthProfileFromProcessed ---
 
-func (suite *ApplicationStoreTestSuite) TestBuildOAuthConfigData_Success() {
+func (suite *ApplicationStoreTestSuite) TestBuildOAuthProfileFromProcessed_Success() {
 	app := suite.createTestApplication()
 	inboundAuthConfig := app.InboundAuthConfig[0]
 
-	cfg := buildOAuthConfigData(inboundAuthConfig)
+	cfg := buildOAuthProfileFromProcessed(inboundAuthConfig)
 
 	suite.NotNil(cfg)
 	suite.Equal([]string{"authorization_code", "refresh_token"}, cfg.GrantTypes)
@@ -115,23 +117,23 @@ func (suite *ApplicationStoreTestSuite) TestBuildOAuthConfigData_Success() {
 	suite.NotNil(cfg.ScopeClaims)
 }
 
-func (suite *ApplicationStoreTestSuite) TestBuildOAuthConfigData_WithoutToken() {
+func (suite *ApplicationStoreTestSuite) TestBuildOAuthProfileFromProcessed_WithoutToken() {
 	app := suite.createTestApplication()
 	inboundAuthConfig := app.InboundAuthConfig[0]
-	inboundAuthConfig.OAuthAppConfig.Token = nil
+	inboundAuthConfig.OAuthConfig.Token = nil
 
-	cfg := buildOAuthConfigData(inboundAuthConfig)
+	cfg := buildOAuthProfileFromProcessed(inboundAuthConfig)
 
 	suite.NotNil(cfg)
 	suite.Nil(cfg.Token)
 }
 
-func (suite *ApplicationStoreTestSuite) TestBuildOAuthConfigData_WithoutAccessToken() {
+func (suite *ApplicationStoreTestSuite) TestBuildOAuthProfileFromProcessed_WithoutAccessToken() {
 	app := suite.createTestApplication()
 	inboundAuthConfig := app.InboundAuthConfig[0]
-	inboundAuthConfig.OAuthAppConfig.Token.AccessToken = nil
+	inboundAuthConfig.OAuthConfig.Token.AccessToken = nil
 
-	cfg := buildOAuthConfigData(inboundAuthConfig)
+	cfg := buildOAuthProfileFromProcessed(inboundAuthConfig)
 
 	suite.NotNil(cfg)
 	suite.NotNil(cfg.Token)
@@ -139,12 +141,12 @@ func (suite *ApplicationStoreTestSuite) TestBuildOAuthConfigData_WithoutAccessTo
 	suite.NotNil(cfg.Token.IDToken)
 }
 
-func (suite *ApplicationStoreTestSuite) TestBuildOAuthConfigData_WithoutIDToken() {
+func (suite *ApplicationStoreTestSuite) TestBuildOAuthProfileFromProcessed_WithoutIDToken() {
 	app := suite.createTestApplication()
 	inboundAuthConfig := app.InboundAuthConfig[0]
-	inboundAuthConfig.OAuthAppConfig.Token.IDToken = nil
+	inboundAuthConfig.OAuthConfig.Token.IDToken = nil
 
-	cfg := buildOAuthConfigData(inboundAuthConfig)
+	cfg := buildOAuthProfileFromProcessed(inboundAuthConfig)
 
 	suite.NotNil(cfg)
 	suite.NotNil(cfg.Token)
@@ -152,15 +154,15 @@ func (suite *ApplicationStoreTestSuite) TestBuildOAuthConfigData_WithoutIDToken(
 	suite.Nil(cfg.Token.IDToken)
 }
 
-func (suite *ApplicationStoreTestSuite) TestBuildOAuthConfigData_WithUserInfo() {
+func (suite *ApplicationStoreTestSuite) TestBuildOAuthProfileFromProcessed_WithUserInfo() {
 	app := suite.createTestApplication()
 	inboundAuthConfig := app.InboundAuthConfig[0]
-	inboundAuthConfig.OAuthAppConfig.UserInfo = &inboundmodel.UserInfoConfig{
+	inboundAuthConfig.OAuthConfig.UserInfo = &inboundmodel.UserInfoConfig{
 		ResponseType:   "jwt",
 		UserAttributes: []string{"email", "name"},
 	}
 
-	cfg := buildOAuthConfigData(inboundAuthConfig)
+	cfg := buildOAuthProfileFromProcessed(inboundAuthConfig)
 
 	suite.NotNil(cfg)
 	suite.NotNil(cfg.UserInfo)
@@ -168,7 +170,7 @@ func (suite *ApplicationStoreTestSuite) TestBuildOAuthConfigData_WithUserInfo() 
 	suite.Len(cfg.UserInfo.UserAttributes, 2)
 }
 
-func (suite *ApplicationStoreTestSuite) TestBuildOAuthConfigData_NilOAuthConfig() {
-	cfg := buildOAuthConfigData(model.InboundAuthConfigProcessedDTO{})
+func (suite *ApplicationStoreTestSuite) TestBuildOAuthProfileFromProcessed_NilOAuthConfig() {
+	cfg := buildOAuthProfileFromProcessed(inboundmodel.InboundAuthConfigProcessed{})
 	suite.Nil(cfg)
 }

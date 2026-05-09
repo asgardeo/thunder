@@ -47,7 +47,7 @@ var (
 		Parent:      nil,
 	}
 
-	refreshTokenTestUserSchema = testutils.UserSchema{
+	refreshTokenTestUserType = testutils.UserType{
 		Name: "refresh-token-test-person",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -156,7 +156,7 @@ var (
 type RefreshTokenTestSuite struct {
 	suite.Suite
 	applicationID string
-	userSchemaID  string
+	entityTypeID  string
 	authFlowID    string
 	ouID          string
 	userID        string
@@ -175,11 +175,11 @@ func (ts *RefreshTokenTestSuite) SetupSuite() {
 	ts.Require().NoError(err, "Failed to create test organization unit")
 	ts.ouID = ouID
 
-	// Create user schema.
-	refreshTokenTestUserSchema.OUID = ouID
-	schemaID, err := testutils.CreateUserType(refreshTokenTestUserSchema)
+	// Create user type.
+	refreshTokenTestUserType.OUID = ouID
+	schemaID, err := testutils.CreateUserType(refreshTokenTestUserType)
 	ts.Require().NoError(err, "Failed to create test user type")
-	ts.userSchemaID = schemaID
+	ts.entityTypeID = schemaID
 
 	// Create authentication flow.
 	flowID, err := testutils.CreateFlow(refreshTokenTestAuthFlow)
@@ -274,8 +274,8 @@ func (ts *RefreshTokenTestSuite) TearDownSuite() {
 		}
 	}
 
-	if ts.userSchemaID != "" {
-		if err := testutils.DeleteUserType(ts.userSchemaID); err != nil {
+	if ts.entityTypeID != "" {
+		if err := testutils.DeleteUserType(ts.entityTypeID); err != nil {
 			ts.T().Logf("Failed to delete test user type: %v", err)
 		}
 	}

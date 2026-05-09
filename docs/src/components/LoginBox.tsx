@@ -16,8 +16,8 @@
  * under the License.
  */
 
+import {Box, Typography, TextField, Button, Divider, Card, FormControl, FormLabel, useTheme} from '@wso2/oxygen-ui';
 import React, {useCallback, useEffect, useRef} from 'react';
-import {Box, Typography, TextField, Button, Divider, Card, FormControl, FormLabel} from '@wso2/oxygen-ui';
 import useIsDarkMode from '../hooks/useIsDarkMode';
 
 interface LoginBoxProps {
@@ -29,6 +29,7 @@ interface LoginBoxProps {
 
 export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}: LoginBoxProps) {
   const isDark = useIsDarkMode();
+  const theme = useTheme();
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Clear entry animation after it plays so transitions work smoothly on hover.
@@ -37,9 +38,12 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
     const el = cardRef.current;
 
     if (!el) return;
-    const timer = setTimeout(() => {
-      el.classList.add('entry-done');
-    }, (delay + 1) * 1000 + 200);
+    const timer = setTimeout(
+      () => {
+        el.classList.add('entry-done');
+      },
+      (delay + 1) * 1000 + 200,
+    );
 
     return () => clearTimeout(timer);
   }, [delay]);
@@ -70,8 +74,8 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
             '.MuiCard-root:hover &': {
               transform: 'scale(1.05)',
               filter: isDark
-                ? 'drop-shadow(0 0 6px rgba(255, 140, 0, 0.15))'
-                : 'drop-shadow(0 0 6px rgba(255, 107, 0, 0.1))',
+                ? `drop-shadow(0 0 6px rgba(${theme.vars?.palette.primary.main} / 0.15))`
+                : `drop-shadow(0 0 6px rgba(${theme.vars?.palette.primary.main} / 0.1))`,
             },
           }}
         >
@@ -170,8 +174,8 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
           mb: 2.5,
           py: 1.3,
           borderRadius: 10,
-          borderColor: !isDark ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
-          color: !isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+          borderColor: 'divider',
+          color: 'text.secondary',
           bgcolor: !isDark ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)',
           '&:hover': {
             borderColor: !isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)',
@@ -181,7 +185,7 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
       >
         Continue
       </Button>
-      <Divider sx={{my: 2.5, borderColor: !isDark ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'}}>
+      <Divider sx={{my: 2.5, borderColor: 'divider'}}>
         <Typography variant="body2" sx={{fontSize: '0.75rem', opacity: 0.6}}>
           OR
         </Typography>
@@ -197,7 +201,7 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
               height: 18,
               display: 'flex',
               alignItems: 'center',
-              color: !isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+              color: 'text.secondary',
             }}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" style={{opacity: 0.8}}>
@@ -225,8 +229,8 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
           mb: 1.5,
           py: 1.3,
           borderRadius: 10,
-          borderColor: !isDark ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
-          color: !isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+          borderColor: 'divider',
+          color: 'text.secondary',
           bgcolor: !isDark ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)',
           '&:hover': {
             borderColor: !isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)',
@@ -247,7 +251,7 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
               height: 18,
               display: 'flex',
               alignItems: 'center',
-              color: !isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+              color: 'text.secondary',
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{opacity: 0.8}}>
@@ -262,8 +266,8 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
           textTransform: 'none',
           py: 1.3,
           borderRadius: 10,
-          borderColor: !isDark ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
-          color: !isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+          borderColor: 'divider',
+          color: 'text.secondary',
           bgcolor: !isDark ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)',
           '&:hover': {
             borderColor: !isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)',
@@ -312,8 +316,8 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
             '.MuiCard-root:hover &': {
               transform: 'scale(1.05)',
               filter: isDark
-                ? 'drop-shadow(0 0 6px rgba(255, 140, 0, 0.15))'
-                : 'drop-shadow(0 0 6px rgba(255, 107, 0, 0.1))',
+                ? `drop-shadow(0 0 6px rgba(${theme.vars?.palette.primary.main} / 0.15))`
+                : `drop-shadow(0 0 6px rgba(${theme.vars?.palette.primary.main} / 0.1))`,
             },
           }}
         >
@@ -393,8 +397,8 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
           textTransform: 'none',
           py: 1.3,
           borderRadius: 10,
-          borderColor: !isDark ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
-          color: !isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+          borderColor: 'divider',
+          color: 'text.secondary',
           bgcolor: !isDark ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)',
           '&:hover': {
             borderColor: !isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)',
@@ -443,8 +447,8 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
             '.MuiCard-root:hover &': {
               transform: 'scale(1.05)',
               filter: isDark
-                ? 'drop-shadow(0 0 6px rgba(255, 140, 0, 0.15))'
-                : 'drop-shadow(0 0 6px rgba(255, 107, 0, 0.1))',
+                ? `drop-shadow(0 0 6px rgba(${theme.vars?.palette.primary.main} / 0.15))`
+                : `drop-shadow(0 0 6px rgba(${theme.vars?.palette.primary.main} / 0.1))`,
             },
           }}
         >
@@ -518,8 +522,8 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
           textTransform: 'none',
           py: 1.3,
           borderRadius: 10,
-          borderColor: !isDark ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)',
-          color: !isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+          borderColor: 'divider',
+          color: 'text.secondary',
           bgcolor: !isDark ? 'rgba(0, 0, 0, 0.03)' : 'rgba(255, 255, 255, 0.03)',
           '&:hover': {
             borderColor: !isDark ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.25)',
@@ -588,12 +592,15 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
         transition: 'none',
         '&.entry-done': {
           willChange: 'auto',
-          transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition:
+            'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
         },
-        bgcolor: isDark ? '#14141e' : '#ffffff',
+        bgcolor: 'background.paper',
         // Glowing border
         border: '1px solid',
-        borderColor: isDark ? 'rgba(255, 140, 0, 0.15)' : 'rgba(255, 107, 0, 0.12)',
+        borderColor: isDark
+          ? `rgba(${theme.vars?.palette.primary.main} / 0.15)`
+          : `rgba(${theme.vars?.palette.primary.main} / 0.12)`,
         // Shimmer sweep overlay — very subtle
         overflow: 'hidden',
         position: 'relative',
@@ -606,8 +613,8 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
           opacity: 0,
           transition: 'opacity 0.4s ease',
           background: isDark
-            ? 'radial-gradient(circle 180px at var(--mouse-x) var(--mouse-y), rgba(255, 140, 0, 0.07) 0%, transparent 100%)'
-            : 'radial-gradient(circle 180px at var(--mouse-x) var(--mouse-y), rgba(255, 107, 0, 0.05) 0%, transparent 100%)',
+            ? `radial-gradient(circle 180px at var(--mouse-x) var(--mouse-y), rgba(${theme.vars?.palette.primary.main} / 0.07) 0%, transparent 100%)`
+            : `radial-gradient(circle 180px at var(--mouse-x) var(--mouse-y), rgba(${theme.vars?.palette.primary.main} / 0.05) 0%, transparent 100%)`,
         },
         '&:hover > .paint-fill-overlay': {
           opacity: 1,
@@ -635,8 +642,8 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
           borderRadius: 'inherit',
           padding: '1px',
           background: isDark
-            ? 'linear-gradient(135deg, rgba(255, 140, 0, 0.25), transparent 40%, transparent 60%, rgba(255, 140, 0, 0.15))'
-            : 'linear-gradient(135deg, rgba(255, 107, 0, 0.15), transparent 40%, transparent 60%, rgba(255, 107, 0, 0.1))',
+            ? `linear-gradient(135deg, rgba(${theme.vars?.palette.primary.main} / 0.25), transparent 40%, transparent 60%, rgba(${theme.vars?.palette.primary.main} / 0.15))`
+            : `linear-gradient(135deg, rgba(${theme.vars?.palette.primary.main} / 0.15), transparent 40%, transparent 60%, rgba(${theme.vars?.palette.primary.main} / 0.1))`,
           mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
           maskComposite: 'exclude',
           WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
@@ -652,7 +659,9 @@ export default function LoginBox({variant, delay = 0, sideCard = false, sx = {}}
           : 'linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, transparent 40%)',
         // Hover: border brightens subtly
         '&:hover': {
-          borderColor: isDark ? 'rgba(255, 140, 0, 0.22)' : 'rgba(255, 107, 0, 0.18)',
+          borderColor: isDark
+            ? `rgba(${theme.vars?.palette.primary.main} / 0.22)`
+            : `rgba(${theme.vars?.palette.primary.main} / 0.18)`,
         },
         ...sx,
       }}

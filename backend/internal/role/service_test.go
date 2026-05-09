@@ -35,10 +35,10 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/utils"
 	"github.com/asgardeo/thunder/tests/mocks/entitymock"
+	"github.com/asgardeo/thunder/tests/mocks/entitytypemock"
 	"github.com/asgardeo/thunder/tests/mocks/groupmock"
 	"github.com/asgardeo/thunder/tests/mocks/oumock"
 	"github.com/asgardeo/thunder/tests/mocks/resourcemock"
-	"github.com/asgardeo/thunder/tests/mocks/userschemamock"
 )
 
 const (
@@ -67,7 +67,7 @@ type RoleServiceTestSuite struct {
 	mockGroupService      *groupmock.GroupServiceInterfaceMock
 	mockOUService         *oumock.OrganizationUnitServiceInterfaceMock
 	mockResourceService   *resourcemock.ResourceServiceInterfaceMock
-	mockUserSchemaService *userschemamock.UserSchemaServiceInterfaceMock
+	mockEntityTypeService *entitytypemock.EntityTypeServiceInterfaceMock
 	transactioner         *fakeTransactioner
 	service               RoleServiceInterface
 }
@@ -83,8 +83,8 @@ func (suite *RoleServiceTestSuite) SetupTest() {
 			Enabled: false,
 		},
 	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("/tmp/test", testConfig)
 	if err != nil {
 		suite.Fail("Failed to initialize runtime", err)
 	}
@@ -94,7 +94,7 @@ func (suite *RoleServiceTestSuite) SetupTest() {
 	suite.mockGroupService = groupmock.NewGroupServiceInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	suite.mockResourceService = resourcemock.NewResourceServiceInterfaceMock(suite.T())
-	suite.mockUserSchemaService = userschemamock.NewUserSchemaServiceInterfaceMock(suite.T())
+	suite.mockEntityTypeService = entitytypemock.NewEntityTypeServiceInterfaceMock(suite.T())
 	suite.transactioner = &fakeTransactioner{}
 	suite.service = newRoleService(
 		suite.mockStore,
@@ -102,14 +102,14 @@ func (suite *RoleServiceTestSuite) SetupTest() {
 		suite.mockGroupService,
 		suite.mockOUService,
 		suite.mockResourceService,
-		suite.mockUserSchemaService,
+		suite.mockEntityTypeService,
 		suite.transactioner,
 	)
 }
 
 // TearDownTest cleans up after each test
 func (suite *RoleServiceTestSuite) TearDownTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 // GetRoleList Tests
@@ -579,12 +579,12 @@ func (suite *RoleServiceTestSuite) TestCreateRole_DeclarativeMode_Denied() {
 			Store: "declarative",
 		},
 	}
-	config.ResetThunderRuntime()
-	initErr := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	config.ResetServerRuntime()
+	initErr := config.InitializeServerRuntime("/tmp/test", testConfig)
 	if initErr != nil {
 		suite.Fail("Failed to initialize runtime", initErr)
 	}
-	defer config.ResetThunderRuntime()
+	defer config.ResetServerRuntime()
 
 	request := RoleCreationDetail{
 		Name: "Test Role",
@@ -608,12 +608,12 @@ func (suite *RoleServiceTestSuite) TestUpdateRole_DeclarativeMode_Denied() {
 			Store: "declarative",
 		},
 	}
-	config.ResetThunderRuntime()
-	initErr := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	config.ResetServerRuntime()
+	initErr := config.InitializeServerRuntime("/tmp/test", testConfig)
 	if initErr != nil {
 		suite.Fail("Failed to initialize runtime", initErr)
 	}
-	defer config.ResetThunderRuntime()
+	defer config.ResetServerRuntime()
 
 	request := RoleUpdateDetail{
 		Name:        "Updated Role",
@@ -1163,12 +1163,12 @@ func (suite *RoleServiceTestSuite) TestDeleteRole_DeclarativeMode_Denied() {
 			Store: "declarative",
 		},
 	}
-	config.ResetThunderRuntime()
-	initErr := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	config.ResetServerRuntime()
+	initErr := config.InitializeServerRuntime("/tmp/test", testConfig)
 	if initErr != nil {
 		suite.Fail("Failed to initialize runtime", initErr)
 	}
-	defer config.ResetThunderRuntime()
+	defer config.ResetServerRuntime()
 
 	suite.mockStore.On("IsRoleExist", mock.Anything, "role1").Return(true, nil)
 	suite.mockStore.On("IsRoleDeclarative", mock.Anything, "role1").Return(true, nil)
@@ -1302,7 +1302,7 @@ func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_Success() 
 		[]string{"group1"}).Return(map[string]*group.Group{
 		"group1": {Name: "Test Group"},
 	}, (*serviceerror.ServiceError)(nil)).Once()
-	suite.mockUserSchemaService.On("GetDisplayAttributesByNames", mock.Anything,
+	suite.mockEntityTypeService.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything,
 		[]string{"employee"}).Return(map[string]string{
 		"employee": "email",
 	}, (*serviceerror.ServiceError)(nil)).Once()
@@ -1426,7 +1426,7 @@ func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_NestedDisp
 			Attributes: json.RawMessage(`{"profile":{"fullName":"Alice Smith"}}`),
 		},
 	}, nil).Once()
-	suite.mockUserSchemaService.On("GetDisplayAttributesByNames", mock.Anything,
+	suite.mockEntityTypeService.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything,
 		[]string{"employee"}).Return(map[string]string{
 		"employee": "profile.fullName",
 	}, (*serviceerror.ServiceError)(nil)).Once()
@@ -1459,7 +1459,7 @@ func (suite *RoleServiceTestSuite) TestGetRoleAssignments_WithDisplay_SchemaServ
 		},
 	}, nil).Once()
 	// Schema service fails — should fall back to user ID
-	suite.mockUserSchemaService.On("GetDisplayAttributesByNames", mock.Anything,
+	suite.mockEntityTypeService.On("GetDisplayAttributesByNames", mock.Anything, mock.Anything,
 		[]string{"employee"}).Return(
 		(map[string]string)(nil), &serviceerror.ServiceError{Code: "INTERNAL_ERROR"},
 	).Once()
@@ -1654,12 +1654,12 @@ func (suite *RoleServiceTestSuite) TestAddAssignments_DeclarativeMode_Denied() {
 			Store: "declarative",
 		},
 	}
-	config.ResetThunderRuntime()
-	initErr := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	config.ResetServerRuntime()
+	initErr := config.InitializeServerRuntime("/tmp/test", testConfig)
 	if initErr != nil {
 		suite.Fail("Failed to initialize runtime", initErr)
 	}
-	defer config.ResetThunderRuntime()
+	defer config.ResetServerRuntime()
 
 	request := []RoleAssignment{
 		{ID: testUserID1, Type: AssigneeTypeUser},
@@ -1775,12 +1775,12 @@ func (suite *RoleServiceTestSuite) TestRemoveAssignments_DeclarativeMode_Denied(
 			Store: "declarative",
 		},
 	}
-	config.ResetThunderRuntime()
-	initErr := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	config.ResetServerRuntime()
+	initErr := config.InitializeServerRuntime("/tmp/test", testConfig)
 	if initErr != nil {
 		suite.Fail("Failed to initialize runtime", initErr)
 	}
-	defer config.ResetThunderRuntime()
+	defer config.ResetServerRuntime()
 
 	request := []RoleAssignment{
 		{ID: "user1", Type: AssigneeTypeUser},

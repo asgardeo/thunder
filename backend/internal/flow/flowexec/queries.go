@@ -26,26 +26,26 @@ var (
 	// QueryCreateFlowContext is the query to create a new flow context.
 	QueryCreateFlowContext = model.DBQuery{
 		ID:    "FLQ-FLOW_CTX-01",
-		Query: "INSERT INTO FLOW_CONTEXT (FLOW_ID, DEPLOYMENT_ID, CONTEXT, EXPIRY_TIME) VALUES ($1, $2, $3, $4)",
+		Query: `INSERT INTO "FLOW_CONTEXT" (FLOW_ID, DEPLOYMENT_ID, CONTEXT, EXPIRY_TIME) VALUES ($1, $2, $3, $4)`,
 	}
 
 	// QueryGetFlowContext is the query to get a flow context by ID.
 	QueryGetFlowContext = model.DBQuery{
 		ID: "FLQ-FLOW_CTX-02",
-		Query: "SELECT FLOW_ID, CONTEXT, EXPIRY_TIME, CREATED_AT, UPDATED_AT FROM FLOW_CONTEXT " +
-			"WHERE FLOW_ID = $1 AND DEPLOYMENT_ID = $2 AND EXPIRY_TIME > $3",
+		Query: `SELECT FLOW_ID, CONTEXT, EXPIRY_TIME, CREATED_AT, UPDATED_AT FROM "FLOW_CONTEXT" ` +
+			`WHERE FLOW_ID = $1 AND DEPLOYMENT_ID = $2 AND EXPIRY_TIME > $3`,
 	}
 
 	// QueryUpdateFlowContext is the query to update a flow context.
 	QueryUpdateFlowContext = model.DBQuery{
 		ID: "FLQ-FLOW_CTX-03",
-		Query: "UPDATE FLOW_CONTEXT SET CONTEXT = $2, UPDATED_AT = CURRENT_TIMESTAMP " +
-			"WHERE FLOW_ID = $1 AND DEPLOYMENT_ID = $3",
+		Query: `UPDATE "FLOW_CONTEXT" SET CONTEXT = $2, UPDATED_AT = CURRENT_TIMESTAMP ` +
+			`WHERE FLOW_ID = $1 AND DEPLOYMENT_ID = $3`,
 	}
 
 	// QueryDeleteFlowContext is the query to delete a flow context.
 	QueryDeleteFlowContext = model.DBQuery{
 		ID:    "FLQ-FLOW_CTX-04",
-		Query: "DELETE FROM FLOW_CONTEXT WHERE FLOW_ID = $1 AND DEPLOYMENT_ID = $2",
+		Query: `DELETE FROM "FLOW_CONTEXT" WHERE FLOW_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 )

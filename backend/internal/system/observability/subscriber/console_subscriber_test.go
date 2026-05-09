@@ -60,7 +60,7 @@ func TestConsoleSubscriber_IsEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config.GetThunderRuntime().Config.Observability.Output.Console.Enabled = tt.enabled
+			config.GetServerRuntime().Config.Observability.Output.Console.Enabled = tt.enabled
 
 			sub := NewConsoleSubscriber()
 			if got := sub.IsEnabled(); got != tt.want {
@@ -82,7 +82,7 @@ func TestConsoleSubscriber_Initialize(t *testing.T) {
 		{
 			name: "successful initialization with json format",
 			config: func() {
-				cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+				cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 				cfg.Enabled = true
 				cfg.Format = formatJSON
 				cfg.Categories = []string{}
@@ -92,7 +92,7 @@ func TestConsoleSubscriber_Initialize(t *testing.T) {
 		{
 			name: "successful initialization with categories",
 			config: func() {
-				cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+				cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 				cfg.Enabled = true
 				cfg.Format = formatJSON
 				cfg.Categories = []string{"observability.authentication", "observability.flows"}
@@ -102,7 +102,7 @@ func TestConsoleSubscriber_Initialize(t *testing.T) {
 		{
 			name: "successful initialization with default format",
 			config: func() {
-				cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+				cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 				cfg.Enabled = true
 				cfg.Format = ""
 				cfg.Categories = []string{}
@@ -148,7 +148,7 @@ func TestConsoleSubscriber_GetID(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
 	cfg.Format = formatJSON
 
@@ -200,7 +200,7 @@ func TestConsoleSubscriber_GetCategories(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			setupTestConfig(t)
-			cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+			cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 			cfg.Enabled = true
 			cfg.Format = formatJSON
 			cfg.Categories = tt.categories
@@ -225,7 +225,7 @@ func TestConsoleSubscriber_OnEvent(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
 	cfg.Format = formatJSON
 
@@ -256,7 +256,7 @@ func TestConsoleSubscriber_OnEventWithCapture(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
 	cfg.Format = formatJSON
 
@@ -314,7 +314,7 @@ func TestConsoleSubscriber_OnEventMultiple(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
 	cfg.Format = formatJSON
 
@@ -354,7 +354,7 @@ func TestConsoleSubscriber_Close(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
 	cfg.Format = formatJSON
 
@@ -385,7 +385,7 @@ func TestConsoleSubscriber_WriteAfterClose(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
 	cfg.Format = formatJSON
 
@@ -440,7 +440,7 @@ func TestConsoleSubscriber_FormatterSelection(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			setupTestConfig(t)
 
-			cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+			cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 			cfg.Enabled = true
 			cfg.Format = tt.format
 
@@ -467,7 +467,7 @@ func TestConsoleSubscriber_EventWithEmptyData(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
 	cfg.Format = formatJSON
 
@@ -509,7 +509,7 @@ func TestConsoleSubscriber_EventWithNilData(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
 	cfg.Format = formatJSON
 
@@ -547,7 +547,7 @@ func BenchmarkConsoleSubscriber_OnEvent(b *testing.B) {
 		_ = devNull.Close()
 	}()
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
 	cfg.Format = formatJSON
 
@@ -587,7 +587,7 @@ func BenchmarkConsoleSubscriber_OnEventComplex(b *testing.B) {
 		_ = devNull.Close()
 	}()
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
 	cfg.Format = formatJSON
 
@@ -664,7 +664,7 @@ func TestConsoleSubscriber_Initialize_EmptyCategoriesDefaultsToAll(t *testing.T)
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
 	cfg.Format = formatJSON
 	cfg.Categories = []string{} // Empty categories
@@ -690,7 +690,7 @@ func TestConsoleSubscriber_MultipleInitializations(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
 	cfg.Format = formatJSON
 
@@ -730,7 +730,7 @@ func TestConsoleSubscriber_OnEventConcurrent(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
 	cfg.Format = formatJSON
 
@@ -813,7 +813,7 @@ func TestConsoleSubscriber_OnEvent_DifferentEventStatuses(t *testing.T) {
 	setupTestConfig(t)
 	defer resetTestConfig()
 
-	cfg := &config.GetThunderRuntime().Config.Observability.Output.Console
+	cfg := &config.GetServerRuntime().Config.Observability.Output.Console
 	cfg.Enabled = true
 	cfg.Format = formatJSON
 

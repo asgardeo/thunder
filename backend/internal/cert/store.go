@@ -49,7 +49,7 @@ type certificateStore struct {
 func newCertificateStore() certificateStoreInterface {
 	return &certificateStore{
 		dbProvider:   dbprovider.GetDBProvider(),
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
 	}
 }
 

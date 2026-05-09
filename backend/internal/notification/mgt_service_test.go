@@ -50,7 +50,7 @@ func TestNotificationSenderMgtServiceTestSuite(t *testing.T) {
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) SetupSuite() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		Crypto: config.CryptoConfig{
 			Encryption: config.EncryptionConfig{
@@ -58,14 +58,14 @@ func (suite *NotificationSenderMgtServiceTestSuite) SetupSuite() {
 			},
 		},
 	}
-	err := config.InitializeThunderRuntime("", testConfig)
+	err := config.InitializeServerRuntime("", testConfig)
 	if err != nil {
-		suite.T().Fatalf("Failed to initialize ThunderRuntime: %v", err)
+		suite.T().Fatalf("Failed to initialize server runtime: %v", err)
 	}
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) TearDownSuite() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 func (suite *NotificationSenderMgtServiceTestSuite) SetupTest() {
@@ -576,13 +576,13 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestDeleteSender_StoreError(
 // TestCreateSender_DeclarativeResourcesEnabled tests that CreateSender returns error when declarative resources enabled
 func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender_DeclarativeResourcesEnabled() {
 	// Save original config
-	originalConfig := config.GetThunderRuntime().Config
+	originalConfig := config.GetServerRuntime().Config
 	defer func() {
-		config.GetThunderRuntime().Config = originalConfig
+		config.GetServerRuntime().Config = originalConfig
 	}()
 
 	// Enable declarative resources
-	config.GetThunderRuntime().Config.DeclarativeResources.Enabled = true
+	config.GetServerRuntime().Config.DeclarativeResources.Enabled = true
 
 	sender := suite.getValidTwilioSender()
 	result, err := suite.service.CreateSender(context.Background(), sender)
@@ -595,13 +595,13 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestCreateSender_Declarative
 // TestUpdateSender_DeclarativeResourcesEnabled tests that UpdateSender returns error when declarative resources enabled
 func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_DeclarativeResourcesEnabled() {
 	// Save original config
-	originalConfig := config.GetThunderRuntime().Config
+	originalConfig := config.GetServerRuntime().Config
 	defer func() {
-		config.GetThunderRuntime().Config = originalConfig
+		config.GetServerRuntime().Config = originalConfig
 	}()
 
 	// Enable declarative resources
-	config.GetThunderRuntime().Config.DeclarativeResources.Enabled = true
+	config.GetServerRuntime().Config.DeclarativeResources.Enabled = true
 
 	sender := suite.getValidTwilioSender()
 	result, err := suite.service.UpdateSender(context.Background(), testSenderID, sender)
@@ -614,13 +614,13 @@ func (suite *NotificationSenderMgtServiceTestSuite) TestUpdateSender_Declarative
 // TestDeleteSender_DeclarativeResourcesEnabled tests that DeleteSender returns error when declarative resources enabled
 func (suite *NotificationSenderMgtServiceTestSuite) TestDeleteSender_DeclarativeResourcesEnabled() {
 	// Save original config
-	originalConfig := config.GetThunderRuntime().Config
+	originalConfig := config.GetServerRuntime().Config
 	defer func() {
-		config.GetThunderRuntime().Config = originalConfig
+		config.GetServerRuntime().Config = originalConfig
 	}()
 
 	// Enable declarative resources
-	config.GetThunderRuntime().Config.DeclarativeResources.Enabled = true
+	config.GetServerRuntime().Config.DeclarativeResources.Enabled = true
 
 	err := suite.service.DeleteSender(context.Background(), testSenderID)
 

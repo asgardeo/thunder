@@ -52,9 +52,9 @@ func Initialize(
 
 // initializePARStore selects the PAR store implementation based on the configured runtime DB type.
 func initializePARStore() parStoreInterface {
-	deploymentID := config.GetThunderRuntime().Config.Server.Identifier
+	deploymentID := config.GetServerRuntime().Config.Server.Identifier
 
-	if config.GetThunderRuntime().Config.Database.Runtime.Type == provider.DataSourceTypeRedis {
+	if config.GetServerRuntime().Config.Database.Runtime.Type == provider.DataSourceTypeRedis {
 		return newRedisPARRequestStore(provider.GetRedisProvider(), deploymentID)
 	}
 	return newPARRequestStore(deploymentID)

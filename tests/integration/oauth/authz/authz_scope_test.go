@@ -43,9 +43,9 @@ var (
 	scopeUserNoRole         string
 	scopeUserWithGroup      string
 	scopeGroupID            string
-	scopeUserSchemaID       string
+	scopeEntityTypeID       string
 	scopeTestResourceServer string
-	scopeTestUserSchema     = testutils.UserSchema{
+	scopeTestEntityType     = testutils.UserType{
 		Name: "authz-test-person",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -111,12 +111,12 @@ func (ts *OAuthAuthzScopeTestSuite) SetupSuite() {
 	if err != nil {
 		ts.T().Fatalf("Failed to create test organization unit: %v", err)
 	}
-	scopeTestUserSchema.OUID = scopeTestOUID
+	scopeTestEntityType.OUID = scopeTestOUID
 
-	// Create user schema
-	scopeUserSchemaID, err = testutils.CreateUserType(scopeTestUserSchema)
+	// Create user type
+	scopeEntityTypeID, err = testutils.CreateUserType(scopeTestEntityType)
 	if err != nil {
-		ts.T().Fatalf("Failed to create user schema: %v", err)
+		ts.T().Fatalf("Failed to create user type: %v", err)
 	}
 
 	// Create authentication flow
@@ -301,9 +301,9 @@ func (ts *OAuthAuthzScopeTestSuite) TearDownSuite() {
 		}
 	}
 
-	if scopeUserSchemaID != "" {
-		if err := testutils.DeleteUserType(scopeUserSchemaID); err != nil {
-			ts.T().Logf("Failed to delete user schema: %v", err)
+	if scopeEntityTypeID != "" {
+		if err := testutils.DeleteUserType(scopeEntityTypeID); err != nil {
+			ts.T().Logf("Failed to delete user type: %v", err)
 		}
 	}
 }

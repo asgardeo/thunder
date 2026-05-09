@@ -38,7 +38,7 @@ const (
 	testMobileNumber           = "+1234567890"
 )
 
-var smsOTPUserSchema = testutils.UserSchema{
+var smsOTPEntityType = testutils.UserType{
 	Name: "smsotp_user",
 	Schema: map[string]interface{}{
 		"username": map[string]interface{}{
@@ -71,7 +71,7 @@ type SMSOTPAuthTestSuite struct {
 	senderID     string
 	userID       string
 	mobileNumber string
-	userSchemaID string
+	entityTypeID string
 	ouID         string
 }
 
@@ -120,10 +120,10 @@ func (suite *SMSOTPAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err, "Failed to create notification sender")
 	suite.senderID = senderID
 
-	smsOTPUserSchema.OUID = suite.ouID
-	schemaID, err := testutils.CreateUserType(smsOTPUserSchema)
-	suite.Require().NoError(err, "Failed to create SMS OTP user schema")
-	suite.userSchemaID = schemaID
+	smsOTPEntityType.OUID = suite.ouID
+	schemaID, err := testutils.CreateUserType(smsOTPEntityType)
+	suite.Require().NoError(err, "Failed to create SMS OTP user type")
+	suite.entityTypeID = schemaID
 
 	userAttributes := map[string]interface{}{
 		"username":     "smsotp_user",
@@ -135,7 +135,7 @@ func (suite *SMSOTPAuthTestSuite) SetupSuite() {
 	suite.Require().NoError(err)
 
 	user := testutils.User{
-		Type:             smsOTPUserSchema.Name,
+		Type:             smsOTPEntityType.Name,
 		OUID:             suite.ouID,
 		Attributes:       userAttributesJSON,
 	}
@@ -153,8 +153,8 @@ func (suite *SMSOTPAuthTestSuite) TearDownSuite() {
 		_ = suite.deleteNotificationSender(suite.senderID)
 	}
 
-	if suite.userSchemaID != "" {
-		_ = testutils.DeleteUserType(suite.userSchemaID)
+	if suite.entityTypeID != "" {
+		_ = testutils.DeleteUserType(suite.entityTypeID)
 	}
 
 	if suite.mockServer != nil {

@@ -38,7 +38,7 @@ import (
 //
 // Returns normalized store mode: "mutable", "declarative", or "composite"
 func getOrganizationUnitStoreMode() serverconst.StoreMode {
-	cfg := config.GetThunderRuntime().Config
+	cfg := config.GetServerRuntime().Config
 	// Check if service-level configuration is explicitly set
 	if cfg.OrganizationUnit.Store != "" {
 		mode := serverconst.StoreMode(strings.ToLower(strings.TrimSpace(cfg.OrganizationUnit.Store)))

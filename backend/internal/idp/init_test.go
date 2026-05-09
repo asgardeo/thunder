@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/asgardeo/thunder/internal/system/cache"
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
@@ -50,21 +51,21 @@ func TestIDPInitTestSuite(t *testing.T) {
 }
 
 func (s *IDPInitTestSuite) SetupTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
 }
 
 func (s *IDPInitTestSuite) TearDownTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 func (s *IDPInitTestSuite) TestInitialize() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	// Initialize runtime config for the test
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
@@ -82,10 +83,10 @@ func (s *IDPInitTestSuite) TestInitialize() {
 			},
 		},
 	}
-	_ = config.InitializeThunderRuntime("", testConfig)
+	_ = config.InitializeServerRuntime("", testConfig)
 	mux := http.NewServeMux()
 
-	service, _, err := Initialize(mux)
+	service, _, err := Initialize(cache.Initialize(), mux)
 	s.NoError(err)
 	s.NotNil(service)
 	s.Implements((*IDPServiceInterface)(nil), service)
@@ -290,7 +291,7 @@ func (suite *IDPInitTestSuite) TestValidateIDPForInit_InvalidType() {
 // TestInitialize_WithDeclarativeResourcesDisabled tests the Initialize function when declarative resources are disabled
 func (suite *IDPInitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled() {
 	// Setup - ensure config is reset and initialized for this test
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
@@ -310,13 +311,13 @@ func (suite *IDPInitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled()
 			},
 		},
 	}
-	err := config.InitializeThunderRuntime("", testConfig)
+	err := config.InitializeServerRuntime("", testConfig)
 	assert.NoError(suite.T(), err)
 
 	mux := http.NewServeMux()
 
 	// Execute
-	service, _, err := Initialize(mux)
+	service, _, err := Initialize(cache.Initialize(), mux)
 
 	// Assert
 	suite.NoError(err)
@@ -358,16 +359,16 @@ func TestInitialize_WithDeclarativeResourcesEnabled_EmptyDirectory(t *testing.T)
 	assert.NoError(t, err)
 
 	// Reset and initialize with test config
-	config.ResetThunderRuntime()
-	err = config.InitializeThunderRuntime(tmpDir, testConfig)
+	config.ResetServerRuntime()
+	err = config.InitializeServerRuntime(tmpDir, testConfig)
 	assert.NoError(t, err)
 
-	defer config.ResetThunderRuntime() // Clean up after test
+	defer config.ResetServerRuntime() // Clean up after test
 
 	mux := http.NewServeMux()
 
 	// Execute
-	service, _, err := Initialize(mux)
+	service, _, err := Initialize(cache.Initialize(), mux)
 
 	// Assert
 	assert.NoError(t, err)
@@ -392,7 +393,7 @@ func TestInitialize_WithDeclarativeResourcesEnabled_ValidConfigs(t *testing.T) {
 	err := os.MkdirAll(idpDir, 0750)
 	assert.NoError(t, err)
 
-	// Setup config with encryption support (path relative to thunderHome)
+	// Setup config with encryption support (path relative to server home)
 	testConfig := &config.Config{
 		Database: config.DatabaseConfig{
 			Config: config.DataSource{
@@ -457,16 +458,16 @@ properties:
 	assert.NoError(t, err)
 
 	// Reset and initialize with test config
-	config.ResetThunderRuntime()
-	err = config.InitializeThunderRuntime(tmpDir, testConfig)
+	config.ResetServerRuntime()
+	err = config.InitializeServerRuntime(tmpDir, testConfig)
 	assert.NoError(t, err)
 
-	defer config.ResetThunderRuntime() // Clean up after test
+	defer config.ResetServerRuntime() // Clean up after test
 
 	mux := http.NewServeMux()
 
 	// Execute
-	service, _, err := Initialize(mux)
+	service, _, err := Initialize(cache.Initialize(), mux)
 
 	// Assert
 	assert.NoError(t, err)
@@ -548,15 +549,15 @@ func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 		},
 	}
 
-	config.ResetThunderRuntime()
-	err = config.InitializeThunderRuntime(tmpDir, testConfig)
+	config.ResetServerRuntime()
+	err = config.InitializeServerRuntime(tmpDir, testConfig)
 	assert.NoError(t, err)
-	defer config.ResetThunderRuntime()
+	defer config.ResetServerRuntime()
 
 	mux := http.NewServeMux()
 
 	// Initialize should return an error due to invalid YAML
-	_, _, err = Initialize(mux)
+	_, _, err = Initialize(cache.Initialize(), mux)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load identity provider resources")
 }
@@ -609,15 +610,15 @@ properties:
 		},
 	}
 
-	config.ResetThunderRuntime()
-	err = config.InitializeThunderRuntime(tmpDir, testConfig)
+	config.ResetServerRuntime()
+	err = config.InitializeServerRuntime(tmpDir, testConfig)
 	assert.NoError(t, err)
-	defer config.ResetThunderRuntime()
+	defer config.ResetServerRuntime()
 
 	mux := http.NewServeMux()
 
 	// Initialize should return an error due to validation failure
-	_, _, err = Initialize(mux)
+	_, _, err = Initialize(cache.Initialize(), mux)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load identity provider resources")
 }
@@ -670,15 +671,15 @@ properties:
 		},
 	}
 
-	config.ResetThunderRuntime()
-	err = config.InitializeThunderRuntime(tmpDir, testConfig)
+	config.ResetServerRuntime()
+	err = config.InitializeServerRuntime(tmpDir, testConfig)
 	assert.NoError(t, err)
-	defer config.ResetThunderRuntime()
+	defer config.ResetServerRuntime()
 
 	mux := http.NewServeMux()
 
 	// Initialize should return an error due to invalid IDP type
-	_, _, err = Initialize(mux)
+	_, _, err = Initialize(cache.Initialize(), mux)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load identity provider resources")
 }
@@ -693,8 +694,8 @@ func (s *IDPInitTestSuite) TestGetIdentityProviderStoreMode_MutableMode() {
 			Store: "mutable",
 		},
 	}
-	config.ResetThunderRuntime()
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
 
 	mode := getIdentityProviderStoreMode()
 
@@ -712,8 +713,8 @@ func (s *IDPInitTestSuite) TestGetIdentityProviderStoreMode_DeclarativeMode() {
 			Store: "declarative",
 		},
 	}
-	config.ResetThunderRuntime()
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
 
 	mode := getIdentityProviderStoreMode()
 
@@ -731,8 +732,8 @@ func (s *IDPInitTestSuite) TestGetIdentityProviderStoreMode_CompositeMode() {
 			Store: "composite",
 		},
 	}
-	config.ResetThunderRuntime()
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
 
 	mode := getIdentityProviderStoreMode()
 
@@ -750,8 +751,8 @@ func (s *IDPInitTestSuite) TestGetIdentityProviderStoreMode_FallbackToGlobalSett
 			Store: "", // Empty means use global setting
 		},
 	}
-	config.ResetThunderRuntime()
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
 
 	mode := getIdentityProviderStoreMode()
 
@@ -765,8 +766,8 @@ func (s *IDPInitTestSuite) TestIsCompositeModeEnabled() {
 			Store: "composite",
 		},
 	}
-	config.ResetThunderRuntime()
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
 
 	enabled := isCompositeModeEnabled()
 
@@ -780,8 +781,8 @@ func (s *IDPInitTestSuite) TestIsMutableModeEnabled() {
 			Store: "mutable",
 		},
 	}
-	config.ResetThunderRuntime()
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
 
 	enabled := isMutableModeEnabled()
 
@@ -795,8 +796,8 @@ func (s *IDPInitTestSuite) TestIsDeclarativeModeEnabled() {
 			Store: "declarative",
 		},
 	}
-	config.ResetThunderRuntime()
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	config.ResetServerRuntime()
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
 
 	enabled := isDeclarativeModeEnabled()
 
@@ -817,7 +818,7 @@ func (s *IDPInitTestSuite) TestInitialize_DBClientError() {
 	}()
 
 	mux := http.NewServeMux()
-	_, _, err := Initialize(mux)
+	_, _, err := Initialize(cache.Initialize(), mux)
 
 	s.Error(err)
 	s.Equal("mock db client error", err.Error())
@@ -841,7 +842,7 @@ func (s *IDPInitTestSuite) TestInitialize_TransactionerError() {
 	}()
 
 	mux := http.NewServeMux()
-	_, _, err := Initialize(mux)
+	_, _, err := Initialize(cache.Initialize(), mux)
 
 	s.Error(err)
 	s.Equal("mock transactioner error", err.Error())

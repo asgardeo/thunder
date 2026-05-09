@@ -27,6 +27,7 @@ import (
 	"github.com/asgardeo/thunder/internal/authn/common"
 	"github.com/asgardeo/thunder/internal/authn/github"
 	"github.com/asgardeo/thunder/internal/authn/google"
+	"github.com/asgardeo/thunder/internal/authn/magiclink"
 	"github.com/asgardeo/thunder/internal/authn/oauth"
 	"github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
@@ -48,6 +49,7 @@ func Initialize(
 	authAssertGen assert.AuthAssertGeneratorInterface,
 	passkeySvc passkey.PasskeyServiceInterface,
 	otpSvc otp.OTPAuthnServiceInterface,
+	magicLinkSvc magiclink.MagicLinkAuthnServiceInterface,
 	oauthSvc oauth.OAuthAuthnServiceInterface,
 	oidcSvc oidc.OIDCAuthnServiceInterface,
 	googleSvc google.GoogleOIDCAuthnServiceInterface,
@@ -85,6 +87,10 @@ func Initialize(
 		Factors:       []common.AuthenticationFactor{common.FactorKnowledge},
 		AssociatedIDP: idp.IDPTypeGoogle,
 	})
+	common.RegisterAuthenticator(common.AuthenticatorMeta{
+		Name:    common.AuthenticatorMagicLink,
+		Factors: []common.AuthenticationFactor{common.FactorPossession},
+	})
 
 	authnService := newAuthenticationService(
 		idpSvc,
@@ -92,6 +98,7 @@ func Initialize(
 		authAssertGen,
 		authnProvider,
 		otpSvc,
+		magicLinkSvc,
 		oauthSvc,
 		oidcSvc,
 		googleSvc,
@@ -191,6 +198,6 @@ func registerRoutes(mux *http.ServeMux, authnHandler *authenticationHandler) {
 }
 
 // optionsNoContentHandler handles OPTIONS requests by responding with 204 No Content.
-func optionsNoContentHandler(w http.ResponseWriter, r *http.Request) {
+func optionsNoContentHandler(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }

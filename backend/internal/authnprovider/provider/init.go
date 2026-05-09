@@ -38,7 +38,7 @@ func InitializeAuthnProvider(
 	otpSvc otp.OTPAuthnServiceInterface,
 	federatedAuths map[idp.IDPType]authncommon.FederatedAuthenticator,
 ) AuthnProviderInterface {
-	authnProviderConfig := config.GetThunderRuntime().Config.AuthnProvider
+	authnProviderConfig := config.GetServerRuntime().Config.AuthnProvider
 	switch authnProviderConfig.Type {
 	case "rest":
 		return initializeRestAuthnProvider()
@@ -59,7 +59,7 @@ func initializeDefaultAuthnProvider(
 
 // initializeRestAuthnProvider initializes the REST authentication provider.
 func initializeRestAuthnProvider() AuthnProviderInterface {
-	authnProviderConfig := config.GetThunderRuntime().Config.AuthnProvider
+	authnProviderConfig := config.GetServerRuntime().Config.AuthnProvider
 	baseURL := authnProviderConfig.Rest.BaseURL
 	apiKey := authnProviderConfig.Rest.Security.APIKey
 	timeout := time.Duration(authnProviderConfig.Rest.Timeout) * time.Second

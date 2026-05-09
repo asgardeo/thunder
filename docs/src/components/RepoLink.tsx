@@ -18,11 +18,11 @@
 
 import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
-import type {DocusaurusThunderConfig} from '@site/docusaurus.thunder.config';
+import type {DocusaurusProductConfig} from '@site/docusaurus.product.config';
 import type {ReactNode} from 'react';
 
 export default function RepoLink({path = '', children}: {path?: string; children: ReactNode}): ReactNode {
   const {siteConfig} = useDocusaurusContext();
-  const config = siteConfig.customFields?.thunder as DocusaurusThunderConfig;
+  const config = siteConfig.customFields?.product as DocusaurusProductConfig;
   return <Link href={config.project.source.github.url + path}>{children}</Link>;
 }

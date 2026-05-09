@@ -22,14 +22,6 @@ import (
 	"errors"
 )
 
-// InboundAuthType represents the type of inbound authentication.
-type InboundAuthType string
-
-const (
-	// OAuthInboundAuthType represents the OAuth 2.0 inbound authentication type.
-	OAuthInboundAuthType InboundAuthType = "oauth2"
-)
-
 // ApplicationNotFoundError is the error returned when an application is not found.
 var ApplicationNotFoundError error = errors.New("application not found")
 

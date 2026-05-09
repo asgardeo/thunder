@@ -40,6 +40,10 @@ paths:
             example:
               applications:
                 - "550e8400-e29b-41d4-a716-446655440000"
+              resourceServers:
+                - "*"
+              roles:
+                - "*"
               flows:
                 - "*"
               options:
@@ -84,6 +88,8 @@ paths:
                     description:
                       key: "error.exportservice.no_resources_found_description"
                       defaultValue: "No valid resources found for the provided identifiers"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
         "500":
           description: Internal server error
           content:
@@ -119,6 +125,10 @@ paths:
               $ref: '#/components/schemas/ExportRequest'
             example:
               applications:
+                - "*"
+              resourceServers:
+                - "*"
+              roles:
                 - "*"
               flows:
                 - "*"
@@ -172,6 +182,8 @@ paths:
                     description:
                       key: "error.exportservice.no_resources_found_description"
                       defaultValue: "No valid resources found for the provided identifiers"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
         "500":
           description: Internal server error
           content:
@@ -197,6 +209,22 @@ components:
           scopes:
             system: Full system access
 
+  responses:
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "AUTH-4010"
+            message:
+              key: "error.unauthorized"
+              defaultValue: "Unauthorized"
+            description:
+              key: "error.unauthorized_description"
+              defaultValue: "Authentication is required to access this resource"
+
   schemas:
     ExportRequest:
       type: object
@@ -220,11 +248,11 @@ components:
           items:
             type: string
           description: IDs of notification senders to export, or ["*"] for all.
-        userSchemas:
+        userTypes:
           type: array
           items:
             type: string
-          description: IDs of user schemas to export, or ["*"] for all.
+          description: IDs of user types to export, or ["*"] for all.
         organizationUnits:
           type: array
           items:
@@ -235,6 +263,16 @@ components:
           items:
             type: string
           description: IDs of users to export, or ["*"] for all.
+        resourceServers:
+          type: array
+          items:
+            type: string
+          description: IDs of resource servers to export, or ["*"] for all.
+        roles:
+          type: array
+          items:
+            type: string
+          description: IDs of roles to export, or ["*"] for all.
         flows:
           type: array
           items:
@@ -529,7 +567,7 @@ components:
       properties:
         code:
           type: string
-          description: Machine-readable error code.
+          description: "Error code. Codes follow the EXP-XXXX convention."
           example: "EXP-1001"
         message:
           $ref: '#/components/schemas/I18nMessage'

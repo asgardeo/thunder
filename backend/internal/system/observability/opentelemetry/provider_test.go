@@ -422,7 +422,7 @@ func TestConfig_Defaults(t *testing.T) {
 			expected: Config{
 				Enabled:        true,
 				ExporterType:   "stdout",
-				ServiceName:    "thunder-iam",
+				ServiceName:    "iam",
 				ServiceVersion: "1.0.0",
 				Environment:    "development",
 				SampleRate:     1.0,

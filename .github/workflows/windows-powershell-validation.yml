@@ -11,8 +11,8 @@ permissions:
 
 env:
   GOFLAGS: "-mod=readonly"
-  PRODUCT_NAME: "Thunder"
-  PRODUCT_NAME_LOWER: "thunder"
+  PRODUCT_NAME: "ThunderID"
+  PRODUCT_NAME_LOWER: "thunderid"
 
 jobs:
   build-windows:

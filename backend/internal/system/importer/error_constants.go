@@ -23,7 +23,9 @@ import (
 	"github.com/asgardeo/thunder/internal/application"
 	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
+	"github.com/asgardeo/thunder/internal/entitytype"
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
+	"github.com/asgardeo/thunder/internal/group"
 	"github.com/asgardeo/thunder/internal/idp"
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/resource"
@@ -31,7 +33,6 @@ import (
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/i18n/core"
 	"github.com/asgardeo/thunder/internal/user"
-	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 // notFoundErrorCodes is the set of service error codes that represent a resource-not-found condition
@@ -42,8 +43,9 @@ var notFoundErrorCodes = map[string]struct{}{
 	idp.ErrorIDPNotFound.Code:                 {},
 	flowmgt.ErrorFlowNotFound.Code:            {},
 	ou.ErrorOrganizationUnitNotFound.Code:     {},
-	userschema.ErrorUserSchemaNotFound.Code:   {},
+	entitytype.ErrorEntityTypeNotFound.Code:   {},
 	role.ErrorRoleNotFound.Code:               {},
+	group.ErrorGroupNotFound.Code:             {},
 	resource.ErrorResourceServerNotFound.Code: {},
 	thememgt.ErrorThemeNotFound.Code:          {},
 	layoutmgt.ErrorLayoutNotFound.Code:        {},

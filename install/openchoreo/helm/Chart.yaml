@@ -15,33 +15,33 @@
 # under the License.
 
 apiVersion: v2
-name: thunder
+name: thunderid
 description: |
-  Umbrella Helm chart for the Thunder Identity Provider on OpenChoreo.
+  Umbrella Helm chart for the ThunderID Identity Provider on OpenChoreo.
 
   Sub-charts:
-    thunder-oc-componenttype  — Registers the ComponentType (or ClusterComponentType) once
-                             per cluster/namespace. Platform admins install this.
-    thunder-component      — Deploys the Component, Workload, Release, and platform
-                             resources for a Thunder instance. Teams install this.
+    thunderid-oc-componenttype  — Registers the ComponentType (or ClusterComponentType) once
+                               per cluster/namespace. Platform admins install this.
+    thunderid-component         — Deploys the Component, Workload, Release, and platform
+                               resources for a ThunderID instance. Teams install this.
 
   Install both together (default):
-    helm install thunder .
+    helm install thunderid .
 
   Install only the ComponentType:
-    helm install thunder-type charts/thunder-oc-componenttype
+    helm install thunderid-type charts/thunderid-oc-componenttype
 
   Install only the Component (assumes ComponentType already exists):
-    helm install thunder-app charts/thunder-component -f my-values.yaml
+    helm install thunderid-app charts/thunderid-component -f my-values.yaml
 type: application
-version: 0.35.0
-appVersion: "0.35.0"
+version: 0.37.0
+appVersion: "0.37.0"
 dependencies:
-  - name: thunder-oc-componenttype
-    version: "0.35.0"
-    repository: "file://charts/thunder-oc-componenttype"
-    condition: thunder-oc-componenttype.enabled
-  - name: thunder-component
-    version: "0.35.0"
-    repository: "file://charts/thunder-component"
-    condition: thunder-component.enabled
+  - name: thunderid-oc-componenttype
+    version: "0.37.0"
+    repository: "file://charts/thunderid-oc-componenttype"
+    condition: thunderid-oc-componenttype.enabled
+  - name: thunderid-component
+    version: "0.37.0"
+    repository: "file://charts/thunderid-component"
+    condition: thunderid-component.enabled

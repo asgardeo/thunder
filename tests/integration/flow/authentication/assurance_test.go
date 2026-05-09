@@ -308,7 +308,7 @@ var (
 		},
 	}
 
-	assuranceUserSchema = testutils.UserSchema{
+	assuranceEntityType = testutils.UserType{
 		Name: "assurance_test_user",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -328,7 +328,7 @@ var (
 	}
 
 	assuranceTestUser = testutils.User{
-		Type: assuranceUserSchema.Name,
+		Type: assuranceEntityType.Name,
 		Attributes: json.RawMessage(`{
 			"username": "assurance_user",
 			"password": "testpassword123",
@@ -340,7 +340,7 @@ var (
 
 var (
 	assuranceTestAppID       string
-	assuranceUserSchemaID    string
+	assuranceEntityTypeID    string
 	assuranceTestSenderID    string
 	assuranceSMSOnlyFlowID   string
 	assuranceMFAFlowID       string
@@ -372,13 +372,13 @@ func (ts *AssuranceTestSuite) SetupSuite() {
 	}
 	assuranceTestOU.ID = ouID
 
-	// Create test user schema
-	assuranceUserSchema.OUID = ouID
-	schemaID, err := testutils.CreateUserType(assuranceUserSchema)
+	// Create test user type
+	assuranceEntityType.OUID = ouID
+	schemaID, err := testutils.CreateUserType(assuranceEntityType)
 	if err != nil {
-		ts.T().Fatalf("Failed to create test user schema: %v", err)
+		ts.T().Fatalf("Failed to create test user type: %v", err)
 	}
-	assuranceUserSchemaID = schemaID
+	assuranceEntityTypeID = schemaID
 
 	// Start mock notification server
 	ts.mockServer = testutils.NewMockNotificationServer(assuranceMockNotificationServerPort)
@@ -475,8 +475,8 @@ func (ts *AssuranceTestSuite) TearDownSuite() {
 		_ = testutils.DeleteOrganizationUnit(assuranceTestOU.ID)
 	}
 
-	if assuranceUserSchemaID != "" {
-		_ = testutils.DeleteUserType(assuranceUserSchemaID)
+	if assuranceEntityTypeID != "" {
+		_ = testutils.DeleteUserType(assuranceEntityTypeID)
 	}
 }
 

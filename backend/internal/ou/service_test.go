@@ -50,18 +50,18 @@ func TestOUService_OrganizationUnitServiceTestSuite_Run(t *testing.T) {
 }
 
 func (suite *OrganizationUnitServiceTestSuite) SetupTest() {
-	// Initialize ThunderRuntime with declarative mode disabled by default
-	config.ResetThunderRuntime()
+	// Initialize server runtime with declarative mode disabled by default
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
 }
 
 func (suite *OrganizationUnitServiceTestSuite) TearDownTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 type ouListExpectations struct {

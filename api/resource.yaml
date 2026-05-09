@@ -57,13 +57,15 @@ paths:
                   - id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                     name: "Booking System"
                     description: "Handles all booking operations"
-                    identifier: "booking-system"
+                    handle: "booking-system"
+                    identifier: "https://api.example.com/booking"
                     ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                     delimiter: ":"
                   - id: "257e528f-eb24-48b6-884d-20460e190957"
                     name: "Property Management"
                     description: "Property and facility management"
-                    identifier: "property-mgmt"
+                    handle: "property-mgmt"
+                    identifier: "https://api.example.com/property"
                     ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                     delimiter: ":"
                 links:
@@ -125,7 +127,8 @@ paths:
             example:
               name: "Booking System"
               description: "Handles all booking operations"
-              identifier: "booking-system"
+              handle: "booking-system"
+              identifier: "https://api.example.com/booking"
               ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
       responses:
         "201":
@@ -138,7 +141,8 @@ paths:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 name: "Booking System"
                 description: "Handles all booking operations"
-                identifier: "booking-system"
+                handle: "booking-system"
+                identifier: "https://api.example.com/booking"
                 ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                 delimiter: ":"
         "400":
@@ -244,7 +248,8 @@ paths:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 name: "Booking System"
                 description: "Handles all booking operations"
-                identifier: "booking-system"
+                handle: "booking-system"
+                identifier: "https://api.example.com/booking"
                 ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                 delimiter: ":"
         "400":
@@ -311,7 +316,7 @@ paths:
             example:
               name: "Booking System Updated"
               description: "Updated description for booking operations"
-              identifier: "booking-system-v2"
+              identifier: "https://api.example.com/booking/v2"
               ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
       responses:
         "200":
@@ -324,7 +329,8 @@ paths:
                 id: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
                 name: "Booking System Updated"
                 description: "Updated description for booking operations"
-                identifier: "booking-system-v2"
+                handle: "booking-system"
+                identifier: "https://api.example.com/booking/v2"
                 ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
                 delimiter: ":"
         "400":
@@ -2047,7 +2053,7 @@ components:
   schemas:
     ResourceServer:
       type: object
-      required: [id, name, ouId, delimiter]
+      required: [id, name, handle, ouId, delimiter]
       properties:
         id:
           type: string
@@ -2060,10 +2066,13 @@ components:
           type: string
           nullable: true
           description: Optional description of the resource server
+        handle:
+          type: string
+          description: Immutable handle that prefixes all permission strings derived from this resource server. Must be unique.
         identifier:
           type: string
           nullable: true
-          description: Optional identifier for authorization requests (Unique in the system if provided)
+          description: Optional identifier for this resource server. Must be unique in the system if provided. When set to an absolute URI, the resource server is used in RFC 8707 resource indicator flows and the identifier is used as the access token audience claim value.
         ouId:
           type: string
           format: uuid
@@ -2071,6 +2080,9 @@ components:
         delimiter:
           type: string
           description: Character used to separate permission hierarchy levels (immutable after creation)
+        isReadOnly:
+          type: boolean
+          description: Whether the resource server is read-only (system-managed)
 
     CreateResourceServerRequest:
       type: object
@@ -2082,9 +2094,12 @@ components:
         description:
           type: string
           description: Optional description of the resource server
+        handle:
+          type: string
+          description: Immutable handle that prefixes all permission strings derived from this resource server. Must be unique. Use lowercase with hyphens (e.g., "booking-api").
         identifier:
           type: string
-          description: Optional identifier for authorization requests (Unique in the system if provided)
+          description: Optional identifier for this resource server. Must be unique in the system if provided. When set to an absolute URI, the resource server is used in RFC 8707 resource indicator flows and clients can use this value in the resource parameter to request audience-restricted access tokens.
         ouId:
           type: string
           format: uuid
@@ -2105,7 +2120,7 @@ components:
           description: Optional description of the resource server
         identifier:
           type: string
-          description: Optional identifier for authorization requests (Unique in the system if provided)
+          description: Optional identifier for this resource server. Must be unique in the system if provided. When set to an absolute URI, the resource server is used in RFC 8707 resource indicator flows.
         ouId:
           type: string
           format: uuid
@@ -2301,7 +2316,7 @@ components:
       properties:
         code:
           type: string
-          description: Error code
+          description: "Error code. Codes follow the RES-XXXX convention."
           example: "RES-1001"
         message:
           $ref: '#/components/schemas/I18nMessage'

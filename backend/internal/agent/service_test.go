@@ -21,6 +21,7 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -163,21 +164,23 @@ func (suite *AgentServiceTestSuite) TestNeedsInboundClient_EmptyRequest() {
 }
 
 func (suite *AgentServiceTestSuite) TestNeedsInboundClient_WithAuthFlowID() {
-	req := &model.CreateAgentRequest{AuthFlowID: "flow-1"}
+	req := &model.CreateAgentRequest{InboundAuthProfile: inboundmodel.InboundAuthProfile{AuthFlowID: "flow-1"}}
 	assert.True(suite.T(), needsInboundClient(req))
 }
 
 func (suite *AgentServiceTestSuite) TestNeedsInboundClient_WithInboundAuthConfig() {
 	req := &model.CreateAgentRequest{
-		InboundAuthConfig: []model.InboundAuthConfig{
-			{Type: model.OAuthInboundAuthType, Config: &model.OAuthAgentConfig{}},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
+			{Type: inboundmodel.OAuthInboundAuthType, OAuthConfig: &inboundmodel.OAuthConfigWithSecret{}},
 		},
 	}
 	assert.True(suite.T(), needsInboundClient(req))
 }
 
 func (suite *AgentServiceTestSuite) TestNeedsInboundClient_WithAllowedUserTypes() {
-	req := &model.CreateAgentRequest{AllowedUserTypes: []string{"employee"}}
+	req := &model.CreateAgentRequest{
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{AllowedUserTypes: []string{"employee"}},
+	}
 	assert.True(suite.T(), needsInboundClient(req))
 }
 
@@ -190,7 +193,7 @@ func (suite *AgentServiceTestSuite) TestUpdateNeedsInboundClient_EmptyRequest() 
 }
 
 func (suite *AgentServiceTestSuite) TestUpdateNeedsInboundClient_WithThemeID() {
-	req := &model.UpdateAgentRequest{ThemeID: "theme-abc"}
+	req := &model.UpdateAgentRequest{InboundAuthProfile: inboundmodel.InboundAuthProfile{ThemeID: "theme-abc"}}
 	assert.True(suite.T(), updateNeedsInboundClient(req))
 }
 
@@ -199,26 +202,26 @@ func (suite *AgentServiceTestSuite) TestRequiresClientSecret_NilConfig() {
 }
 
 func (suite *AgentServiceTestSuite) TestRequiresClientSecret_PublicClient() {
-	cfg := &model.OAuthAgentConfig{PublicClient: true}
+	cfg := &inboundmodel.OAuthConfigWithSecret{PublicClient: true}
 	assert.False(suite.T(), requiresClientSecret(cfg))
 }
 
 func (suite *AgentServiceTestSuite) TestRequiresClientSecret_ClientSecretBasic() {
-	cfg := &model.OAuthAgentConfig{
+	cfg := &inboundmodel.OAuthConfigWithSecret{
 		TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
 	}
 	assert.True(suite.T(), requiresClientSecret(cfg))
 }
 
 func (suite *AgentServiceTestSuite) TestRequiresClientSecret_NoneMethod() {
-	cfg := &model.OAuthAgentConfig{
+	cfg := &inboundmodel.OAuthConfigWithSecret{
 		TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
 	}
 	assert.False(suite.T(), requiresClientSecret(cfg))
 }
 
 func (suite *AgentServiceTestSuite) TestRequiresClientSecret_DefaultIsTrue() {
-	cfg := &model.OAuthAgentConfig{}
+	cfg := &inboundmodel.OAuthConfigWithSecret{}
 	assert.True(suite.T(), requiresClientSecret(cfg))
 }
 
@@ -261,28 +264,6 @@ func (suite *AgentServiceTestSuite) TestBuildSystemAttributesJSON_EmptyFields() 
 	raw, err := buildSystemAttributesJSON("", "", "", "")
 	suite.Require().NoError(err)
 	assert.Nil(suite.T(), raw)
-}
-
-// --- removeSecrets ---
-
-func (suite *AgentServiceTestSuite) TestRemoveSecrets_Nil() {
-	assert.Nil(suite.T(), removeSecrets(nil))
-}
-
-func (suite *AgentServiceTestSuite) TestRemoveSecrets_RemovesClientSecret() {
-	in := []model.InboundAuthConfig{
-		{
-			Type: model.OAuthInboundAuthType,
-			Config: &model.OAuthAgentConfig{
-				ClientID:     "cid",
-				ClientSecret: "secret",
-			},
-		},
-	}
-	out := removeSecrets(in)
-	suite.Require().Len(out, 1)
-	assert.Equal(suite.T(), "cid", out[0].Config.ClientID)
-	assert.Empty(suite.T(), out[0].Config.ClientSecret)
 }
 
 // --- validateBaseFields ---
@@ -421,10 +402,10 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_WithInboundAuth_Success() {
 		mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	req := &model.CreateAgentRequest{
-		Name:       testAgentName,
-		Type:       testAgentType,
-		OUID:       testOUID,
-		AuthFlowID: "flow-1",
+		Name:               testAgentName,
+		Type:               testAgentType,
+		OUID:               testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{AuthFlowID: "flow-1"},
 	}
 	resp, svcErr := svc.CreateAgent(context.Background(), req)
 	suite.Require().Nil(svcErr)
@@ -455,10 +436,10 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_FlowIDResolvedToDefault() {
 		Name: testAgentName,
 		Type: testAgentType,
 		OUID: testOUID,
-		InboundAuthConfig: []model.InboundAuthConfig{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				Config: &model.OAuthAgentConfig{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeClientCredentials},
 					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
 				},
@@ -485,14 +466,14 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_WithOAuth_Success() {
 		mock.Anything, mock.Anything, mock.Anything).Return(nil)
 
 	req := &model.CreateAgentRequest{
-		Name:       testAgentName,
-		Type:       testAgentType,
-		OUID:       testOUID,
-		AuthFlowID: "flow-1",
-		InboundAuthConfig: []model.InboundAuthConfig{
+		Name:               testAgentName,
+		Type:               testAgentType,
+		OUID:               testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{AuthFlowID: "flow-1"},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				Config: &model.OAuthAgentConfig{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeClientCredentials},
 					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
 				},
@@ -503,9 +484,9 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_WithOAuth_Success() {
 	suite.Require().Nil(svcErr)
 	suite.Require().NotNil(resp)
 	suite.Require().Len(resp.InboundAuthConfig, 1)
-	assert.Equal(suite.T(), model.OAuthInboundAuthType, resp.InboundAuthConfig[0].Type)
-	assert.NotEmpty(suite.T(), resp.InboundAuthConfig[0].Config.ClientID)
-	assert.NotEmpty(suite.T(), resp.InboundAuthConfig[0].Config.ClientSecret)
+	assert.Equal(suite.T(), inboundmodel.OAuthInboundAuthType, resp.InboundAuthConfig[0].Type)
+	assert.NotEmpty(suite.T(), resp.InboundAuthConfig[0].OAuthConfig.ClientID)
+	assert.NotEmpty(suite.T(), resp.InboundAuthConfig[0].OAuthConfig.ClientSecret)
 }
 
 func (suite *AgentServiceTestSuite) TestCreateAgent_EntityCreationFails() {
@@ -539,10 +520,10 @@ func (suite *AgentServiceTestSuite) TestCreateAgent_InboundCreationFails_Compens
 	mockEntity.On("DeleteEntity", mock.Anything, mock.Anything).Return(nil)
 
 	req := &model.CreateAgentRequest{
-		Name:       testAgentName,
-		Type:       testAgentType,
-		OUID:       testOUID,
-		AuthFlowID: "flow-1",
+		Name:               testAgentName,
+		Type:               testAgentType,
+		OUID:               testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{AuthFlowID: "flow-1"},
 	}
 	resp, svcErr := svc.CreateAgent(context.Background(), req)
 	assert.Nil(suite.T(), resp)
@@ -616,10 +597,7 @@ func (suite *AgentServiceTestSuite) TestGetAgent_Success_WithOAuth() {
 	mockInbound.On("GetInboundClientByEntityID", mock.Anything, testAgentID).Return(inboundRec, nil)
 
 	oauthProfile := &inboundmodel.OAuthProfile{
-		AppID: testAgentID,
-		OAuthProfile: &inboundmodel.OAuthProfileData{
-			GrantTypes: []string{"client_credentials"},
-		},
+		GrantTypes: []string{"client_credentials"},
 	}
 	clearMockCalls(mockInbound, "GetOAuthProfileByEntityID")
 	mockInbound.On("GetOAuthProfileByEntityID", mock.Anything, testAgentID).Return(oauthProfile, nil)
@@ -629,9 +607,8 @@ func (suite *AgentServiceTestSuite) TestGetAgent_Success_WithOAuth() {
 	suite.Require().NotNil(resp)
 	assert.Equal(suite.T(), "flow-1", resp.AuthFlowID)
 	suite.Require().Len(resp.InboundAuthConfig, 1)
-	// clientSecret must be scrubbed on GET.
-	assert.Empty(suite.T(), resp.InboundAuthConfig[0].Config.ClientSecret)
-	assert.Equal(suite.T(), "cid-123", resp.InboundAuthConfig[0].Config.ClientID)
+	// ClientSecret is structurally absent on the GET response (OAuthConfig has no field).
+	assert.Equal(suite.T(), "cid-123", resp.InboundAuthConfig[0].OAuthConfig.ClientID)
 }
 
 // --- DeleteAgent ---
@@ -835,10 +812,10 @@ func (suite *AgentServiceTestSuite) TestUpdateAgent_FlowIDResolvedToDefault() {
 	resp, svcErr := svc.UpdateAgent(context.Background(), testAgentID, &model.UpdateAgentRequest{
 		Name: testAgentName,
 		Type: testAgentType,
-		InboundAuthConfig: []model.InboundAuthConfig{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				Config: &model.OAuthAgentConfig{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeClientCredentials},
 					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
 				},
@@ -849,6 +826,96 @@ func (suite *AgentServiceTestSuite) TestUpdateAgent_FlowIDResolvedToDefault() {
 	suite.Require().NotNil(resp)
 	assert.Equal(suite.T(), "default-flow-id", resp.AuthFlowID)
 	assert.Equal(suite.T(), "default-reg-flow-id", resp.RegistrationFlowID)
+}
+
+// --- owner validation ---
+
+func (suite *AgentServiceTestSuite) TestValidateOwnerExists_Empty() {
+	svc, _, _, _ := suite.setupService()
+	assert.Nil(suite.T(), svc.validateOwnerExists(context.Background(), ""))
+}
+
+func (suite *AgentServiceTestSuite) TestValidateOwnerExists_NotFound() {
+	svc, mockEntity, _, _ := suite.setupService()
+	clearMockCalls(mockEntity, "GetEntity")
+	mockEntity.On("GetEntity", mock.Anything, "missing-owner").
+		Return((*entity.Entity)(nil), entity.ErrEntityNotFound)
+
+	svcErr := svc.validateOwnerExists(context.Background(), "missing-owner")
+	suite.Require().NotNil(svcErr)
+	assert.Equal(suite.T(), ErrorOwnerNotFound.Code, svcErr.Code)
+}
+
+func (suite *AgentServiceTestSuite) TestValidateOwnerExists_StoreError() {
+	svc, mockEntity, _, _ := suite.setupService()
+	clearMockCalls(mockEntity, "GetEntity")
+	mockEntity.On("GetEntity", mock.Anything, "owner-x").
+		Return((*entity.Entity)(nil), errors.New("db error"))
+
+	svcErr := svc.validateOwnerExists(context.Background(), "owner-x")
+	suite.Require().NotNil(svcErr)
+	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, svcErr.Code)
+}
+
+func (suite *AgentServiceTestSuite) TestValidateOwnerExists_Success() {
+	svc, mockEntity, _, _ := suite.setupService()
+	clearMockCalls(mockEntity, "GetEntity")
+	mockEntity.On("GetEntity", mock.Anything, "owner-y").
+		Return(&entity.Entity{ID: "owner-y"}, nil)
+
+	assert.Nil(suite.T(), svc.validateOwnerExists(context.Background(), "owner-y"))
+}
+
+func (suite *AgentServiceTestSuite) TestCreateAgent_OwnerNotFound() {
+	svc, mockEntity, _, _ := suite.setupService()
+	clearMockCalls(mockEntity, "GetEntity")
+	mockEntity.On("GetEntity", mock.Anything, "ghost").
+		Return((*entity.Entity)(nil), entity.ErrEntityNotFound)
+
+	resp, svcErr := svc.CreateAgent(context.Background(), &model.CreateAgentRequest{
+		Name: testAgentName, Type: testAgentType, OUID: testOUID, Owner: "ghost",
+	})
+	assert.Nil(suite.T(), resp)
+	suite.Require().NotNil(svcErr)
+	assert.Equal(suite.T(), ErrorOwnerNotFound.Code, svcErr.Code)
+}
+
+func (suite *AgentServiceTestSuite) TestUpdateAgent_OwnerChanged_OwnerNotFound() {
+	svc, mockEntity, _, _ := suite.setupService()
+
+	agentEntity := buildAgentEntityFixture("old-name", "", "current-owner", "")
+	clearMockCalls(mockEntity, "GetEntity")
+	mockEntity.On("GetEntity", mock.Anything, testAgentID).Return(agentEntity, nil)
+	mockEntity.On("GetEntity", mock.Anything, "new-owner").
+		Return((*entity.Entity)(nil), entity.ErrEntityNotFound)
+
+	resp, svcErr := svc.UpdateAgent(context.Background(), testAgentID, &model.UpdateAgentRequest{
+		Name: testAgentName, Type: testAgentType, Owner: "new-owner",
+	})
+	assert.Nil(suite.T(), resp)
+	suite.Require().NotNil(svcErr)
+	assert.Equal(suite.T(), ErrorOwnerNotFound.Code, svcErr.Code)
+}
+
+func (suite *AgentServiceTestSuite) TestUpdateAgent_OwnerChanged_Success() {
+	svc, mockEntity, _, _ := suite.setupService()
+
+	agentEntity := buildAgentEntityFixture("old-name", "", "current-owner", "")
+	clearMockCalls(mockEntity, "GetEntity")
+	mockEntity.On("GetEntity", mock.Anything, testAgentID).Return(agentEntity, nil)
+	mockEntity.On("GetEntity", mock.Anything, "new-owner").
+		Return(&entity.Entity{ID: "new-owner"}, nil)
+
+	clearMockCalls(mockEntity, "UpdateEntity")
+	mockEntity.On("UpdateEntity", mock.Anything, testAgentID, mock.Anything).
+		Return(&entity.Entity{}, nil)
+
+	resp, svcErr := svc.UpdateAgent(context.Background(), testAgentID, &model.UpdateAgentRequest{
+		Name: testAgentName, Type: testAgentType, Owner: "new-owner",
+	})
+	suite.Require().Nil(svcErr)
+	suite.Require().NotNil(resp)
+	assert.Equal(suite.T(), "new-owner", resp.Owner)
 }
 
 // --- mapEntityError ---

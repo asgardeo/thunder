@@ -16,40 +16,40 @@
 
 services:
   # Initialize database from the image
-  thunder-db-init:
+  thunderid-db-init:
     image: ghcr.io/asgardeo/thunder:latest
-    command: sh -c "cp -r /opt/thunder/repository/database/* /data/ && (cp -r /opt/thunder/consent/repository/database/* /consent-data/ 2>/dev/null || true)"
+    command: sh -c "cp -r /opt/thunderid/repository/database/* /data/ && (cp -r /opt/thunderid/consent/repository/database/* /consent-data/ 2>/dev/null || true)"
     volumes:
-      - thunder-db:/data
+      - thunderid-db:/data
       - consent-db:/consent-data
     restart: "no"
 
   # Run setup once with the shared database
-  thunder-setup:
+  thunderid-setup:
     image: ghcr.io/asgardeo/thunder:latest
     command: ./setup.sh
     volumes:
-      - thunder-db:/opt/thunder/repository/database
-      - consent-db:/opt/thunder/consent/repository/database
+      - thunderid-db:/opt/thunderid/repository/database
+      - consent-db:/opt/thunderid/consent/repository/database
     depends_on:
-      thunder-db-init:
+      thunderid-db-init:
         condition: service_completed_successfully
     restart: "no"
 
-  # Run Thunder server with the shared database
-  thunder:
+  # Run ThunderID server with the shared database
+  thunderid:
     image: ghcr.io/asgardeo/thunder:latest
     depends_on:
-      thunder-setup:
+      thunderid-setup:
         condition: service_completed_successfully
     ports:
       - "8090:8090"
     volumes:
-      - thunder-db:/opt/thunder/repository/database
-      - consent-db:/opt/thunder/consent/repository/database
+      - thunderid-db:/opt/thunderid/repository/database
+      - consent-db:/opt/thunderid/consent/repository/database
 
 volumes:
-  thunder-db:
+  thunderid-db:
     driver: local
   consent-db:
     driver: local

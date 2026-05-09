@@ -34,7 +34,7 @@ import (
 	"github.com/asgardeo/thunder/internal/notification/common"
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/cryptolab/hash"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/template"
@@ -67,9 +67,9 @@ func (suite *OTPServiceTestSuite) SetupSuite() {
 			},
 		},
 	}
-	err := config.InitializeThunderRuntime("", testConfig)
+	err := config.InitializeServerRuntime("", testConfig)
 	if err != nil {
-		suite.T().Fatalf("Failed to initialize ThunderRuntime: %v", err)
+		suite.T().Fatalf("Failed to initialize server runtime: %v", err)
 	}
 }
 
@@ -330,7 +330,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_Success() {
 	cp.EXPECT().GetClient(mock.Anything).Return(mm, nil).Once()
 	suite.service.clientProvider = cp
 
-	suite.mockJWTService.EXPECT().GenerateJWT(mock.Anything, mock.Anything,
+	suite.mockJWTService.EXPECT().GenerateJWT(mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("session-token-123", int64(0), nil).Once()
 
 	res, err := suite.service.SendOTP(context.Background(), req)
@@ -386,7 +386,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_GenerateJWTError() {
 	suite.service.clientProvider = cp
 
 	suite.mockJWTService.EXPECT().GenerateJWT(
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 	).Return("", int64(0), &serviceerror.InternalServerError).Once()
 
 	res, err := suite.service.SendOTP(context.Background(), req)
@@ -643,7 +643,7 @@ func (suite *OTPServiceTestSuite) TestSendOTP_TemplateRenderSuccess_UsesRendered
 	cp.EXPECT().GetClient(mock.Anything).Return(mm, nil).Once()
 	suite.service.clientProvider = cp
 
-	suite.mockJWTService.EXPECT().GenerateJWT(mock.Anything, mock.Anything,
+	suite.mockJWTService.EXPECT().GenerateJWT(mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return("token", int64(0), nil).Once()
 
 	res, err := suite.service.SendOTP(context.Background(), req)

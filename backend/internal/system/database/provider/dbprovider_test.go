@@ -43,7 +43,7 @@ func (suite *DBProviderTestSuite) SetupTest() {
 	suite.mockDB = mock
 
 	// Reset global config before each test
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 
 	// Initialize a dummy config
 	dummyConfig := &config.Config{
@@ -53,12 +53,12 @@ func (suite *DBProviderTestSuite) SetupTest() {
 			User:    config.DataSource{Type: "postgres", Postgres: config.PostgresDataSource{Name: "user"}},
 		},
 	}
-	err = config.InitializeThunderRuntime(".", dummyConfig)
+	err = config.InitializeServerRuntime(".", dummyConfig)
 	suite.Require().NoError(err)
 }
 
 func (suite *DBProviderTestSuite) TearDownTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 func (suite *DBProviderTestSuite) TestGetUserDBTransactioner_Success() {

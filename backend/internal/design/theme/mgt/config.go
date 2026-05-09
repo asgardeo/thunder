@@ -37,7 +37,7 @@ import (
 //
 // Returns normalized store mode: "mutable", "declarative", or "composite"
 func getThemeStoreMode() serverconst.StoreMode {
-	cfg := config.GetThunderRuntime().Config
+	cfg := config.GetServerRuntime().Config
 	// Check if service-level configuration is explicitly set
 	if cfg.Theme.Store != "" {
 		mode := serverconst.StoreMode(strings.ToLower(strings.TrimSpace(cfg.Theme.Store)))

@@ -29,7 +29,7 @@ import (
 )
 
 // PropOAuthProfile is the key under InboundClient.Properties used by the file store to embed
-// the typed OAuthProfileData for a declaratively-loaded inbound client.
+// the typed OAuthProfile for a declaratively-loaded inbound client.
 const PropOAuthProfile = "oauth_profile"
 
 // fileBasedStore is a read-only in-memory inboundClientStoreInterface backed by declaratively-loaded
@@ -66,7 +66,7 @@ func (f *fileBasedStore) CreateInboundClient(_ context.Context, client inboundmo
 
 // CreateOAuthProfile is not supported in the file store — OAuth profile is embedded in the
 // inbound client's Properties under PropOAuthProfile.
-func (f *fileBasedStore) CreateOAuthProfile(_ context.Context, _ string, _ *inboundmodel.OAuthProfileData) error {
+func (f *fileBasedStore) CreateOAuthProfile(_ context.Context, _ string, _ *inboundmodel.OAuthProfile) error {
 	return errors.New("CreateOAuthProfile is not supported in file-based store")
 }
 
@@ -101,11 +101,11 @@ func (f *fileBasedStore) GetOAuthProfileByEntityID(ctx context.Context, entityID
 		return nil, nil
 	}
 
-	var oauthProfile inboundmodel.OAuthProfileData
+	var oauthProfile inboundmodel.OAuthProfile
 	switch p := raw.(type) {
-	case inboundmodel.OAuthProfileData:
+	case inboundmodel.OAuthProfile:
 		oauthProfile = p
-	case *inboundmodel.OAuthProfileData:
+	case *inboundmodel.OAuthProfile:
 		if p == nil {
 			return nil, nil
 		}
@@ -115,7 +115,7 @@ func (f *fileBasedStore) GetOAuthProfileByEntityID(ctx context.Context, entityID
 		return nil, ErrInboundClientDataCorrupted
 	}
 
-	return &inboundmodel.OAuthProfile{AppID: entityID, OAuthProfile: &oauthProfile}, nil
+	return &oauthProfile, nil
 }
 
 // GetInboundClientList returns all inbound clients in the file store with IsReadOnly set.
@@ -150,7 +150,7 @@ func (f *fileBasedStore) UpdateInboundClient(_ context.Context, _ inboundmodel.I
 }
 
 // UpdateOAuthProfile is not supported in the file store.
-func (f *fileBasedStore) UpdateOAuthProfile(_ context.Context, _ string, _ *inboundmodel.OAuthProfileData) error {
+func (f *fileBasedStore) UpdateOAuthProfile(_ context.Context, _ string, _ *inboundmodel.OAuthProfile) error {
 	return errors.New("UpdateOAuthProfile is not supported in file-based store")
 }
 

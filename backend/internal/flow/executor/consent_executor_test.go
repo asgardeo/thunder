@@ -90,7 +90,7 @@ func buildConsentNodeContext() *core.NodeContext {
 	return &core.NodeContext{
 		Context:     context.Background(),
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          testUserID,
@@ -106,8 +106,10 @@ func buildConsentNodeContext() *core.NodeContext {
 		RuntimeData:    map[string]string{},
 		NodeProperties: map[string]interface{}{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"email", "phone"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"email", "phone"},
+				},
 			},
 		},
 	}

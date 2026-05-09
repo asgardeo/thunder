@@ -33,13 +33,13 @@ type SilverTestSuite struct {
 	suite.Suite
 	client       *http.Client
 	oUID         string
-	userSchemaID string
+	entityTypeID string
 	userID       string
 }
 
 const (
 	credentialsAuthEndpoint = "/auth/credentials/authenticate"
-	userSchemaName          = "emailuser"
+	entityTypeName          = "emailuser"
 	username                = "alice"
 	password                = "secret123"
 	email                   = "alice@example.com"
@@ -52,8 +52,8 @@ var (
 		Name:   "Customers OU",
 		Parent: nil,
 	}
-	userSchema = testutils.UserSchema{
-		Name: userSchemaName,
+	entityType = testutils.UserType{
+		Name: entityTypeName,
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
 				"type":   "string",
@@ -70,7 +70,7 @@ var (
 		},
 	}
 	user = testutils.User{
-		Type: userSchemaName,
+		Type: entityTypeName,
 		Attributes: json.RawMessage(`{
 			"username": "` + username + `", 
 			"password": "` + password + `", 
@@ -93,13 +93,13 @@ func (ts *SilverTestSuite) SetupSuite() {
 	}
 	ts.oUID = ouID
 
-	// Create user schema
-	userSchema.OUID = ts.oUID
-	schemaID, err := testutils.CreateUserType(userSchema)
+	// Create user type
+	entityType.OUID = ts.oUID
+	schemaID, err := testutils.CreateUserType(entityType)
 	if err != nil {
-		ts.T().Fatalf("Failed to create test user schema: %v", err)
+		ts.T().Fatalf("Failed to create test user type: %v", err)
 	}
-	ts.userSchemaID = schemaID
+	ts.entityTypeID = schemaID
 
 	// Create user
 	user.OUID = ts.oUID
@@ -118,10 +118,10 @@ func (ts *SilverTestSuite) TearDownSuite() {
 		}
 	}
 
-	// Clean up created user schema
-	if ts.userSchemaID != "" {
-		if err := testutils.DeleteUserType(ts.userSchemaID); err != nil {
-			ts.T().Logf("Failed to delete test user schema %s: %v", ts.userSchemaID, err)
+	// Clean up created user type
+	if ts.entityTypeID != "" {
+		if err := testutils.DeleteUserType(ts.entityTypeID); err != nil {
+			ts.T().Logf("Failed to delete test user type %s: %v", ts.entityTypeID, err)
 		}
 	}
 

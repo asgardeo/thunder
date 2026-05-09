@@ -50,7 +50,7 @@ func newRedisSessionStore(p provider.RedisProviderInterface) sessionStoreInterfa
 	return &redisSessionStore{
 		client:       p.GetRedisClient(),
 		keyPrefix:    p.GetKeyPrefix(),
-		deploymentID: config.GetThunderRuntime().Config.Server.Identifier,
+		deploymentID: config.GetServerRuntime().Config.Server.Identifier,
 	}
 }
 

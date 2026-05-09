@@ -39,7 +39,7 @@ func TestConsentServiceTestSuite(t *testing.T) {
 	suite.Run(t, new(ConsentServiceTestSuite))
 }
 
-// initConsentRuntime initializes a minimal ThunderRuntime for service tests.
+// initConsentRuntime initializes a minimal server runtime for service tests.
 func initConsentRuntime(t *testing.T, enabled bool, baseURL string) {
 	t.Helper()
 	cfg := &config.Config{
@@ -48,9 +48,9 @@ func initConsentRuntime(t *testing.T, enabled bool, baseURL string) {
 			BaseURL: baseURL,
 		},
 	}
-	config.ResetThunderRuntime()
-	require.NoError(t, config.InitializeThunderRuntime("/tmp/test", cfg))
-	t.Cleanup(config.ResetThunderRuntime)
+	config.ResetServerRuntime()
+	require.NoError(t, config.InitializeServerRuntime("/tmp/test", cfg))
+	t.Cleanup(config.ResetServerRuntime)
 }
 
 // newServiceWithMockClient creates a consentService with the provided mock client and config.

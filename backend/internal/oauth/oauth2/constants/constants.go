@@ -60,6 +60,7 @@ const (
 	RequestParamNonce               string = "nonce"
 	RequestParamPrompt              string = "prompt"
 	RequestParamRequestURI          string = "request_uri"
+	RequestParamAcrValues           string = "acr_values"
 )
 
 // OIDC prompt parameter values.
@@ -311,12 +312,13 @@ const (
 
 // Custom JWT claim names.
 const (
-	ClaimUserType      string = "userType"
-	ClaimOUID          string = "ouId"
-	ClaimOUName        string = "ouName"
-	ClaimOUHandle      string = "ouHandle"
-	ClaimClaimsRequest string = "claims_req"
-	ClaimClaimsLocales string = "claims_locales"
+	ClaimUserType           string = "userType"
+	ClaimOUID               string = "ouId"
+	ClaimOUName             string = "ouName"
+	ClaimOUHandle           string = "ouHandle"
+	ClaimClaimsRequest      string = "claims_req"
+	ClaimClaimsLocales      string = "claims_locales"
+	ClaimCompletedAuthClass string = "completed_auth_class"
 )
 
 // OIDC subject types.

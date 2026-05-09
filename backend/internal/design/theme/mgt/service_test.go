@@ -48,8 +48,8 @@ func (suite *ThemeServiceTestSuite) SetupTest() {
 			Enabled: false,
 		},
 	}
-	config.ResetThunderRuntime()
-	err := config.InitializeThunderRuntime("/tmp/test", testConfig)
+	config.ResetServerRuntime()
+	err := config.InitializeServerRuntime("/tmp/test", testConfig)
 	if err != nil {
 		suite.Fail("Failed to initialize runtime", err)
 	}
@@ -206,7 +206,7 @@ func (suite *ThemeServiceTestSuite) TestCreateTheme_DuplicateHandle() {
 
 // Test CreateTheme - Declarative mode enabled
 func (suite *ThemeServiceTestSuite) TestCreateTheme_DeclarativeModeEnabled() {
-	runtime := config.GetThunderRuntime()
+	runtime := config.GetServerRuntime()
 	runtime.Config.Theme.Store = "declarative"
 
 	themeRequest := CreateThemeRequestWithID{

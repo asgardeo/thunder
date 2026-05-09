@@ -46,7 +46,7 @@ interface LoadedContent {
  */
 export default function personaPlugin(): Plugin {
   return {
-    name: 'thunder-persona-plugin',
+    name: 'product-persona-plugin',
 
     async allContentLoaded({
       allContent,
@@ -57,9 +57,7 @@ export default function personaPlugin(): Plugin {
     }) {
       const {setGlobalData} = actions;
 
-      const docsContent = allContent['docusaurus-plugin-content-docs']?.[
-        'default'
-      ] as LoadedContent | undefined;
+      const docsContent = allContent['docusaurus-plugin-content-docs']?.default as LoadedContent | undefined;
 
       const personaMap: Record<string, string> = {};
 

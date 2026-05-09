@@ -58,6 +58,7 @@ type OIDCProviderMetadata struct {
 	SubjectTypesSupported            []string `json:"subject_types_supported"`
 	IDTokenSigningAlgValuesSupported []string `json:"id_token_signing_alg_values_supported"`
 	ClaimsSupported                  []string `json:"claims_supported"`
+	AcrValuesSupported               []string `json:"acr_values_supported,omitempty"`
 	EndSessionEndpoint               string   `json:"end_session_endpoint,omitempty"`
 }
 
@@ -206,6 +207,29 @@ func (ts *DiscoveryTestSuite) TestOIDCDiscovery_GET_Success() {
 	// Verify RFC 9207 issuer identification support
 	ts.True(metadata.AuthorizationResponseIssParameterSupported,
 		"authorization_response_iss_parameter_supported must be true (RFC 9207)")
+}
+
+func (ts *DiscoveryTestSuite) TestOIDCDiscovery_AcrValuesSupported() {
+	req, err := http.NewRequest("GET", testServerURL+oidcDiscoveryEndpoint, nil)
+	ts.Require().NoError(err)
+
+	resp, err := ts.client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+
+	ts.Equal(http.StatusOK, resp.StatusCode)
+
+	var metadata OIDCProviderMetadata
+	err = json.NewDecoder(resp.Body).Decode(&metadata)
+	ts.Require().NoError(err)
+
+	expectedACRs := []string{
+		"urn:thunder:acr:password",
+		"urn:thunder:acr:generated-code",
+		"urn:thunder:acr:biometrics",
+	}
+	ts.ElementsMatch(expectedACRs, metadata.AcrValuesSupported,
+		"acr_values_supported must contain exactly the ACR values from the ACR-AMR config")
 }
 
 // TestOIDCDiscovery_OPTIONS_Success tests OPTIONS request for CORS

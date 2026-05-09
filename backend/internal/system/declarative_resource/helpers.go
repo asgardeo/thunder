@@ -25,7 +25,7 @@ import (
 
 // IsDeclarativeModeEnabled checks if declarative resources are enabled in the configuration.
 func IsDeclarativeModeEnabled() bool {
-	return config.GetThunderRuntime().Config.DeclarativeResources.Enabled
+	return config.GetServerRuntime().Config.DeclarativeResources.Enabled
 }
 
 // CheckDeclarativeCreate returns an error when declarative read-only mode is active.

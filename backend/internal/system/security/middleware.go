@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
+	"github.com/asgardeo/thunder/internal/system/error/apierror"
 	"github.com/asgardeo/thunder/internal/system/utils"
 )
 
@@ -49,29 +50,12 @@ func middleware(service SecurityServiceInterface) (func(http.Handler) http.Handl
 
 // writeSecurityError writes an appropriate HTTP error response based on the security error.
 func writeSecurityError(w http.ResponseWriter, err error) {
-	var code string
-	var description string
-	var statusCode int
+	w.Header().Set(serverconst.WWWAuthenticateHeaderName, serverconst.TokenTypeBearer)
 
-	// Check for unauthorized errors
-	if errors.Is(err, errUnauthorized) || errors.Is(err, errInvalidToken) ||
-		errors.Is(err, errMissingAuthHeader) || errors.Is(err, errNoHandlerFound) {
-		code = "unauthorized"
-		description = "Authentication is required to access this resource"
-		statusCode = http.StatusUnauthorized
-		// Set WWW-Authenticate header for 401 responses
-		w.Header().Set(serverconst.WWWAuthenticateHeaderName, serverconst.TokenTypeBearer)
-	} else if errors.Is(err, errForbidden) || errors.Is(err, errInsufficientPermissions) {
-		code = "forbidden"
-		description = "You do not have sufficient permissions to access this resource"
-		statusCode = http.StatusForbidden
-	} else {
-		code = "unauthorized"
-		description = "Authentication failed"
-		statusCode = http.StatusUnauthorized
-		w.Header().Set(serverconst.WWWAuthenticateHeaderName, serverconst.TokenTypeBearer)
+	if errors.Is(err, errForbidden) || errors.Is(err, errInsufficientPermissions) {
+		utils.WriteErrorResponse(w, http.StatusForbidden, apierror.ErrForbidden)
+		return
 	}
 
-	// Use the existing WriteJSONError utility
-	utils.WriteJSONError(w, code, description, statusCode, nil)
+	utils.WriteErrorResponse(w, http.StatusUnauthorized, apierror.ErrUnauthorized)
 }

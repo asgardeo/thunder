@@ -69,11 +69,12 @@ func ParseURL(urlStr string) (*url.URL, error) {
 }
 
 // MatchURIPattern reports whether incoming matches pattern.
-// pattern may contain * (exactly one path segment) or ** (zero or more path segments)
-// only in the path component. Scheme, host, and query must match exactly (case-insensitive
-// scheme and host per RFC 3986). Both paths are cleaned (resolving . and .. segments)
-// before matching to prevent path traversal. Returns (false, error) for malformed inputs,
-// (false, nil) for no match, (true, nil) for a match.
+// In the path component, * matches exactly one segment and ** matches zero or more segments.
+// In the host component, * matches one or more alphanumeric characters within a single
+// DNS label and does not cross label boundaries. Scheme and host comparison is
+// case-insensitive; query must match exactly. Paths are cleaned (resolving . and ..
+// segments) before matching to prevent path traversal. Returns (false, error) for malformed
+// inputs, (false, nil) for no match, (true, nil) for a match.
 func MatchURIPattern(pattern, incoming string) (bool, error) {
 	patternURL, err := url.Parse(pattern)
 	if err != nil || patternURL.Scheme == "" || patternURL.Host == "" {
@@ -87,7 +88,7 @@ func MatchURIPattern(pattern, incoming string) (bool, error) {
 	if !strings.EqualFold(patternURL.Scheme, incomingURL.Scheme) {
 		return false, nil
 	}
-	if !strings.EqualFold(patternURL.Host, incomingURL.Host) {
+	if !matchHostPattern(patternURL.Host, incomingURL.Host) {
 		return false, nil
 	}
 	if patternURL.RawQuery != incomingURL.RawQuery {
@@ -97,6 +98,68 @@ func MatchURIPattern(pattern, incoming string) (bool, error) {
 		return false, nil
 	}
 	return matchPathPattern(path.Clean(patternURL.Path), path.Clean(incomingURL.Path)), nil
+}
+
+// matchHostPattern matches incoming host against pattern host. * in the pattern matches
+// one or more alphanumeric characters within a single DNS label. Comparison is
+// case-insensitive. When the pattern contains no *, this is equivalent to strings.EqualFold.
+func matchHostPattern(pattern, incoming string) bool {
+	if !strings.ContainsRune(pattern, '*') {
+		return strings.EqualFold(pattern, incoming)
+	}
+	pattern = strings.ToLower(pattern)
+	incoming = strings.ToLower(incoming)
+	pLabels := strings.Split(pattern, ".")
+	iLabels := strings.Split(incoming, ".")
+	if len(pLabels) != len(iLabels) {
+		return false
+	}
+	for k := range pLabels {
+		if !matchHostLabel(pLabels[k], iLabels[k]) {
+			return false
+		}
+	}
+	return true
+}
+
+// matchHostLabel matches a single host label. * in the pattern matches one or more
+// alphanumeric chars (a-z, 0-9). Both inputs must already be lowercased.
+func matchHostLabel(pat, inc string) bool {
+	return matchHostLabelImpl(pat, inc, 0, 0)
+}
+
+// matchHostLabelImpl is the recursive backtracking matcher for matchHostLabel.
+// pi and ii are the current positions in pat and inc respectively. * is greedy with
+// backtracking so adjacent literals like *foo can match correctly.
+func matchHostLabelImpl(pat, inc string, pi, ii int) bool {
+	for pi < len(pat) {
+		if pat[pi] == '*' {
+			j := ii
+			for j < len(inc) && isHostAlphaNum(inc[j]) {
+				j++
+			}
+			// * must consume at least one character; try the longest match first then backtrack.
+			for k := j; k > ii; k-- {
+				if matchHostLabelImpl(pat, inc, pi+1, k) {
+					return true
+				}
+			}
+			return false
+		}
+		if ii >= len(inc) || pat[pi] != inc[ii] {
+			return false
+		}
+		pi++
+		ii++
+	}
+	return ii == len(inc)
+}
+
+// isHostAlphaNum reports whether the byte is a lowercase letter or a digit.
+// The host matcher lowercases its inputs before comparing, so this is the full
+// character class consumed by * within a host label.
+func isHostAlphaNum(b byte) bool {
+	return (b >= '0' && b <= '9') || (b >= 'a' && b <= 'z')
 }
 
 // matchPathPattern reports whether incomingPath matches patternPath.

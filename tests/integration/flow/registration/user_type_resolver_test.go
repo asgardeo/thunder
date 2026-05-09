@@ -56,7 +56,7 @@ func (ts *UserTypeResolverRuntimeTestSuite) SetupSuite() {
 	ts.testOUID1 = ouID1
 
 	// Create first user type with self-registration enabled
-	userType1 := testutils.UserSchema{
+	userType1 := testutils.UserType{
 		Name:                  "runtime-test-customer",
 		OUID:                  ts.testOUID1,
 		AllowSelfRegistration: true,
@@ -74,7 +74,7 @@ func (ts *UserTypeResolverRuntimeTestSuite) SetupSuite() {
 	ts.testUserTypeName1 = userType1.Name
 
 	// Create second user type with self-registration enabled
-	userType2 := testutils.UserSchema{
+	userType2 := testutils.UserType{
 		Name:                  "runtime-test-employee",
 		OUID:                  ts.testOUID1,
 		AllowSelfRegistration: true,
@@ -91,12 +91,19 @@ func (ts *UserTypeResolverRuntimeTestSuite) SetupSuite() {
 	ts.testUserTypeID2 = userTypeID2
 	ts.testUserTypeName2 = userType2.Name
 
+	// Look up the default registration flow ID
+	regFlowID, err := testutils.GetFlowIDByHandle("default-basic-flow", "REGISTRATION")
+	if err != nil {
+		ts.T().Fatalf("Failed to get default registration flow ID: %v", err)
+	}
+
 	// Create test application with two user types (triggers user type selection)
 	testApp := testutils.Application{
 		OUID:                      ts.testOUID1,
 		Name:                      "Runtime Meta Test Application",
 		Description:               "Application for testing runtime meta generation",
 		IsRegistrationFlowEnabled: true,
+		RegistrationFlowID:        regFlowID,
 		ClientID:                  "runtime_meta_test_client",
 		ClientSecret:              "runtime_meta_test_secret",
 		RedirectURIs:              []string{"http://localhost:3000/callback"},

@@ -20,7 +20,9 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/asgardeo/thunder/internal/agent"
 	"github.com/asgardeo/thunder/internal/application"
@@ -31,6 +33,7 @@ import (
 	authnConsent "github.com/asgardeo/thunder/internal/authn/consent"
 	"github.com/asgardeo/thunder/internal/authn/github"
 	"github.com/asgardeo/thunder/internal/authn/google"
+	"github.com/asgardeo/thunder/internal/authn/magiclink"
 	authnOAuth "github.com/asgardeo/thunder/internal/authn/oauth"
 	authnOIDC "github.com/asgardeo/thunder/internal/authn/oidc"
 	"github.com/asgardeo/thunder/internal/authn/otp"
@@ -44,6 +47,7 @@ import (
 	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
 	"github.com/asgardeo/thunder/internal/entity"
 	"github.com/asgardeo/thunder/internal/entityprovider"
+	"github.com/asgardeo/thunder/internal/entitytype"
 	flowcore "github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/flow/executor"
 	"github.com/asgardeo/thunder/internal/flow/flowexec"
@@ -57,8 +61,9 @@ import (
 	"github.com/asgardeo/thunder/internal/ou"
 	"github.com/asgardeo/thunder/internal/resource"
 	"github.com/asgardeo/thunder/internal/role"
-	"github.com/asgardeo/thunder/internal/system/crypto/hash"
-	"github.com/asgardeo/thunder/internal/system/crypto/pki"
+	"github.com/asgardeo/thunder/internal/system/cache"
+	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/asgardeo/thunder/internal/system/cryptolab/hash"
 	dbprovider "github.com/asgardeo/thunder/internal/system/database/provider"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
 	"github.com/asgardeo/thunder/internal/system/email"
@@ -68,6 +73,8 @@ import (
 	"github.com/asgardeo/thunder/internal/system/importer"
 	"github.com/asgardeo/thunder/internal/system/jose"
 	"github.com/asgardeo/thunder/internal/system/jose/jwt"
+	"github.com/asgardeo/thunder/internal/system/kmprovider/defaultkm"
+	"github.com/asgardeo/thunder/internal/system/kmprovider/defaultkm/pkiservice"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/mcp"
 	"github.com/asgardeo/thunder/internal/system/observability"
@@ -75,21 +82,26 @@ import (
 	"github.com/asgardeo/thunder/internal/system/sysauthz"
 	"github.com/asgardeo/thunder/internal/system/template"
 	"github.com/asgardeo/thunder/internal/user"
-	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 // observabilitySvc is the observability service instance. This is used for graceful shutdown.
 var observabilitySvc observability.ObservabilityServiceInterface
 
 // registerServices registers all the services with the provided HTTP multiplexer.
-func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
+func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterface) jwt.JWTServiceInterface {
 	logger := log.GetLogger()
 
 	// Load the server's private key for signing JWTs.
-	pkiService, err := pki.Initialize()
+	pkiService, err := pkiservice.Initialize()
 	if err != nil {
 		logger.Fatal("Failed to initialize certificate service", log.Error(err))
 	}
+
+	configCryptoSvc, err := defaultkm.InitConfigProvider()
+	if err != nil {
+		logger.Fatal("Failed to initialize config crypto provider", log.Error(err))
+	}
+	runtimeCryptoSvc := defaultkm.NewRuntimeCryptoService(pkiService, configCryptoSvc)
 
 	jwtService, jweService, err := jose.Initialize(pkiService)
 	if err != nil {
@@ -125,7 +137,11 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// would arise if sysauthz were to directly import the ou package.
 	ouAuthzService.SetOUHierarchyResolver(ouHierarchyResolver)
 
-	hashService, err := hash.Initialize()
+	hashCfg, err := buildHashConfig()
+	if err != nil {
+		logger.Fatal("Failed to build HashService config", log.Error(err))
+	}
+	hashService, err := hash.Initialize(hashCfg)
 	if err != nil {
 		logger.Fatal("Failed to initialize HashService", log.Error(err))
 	}
@@ -133,16 +149,16 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Initialize consent service
 	consentService := consent.Initialize()
 
-	// Initialize user schema service
-	userSchemaService, userSchemaExporter, err := userschema.Initialize(
-		mux, ouService, ouAuthzService, consentService)
+	// Initialize user type service
+	entityTypeService, entityTypeExporter, err := entitytype.Initialize(
+		mux, cacheManager, ouService, ouAuthzService, consentService)
 	if err != nil {
-		logger.Fatal("Failed to initialize UserSchemaService", log.Error(err))
+		logger.Fatal("Failed to initialize EntityTypeService", log.Error(err))
 	}
-	exporters = append(exporters, userSchemaExporter)
+	exporters = append(exporters, entityTypeExporter)
 
 	// Initialize entity service
-	entityService, err := entity.Initialize(hashService, userSchemaService, ouService)
+	entityService, err := entity.Initialize(cacheManager, hashService, entityTypeService, ouService)
 	if err != nil {
 		logger.Fatal("Failed to initialize EntityService", log.Error(err))
 	}
@@ -151,19 +167,20 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	entityProvider := entityprovider.InitializeEntityProvider(entityService)
 
 	userService, ouUserResolver, userExporter, err := user.Initialize(
-		mux, entityService, ouService, userSchemaService, ouAuthzService,
+		mux, entityService, ouService, entityTypeService, ouAuthzService,
 	)
 	if err != nil {
 		logger.Fatal("Failed to initialize UserService", log.Error(err))
 	}
 	exporters = append(exporters, userExporter)
 
-	groupService, ouGroupResolver, err := group.Initialize(
-		mux, dbprovider.GetDBProvider(), ouService, entityService, userSchemaService, ouAuthzService,
+	groupService, ouGroupResolver, groupExporter, err := group.Initialize(
+		mux, dbprovider.GetDBProvider(), ouService, entityService, entityTypeService, ouAuthzService,
 	)
 	if err != nil {
 		logger.Fatal("Failed to initialize GroupService", log.Error(err))
 	}
+	exporters = append(exporters, groupExporter)
 
 	// Two-phase initialization: inject user/group resolvers into OU service.
 	ouService.SetOUUserResolver(ouUserResolver)
@@ -175,7 +192,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	}
 	exporters = append(exporters, resourceExporter)
 	roleService, roleExporter, err := role.Initialize(
-		mux, entityService, groupService, ouService, resourceService, userSchemaService,
+		mux, entityService, groupService, ouService, resourceService, entityTypeService,
 	)
 	if err != nil {
 		logger.Fatal("Failed to initialize RoleService", log.Error(err))
@@ -183,7 +200,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	exporters = append(exporters, roleExporter)
 	authZService := authz.Initialize(roleService)
 
-	idpService, idpExporter, err := idp.Initialize(mux)
+	idpService, idpExporter, err := idp.Initialize(cacheManager, mux)
 	if err != nil {
 		logger.Fatal("Failed to initialize IDPService", log.Error(err))
 	}
@@ -206,6 +223,9 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 
 	// Initialize passkey service
 	passkeyService := passkey.Initialize(entityService)
+
+	// Initialize magic link service
+	magicLinkService := magiclink.Initialize(jwtService, entityProvider)
 
 	// Initialize otp core service
 	otpCoreService := otp.Initialize(otpService, entityProvider)
@@ -232,12 +252,12 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	consentEnforcer := authnConsent.Initialize(consentService, jwtService)
 
 	authn.Initialize(mux, mcpServer, idpService, jwtService, authnProvider, authAssertGen, passkeyService,
-		otpCoreService, oauthAuthnService, oidcAuthnService, googleAuthnService, githubAuthnService)
+		otpCoreService, magicLinkService, oauthAuthnService, oidcAuthnService, googleAuthnService, githubAuthnService)
 
 	attributeCacheService := attributecache.Initialize()
 
 	// Initialize flow and executor services.
-	flowFactory, graphCache := flowcore.Initialize()
+	flowFactory, graphCache := flowcore.Initialize(cacheManager)
 	var emailClient email.EmailClientInterface
 	emailClient, err = email.Initialize()
 	if err != nil {
@@ -246,16 +266,17 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		emailClient = nil
 	}
 	execRegistry := executor.Initialize(flowFactory, ouService, idpService, notifSenderSvc, jwtService, authAssertGen,
-		consentEnforcer, authnProvider, otpCoreService, passkeyService, authZService, userSchemaService,
-		observabilitySvc, groupService, roleService, entityProvider, attributeCacheService, emailClient,
+		consentEnforcer, authnProvider, otpCoreService, passkeyService, magicLinkService, authZService,
+		entityTypeService, groupService, roleService, entityProvider, attributeCacheService, emailClient,
 		templateService, oauthAuthnService, oidcAuthnService, githubAuthnService, googleAuthnService)
 
-	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(mux, mcpServer, flowFactory, execRegistry, graphCache)
+	flowMgtService, flowMgtExporter, err := flowmgt.Initialize(
+		mux, mcpServer, cacheManager, flowFactory, execRegistry, graphCache)
 	if err != nil {
 		logger.Fatal("Failed to initialize FlowMgtService", log.Error(err))
 	}
 	exporters = append(exporters, flowMgtExporter)
-	certservice, err := cert.Initialize(dbprovider.GetDBProvider())
+	certservice, err := cert.Initialize(cacheManager, dbprovider.GetDBProvider())
 	if err != nil {
 		logger.Fatal("Failed to initialize CertificateService", log.Error(err))
 	}
@@ -274,8 +295,8 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	exporters = append(exporters, layoutExporter)
 
 	inboundClientService, err := inboundclient.Initialize(
-		certservice, entityProvider,
-		themeMgtService, layoutMgtService, flowMgtService, userSchemaService, consentService)
+		cacheManager, certservice, entityProvider,
+		themeMgtService, layoutMgtService, flowMgtService, entityTypeService, consentService)
 	if err != nil {
 		logger.Fatal("Failed to initialize InboundClientService", log.Error(err))
 	}
@@ -296,7 +317,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	designResolveService := resolve.Initialize(mux, themeMgtService, layoutMgtService, applicationService)
 
 	// Initialize flow metadata service
-	_ = flowmeta.Initialize(mux, applicationService, ouService, designResolveService, i18nService)
+	_ = flowmeta.Initialize(mux, inboundClientService, entityProvider, ouService, designResolveService, i18nService)
 
 	// Initialize export service with collected exporters
 	_ = export.Initialize(mux, exporters)
@@ -308,8 +329,9 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		idpService,
 		flowMgtService,
 		ouService,
-		userSchemaService,
+		entityTypeService,
 		roleService,
+		groupService,
 		resourceService,
 		themeMgtService,
 		layoutMgtService,
@@ -317,8 +339,8 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 		i18nService,
 	)
 
-	flowExecService, err := flowexec.Initialize(mux, flowMgtService, applicationService, execRegistry,
-		observabilitySvc)
+	flowExecService, err := flowexec.Initialize(mux, flowMgtService, inboundClientService, entityProvider,
+		execRegistry, observabilitySvc, runtimeCryptoSvc)
 	if err != nil {
 		logger.Fatal("Failed to initialize flow execution service", log.Error(err))
 	}
@@ -326,7 +348,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	// Initialize OAuth services.
 	err = oauth.Initialize(mux, applicationService, inboundClientService, authnProvider, jwtService, jweService,
 		flowExecService, observabilitySvc, pkiService, ouService, attributeCacheService, authZService, entityProvider,
-		resourceService, i18nService)
+		resourceService, i18nService, idpService)
 	if err != nil {
 		logger.Fatal("Failed to initialize OAuth services", log.Error(err))
 	}
@@ -341,4 +363,23 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 // unregisterServices unregisters all services that require cleanup during shutdown.
 func unregisterServices() {
 	observabilitySvc.Shutdown()
+}
+
+// buildHashConfig constructs a hash.HashConfig from the server configuration.
+func buildHashConfig() (hash.HashConfig, error) {
+	cfg := config.GetServerRuntime().Config.Crypto.PasswordHashing
+	alg := hash.CredAlgorithm(strings.ToUpper(cfg.Algorithm))
+	switch alg {
+	case "", hash.SHA256:
+		return hash.HashConfig{Algorithm: hash.SHA256, SaltSize: cfg.SHA256.SaltSize}, nil
+	case hash.PBKDF2:
+		return hash.HashConfig{Algorithm: alg, SaltSize: cfg.PBKDF2.SaltSize,
+			Iterations: cfg.PBKDF2.Iterations, KeySize: cfg.PBKDF2.KeySize}, nil
+	case hash.ARGON2ID:
+		return hash.HashConfig{Algorithm: alg, SaltSize: cfg.Argon2ID.SaltSize,
+			Iterations: cfg.Argon2ID.Iterations, Memory: cfg.Argon2ID.Memory,
+			Parallelism: cfg.Argon2ID.Parallelism, KeySize: cfg.Argon2ID.KeySize}, nil
+	default:
+		return hash.HashConfig{}, fmt.Errorf("unrecognized password hashing algorithm %q", cfg.Algorithm)
+	}
 }

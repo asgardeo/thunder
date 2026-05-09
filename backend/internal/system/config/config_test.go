@@ -993,3 +993,99 @@ func (suite *ConfigTestSuite) createTempFile(dir, pattern, content string) strin
 
 	return tempFile.Name()
 }
+
+func (suite *ConfigTestSuite) TestAuthClassValidate_EmptyConfig() {
+	cfg := AuthClassConfig{}
+	assert.NoError(suite.T(), cfg.Validate())
+}
+
+func (suite *ConfigTestSuite) TestAuthClassValidate_ValidMapping() {
+	cfg := AuthClassConfig{
+		Amrs: []string{"PWD", "OTP"},
+		AcrAMR: map[string][]string{
+			"urn:thunder:acr:password":       {"PWD"},
+			"urn:thunder:acr:generated-code": {"OTP"},
+			"urn:thunder:acr:multi":          {"PWD", "OTP"},
+		},
+	}
+	assert.NoError(suite.T(), cfg.Validate())
+}
+
+func (suite *ConfigTestSuite) TestAuthClassValidate_EmptyAMRList() {
+	cfg := AuthClassConfig{
+		Amrs: []string{"PWD"},
+		AcrAMR: map[string][]string{
+			"urn:thunder:acr:password": {"PWD"},
+			"urn:thunder:acr:empty":    {},
+		},
+	}
+	err := cfg.Validate()
+	suite.Require().Error(err)
+	assert.Contains(suite.T(), err.Error(), "urn:thunder:acr:empty")
+	assert.Contains(suite.T(), err.Error(), "empty AMR list")
+}
+
+func (suite *ConfigTestSuite) TestAuthClassValidate_UnknownAMRKey() {
+	cfg := AuthClassConfig{
+		Amrs: []string{"PWD"},
+		AcrAMR: map[string][]string{
+			"urn:thunder:acr:password": {"PWD"},
+			"urn:thunder:acr:otp":      {"NonExistentAMR"},
+		},
+	}
+	err := cfg.Validate()
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "NonExistentAMR")
+	assert.Contains(suite.T(), err.Error(), "unknown AMR key")
+}
+
+func (suite *ConfigTestSuite) TestAuthClassValidate_NoAMRSection() {
+	cfg := AuthClassConfig{
+		AcrAMR: map[string][]string{
+			"urn:thunder:acr:password": {"PWD"},
+		},
+	}
+	err := cfg.Validate()
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "unknown AMR key")
+}
+
+func (suite *ConfigTestSuite) TestAuthClassValidate_AcrAMREmptyButAMRPresent() {
+	cfg := AuthClassConfig{
+		Amrs: []string{"PWD"},
+	}
+	assert.NoError(suite.T(), cfg.Validate())
+}
+
+func (suite *ConfigTestSuite) TestAuthClassValidate_EmptyACRKey() {
+	cfg := AuthClassConfig{
+		Amrs: []string{"PWD"},
+		AcrAMR: map[string][]string{
+			"": {"PWD"},
+		},
+	}
+	err := cfg.Validate()
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "ACR value must not be empty")
+}
+
+func (suite *ConfigTestSuite) TestAuthClassValidate_EmptyAMREntry() {
+	cfg := AuthClassConfig{
+		Amrs: []string{"PWD", ""},
+	}
+	err := cfg.Validate()
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "AMR entry must not be empty")
+}
+
+func (suite *ConfigTestSuite) TestAuthClassValidate_EmptyAMRReference() {
+	cfg := AuthClassConfig{
+		Amrs: []string{"PWD"},
+		AcrAMR: map[string][]string{
+			"urn:thunder:acr:password": {"PWD", ""},
+		},
+	}
+	err := cfg.Validate()
+	assert.Error(suite.T(), err)
+	assert.Contains(suite.T(), err.Error(), "references an empty AMR key")
+}

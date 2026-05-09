@@ -23,11 +23,11 @@ import (
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/entityprovider"
+	"github.com/asgardeo/thunder/internal/entitytype"
 	"github.com/asgardeo/thunder/internal/flow/common"
 	"github.com/asgardeo/thunder/internal/flow/core"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
-	"github.com/asgardeo/thunder/internal/userschema"
 )
 
 // attributeUniquenessValidator checks whether values supplied for unique schema attributes
@@ -36,7 +36,7 @@ import (
 // before any creation executor runs.
 type attributeUniquenessValidator struct {
 	core.ExecutorInterface
-	userSchemaService userschema.UserSchemaServiceInterface
+	entityTypeService entitytype.EntityTypeServiceInterface
 	entityProvider    entityprovider.EntityProviderInterface
 	logger            *log.Logger
 }
@@ -44,7 +44,7 @@ type attributeUniquenessValidator struct {
 // newAttributeUniquenessValidator creates a new instance of attributeUniquenessValidator.
 func newAttributeUniquenessValidator(
 	flowFactory core.FlowFactoryInterface,
-	userSchemaService userschema.UserSchemaServiceInterface,
+	entityTypeService entitytype.EntityTypeServiceInterface,
 	entityProvider entityprovider.EntityProviderInterface,
 ) *attributeUniquenessValidator {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, ExecutorNameAttributeUniquenessValidator))
@@ -58,13 +58,13 @@ func newAttributeUniquenessValidator(
 		[]common.Input{}, prerequisites)
 	return &attributeUniquenessValidator{
 		ExecutorInterface: base,
-		userSchemaService: userSchemaService,
+		entityTypeService: entityTypeService,
 		entityProvider:    entityProvider,
 		logger:            logger,
 	}
 }
 
-// Execute iterates over the unique attributes defined in the user schema and checks whether
+// Execute iterates over the unique attributes defined in the user type and checks whether
 // any value already present in UserInputs belongs to an existing user.
 // Returns ExecUserInputRequired (triggering onIncomplete routing) with the specific attribute
 // named in FailureReason when a conflict is detected, or ExecComplete when all values are free.
@@ -84,7 +84,7 @@ func (e *attributeUniquenessValidator) Execute(ctx *core.NodeContext) (*common.E
 	userType := ctx.RuntimeData[userTypeKey]
 
 	svcCtx := security.WithRuntimeContext(context.Background())
-	uniqueAttrs, svcErr := e.userSchemaService.GetUniqueAttributes(svcCtx, userType)
+	uniqueAttrs, svcErr := e.entityTypeService.GetUniqueAttributes(svcCtx, entitytype.TypeCategoryUser, userType)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to retrieve unique attributes from schema for user type %s: %s",
 			userType, svcErr.Error.DefaultValue)

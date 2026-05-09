@@ -16,10 +16,7 @@
  * under the License.
  */
 
-// Package model holds the public data types for the inbound client subsystem. Kept as a leaf
-// package (no service / store / flow dependencies) so any consumer — including
-// application/model — can import it without forming a dependency cycle through the
-// inboundclient parent package.
+// Package model holds public data types for the inbound client subsystem.
 //
 //nolint:lll
 package model
@@ -28,8 +25,7 @@ import (
 	"github.com/asgardeo/thunder/internal/cert"
 )
 
-// InboundClient is the protocol-agnostic inbound client record for a principal entity.
-// Identity data (name, description, clientId, credentials) lives in the entity layer.
+// InboundClient is the persistence shape for protocol-agnostic inbound client record.
 type InboundClient struct {
 	ID                        string
 	AuthFlowID                string
@@ -39,30 +35,42 @@ type InboundClient struct {
 	LayoutID                  string
 	Assertion                 *AssertionConfig
 	LoginConsent              *LoginConsentConfig
-	AllowedEntityTypes        []string
+	AllowedUserTypes          []string
 	Properties                map[string]interface{}
 	IsReadOnly                bool
 }
 
-// AssertionConfig is the entity-level (root) assertion config that token configs fall back to.
+// InboundAuthProfile is the wire field block embedded in entity DTOs (requests and responses).
+type InboundAuthProfile struct {
+	AuthFlowID                string              `json:"authFlowId,omitempty"           yaml:"auth_flow_id,omitempty"           jsonschema:"Authentication flow ID. Optional. Specifies which login flow to use (e.g., MFA, passwordless). If omitted, the default authentication flow is used."`
+	RegistrationFlowID        string              `json:"registrationFlowId,omitempty"   yaml:"registration_flow_id,omitempty"   jsonschema:"Registration flow ID. Optional. Specifies the user registration/signup flow."`
+	IsRegistrationFlowEnabled bool                `json:"isRegistrationFlowEnabled"      yaml:"is_registration_flow_enabled"     jsonschema:"Enable self-service registration. Set to true to allow users to sign up themselves. Requires registrationFlowId to be set."`
+	ThemeID                   string              `json:"themeId,omitempty"              yaml:"theme_id,omitempty"               jsonschema:"Theme configuration ID. Optional. Customizes the visual styling of login pages."`
+	LayoutID                  string              `json:"layoutId,omitempty"             yaml:"layout_id,omitempty"              jsonschema:"Layout configuration ID. Optional. Customizes the screen structure and component positioning of login pages."`
+	Assertion                 *AssertionConfig    `json:"assertion,omitempty"            yaml:"assertion,omitempty"              jsonschema:"Assertion configuration. Optional. Customize assertion validity periods and included user attributes."`
+	LoginConsent              *LoginConsentConfig `json:"loginConsent,omitempty"         yaml:"login_consent,omitempty"          jsonschema:"Login consent configuration settings."`
+	AllowedUserTypes          []string            `json:"allowedUserTypes,omitempty"     yaml:"allowed_user_types,omitempty"     jsonschema:"Allowed user types. Optional. Restricts which user types can authenticate to and register against this resource."`
+	Certificate               *Certificate        `json:"certificate,omitempty"          yaml:"certificate,omitempty"            jsonschema:"Resource-level certificate. Optional. For certificate-based authentication or JWT validation."`
+}
+
+// AssertionConfig is the entity-level assertion config; token configs fall back to it.
 type AssertionConfig struct {
 	ValidityPeriod int64    `json:"validityPeriod,omitempty" yaml:"validity_period,omitempty" jsonschema:"Assertion validity period in seconds."`
 	UserAttributes []string `json:"userAttributes,omitempty" yaml:"user_attributes,omitempty" jsonschema:"User attributes to include in the assertion."`
 }
 
-// LoginConsentConfig is the login consent configuration for an inbound client.
+// LoginConsentConfig is the login consent configuration.
 type LoginConsentConfig struct {
 	ValidityPeriod int64 `json:"validityPeriod" yaml:"validity_period" jsonschema:"Consent validity period in seconds. 0 means never expire."`
 }
 
-// Certificate is a user-supplied certificate input for an inbound client.
+// Certificate is a user-supplied certificate input.
 type Certificate struct {
-	Type  cert.CertificateType `json:"type,omitempty" yaml:"type,omitempty" jsonschema:"Certificate type (PEM, JWK, etc.)."`
+	Type  cert.CertificateType `json:"type,omitempty"  yaml:"type,omitempty"  jsonschema:"Certificate type (PEM, JWK, etc.)."`
 	Value string               `json:"value,omitempty" yaml:"value,omitempty" jsonschema:"Certificate value in the format specified by type."`
 }
 
-// DeclarativeLoaderConfig describes how to load inbound clients from a caller-owned YAML
-// resource directory.
+// DeclarativeLoaderConfig describes how to load inbound clients from a YAML resource directory.
 type DeclarativeLoaderConfig struct {
 	ResourceType  string
 	DirectoryName string

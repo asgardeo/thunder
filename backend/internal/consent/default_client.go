@@ -736,7 +736,7 @@ func (c *defaultClient) revokeConsent(ctx context.Context, ouID, consentID strin
 
 // getClientConfig retrieves the client configuration from the system config with validation and defaulting.
 func getClientConfig() clientConfig {
-	consentCfg := config.GetThunderRuntime().Config.Consent
+	consentCfg := config.GetServerRuntime().Config.Consent
 
 	timeoutSecs := consentCfg.Timeout
 	if timeoutSecs <= 0 {

@@ -202,7 +202,7 @@ var (
 		Description: "OU for HTTP request executor authentication tests",
 	}
 
-	httpRequestTestUserSchema = testutils.UserSchema{
+	httpRequestTestEntityType = testutils.UserType{
 		Name: "http_request_test_person",
 		Schema: map[string]interface{}{
 			"username": map[string]interface{}{
@@ -241,7 +241,7 @@ type HTTPRequestExecutorTestSuite struct {
 	config                 *common.TestSuiteConfig
 	mockNotificationServer *testutils.MockHTTPServer
 	ouID                   string
-	userSchemaID           string
+	entityTypeID           string
 	testAppID              string
 	testFlowID             string
 }
@@ -261,13 +261,13 @@ func (ts *HTTPRequestExecutorTestSuite) SetupSuite() {
 	}
 	ts.ouID = ouID
 
-	// Create test user schema within the OU
-	httpRequestTestUserSchema.OUID = ts.ouID
-	schemaID, err := testutils.CreateUserType(httpRequestTestUserSchema)
+	// Create test user type within the OU
+	httpRequestTestEntityType.OUID = ts.ouID
+	schemaID, err := testutils.CreateUserType(httpRequestTestEntityType)
 	if err != nil {
-		ts.T().Fatalf("Failed to create test user schema during setup: %v", err)
+		ts.T().Fatalf("Failed to create test user type during setup: %v", err)
 	}
-	ts.userSchemaID = schemaID
+	ts.entityTypeID = schemaID
 
 	// Start mock HTTP server
 	ts.mockNotificationServer = testutils.NewMockHTTPServer(mockHTTPServerPort)
@@ -339,10 +339,10 @@ func (ts *HTTPRequestExecutorTestSuite) TearDownSuite() {
 		}
 	}
 
-	// Delete test user schema
-	if ts.userSchemaID != "" {
-		if err := testutils.DeleteUserType(ts.userSchemaID); err != nil {
-			ts.T().Logf("Failed to delete test user schema during teardown: %v", err)
+	// Delete test user type
+	if ts.entityTypeID != "" {
+		if err := testutils.DeleteUserType(ts.entityTypeID); err != nil {
+			ts.T().Logf("Failed to delete test user type during teardown: %v", err)
 		}
 	}
 }

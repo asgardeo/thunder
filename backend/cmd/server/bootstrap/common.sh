@@ -20,7 +20,7 @@
 # Common functions and variables for bootstrap scripts
 # Source this file at the beginning of each bootstrap script
 
-PRODUCT_NAME="Thunder"
+PRODUCT_NAME="ThunderID"
 
 # Color codes
 RED='\033[0;31m'

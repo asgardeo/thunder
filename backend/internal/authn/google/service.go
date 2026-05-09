@@ -160,7 +160,7 @@ func (g *googleOIDCAuthnService) ValidateIDToken(
 	}
 
 	// Get leeway from config to account for clock skew
-	leeway := config.GetThunderRuntime().Config.JWT.Leeway
+	leeway := config.GetServerRuntime().Config.JWT.Leeway
 
 	// Validate expiration time
 	exp, ok := claims["exp"].(float64)

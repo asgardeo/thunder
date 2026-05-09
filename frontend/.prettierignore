@@ -4,4 +4,4 @@
 /coverage
 
 pnpm-lock.yaml
-/packages/thunder-create/src/templates
+/packages/create/src/templates

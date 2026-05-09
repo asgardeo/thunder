@@ -24,8 +24,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/asgardeo/thunder/internal/system/crypto"
-	"github.com/asgardeo/thunder/internal/system/crypto/config"
+	"github.com/asgardeo/thunder/internal/system/kmprovider/defaultkm"
 )
 
 // Property represents a generic property with name, value, and isSecret fields.
@@ -76,7 +75,10 @@ func (p *Property) GetValue() (string, error) {
 		return p.value, nil
 	}
 
-	var cryptoProvider crypto.ConfigCryptoProvider = config.GetEncryptionService()
+	cryptoProvider, err := defaultkm.GetEncryptionService()
+	if err != nil {
+		return "", fmt.Errorf("failed to initialize encryption service: %w", err)
+	}
 	decryptedBytes, err := cryptoProvider.Decrypt(context.Background(), []byte(p.value))
 	if err != nil {
 		return "", fmt.Errorf("failed to decrypt secret property %s: %w", p.GetName(), err)
@@ -91,7 +93,10 @@ func (p *Property) Encrypt() error {
 		return nil
 	}
 
-	var cryptoProvider crypto.ConfigCryptoProvider = config.GetEncryptionService()
+	cryptoProvider, err := defaultkm.GetEncryptionService()
+	if err != nil {
+		return fmt.Errorf("failed to initialize encryption service: %w", err)
+	}
 	encryptedBytes, err := cryptoProvider.Encrypt(context.Background(), []byte(p.value))
 	if err != nil {
 		return fmt.Errorf("failed to encrypt secret property %s: %w", p.GetName(), err)

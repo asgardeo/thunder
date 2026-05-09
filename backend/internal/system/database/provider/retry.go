@@ -66,15 +66,15 @@ func initDBRetryMetrics() {
 	retryMetrics.once.Do(func() {
 		meter := otel.Meter("github.com/asgardeo/thunder/database/retry")
 		retryMetrics.retryAttempts, _ = meter.Int64Counter(
-			"thunder_db_retry_attempts_total",
+			"thunderid_db_retry_attempts_total",
 			metric.WithDescription("Total DB retry attempts for transient errors"),
 		)
 		retryMetrics.retryBackoff, _ = meter.Float64Histogram(
-			"thunder_db_retry_backoff_seconds",
+			"thunderid_db_retry_backoff_seconds",
 			metric.WithDescription("Backoff delay used before DB retry attempts"),
 		)
 		retryMetrics.operationLatency, _ = meter.Float64Histogram(
-			"thunder_db_operation_seconds",
+			"thunderid_db_operation_seconds",
 			metric.WithDescription("Latency of DB operations executed through retry wrapper"),
 		)
 	})

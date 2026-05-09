@@ -27,8 +27,8 @@ import (
 	"fmt"
 
 	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/asgardeo/thunder/internal/system/kmprovider/defaultkm/pkiservice"
 	"github.com/asgardeo/thunder/internal/system/log"
 )
 
@@ -47,8 +47,8 @@ type jweService struct {
 }
 
 // newJWEService creates a new JWE service instance.
-func newJWEService(pkiService pki.PKIServiceInterface) (JWEServiceInterface, error) {
-	preferredKid := config.GetThunderRuntime().Config.JWT.PreferredKeyID
+func newJWEService(pkiService pkiservice.PKIServiceInterface) (JWEServiceInterface, error) {
+	preferredKid := config.GetServerRuntime().Config.JWT.PreferredKeyID
 
 	privateKey, err := pkiService.GetPrivateKey(preferredKid)
 	if err != nil {

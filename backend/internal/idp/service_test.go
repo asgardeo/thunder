@@ -19,13 +19,12 @@
 package idp
 
 import (
+	"context"
 	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-
-	"context"
 
 	"github.com/asgardeo/thunder/internal/system/cmodels"
 	"github.com/asgardeo/thunder/internal/system/config"
@@ -43,7 +42,7 @@ func (m *mockTransactioner) Transact(ctx context.Context, operation func(txCtx c
 type IDPServiceTestSuite struct {
 	suite.Suite
 	mockStore  *idpStoreInterfaceMock
-	idpService IDPServiceInterface
+	idpService *idpService
 }
 
 const (
@@ -56,21 +55,24 @@ func TestIDPServiceTestSuite(t *testing.T) {
 }
 
 func (s *IDPServiceTestSuite) SetupTest() {
-	// Initialize ThunderRuntime with declarative mode disabled by default
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: false,
 		},
 	}
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
 
 	s.mockStore = newIdpStoreInterfaceMock(s.T())
-	s.idpService = newIDPService(s.mockStore, &mockTransactioner{})
+	s.idpService = &idpService{
+		idpStore:      s.mockStore,
+		transactioner: &mockTransactioner{},
+		logger:        log.GetLogger().With(log.String(log.LoggerKeyComponentName, "IdPService")),
+	}
 }
 
 func (s *IDPServiceTestSuite) TearDownTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 func createOIDCProperties() []cmodels.Property {
@@ -371,6 +373,61 @@ func (s *IDPServiceTestSuite) TestGetIdentityProviderByName_StoreError() {
 	s.mockStore.AssertExpectations(s.T())
 }
 
+// TestGetIdentityProviderByIssuer_Success tests successful IDP retrieval by issuer
+func (s *IDPServiceTestSuite) TestGetIdentityProviderByIssuer_Success() {
+	prop, _ := cmodels.NewProperty(PropIssuer, "https://idp.example.com", false)
+	idp := &IDPDTO{
+		ID:         "idp-123",
+		Name:       "Test IDP",
+		Type:       IDPTypeOIDC,
+		Properties: []cmodels.Property{*prop},
+	}
+
+	s.mockStore.On("GetIdentityProviderByIssuer", mock.Anything, "https://idp.example.com").Return(idp, nil)
+
+	result, err := s.idpService.GetIdentityProviderByIssuer(context.Background(), "https://idp.example.com")
+
+	s.Nil(err)
+	s.NotNil(result)
+	s.Equal("idp-123", result.ID)
+	s.mockStore.AssertExpectations(s.T())
+}
+
+// TestGetIdentityProviderByIssuer_EmptyIssuer tests empty issuer validation
+func (s *IDPServiceTestSuite) TestGetIdentityProviderByIssuer_EmptyIssuer() {
+	result, err := s.idpService.GetIdentityProviderByIssuer(context.Background(), "")
+
+	s.Nil(result)
+	s.NotNil(err)
+	s.Equal(ErrorInvalidIDPID.Code, err.Code)
+}
+
+// TestGetIdentityProviderByIssuer_NotFound tests IDP not found by issuer
+func (s *IDPServiceTestSuite) TestGetIdentityProviderByIssuer_NotFound() {
+	s.mockStore.On("GetIdentityProviderByIssuer", mock.Anything, "https://unknown.example.com").
+		Return((*IDPDTO)(nil), ErrIDPNotFound)
+
+	result, err := s.idpService.GetIdentityProviderByIssuer(context.Background(), "https://unknown.example.com")
+
+	s.Nil(result)
+	s.NotNil(err)
+	s.Equal(ErrorIDPNotFound.Code, err.Code)
+	s.mockStore.AssertExpectations(s.T())
+}
+
+// TestGetIdentityProviderByIssuer_StoreError tests store error handling
+func (s *IDPServiceTestSuite) TestGetIdentityProviderByIssuer_StoreError() {
+	s.mockStore.On("GetIdentityProviderByIssuer", mock.Anything, "https://idp.example.com").
+		Return((*IDPDTO)(nil), errors.New("database error"))
+
+	result, err := s.idpService.GetIdentityProviderByIssuer(context.Background(), "https://idp.example.com")
+
+	s.Nil(result)
+	s.NotNil(err)
+	s.Equal(serviceerror.InternalServerError.Code, err.Code)
+	s.mockStore.AssertExpectations(s.T())
+}
+
 // TestUpdateIdentityProvider_Success tests successful IDP update
 func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_Success() {
 	idp := &IDPDTO{
@@ -606,15 +663,14 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_StoreError() {
 
 // TestCreateIdentityProvider_DeclarativeModeEnabled tests creation is blocked when declarative mode is enabled
 func (s *IDPServiceTestSuite) TestCreateIdentityProvider_DeclarativeModeEnabled() {
-	// Setup declarative mode
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 	}
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
-	defer config.ResetThunderRuntime()
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
+	defer config.ResetServerRuntime()
 
 	idp := &IDPDTO{
 		Name: "Test IDP",
@@ -630,15 +686,14 @@ func (s *IDPServiceTestSuite) TestCreateIdentityProvider_DeclarativeModeEnabled(
 
 // TestUpdateIdentityProvider_DeclarativeModeEnabled tests update is blocked when declarative mode is enabled
 func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_DeclarativeModeEnabled() {
-	// Setup declarative mode
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 	}
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
-	defer config.ResetThunderRuntime()
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
+	defer config.ResetServerRuntime()
 
 	idp := &IDPDTO{
 		Name: "Updated IDP",
@@ -654,15 +709,14 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_DeclarativeModeEnabled(
 
 // TestDeleteIdentityProvider_DeclarativeModeEnabled tests deletion is blocked when declarative mode is enabled
 func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_DeclarativeModeEnabled() {
-	// Setup declarative mode
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
 			Enabled: true,
 		},
 	}
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
-	defer config.ResetThunderRuntime()
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
+	defer config.ResetServerRuntime()
 
 	err := s.idpService.DeleteIdentityProvider(context.Background(), "idp-123")
 
@@ -738,13 +792,13 @@ func (s *IDPServiceTestSuite) TestValidateIDP() {
 
 // TestUpdateIdentityProvider_FailsForDeclarativeIDP verifies immutability in composite mode
 func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_FailsForDeclarativeIDP() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		IdentityProvider: config.IdentityProviderConfig{
 			Store: "composite",
 		},
 	}
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
 
 	idpID := declarativeIDPTestID
 	existingIDP := &IDPDTO{
@@ -759,11 +813,9 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_FailsForDeclarativeIDP(
 	dbStore := newIdpStoreInterfaceMock(s.T())
 	compositeStore := newCompositeIDPStore(fileStore, dbStore)
 
-	// Simulate IDP exists in file store (declarative) - dbStore should return not found, fileStore returns the IDP
 	dbStore.On("GetIdentityProvider", context.Background(), idpID).Return((*IDPDTO)(nil), ErrIDPNotFound)
 	fileStore.On("GetIdentityProvider", context.Background(), idpID).Return(existingIDP, nil)
 
-	// Mock GetIdentityProviderByName check (name is changing)
 	dbStore.On("GetIdentityProviderByName", context.Background(), "Updated Name").Return((*IDPDTO)(nil), ErrIDPNotFound)
 	fileStore.On("GetIdentityProviderByName", context.Background(), "Updated Name").
 		Return((*IDPDTO)(nil), ErrIDPNotFound)
@@ -784,18 +836,18 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_FailsForDeclarativeIDP(
 	s.Equal("IDP-1010", err.Code)
 	s.Equal("Identity provider is immutable", err.Error.DefaultValue)
 
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 // TestUpdateIdentityProvider_SucceedsForMutableIDP verifies update works for DB IDPs
 func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_SucceedsForMutableIDP() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		IdentityProvider: config.IdentityProviderConfig{
 			Store: "composite",
 		},
 	}
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
 
 	idpID := mutableIDPTestID
 	existingIDP := &IDPDTO{
@@ -810,7 +862,6 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_SucceedsForMutableIDP()
 	dbStore := newIdpStoreInterfaceMock(s.T())
 	compositeStore := newCompositeIDPStore(fileStore, dbStore)
 
-	// Simulate IDP only exists in database (not in file store)
 	fileStore.On("GetIdentityProvider", context.Background(), idpID).Return((*IDPDTO)(nil), ErrIDPNotFound)
 	fileStore.On("GetIdentityProviderByName", context.Background(), "Updated Name").
 		Return((*IDPDTO)(nil), ErrIDPNotFound)
@@ -834,18 +885,18 @@ func (s *IDPServiceTestSuite) TestUpdateIdentityProvider_SucceedsForMutableIDP()
 	s.Nil(err)
 	s.NotNil(result)
 	s.Equal("Updated Name", result.Name)
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 // TestDeleteIdentityProvider_FailsForDeclarativeIDP verifies immutability for deletes
 func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_FailsForDeclarativeIDP() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		IdentityProvider: config.IdentityProviderConfig{
 			Store: "composite",
 		},
 	}
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
 
 	idpID := "declarative-idp"
 	existingIDP := &IDPDTO{
@@ -859,7 +910,6 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_FailsForDeclarativeIDP(
 	dbStore := newIdpStoreInterfaceMock(s.T())
 	compositeStore := newCompositeIDPStore(fileStore, dbStore)
 
-	// Simulate IDP exists in file store (declarative) - dbStore should return not found, fileStore returns the IDP
 	dbStore.On("GetIdentityProvider", context.Background(), idpID).Return((*IDPDTO)(nil), ErrIDPNotFound)
 	fileStore.On("GetIdentityProvider", context.Background(), idpID).Return(existingIDP, nil)
 
@@ -871,18 +921,18 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_FailsForDeclarativeIDP(
 	s.Equal("IDP-1010", err.Code)
 	s.Equal("Identity provider is immutable", err.Error.DefaultValue)
 
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }
 
 // TestDeleteIdentityProvider_SucceedsForMutableIDP verifies delete works for DB IDPs
 func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_SucceedsForMutableIDP() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	testConfig := &config.Config{
 		IdentityProvider: config.IdentityProviderConfig{
 			Store: "composite",
 		},
 	}
-	_ = config.InitializeThunderRuntime("/tmp/test", testConfig)
+	_ = config.InitializeServerRuntime("/tmp/test", testConfig)
 
 	idpID := "mutable-idp"
 	existingIDP := &IDPDTO{
@@ -896,7 +946,6 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_SucceedsForMutableIDP()
 	dbStore := newIdpStoreInterfaceMock(s.T())
 	compositeStore := newCompositeIDPStore(fileStore, dbStore)
 
-	// Simulate IDP only exists in database (not in file store)
 	fileStore.On("GetIdentityProvider", context.Background(), idpID).Return((*IDPDTO)(nil), ErrIDPNotFound)
 	dbStore.On("GetIdentityProvider", context.Background(), idpID).Return(existingIDP, nil)
 	dbStore.On("DeleteIdentityProvider", context.Background(), idpID).Return(nil)
@@ -908,5 +957,5 @@ func (s *IDPServiceTestSuite) TestDeleteIdentityProvider_SucceedsForMutableIDP()
 	s.Nil(err)
 	dbStore.AssertCalled(s.T(), "DeleteIdentityProvider", context.Background(), idpID)
 
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 }

@@ -50,7 +50,7 @@ func TestJWEServiceSuite(t *testing.T) {
 }
 
 func (suite *JWEServiceTestSuite) SetupTest() {
-	config.ResetThunderRuntime()
+	config.ResetServerRuntime()
 	suite.pkiMock = pkimock.NewPKIServiceInterfaceMock(suite.T())
 
 	rsaKey, _ := rsa.GenerateKey(rand.Reader, 2048)
@@ -64,7 +64,7 @@ func (suite *JWEServiceTestSuite) SetupTest() {
 			PreferredKeyID: "test-kid",
 		},
 	}
-	_ = config.InitializeThunderRuntime("", testConfig)
+	_ = config.InitializeServerRuntime("", testConfig)
 }
 
 func (suite *JWEServiceTestSuite) TestEncryptDecrypt_RSA() {
