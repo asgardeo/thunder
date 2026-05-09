@@ -47,7 +47,19 @@
       "forms.invite_sms_sent.message": "An invitation SMS has been sent to the user. They can complete their registration using the link in the message.",
       "forms.invite_link_status.title": "Invite Link Ready",
       "forms.invite_link_status.message": "Share the invite link below with the user to complete their registration.",
-      "forms.invite_link_status.link_label": "Invite Link"
+      "forms.invite_link_status.link_label": "Invite Link",
+      "forms.onboarding_mode.title": "Add User",
+      "forms.onboarding_mode.subtitle": "Choose whether to create the account now or send an invite for the user to finish onboarding later.",
+      "forms.onboarding_mode.actions.create.label": "Create User",
+      "forms.onboarding_mode.actions.invite.label": "Invite User",
+      "forms.add_user.title": "Add user details",
+      "forms.add_user.subtitle": "Provide the new user details and credentials to create the account immediately.",
+      "forms.add_user.actions.submit.label": "Create User",
+      "forms.complete_registration.title": "Complete your account",
+      "forms.complete_registration.subtitle": "Provide your remaining details and set a password to finish setting up your account.",
+      "forms.complete_registration.actions.submit.label": "Complete Setup",
+      "forms.add_user_complete.title": "User added successfully",
+      "forms.add_user_complete.description": "The new account is ready to access your organization."
     },
     "invite": {
       "validating": "Validating your invite link...",

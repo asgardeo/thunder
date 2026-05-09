@@ -31,6 +31,7 @@ import {zodResolver} from '@hookform/resolvers/zod';
 import {OrganizationUnitTreePicker} from '@thunderid/configure-organization-units';
 import {CopyableTextAdapter, type FlowComponent} from '@thunderid/design';
 import {useLogger} from '@thunderid/logger/react';
+import type {ApiError} from '@thunderid/types';
 import {
   Box,
   Stack,
@@ -91,49 +92,36 @@ function deriveStepLabel(
   return '';
 }
 
-type FlowExecutionErrorLike = {
-  code?: string;
-  failureReason?: string;
-  message?: string;
-  response?: {
-    data?: {
-      code?: string;
-      detail?: string;
-      failureReason?: string;
-      message?: string;
-      title?: string;
-    };
-    status?: number;
-  };
-  status?: number;
-};
+const FLOW_NOT_FOUND_ERROR_CODE = 'FLM-1003';
+
+function hasFlowNotFoundMessage(value: string | undefined): boolean {
+  return value?.toLowerCase().includes('flow not found') ?? false;
+}
 
 function isMissingOnboardingFlow(error: unknown): boolean {
   if (!error || typeof error !== 'object') {
     return false;
   }
 
-  const flowError = error as FlowExecutionErrorLike;
-  const status = flowError.response?.status ?? flowError.status;
-  const code = flowError.response?.data?.code ?? flowError.code;
-  const combinedMessage = [
-    flowError.message,
-    flowError.failureReason,
-    flowError.response?.data?.message,
-    flowError.response?.data?.title,
-    flowError.response?.data?.detail,
-    flowError.response?.data?.failureReason,
-  ]
-    .filter((value): value is string => typeof value === 'string' && value.length > 0)
-    .join(' ')
-    .toLowerCase();
+  const flowError = error as Error & {
+    code?: string;
+    failureReason?: string;
+    response?: {
+      data?: ApiError;
+      status?: number;
+    };
+    status?: number;
+  };
+  const {response} = flowError;
+  const apiError = response?.data;
 
   return (
-    code === 'FLM-1003' ||
-    combinedMessage.includes('flow not found') ||
-    combinedMessage.includes('default-user-onboarding') ||
-    combinedMessage.includes('user onboarding flow') ||
-    (status === 404 && combinedMessage.includes('flow'))
+    apiError?.code === FLOW_NOT_FOUND_ERROR_CODE ||
+    flowError.code === FLOW_NOT_FOUND_ERROR_CODE ||
+    hasFlowNotFoundMessage(apiError?.message) ||
+    hasFlowNotFoundMessage(apiError?.description) ||
+    hasFlowNotFoundMessage(flowError.message) ||
+    hasFlowNotFoundMessage(flowError.failureReason)
   );
 }
 
@@ -214,6 +202,7 @@ function InviteUserStepContent({
                 comp.type === 'TEXT_INPUT' ||
                 comp.type === 'EMAIL_INPUT' ||
                 comp.type === 'PHONE_INPUT' ||
+                comp.type === 'PASSWORD_INPUT' ||
                 comp.type === 'SELECT' ||
                 comp.type === 'OU_SELECT') &&
               comp.ref
@@ -224,6 +213,8 @@ function InviteUserStepContent({
                 fieldSchema = z.string().email('Please enter a valid email address');
               } else if (comp.type === 'PHONE_INPUT') {
                 fieldSchema = z.string().check(z.regex(/^\+?[0-9\s\-().]{7,20}$/, 'Please enter a valid phone number'));
+              } else if (comp.type === 'PASSWORD_INPUT') {
+                fieldSchema = z.string();
               }
 
               const labelText = typeof comp.label === 'string' ? comp.label : comp.ref;
@@ -354,6 +345,40 @@ function InviteUserStepContent({
                 type="tel"
                 placeholder={resolve(placeholderText) ?? placeholderText}
                 autoComplete="tel"
+                required={required}
+                variant="outlined"
+                disabled={isFormLoading}
+                error={!!formErrors[ref]}
+                helperText={formErrors[ref]?.message as string}
+                color={formErrors[ref] ? 'error' : 'primary'}
+                onChange={(e) => {
+                  field.onChange(e);
+                  handleInputChangeFn(ref, e.target.value);
+                }}
+              />
+            )}
+          />
+        </FormControl>
+      );
+    }
+
+    if (type === 'PASSWORD_INPUT') {
+      return (
+        <FormControl key={component.id ?? index} required={required}>
+          <FormLabel htmlFor={ref}>{resolve(labelText) ?? labelText}</FormLabel>
+          <Controller
+            name={ref}
+            control={formControl}
+            rules={{required: required ? `${resolve(labelText) ?? labelText} is required` : false}}
+            render={({field}) => (
+              <TextField
+                {...field}
+                fullWidth
+                size="small"
+                id={ref}
+                type="password"
+                placeholder={resolve(placeholderText) ?? placeholderText}
+                autoComplete="new-password"
                 required={required}
                 variant="outlined"
                 disabled={isFormLoading}

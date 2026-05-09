@@ -226,15 +226,16 @@
                     {
                         "type": "TEXT",
                         "id": "text_header_onboarding_mode",
-                        "label": "How would you like to add this user?",
+                        "label": "{{ t(onboarding:forms.onboarding_mode.title) }}",
                         "variant": "HEADING_1",
                         "align": "center"
                     },
                     {
                         "type": "TEXT",
                         "id": "text_subtitle_onboarding_mode",
-                        "label": "Choose whether to create the account now or send an invite for the user to finish onboarding later.",
-                        "variant": "HEADING_6"
+                        "label": "{{ t(onboarding:forms.onboarding_mode.subtitle) }}",
+                        "variant": "HEADING_6",
+                        "align": "center"
                     },
                     {
                         "type": "BLOCK",
@@ -249,14 +250,14 @@
                                     {
                                         "type": "ACTION",
                                         "id": "action_create_user_now",
-                                        "label": "Create user now",
+                                        "label": "{{ t(onboarding:forms.onboarding_mode.actions.create.label) }}",
                                         "variant": "PRIMARY",
                                         "eventType": "SUBMIT"
                                     },
                                     {
                                         "type": "ACTION",
                                         "id": "action_invite_user",
-                                        "label": "Invite user",
+                                        "label": "{{ t(onboarding:forms.onboarding_mode.actions.invite.label) }}",
                                         "variant": "OUTLINED",
                                         "eventType": "SUBMIT"
                                     }
@@ -270,7 +271,7 @@
                 {
                     "action": {
                         "ref": "action_create_user_now",
-                        "nextNode": "prompt_create_user_details"
+                        "nextNode": "direct_create_provisioning"
                     }
                 },
                 {
@@ -292,6 +293,33 @@
             }
         },
         {
+            "id": "direct_create_provisioning",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "ProvisioningExecutor",
+                "inputs": [
+                    {
+                        "ref": "input_direct_create_password",
+                        "identifier": "password",
+                        "type": "PASSWORD_INPUT",
+                        "required": true
+                    }
+                ]
+            },
+            "onSuccess": "admin_registration_complete",
+            "onIncomplete": "prompt_create_user_details",
+            "layout": {
+                "size": {
+                    "width": 200,
+                    "height": 113
+                },
+                "position": {
+                    "x": 2901,
+                    "y": 1326
+                }
+            }
+        },
+        {
             "id": "prompt_create_user_details",
             "type": "PROMPT",
             "meta": {
@@ -299,14 +327,15 @@
                     {
                         "align": "center",
                         "type": "TEXT",
-                        "id": "text_header_create_details",
-                        "label": "Add user details",
+                        "id": "text_header_create_user_details",
+                        "label": "{{ t(onboarding:forms.add_user.title) }}",
                         "variant": "HEADING_1"
                     },
                     {
+                        "align": "center",
                         "type": "TEXT",
-                        "id": "text_subtitle_create_details",
-                        "label": "Provide the new user details and create the account immediately.",
+                        "id": "text_subtitle_create_user_details",
+                        "label": "{{ t(onboarding:forms.add_user.subtitle) }}",
                         "variant": "HEADING_6"
                     },
                     {
@@ -314,49 +343,13 @@
                         "id": "block_create_user_details",
                         "components": [
                             {
-                                "id": "input_create_email",
-                                "ref": "email",
-                                "type": "EMAIL_INPUT",
-                                "label": "{{ t(onboarding:forms.email.fields.email.label) }}",
-                                "required": true,
-                                "placeholder": "{{ t(onboarding:forms.email.fields.email.placeholder) }}"
-                            },
-                            {
-                                "id": "input_create_username",
-                                "ref": "username",
-                                "type": "TEXT_INPUT",
-                                "label": "{{ t(onboarding:forms.user_details.fields.username.label) }}",
-                                "required": true,
-                                "placeholder": "{{ t(onboarding:forms.user_details.fields.username.placeholder) }}"
-                            },
-                            {
-                                "id": "input_create_given_name",
-                                "ref": "given_name",
-                                "type": "TEXT_INPUT",
-                                "label": "{{ t(onboarding:forms.user_details.fields.first_name.label) }}",
-                                "required": false,
-                                "placeholder": "{{ t(onboarding:forms.user_details.fields.first_name.placeholder) }}"
-                            },
-                            {
-                                "id": "input_create_family_name",
-                                "ref": "family_name",
-                                "type": "TEXT_INPUT",
-                                "label": "{{ t(onboarding:forms.user_details.fields.last_name.label) }}",
-                                "required": false,
-                                "placeholder": "{{ t(onboarding:forms.user_details.fields.last_name.placeholder) }}"
-                            },
-                            {
-                                "id": "input_create_password",
-                                "ref": "password",
-                                "type": "PASSWORD_INPUT",
-                                "label": "{{ t(onboarding:forms.credential.fields.password.label) }}",
-                                "required": true,
-                                "placeholder": "{{ t(onboarding:forms.credential.fields.password.placeholder) }}"
+                                "type": "DYNAMIC_INPUT_PLACEHOLDER",
+                                "id": "dynamic_inputs_create_user_details"
                             },
                             {
                                 "type": "ACTION",
-                                "id": "action_submit_create_user_details",
-                                "label": "Create user",
+                                "id": "action_create_user_details",
+                                "label": "{{ t(onboarding:forms.add_user.actions.submit.label) }}",
                                 "variant": "PRIMARY",
                                 "eventType": "SUBMIT"
                             }
@@ -366,41 +359,10 @@
             },
             "prompts": [
                 {
-                    "inputs": [
-                        {
-                            "ref": "input_create_email",
-                            "identifier": "email",
-                            "type": "EMAIL_INPUT",
-                            "required": true
-                        },
-                        {
-                            "ref": "input_create_username",
-                            "identifier": "username",
-                            "type": "TEXT_INPUT",
-                            "required": true
-                        },
-                        {
-                            "ref": "input_create_given_name",
-                            "identifier": "given_name",
-                            "type": "TEXT_INPUT",
-                            "required": false
-                        },
-                        {
-                            "ref": "input_create_family_name",
-                            "identifier": "family_name",
-                            "type": "TEXT_INPUT",
-                            "required": false
-                        },
-                        {
-                            "ref": "input_create_password",
-                            "identifier": "password",
-                            "type": "PASSWORD_INPUT",
-                            "required": true
-                        }
-                    ],
+                    "inputs": [],
                     "action": {
-                        "ref": "action_submit_create_user_details",
-                        "nextNode": "check_create_user_details_uniqueness"
+                        "ref": "action_create_user_details",
+                        "nextNode": "direct_create_provisioning"
                     }
                 }
             ],
@@ -412,76 +374,6 @@
                 "position": {
                     "x": 1894,
                     "y": 1018
-                }
-            }
-        },
-        {
-            "id": "check_create_user_details_uniqueness",
-            "type": "TASK_EXECUTION",
-            "executor": {
-                "name": "AttributeUniquenessValidator"
-            },
-            "onSuccess": "direct_create_provisioning",
-            "onIncomplete": "prompt_create_user_details",
-            "layout": {
-                "size": {
-                    "width": 272,
-                    "height": 113
-                },
-                "position": {
-                    "x": 2425,
-                    "y": 1324
-                }
-            }
-        },
-        {
-            "id": "direct_create_provisioning",
-            "type": "TASK_EXECUTION",
-            "inputs": [
-                {
-                    "ref": "input_create_email",
-                    "identifier": "email",
-                    "type": "EMAIL_INPUT",
-                    "required": true
-                },
-                {
-                    "ref": "input_create_username",
-                    "identifier": "username",
-                    "type": "TEXT_INPUT",
-                    "required": true
-                },
-                {
-                    "ref": "input_create_password",
-                    "identifier": "password",
-                    "type": "PASSWORD_INPUT",
-                    "required": true
-                },
-                {
-                    "ref": "input_create_given_name",
-                    "identifier": "given_name",
-                    "type": "TEXT_INPUT",
-                    "required": false
-                },
-                {
-                    "ref": "input_create_family_name",
-                    "identifier": "family_name",
-                    "type": "TEXT_INPUT",
-                    "required": false
-                }
-            ],
-            "executor": {
-                "name": "ProvisioningExecutor"
-            },
-            "onSuccess": "registration_complete",
-            "onIncomplete": "prompt_create_user_details",
-            "layout": {
-                "size": {
-                    "width": 200,
-                    "height": 113
-                },
-                "position": {
-                    "x": 2901,
-                    "y": 1326
                 }
             }
         },
@@ -582,7 +474,8 @@
                         "type": "TEXT",
                         "id": "text_subtitle_invite_method",
                         "label": "{{ t(onboarding:forms.invite_mode.subtitle) }}",
-                        "variant": "HEADING_6"
+                        "variant": "HEADING_6",
+                        "align": "center"
                     },
                     {
                         "type": "BLOCK",
@@ -728,7 +621,7 @@
                     }
                 ]
             },
-            "message": "{{ t(onboarding:forms.invite_email_sent.title) }}",
+            "message": "Invitation sent",
             "next": "invite_verify",
             "layout": {
                 "size": {
@@ -775,7 +668,7 @@
                     }
                 ]
             },
-            "message": "{{ t(onboarding:forms.invite_email_unavailable.title) }}",
+            "message": "Email delivery failed",
             "next": "invite_link_status",
             "layout": {
                 "size": {
@@ -850,7 +743,7 @@
                 "name": "InviteExecutor",
                 "mode": "verify"
             },
-            "onSuccess": "prompt_user_details",
+            "onSuccess": "provisioning",
             "layout": {
                 "size": {
                     "width": 200,
@@ -863,6 +756,33 @@
             }
         },
         {
+            "id": "provisioning",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "ProvisioningExecutor",
+                "inputs": [
+                    {
+                        "ref": "input_prompt_password",
+                        "identifier": "password",
+                        "type": "PASSWORD_INPUT",
+                        "required": true
+                    }
+                ]
+            },
+            "onSuccess": "registration_complete",
+            "onIncomplete": "prompt_user_details",
+            "layout": {
+                "size": {
+                    "width": 200,
+                    "height": 113
+                },
+                "position": {
+                    "x": 6484,
+                    "y": 979
+                }
+            }
+        },
+        {
             "id": "prompt_user_details",
             "type": "PROMPT",
             "meta": {
@@ -870,42 +790,29 @@
                     {
                         "align": "center",
                         "type": "TEXT",
-                        "id": "text_header_details",
-                        "label": "{{ t(onboarding:forms.user_details.title) }}",
+                        "id": "text_header_user_details",
+                        "label": "{{ t(onboarding:forms.complete_registration.title) }}",
                         "variant": "HEADING_1"
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "text_subtitle_user_details",
+                        "label": "{{ t(onboarding:forms.complete_registration.subtitle) }}",
+                        "variant": "HEADING_6"
                     },
                     {
                         "type": "BLOCK",
                         "id": "block_user_details",
                         "components": [
                             {
-                                "id": "input_prompt_username",
-                                "ref": "username",
-                                "type": "TEXT_INPUT",
-                                "label": "{{ t(onboarding:forms.user_details.fields.username.label) }}",
-                                "required": true,
-                                "placeholder": "{{ t(onboarding:forms.user_details.fields.username.placeholder) }}"
-                            },
-                            {
-                                "id": "input_prompt_given_name",
-                                "ref": "given_name",
-                                "type": "TEXT_INPUT",
-                                "label": "{{ t(onboarding:forms.user_details.fields.first_name.label) }}",
-                                "required": false,
-                                "placeholder": "{{ t(onboarding:forms.user_details.fields.first_name.placeholder) }}"
-                            },
-                            {
-                                "id": "input_prompt_family_name",
-                                "ref": "family_name",
-                                "type": "TEXT_INPUT",
-                                "label": "{{ t(onboarding:forms.user_details.fields.last_name.label) }}",
-                                "required": false,
-                                "placeholder": "{{ t(onboarding:forms.user_details.fields.last_name.placeholder) }}"
+                                "type": "DYNAMIC_INPUT_PLACEHOLDER",
+                                "id": "dynamic_inputs_user_details"
                             },
                             {
                                 "type": "ACTION",
-                                "id": "action_submit_details",
-                                "label": "{{ t(onboarding:forms.user_details.actions.next.label) }}",
+                                "id": "action_user_details",
+                                "label": "{{ t(onboarding:forms.complete_registration.actions.submit.label) }}",
                                 "variant": "PRIMARY",
                                 "eventType": "SUBMIT"
                             }
@@ -915,29 +822,10 @@
             },
             "prompts": [
                 {
-                    "inputs": [
-                        {
-                            "ref": "input_prompt_username",
-                            "identifier": "username",
-                            "type": "TEXT_INPUT",
-                            "required": true
-                        },
-                        {
-                            "ref": "input_prompt_given_name",
-                            "identifier": "given_name",
-                            "type": "TEXT_INPUT",
-                            "required": false
-                        },
-                        {
-                            "ref": "input_prompt_family_name",
-                            "identifier": "family_name",
-                            "type": "TEXT_INPUT",
-                            "required": false
-                        }
-                    ],
+                    "inputs": [],
                     "action": {
-                        "ref": "action_submit_details",
-                        "nextNode": "check_user_details_uniqueness"
+                        "ref": "action_user_details",
+                        "nextNode": "provisioning"
                     }
                 }
             ],
@@ -949,138 +837,6 @@
                 "position": {
                     "x": 5110,
                     "y": 687
-                }
-            }
-        },
-        {
-            "id": "check_user_details_uniqueness",
-            "type": "TASK_EXECUTION",
-            "executor": {
-                "name": "AttributeUniquenessValidator"
-            },
-            "onSuccess": "prompt_credential",
-            "onIncomplete": "prompt_user_details",
-            "layout": {
-                "size": {
-                    "width": 272,
-                    "height": 113
-                },
-                "position": {
-                    "x": 5640,
-                    "y": 915
-                }
-            }
-        },
-        {
-            "id": "prompt_credential",
-            "type": "PROMPT",
-            "meta": {
-                "components": [
-                    {
-                        "align": "center",
-                        "type": "TEXT",
-                        "id": "text_header_pwd",
-                        "label": "{{ t(onboarding:forms.credential.title) }}",
-                        "variant": "HEADING_1"
-                    },
-                    {
-                        "type": "BLOCK",
-                        "id": "block_pwd",
-                        "components": [
-                            {
-                                "id": "input_prompt_password",
-                                "ref": "password",
-                                "type": "PASSWORD_INPUT",
-                                "label": "{{ t(onboarding:forms.credential.fields.password.label) }}",
-                                "required": true,
-                                "placeholder": "{{ t(onboarding:forms.credential.fields.password.placeholder) }}"
-                            },
-                            {
-                                "type": "ACTION",
-                                "id": "action_submit_pwd",
-                                "label": "{{ t(onboarding:forms.credential.actions.submit.label) }}",
-                                "variant": "PRIMARY",
-                                "eventType": "SUBMIT"
-                            }
-                        ]
-                    }
-                ]
-            },
-            "prompts": [
-                {
-                    "inputs": [
-                        {
-                            "ref": "input_prompt_password",
-                            "identifier": "password",
-                            "type": "PASSWORD_INPUT",
-                            "required": true
-                        }
-                    ],
-                    "action": {
-                        "ref": "action_submit_pwd",
-                        "nextNode": "provisioning"
-                    }
-                }
-            ],
-            "layout": {
-                "size": {
-                    "width": 350,
-                    "height": 431
-                },
-                "position": {
-                    "x": 6020,
-                    "y": 757
-                }
-            }
-        },
-        {
-            "id": "provisioning",
-            "type": "TASK_EXECUTION",
-            "inputs": [
-                {
-                    "ref": "input_email",
-                    "identifier": "email",
-                    "type": "EMAIL_INPUT",
-                    "required": true
-                },
-                {
-                    "ref": "input_username",
-                    "identifier": "username",
-                    "type": "TEXT_INPUT",
-                    "required": true
-                },
-                {
-                    "ref": "input_password",
-                    "identifier": "password",
-                    "type": "PASSWORD_INPUT",
-                    "required": true
-                },
-                {
-                    "ref": "input_given_name",
-                    "identifier": "given_name",
-                    "type": "TEXT_INPUT",
-                    "required": false
-                },
-                {
-                    "ref": "input_family_name",
-                    "identifier": "family_name",
-                    "type": "TEXT_INPUT",
-                    "required": false
-                }
-            ],
-            "executor": {
-                "name": "ProvisioningExecutor"
-            },
-            "onSuccess": "registration_complete",
-            "onIncomplete": "prompt_credential",
-            "layout": {
-                "size": {
-                    "width": 200,
-                    "height": 113
-                },
-                "position": {
-                    "x": 6484,
-                    "y": 979
                 }
             }
         },
@@ -1100,14 +856,55 @@
                         "align": "center",
                         "type": "TEXT",
                         "id": "registration_complete_heading",
-                        "label": "User added successfully",
+                        "label": "{{ t(invite:complete.title) }}",
                         "variant": "HEADING_1"
                     },
                     {
                         "align": "center",
                         "type": "TEXT",
                         "id": "registration_complete_message",
-                        "label": "The new account is ready to access your organization.",
+                        "label": "{{ t(invite:complete.description) }}",
+                        "variant": "HEADING_6"
+                    }
+                ]
+            },
+            "message": "Registration complete",
+            "next": "end",
+            "layout": {
+                "size": {
+                    "width": 350,
+                    "height": 358
+                },
+                "position": {
+                    "x": 6796,
+                    "y": 857
+                }
+            }
+        },
+        {
+            "id": "admin_registration_complete",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "admin_registration_complete_icon",
+                        "label": "\u2705",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "admin_registration_complete_heading",
+                        "label": "{{ t(onboarding:forms.add_user_complete.title) }}",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "admin_registration_complete_message",
+                        "label": "{{ t(onboarding:forms.add_user_complete.description) }}",
                         "variant": "HEADING_6"
                     }
                 ]
@@ -1120,8 +917,8 @@
                     "height": 358
                 },
                 "position": {
-                    "x": 6796,
-                    "y": 857
+                    "x": 3896,
+                    "y": 1233
                 }
             }
         },

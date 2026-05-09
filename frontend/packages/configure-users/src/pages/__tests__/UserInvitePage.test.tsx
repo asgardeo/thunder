@@ -190,7 +190,22 @@ const phoneInput = (
     label,
     required: opts?.required ?? false,
     placeholder: opts?.placeholder ?? '',
-    id: opts?.id ?? `phone-${ref}`,
+   id: opts?.id ?? `phone-${ref}`,
+  }) as unknown as EmbeddedFlowComponent;
+
+/** Build a password input component */
+const passwordInput = (
+  ref: string,
+  label: string,
+  opts?: {required?: boolean; placeholder?: string; id?: string},
+): EmbeddedFlowComponent =>
+  ({
+    type: 'PASSWORD_INPUT',
+    ref,
+    label,
+    required: opts?.required ?? false,
+    placeholder: opts?.placeholder ?? '',
+    id: opts?.id ?? `password-${ref}`,
   }) as unknown as EmbeddedFlowComponent;
 
 /** Build a select component */
@@ -352,6 +367,19 @@ describe('UserInvitePage', () => {
       const input = screen.getByLabelText(/phone number/i);
       expect(input).toBeInTheDocument();
       expect(input).toHaveAttribute('type', 'tel');
+    });
+
+    it('should render a PASSWORD_INPUT field', () => {
+      mockInviteUserRenderProps.components = [
+        heading('Password Step'),
+        block([passwordInput('password', 'Password', {required: true}), submitAction('Next')]),
+      ];
+
+      render(<UserInvitePage />);
+
+      const input = screen.getByLabelText(/password/i);
+      expect(input).toBeInTheDocument();
+      expect(input).toHaveAttribute('type', 'password');
     });
 
     it('should render a SELECT field with options', () => {
@@ -696,6 +724,20 @@ describe('UserInvitePage', () => {
 
       const input = screen.getByLabelText(/email/i);
       await userEvent.type(input, 'test@example.com');
+
+      expect(mockHandleInputChange).toHaveBeenCalled();
+    });
+
+    it('should call handleInputChange when typing in a PASSWORD_INPUT', async () => {
+      mockInviteUserRenderProps.components = [
+        heading('Password'),
+        block([passwordInput('password', 'Password', {required: true}), submitAction('Next')]),
+      ];
+
+      render(<UserInvitePage />);
+
+      const input = screen.getByLabelText(/password/i);
+      await userEvent.type(input, 'SuperSecret123');
 
       expect(mockHandleInputChange).toHaveBeenCalled();
     });
