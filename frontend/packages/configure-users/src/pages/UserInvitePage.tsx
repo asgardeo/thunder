@@ -94,7 +94,7 @@ function deriveStepLabel(
 
 const FLOW_NOT_FOUND_ERROR_CODE = 'FLM-1003';
 
-function hasFlowNotFoundMessage(value: string | undefined): boolean {
+function containsFlowNotFoundText(value: string | undefined): boolean {
   return value?.toLowerCase().includes('flow not found') ?? false;
 }
 
@@ -118,10 +118,10 @@ function isMissingOnboardingFlow(error: unknown): boolean {
   return (
     apiError?.code === FLOW_NOT_FOUND_ERROR_CODE ||
     flowError.code === FLOW_NOT_FOUND_ERROR_CODE ||
-    hasFlowNotFoundMessage(apiError?.message) ||
-    hasFlowNotFoundMessage(apiError?.description) ||
-    hasFlowNotFoundMessage(flowError.message) ||
-    hasFlowNotFoundMessage(flowError.failureReason)
+    containsFlowNotFoundText(apiError?.message) ||
+    containsFlowNotFoundText(apiError?.description) ||
+    containsFlowNotFoundText(flowError.message) ||
+    containsFlowNotFoundText(flowError.failureReason)
   );
 }
 
