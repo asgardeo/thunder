@@ -262,6 +262,7 @@ describe('UserInvitePage', () => {
     simulateInviteUserError = false;
     capturedOnFlowChange = null;
     mockInviteUserRenderProps = {...defaultRenderProps};
+    Object.assign(mockInviteUserError, {message: 'Invite user failed', response: undefined});
   });
 
   /* ----- Loading state ----- */
@@ -293,13 +294,13 @@ describe('UserInvitePage', () => {
   /* ----- Default header ----- */
 
   describe('header', () => {
-    it('should display default "Invite User" breadcrumb when no steps have been visited', () => {
+    it('should display default "Add User" breadcrumb when no steps have been visited', () => {
       mockInviteUserRenderProps.isLoading = true;
       mockInviteUserRenderProps.components = [];
 
       render(<UserInvitePage />);
 
-      expect(screen.getByText('Invite User')).toBeInTheDocument();
+      expect(screen.getByText('Add User')).toBeInTheDocument();
     });
 
     it('should render a close button that navigates to /users', async () => {
@@ -450,22 +451,22 @@ describe('UserInvitePage', () => {
       expect(screen.getByText('Check your email.')).toBeInTheDocument();
     });
 
-    it('should show "Close" and "Invite Another User" buttons when no BLOCK components present', () => {
+    it('should show "Close" and "Add Another User" buttons when no BLOCK components present', () => {
       mockInviteUserRenderProps.components = [heading('Done')];
 
       render(<UserInvitePage />);
 
       const closeButtons = screen.getAllByRole('button', {name: /close/i});
       expect(closeButtons.length).toBeGreaterThanOrEqual(2); // header X + footer Close
-      expect(screen.getByRole('button', {name: /invite another user/i})).toBeInTheDocument();
+      expect(screen.getByRole('button', {name: /add another user/i})).toBeInTheDocument();
     });
 
-    it('should call resetFlow when "Invite Another User" is clicked in display-only state', async () => {
+    it('should call resetFlow when "Add Another User" is clicked in display-only state', async () => {
       mockInviteUserRenderProps.components = [heading('Done')];
 
       render(<UserInvitePage />);
 
-      await userEvent.click(screen.getByRole('button', {name: /invite another user/i}));
+      await userEvent.click(screen.getByRole('button', {name: /add another user/i}));
 
       expect(mockResetFlow).toHaveBeenCalled();
     });
@@ -503,7 +504,7 @@ describe('UserInvitePage', () => {
       expect(screen.getByText('Invite Link')).toBeInTheDocument();
     });
 
-    it('should not show "Invite Another User" button when BLOCK components are present', () => {
+    it('should not show "Add Another User" button when BLOCK components are present', () => {
       mockInviteUserRenderProps.components = [
         heading('Step 1'),
         block([textInput('name', 'Name'), submitAction('Next')]),
@@ -511,7 +512,7 @@ describe('UserInvitePage', () => {
 
       render(<UserInvitePage />);
 
-      expect(screen.queryByRole('button', {name: /invite another user/i})).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', {name: /add another user/i})).not.toBeInTheDocument();
     });
   });
 
@@ -582,6 +583,39 @@ describe('UserInvitePage', () => {
 
       await waitFor(() => {
         expect(mockLoggerError).toHaveBeenCalledWith('User onboarding error', {error: mockInviteUserError});
+      });
+    });
+
+    it('should fall back to manual user creation when the onboarding flow is missing on error', async () => {
+      simulateInviteUserError = true;
+      Object.assign(mockInviteUserError, {
+        message: 'Flow not found',
+        response: {status: 404, data: {code: 'FLM-1003'}},
+      });
+
+      render(<UserInvitePage />);
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/users/create');
+      });
+
+      expect(mockLoggerInfo).toHaveBeenCalledWith(
+        'Falling back to manual user creation because the onboarding flow is unavailable',
+      );
+
+      simulateInviteUserError = false;
+      Object.assign(mockInviteUserError, {message: 'Invite user failed', response: undefined});
+    });
+
+    it('should fall back to manual user creation when flow change reports a missing onboarding flow', async () => {
+      render(<UserInvitePage />);
+
+      if (capturedOnFlowChange) {
+        capturedOnFlowChange({failureReason: 'Flow not found', response: {status: 404, data: {code: 'FLM-1003'}}});
+      }
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/users/create');
       });
     });
   });
@@ -748,7 +782,7 @@ describe('UserInvitePage', () => {
   /* ----- Progress calculation ----- */
 
   describe('progress calculation', () => {
-    it('should detect OU step and adjust total steps to 4', async () => {
+    it('should detect OU step and adjust total steps to 5', async () => {
       mockInviteUserRenderProps.components = [
         heading('OU Assignment'),
         block([ouSelect('ou', 'Organization Unit'), submitAction('Next')]),
@@ -756,15 +790,15 @@ describe('UserInvitePage', () => {
 
       render(<UserInvitePage />);
 
-      // The OU step detection triggers hasOuStep=true, changing totalSteps to 4
-      // With 1 breadcrumb and 4 total steps, progress = 25%
+      // The OU step detection triggers hasOuStep=true, changing totalSteps to 5
+      // With 1 breadcrumb and 5 total steps, progress = 20%
       await waitFor(() => {
         const progressBar = screen.getAllByRole('progressbar')[0];
-        expect(progressBar).toHaveAttribute('aria-valuenow', '25');
+        expect(progressBar).toHaveAttribute('aria-valuenow', '20');
       });
     });
 
-    it('should calculate progress without OU step as 3 total steps', async () => {
+    it('should calculate progress without OU step as 4 total steps', async () => {
       mockInviteUserRenderProps.components = [
         heading('User Type'),
         block([textInput('type', 'Type'), submitAction('Next')]),
@@ -772,11 +806,11 @@ describe('UserInvitePage', () => {
 
       render(<UserInvitePage />);
 
-      // With 1 breadcrumb and 3 total steps, progress = 33.33...%
+      // With 1 breadcrumb and 4 total steps, progress = 25%
       await waitFor(() => {
         const progressBar = screen.getAllByRole('progressbar')[0];
         const value = Number(progressBar.getAttribute('aria-valuenow'));
-        expect(value).toBeCloseTo(33.33, 0);
+        expect(value).toBeCloseTo(25, 0);
       });
     });
   });
@@ -794,8 +828,8 @@ describe('UserInvitePage', () => {
 
       await waitFor(() => {
         const progressBar = screen.getAllByRole('progressbar')[0];
-        // With OU detected, totalSteps=4, 1 breadcrumb -> 25%
-        expect(progressBar).toHaveAttribute('aria-valuenow', '25');
+        // With OU detected, totalSteps=5, 1 breadcrumb -> 20%
+        expect(progressBar).toHaveAttribute('aria-valuenow', '20');
       });
     });
   });

@@ -389,6 +389,7 @@ const translations = {
     inviteLinkGenerated: 'Invite Link Generated!',
     inviteLinkDescription: 'Share this link with the user to complete their registration.',
     inviteLink: 'Invite Link',
+    addAnother: 'Add Another User',
     inviteAnother: 'Invite Another User',
     'invite.steps.userdetails': 'User Details',
     'invite.steps.invitelink': 'Invite Link',

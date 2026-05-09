@@ -72,11 +72,10 @@ describe('UsersListPage', () => {
     expect(createButton).toBeInTheDocument();
   });
 
-  it('renders invite user button', () => {
+  it('does not render a separate invite user button', () => {
     render(<UsersListPage />);
 
-    const inviteButton = screen.getByRole('button', {name: /invite user/i});
-    expect(inviteButton).toBeInTheDocument();
+    expect(screen.queryByRole('button', {name: /invite user/i})).not.toBeInTheDocument();
   });
 
   it('renders search input', () => {
@@ -103,22 +102,12 @@ describe('UsersListPage', () => {
     expect(searchInput).toHaveValue('john doe');
   });
 
-  it('navigates to create user page when create button is clicked', async () => {
+  it('navigates to add user flow when create button is clicked', async () => {
     const user = userEvent.setup();
     render(<UsersListPage />);
 
     const createButton = screen.getByRole('button', {name: /add user/i});
     await user.click(createButton);
-
-    expect(mockNavigate).toHaveBeenCalledWith('/users/create');
-  });
-
-  it('navigates to invite user page when invite button is clicked', async () => {
-    const user = userEvent.setup();
-    render(<UsersListPage />);
-
-    const inviteButton = screen.getByRole('button', {name: /invite user/i});
-    await user.click(inviteButton);
 
     expect(mockNavigate).toHaveBeenCalledWith('/users/invite');
   });
@@ -151,13 +140,6 @@ describe('UsersListPage', () => {
     expect(createButton).toHaveClass('MuiButton-contained');
   });
 
-  it('invite user button has outlined variant', () => {
-    render(<UsersListPage />);
-
-    const inviteButton = screen.getByRole('button', {name: /invite user/i});
-    expect(inviteButton).toHaveClass('MuiButton-outlined');
-  });
-
   it('handles navigation error gracefully', async () => {
     const navigationError = new Error('Navigation failed');
     mockNavigate.mockRejectedValueOnce(navigationError);
@@ -168,31 +150,11 @@ describe('UsersListPage', () => {
     const createButton = screen.getByRole('button', {name: /add user/i});
     await user.click(createButton);
 
-    expect(mockNavigate).toHaveBeenCalledWith('/users/create');
-
-    await waitFor(() => {
-      expect(mockLoggerError).toHaveBeenCalledWith(
-        'Failed to navigate to create user page',
-        expect.objectContaining({error: navigationError}),
-      );
-    });
-  });
-
-  it('handles invite navigation error gracefully', async () => {
-    const navigationError = new Error('Navigation failed');
-    mockNavigate.mockRejectedValueOnce(navigationError);
-
-    const user = userEvent.setup();
-    render(<UsersListPage />);
-
-    const inviteButton = screen.getByRole('button', {name: /invite user/i});
-    await user.click(inviteButton);
-
     expect(mockNavigate).toHaveBeenCalledWith('/users/invite');
 
     await waitFor(() => {
       expect(mockLoggerError).toHaveBeenCalledWith(
-        'Failed to navigate to invite user page',
+        'Failed to navigate to add user page',
         expect.objectContaining({error: navigationError}),
       );
     });

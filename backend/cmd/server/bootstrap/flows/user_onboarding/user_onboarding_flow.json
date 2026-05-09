@@ -138,7 +138,7 @@
             "executor": {
                 "name": "OUResolverExecutor"
             },
-            "onSuccess": "prompt_email",
+            "onSuccess": "prompt_onboarding_mode",
             "onIncomplete": "prompt_ou_selection",
             "layout": {
                 "size": {
@@ -215,6 +215,273 @@
                 "position": {
                     "x": 829,
                     "y": 823
+                }
+            }
+        },
+        {
+            "id": "prompt_onboarding_mode",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "type": "TEXT",
+                        "id": "text_header_onboarding_mode",
+                        "label": "How would you like to add this user?",
+                        "variant": "HEADING_1",
+                        "align": "center"
+                    },
+                    {
+                        "type": "TEXT",
+                        "id": "text_subtitle_onboarding_mode",
+                        "label": "Choose whether to create the account now or send an invite for the user to finish onboarding later.",
+                        "variant": "HEADING_6"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_onboarding_mode_actions",
+                        "components": [
+                            {
+                                "type": "STACK",
+                                "id": "stack_onboarding_mode_actions",
+                                "direction": "row",
+                                "justify": "center",
+                                "components": [
+                                    {
+                                        "type": "ACTION",
+                                        "id": "action_create_user_now",
+                                        "label": "Create user now",
+                                        "variant": "PRIMARY",
+                                        "eventType": "SUBMIT"
+                                    },
+                                    {
+                                        "type": "ACTION",
+                                        "id": "action_invite_user",
+                                        "label": "Invite user",
+                                        "variant": "OUTLINED",
+                                        "eventType": "SUBMIT"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            "prompts": [
+                {
+                    "action": {
+                        "ref": "action_create_user_now",
+                        "nextNode": "prompt_create_user_details"
+                    }
+                },
+                {
+                    "action": {
+                        "ref": "action_invite_user",
+                        "nextNode": "prompt_email"
+                    }
+                }
+            ],
+            "layout": {
+                "size": {
+                    "width": 350,
+                    "height": 566
+                },
+                "position": {
+                    "x": 1365,
+                    "y": 1007
+                }
+            }
+        },
+        {
+            "id": "prompt_create_user_details",
+            "type": "PROMPT",
+            "meta": {
+                "components": [
+                    {
+                        "align": "center",
+                        "type": "TEXT",
+                        "id": "text_header_create_details",
+                        "label": "Add user details",
+                        "variant": "HEADING_1"
+                    },
+                    {
+                        "type": "TEXT",
+                        "id": "text_subtitle_create_details",
+                        "label": "Provide the new user details and create the account immediately.",
+                        "variant": "HEADING_6"
+                    },
+                    {
+                        "type": "BLOCK",
+                        "id": "block_create_user_details",
+                        "components": [
+                            {
+                                "id": "input_create_email",
+                                "ref": "email",
+                                "type": "EMAIL_INPUT",
+                                "label": "{{ t(onboarding:forms.email.fields.email.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(onboarding:forms.email.fields.email.placeholder) }}"
+                            },
+                            {
+                                "id": "input_create_username",
+                                "ref": "username",
+                                "type": "TEXT_INPUT",
+                                "label": "{{ t(onboarding:forms.user_details.fields.username.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(onboarding:forms.user_details.fields.username.placeholder) }}"
+                            },
+                            {
+                                "id": "input_create_given_name",
+                                "ref": "given_name",
+                                "type": "TEXT_INPUT",
+                                "label": "{{ t(onboarding:forms.user_details.fields.first_name.label) }}",
+                                "required": false,
+                                "placeholder": "{{ t(onboarding:forms.user_details.fields.first_name.placeholder) }}"
+                            },
+                            {
+                                "id": "input_create_family_name",
+                                "ref": "family_name",
+                                "type": "TEXT_INPUT",
+                                "label": "{{ t(onboarding:forms.user_details.fields.last_name.label) }}",
+                                "required": false,
+                                "placeholder": "{{ t(onboarding:forms.user_details.fields.last_name.placeholder) }}"
+                            },
+                            {
+                                "id": "input_create_password",
+                                "ref": "password",
+                                "type": "PASSWORD_INPUT",
+                                "label": "{{ t(onboarding:forms.credential.fields.password.label) }}",
+                                "required": true,
+                                "placeholder": "{{ t(onboarding:forms.credential.fields.password.placeholder) }}"
+                            },
+                            {
+                                "type": "ACTION",
+                                "id": "action_submit_create_user_details",
+                                "label": "Create user",
+                                "variant": "PRIMARY",
+                                "eventType": "SUBMIT"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "prompts": [
+                {
+                    "inputs": [
+                        {
+                            "ref": "input_create_email",
+                            "identifier": "email",
+                            "type": "EMAIL_INPUT",
+                            "required": true
+                        },
+                        {
+                            "ref": "input_create_username",
+                            "identifier": "username",
+                            "type": "TEXT_INPUT",
+                            "required": true
+                        },
+                        {
+                            "ref": "input_create_given_name",
+                            "identifier": "given_name",
+                            "type": "TEXT_INPUT",
+                            "required": false
+                        },
+                        {
+                            "ref": "input_create_family_name",
+                            "identifier": "family_name",
+                            "type": "TEXT_INPUT",
+                            "required": false
+                        },
+                        {
+                            "ref": "input_create_password",
+                            "identifier": "password",
+                            "type": "PASSWORD_INPUT",
+                            "required": true
+                        }
+                    ],
+                    "action": {
+                        "ref": "action_submit_create_user_details",
+                        "nextNode": "check_create_user_details_uniqueness"
+                    }
+                }
+            ],
+            "layout": {
+                "size": {
+                    "width": 350,
+                    "height": 724
+                },
+                "position": {
+                    "x": 1894,
+                    "y": 1018
+                }
+            }
+        },
+        {
+            "id": "check_create_user_details_uniqueness",
+            "type": "TASK_EXECUTION",
+            "executor": {
+                "name": "AttributeUniquenessValidator"
+            },
+            "onSuccess": "direct_create_provisioning",
+            "onIncomplete": "prompt_create_user_details",
+            "layout": {
+                "size": {
+                    "width": 272,
+                    "height": 113
+                },
+                "position": {
+                    "x": 2425,
+                    "y": 1324
+                }
+            }
+        },
+        {
+            "id": "direct_create_provisioning",
+            "type": "TASK_EXECUTION",
+            "inputs": [
+                {
+                    "ref": "input_create_email",
+                    "identifier": "email",
+                    "type": "EMAIL_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_create_username",
+                    "identifier": "username",
+                    "type": "TEXT_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_create_password",
+                    "identifier": "password",
+                    "type": "PASSWORD_INPUT",
+                    "required": true
+                },
+                {
+                    "ref": "input_create_given_name",
+                    "identifier": "given_name",
+                    "type": "TEXT_INPUT",
+                    "required": false
+                },
+                {
+                    "ref": "input_create_family_name",
+                    "identifier": "family_name",
+                    "type": "TEXT_INPUT",
+                    "required": false
+                }
+            ],
+            "executor": {
+                "name": "ProvisioningExecutor"
+            },
+            "onSuccess": "registration_complete",
+            "onIncomplete": "prompt_create_user_details",
+            "layout": {
+                "size": {
+                    "width": 200,
+                    "height": 113
+                },
+                "position": {
+                    "x": 2901,
+                    "y": 1326
                 }
             }
         },
@@ -833,19 +1100,19 @@
                         "align": "center",
                         "type": "TEXT",
                         "id": "registration_complete_heading",
-                        "label": "{{ t(invite:complete.title) }}",
+                        "label": "User added successfully",
                         "variant": "HEADING_1"
                     },
                     {
                         "align": "center",
                         "type": "TEXT",
                         "id": "registration_complete_message",
-                        "label": "{{ t(invite:complete.description) }}",
+                        "label": "The new account is ready to access your organization.",
                         "variant": "HEADING_6"
                     }
                 ]
             },
-            "message": "Registration complete",
+            "message": "User added successfully",
             "next": "end",
             "layout": {
                 "size": {

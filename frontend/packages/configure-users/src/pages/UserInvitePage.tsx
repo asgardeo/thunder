@@ -91,6 +91,52 @@ function deriveStepLabel(
   return '';
 }
 
+type FlowExecutionErrorLike = {
+  code?: string;
+  failureReason?: string;
+  message?: string;
+  response?: {
+    data?: {
+      code?: string;
+      detail?: string;
+      failureReason?: string;
+      message?: string;
+      title?: string;
+    };
+    status?: number;
+  };
+  status?: number;
+};
+
+function isMissingOnboardingFlow(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const flowError = error as FlowExecutionErrorLike;
+  const status = flowError.response?.status ?? flowError.status;
+  const code = flowError.response?.data?.code ?? flowError.code;
+  const combinedMessage = [
+    flowError.message,
+    flowError.failureReason,
+    flowError.response?.data?.message,
+    flowError.response?.data?.title,
+    flowError.response?.data?.detail,
+    flowError.response?.data?.failureReason,
+  ]
+    .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    .join(' ')
+    .toLowerCase();
+
+  return (
+    code === 'FLM-1003' ||
+    combinedMessage.includes('flow not found') ||
+    combinedMessage.includes('default-user-onboarding') ||
+    combinedMessage.includes('user onboarding flow') ||
+    (status === 404 && combinedMessage.includes('flow'))
+  );
+}
+
 const getOptionValue = (option: unknown): string => {
   if (typeof option === 'string') return option;
   if (typeof option === 'object' && option !== null && 'value' in option) {
@@ -679,7 +725,7 @@ function InviteUserStepContent({
               onResetLocalState();
             }}
           >
-            {t('users:inviteAnother', 'Invite Another User')}
+            {t('users:addAnother', 'Add Another User')}
           </Button>
         </Stack>
       )}
@@ -767,6 +813,15 @@ export default function UserInvitePage(): JSX.Element {
     });
   }, [navigate, logger]);
 
+  const handleManualCreateFallback = useCallback(() => {
+    logger.info('Falling back to manual user creation because the onboarding flow is unavailable');
+    (async () => {
+      await navigate('/users/create');
+    })().catch((err: unknown) => {
+      logger.error('Failed to navigate to fallback user creation page', {error: err});
+    });
+  }, [navigate, logger]);
+
   const handleStepLabelChange = useCallback(
     (label: string) => {
       if (label !== prevStepLabelRef.current) {
@@ -801,10 +856,10 @@ export default function UserInvitePage(): JSX.Element {
     setFlowError(null);
   }, []);
 
-  // Compute progress from breadcrumb trail
-  // Without OU step: 3 steps (user type, email, user details + credential)
-  // With OU step: 4 steps (user type, OU, email, user details + credential)
-  const totalSteps = hasOuStep ? 4 : 3;
+  // Compute progress from breadcrumb trail.
+  // Without OU step: user type, onboarding choice, email/details, completion path.
+  // With OU step: add one extra OU selection step.
+  const totalSteps = hasOuStep ? 5 : 4;
   const progress = Math.min((breadcrumbs.length / totalSteps) * 100, 100);
 
   return (
@@ -838,7 +893,7 @@ export default function UserInvitePage(): JSX.Element {
               })}
               {breadcrumbs.length === 0 && (
                 <Typography variant="h5" color="text.primary">
-                  {t('users:inviteUser', 'Invite User')}
+                  {t('users:addUser', 'Add User')}
                 </Typography>
               )}
             </Breadcrumbs>
@@ -869,9 +924,17 @@ export default function UserInvitePage(): JSX.Element {
             >
               <InviteUser
                 onError={(err: Error) => {
+                  if (isMissingOnboardingFlow(err)) {
+                    handleManualCreateFallback();
+                    return;
+                  }
                   logger.error('User onboarding error', {error: err});
                 }}
                 onFlowChange={(response: any) => {
+                  if (isMissingOnboardingFlow(response)) {
+                    handleManualCreateFallback();
+                    return;
+                  }
                   setFlowError((response?.failureReason as string | null) ?? null);
                 }}
               >
