@@ -212,7 +212,7 @@ function InviteUserStepContent({
               if (comp.type === 'EMAIL_INPUT') {
                 fieldSchema = z.string().email('Please enter a valid email address');
               } else if (comp.type === 'PHONE_INPUT') {
-                fieldSchema = z.string().check(z.regex(/^\+?[0-9\s\-().]{7,20}$/, 'Please enter a valid phone number'));
+                fieldSchema = z.string().regex(/^\+?[0-9\s\-().]{7,20}$/, 'Please enter a valid phone number');
               } else if (comp.type === 'PASSWORD_INPUT') {
                 fieldSchema = z.string();
               }
