@@ -759,7 +759,7 @@ function UserCreationFlowBridge({
   flowError,
   handleClose,
   onStepLabelChange,
-  onCreationComplete,
+  onFlowComplete,
   onOuStepDetected,
   onResetLocalState,
 }: {
@@ -767,7 +767,7 @@ function UserCreationFlowBridge({
   flowError: string | null;
   handleClose: () => void;
   onStepLabelChange: (label: string) => void;
-  onCreationComplete: () => void;
+  onFlowComplete: () => void;
   onOuStepDetected: () => void;
   onResetLocalState: () => void;
 }): JSX.Element {
@@ -800,9 +800,9 @@ function UserCreationFlowBridge({
 
   useEffect(() => {
     if (isDisplayOnly) {
-      onCreationComplete();
+      onFlowComplete();
     }
-  }, [isDisplayOnly, onCreationComplete]);
+  }, [isDisplayOnly, onFlowComplete]);
 
   return (
     <UserCreationStepContent
@@ -858,7 +858,7 @@ export default function UserCreationPage(): JSX.Element {
     [setBreadcrumbs],
   );
 
-  const handleCreationComplete = useCallback(() => {
+  const handleFlowComplete = useCallback(() => {
     if (prevStepLabelRef.current !== 'complete') {
       prevStepLabelRef.current = 'complete';
       setBreadcrumbs((prev) => [...prev, t('users:create.steps.complete', 'Complete')]);
@@ -964,7 +964,7 @@ export default function UserCreationPage(): JSX.Element {
                     flowError={flowError}
                     handleClose={handleClose}
                     onStepLabelChange={handleStepLabelChange}
-                    onCreationComplete={handleCreationComplete}
+                    onFlowComplete={handleFlowComplete}
                     onOuStepDetected={handleOuStepDetected}
                     onResetLocalState={handleResetLocalState}
                   />
