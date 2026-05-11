@@ -5,8 +5,8 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![GitHub last commit](https://img.shields.io/github/last-commit/thunder-id/thunder-id.svg)](https://github.com/thunder-id/thunder-id/commits/main)
 [![GitHub issues](https://img.shields.io/github/issues/thunder-id/thunder-id.svg)](https://github.com/thunder-id/thunder-id/issues)
-[![codecov.io](https://codecov.io/github/thunder-id/coverage.svg?branch=main)](https://codecov.io/github/thunder-id?branch=main)
-[![GitHub Release](https://img.shields.io/github/v/release/thunder-id?color=blue)](https://github.com/thunder-id/releases/latest)
+[![codecov.io](https://codecov.io/github/thunder-id/thunder-id/coverage.svg?branch=main)](https://codecov.io/github/thunder-id/thunder-id?branch=main)
+[![GitHub Release](https://img.shields.io/github/v/release/thunder-id/thunder-id?color=blue)](https://github.com/thunder-id/thunder-id/releases/latest)
 
 ThunderID is a lightweight, open-source Identity and Access Management (IAM) engine built to secure access for humans, AI agents, and machines.
 

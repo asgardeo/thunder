@@ -45,6 +45,7 @@ env:
   GOFLAGS: "-mod=readonly"
   PRODUCT_NAME: "ThunderID"
   PRODUCT_NAME_LOWER: "thunderid"
+  DOCKER_IMAGE_NAME: "thunder-id"
   RELEASE_BRANCH: "release"
   RELEASE_GIT_USER_NAME: "thunderid-automation-bot"
   RELEASE_GIT_USER_EMAIL: "thunderid-bot@wso2.com"
@@ -162,7 +163,7 @@ jobs:
           echo "📝 Updating README.md docker-compose curl URL to $VERSION"
 
           # Update the docker-compose.yml curl URL in README.md
-          sed -i -E "s|(https://raw\.githubusercontent\.com/asgardeo/thunder/)v[0-9]+\.[0-9]+\.[0-9]+(/.+docker-compose\.yml)|\1${VERSION}\2|g" README.md
+          sed -i -E "s|(https://raw\.githubusercontent\.com/thunder-id/thunder-id/)v[0-9]+\.[0-9]+\.[0-9]+(/.+docker-compose\.yml)|\1${VERSION}\2|g" README.md
 
           echo "✅ Updated README.md curl URL to $VERSION"
           grep 'docker-compose.yml' README.md
@@ -439,7 +440,7 @@ jobs:
         run: |
           # Build image under the repository owner with the product name
           OWNER_NAME=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          IMAGE_NAME="ghcr.io/${OWNER_NAME}/${PRODUCT_NAME_LOWER}"
+          IMAGE_NAME="ghcr.io/${OWNER_NAME}/${DOCKER_IMAGE_NAME}"
           
           # Get version without 'v' prefix for Docker tags
           DOCKER_VERSION="${{ needs.build.outputs.version }}"
@@ -1031,7 +1032,7 @@ jobs:
             const releaseTag = '${{ needs.release.outputs.release_tag }}';
             const productNameLower = process.env.PRODUCT_NAME_LOWER;
             const serverDistributionUrl = `https://github.com/${{ github.repository }}/releases/download/${releaseTag}/${productNameLower}-${releaseTag.replace('v', '')}-linux-x64.zip`;
-            const pushBenchmarkToGitHub = ${{ github.repository == 'asgardeo/thunder' }};
+            const pushBenchmarkToGitHub = ${{ github.repository == 'thunder-id/thunder-id' }};
 
             try {
               console.log(`🔄 Triggering performance test workflow`);
