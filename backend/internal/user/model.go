@@ -59,13 +59,6 @@ type UserListResponse struct {
 	Links        []utils.Link `json:"links"`
 }
 
-// UserGroup represents a group with basic information for user endpoints.
-type UserGroup struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	OUID string `json:"ouId"`
-}
-
 // UserGroupListResponse represents the response for listing groups that a user belongs to.
 type UserGroupListResponse struct {
 	TotalResults int                  `json:"totalResults"`

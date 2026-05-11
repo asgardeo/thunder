@@ -430,16 +430,11 @@ func (s *agentService) GetAgentGroups(ctx context.Context, agentID string, limit
 		return nil, &serviceerror.InternalServerError
 	}
 
-	out := make([]model.AgentGroup, 0, len(groups))
-	for _, g := range groups {
-		out = append(out, model.AgentGroup{ID: g.ID, Name: g.Name, OUID: g.OUID})
-	}
-
 	resp := &model.AgentGroupListResponse{
 		TotalResults: totalCount,
 		StartIndex:   offset + 1,
-		Count:        len(out),
-		Groups:       out,
+		Count:        len(groups),
+		Groups:       groups,
 		Links: sysutils.BuildPaginationLinks(
 			fmt.Sprintf("%s/%s/groups", agentBasePath, agentID), limit, offset, totalCount, ""),
 	}
