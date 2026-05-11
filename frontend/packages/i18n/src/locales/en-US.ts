@@ -393,6 +393,7 @@ const translations = {
     inviteAnother: 'Invite Another User',
     'invite.steps.userdetails': 'User Details',
     'invite.steps.invitelink': 'Invite Link',
+    'create.steps.complete': 'Complete',
     editUser: 'Edit User',
     deleteUser: 'Delete User',
     userDetails: 'User Details',
@@ -2974,14 +2975,13 @@ const translations = {
     // Next Steps section
     'next_steps.section.title': 'Quick Links',
 
-    // Invite Members card
-    'next_steps.invite_members.title': 'Invite Members',
-    'next_steps.invite_members.description': 'Add collaborators to help manage your organization and act as a backup.',
-    'next_steps.invite_members.actions.primary.label': 'Add User',
-    'next_steps.invite_members.actions.secondary.label': 'Invite User',
-    'next_steps.invite_members.status.count': '{{count}} member',
-    'next_steps.invite_members.status.count_other': '{{count}} members',
-    'next_steps.invite_members.status.empty': 'No members yet — add collaborators',
+    // Add Users card
+    'next_steps.add_users.title': 'Add Users',
+    'next_steps.add_users.description': 'Add collaborators to help manage your organization and act as a backup.',
+    'next_steps.add_users.actions.primary.label': 'Add User',
+    'next_steps.add_users.status.count': '{{count}} member',
+    'next_steps.add_users.status.count_other': '{{count}} members',
+    'next_steps.add_users.status.empty': 'No members yet — add collaborators',
 
     // Login Box card
     'next_steps.login_box.title': 'Sign-in Box',

@@ -18,7 +18,7 @@
 
 import {render, screen, fireEvent} from '@thunderid/test-utils';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import InviteMembersCard from '../InviteMembersCard';
+import AddUsersCard from '../AddUsersCard';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -51,7 +51,7 @@ vi.mock('@thunderid/configure-users', () => ({
   useGetUsers: (args: unknown) => mockUseGetUsers(args) as unknown,
 }));
 
-describe('InviteMembersCard', () => {
+describe('AddUsersCard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate.mockReturnValue(undefined);
@@ -61,7 +61,7 @@ describe('InviteMembersCard', () => {
     it('renders skeleton placeholders while loading', () => {
       mockUseGetUsers.mockReturnValue({isLoading: true, data: undefined});
 
-      render(<InviteMembersCard />);
+      render(<AddUsersCard />);
 
       // MUI Skeleton renders with role="img" by default or just as a div
       // We verify skeletons indirectly by ensuring empty/avatar content is absent
@@ -74,7 +74,7 @@ describe('InviteMembersCard', () => {
     it('renders empty state message when only the admin exists (totalResults = 1)', () => {
       mockUseGetUsers.mockReturnValue({isLoading: false, data: {totalResults: 1, users: []}});
 
-      render(<InviteMembersCard />);
+      render(<AddUsersCard />);
 
       expect(screen.getByText('No members yet — add collaborators')).toBeInTheDocument();
     });
@@ -82,7 +82,7 @@ describe('InviteMembersCard', () => {
     it('renders empty state message when totalResults is 0', () => {
       mockUseGetUsers.mockReturnValue({isLoading: false, data: {totalResults: 0, users: []}});
 
-      render(<InviteMembersCard />);
+      render(<AddUsersCard />);
 
       expect(screen.getByText('No members yet — add collaborators')).toBeInTheDocument();
     });
@@ -97,7 +97,7 @@ describe('InviteMembersCard', () => {
     it('renders member initials when users are present', () => {
       mockUseGetUsers.mockReturnValue({isLoading: false, data: {totalResults: 3, users: USERS}});
 
-      render(<InviteMembersCard />);
+      render(<AddUsersCard />);
 
       expect(screen.getByText('AS')).toBeInTheDocument();
       expect(screen.getByText('BJ')).toBeInTheDocument();
@@ -109,7 +109,7 @@ describe('InviteMembersCard', () => {
         data: {totalResults: 2, users: [{id: 'u1', display: 'Alice'}]},
       });
 
-      render(<InviteMembersCard />);
+      render(<AddUsersCard />);
 
       expect(screen.getByText('AL')).toBeInTheDocument();
     });
@@ -118,7 +118,7 @@ describe('InviteMembersCard', () => {
       const manyUsers = Array.from({length: 5}, (_, i) => ({id: `u${i}`, display: `User ${i}`}));
       mockUseGetUsers.mockReturnValue({isLoading: false, data: {totalResults: 8, users: manyUsers}});
 
-      render(<InviteMembersCard />);
+      render(<AddUsersCard />);
 
       expect(screen.getByText('+3')).toBeInTheDocument();
     });
@@ -126,7 +126,7 @@ describe('InviteMembersCard', () => {
     it('does not render extra count when totalResults is at or below the avatar limit', () => {
       mockUseGetUsers.mockReturnValue({isLoading: false, data: {totalResults: 4, users: USERS}});
 
-      render(<InviteMembersCard />);
+      render(<AddUsersCard />);
 
       expect(screen.queryByText(/^\+\d/)).not.toBeInTheDocument();
     });
@@ -138,31 +138,17 @@ describe('InviteMembersCard', () => {
     });
 
     it('renders the primary "Add User" button', () => {
-      render(<InviteMembersCard />);
+      render(<AddUsersCard />);
 
       expect(screen.getByRole('button', {name: 'Add User'})).toBeInTheDocument();
     });
 
-    it('renders the secondary "Invite User" button', () => {
-      render(<InviteMembersCard />);
-
-      expect(screen.getByRole('button', {name: 'Invite User'})).toBeInTheDocument();
-    });
-
-    it('navigates to /users/invite when Add User is clicked', () => {
-      render(<InviteMembersCard />);
+    it('navigates to /users/create when Add User is clicked', () => {
+      render(<AddUsersCard />);
 
       fireEvent.click(screen.getByRole('button', {name: 'Add User'}));
 
-      expect(mockNavigate).toHaveBeenCalledWith('/users/invite');
-    });
-
-    it('navigates to /users?invite=true when Invite User is clicked', () => {
-      render(<InviteMembersCard />);
-
-      fireEvent.click(screen.getByRole('button', {name: 'Invite User'}));
-
-      expect(mockNavigate).toHaveBeenCalledWith('/users?invite=true');
+      expect(mockNavigate).toHaveBeenCalledWith('/users/create');
     });
   });
 });

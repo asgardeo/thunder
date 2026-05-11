@@ -159,7 +159,7 @@ const getOptionLabel = (option: unknown): string => {
 /**
  * Inner content component that renders the current flow step's form fields.
  */
-function InviteUserStepContent({
+function UserCreationStepContent({
   renderProps,
   flowError,
   handleClose,
@@ -753,13 +753,13 @@ function InviteUserStepContent({
   );
 }
 
-/** Inner component that bridges InviteUser render props with parent state via useEffect */
-function InviteUserFlowBridge({
+/** Inner component that bridges user creation flow render props with parent state via useEffect */
+function UserCreationFlowBridge({
   renderProps,
   flowError,
   handleClose,
   onStepLabelChange,
-  onInviteComplete,
+  onCreationComplete,
   onOuStepDetected,
   onResetLocalState,
 }: {
@@ -767,7 +767,7 @@ function InviteUserFlowBridge({
   flowError: string | null;
   handleClose: () => void;
   onStepLabelChange: (label: string) => void;
-  onInviteComplete: () => void;
+  onCreationComplete: () => void;
   onOuStepDetected: () => void;
   onResetLocalState: () => void;
 }): JSX.Element {
@@ -800,12 +800,12 @@ function InviteUserFlowBridge({
 
   useEffect(() => {
     if (isDisplayOnly) {
-      onInviteComplete();
+      onCreationComplete();
     }
-  }, [isDisplayOnly, onInviteComplete]);
+  }, [isDisplayOnly, onCreationComplete]);
 
   return (
-    <InviteUserStepContent
+    <UserCreationStepContent
       renderProps={renderProps}
       flowError={flowError}
       handleClose={handleClose}
@@ -814,10 +814,10 @@ function InviteUserFlowBridge({
   );
 }
 
-export default function UserInvitePage(): JSX.Element {
+export default function UserCreationPage(): JSX.Element {
   const {t} = useTranslation();
   const navigate = useNavigate();
-  const logger = useLogger('UserInvitePage');
+  const logger = useLogger('UserCreationPage');
   const [flowError, setFlowError] = useState<string | null>(null);
 
   // Track breadcrumb trail of visited step labels
@@ -836,7 +836,7 @@ export default function UserInvitePage(): JSX.Element {
   const handleManualCreateFallback = useCallback(() => {
     logger.info('Falling back to manual user creation because the onboarding flow is unavailable');
     (async () => {
-      await navigate('/users/create');
+      await navigate('/users/create/manual');
     })().catch((err: unknown) => {
       logger.error('Failed to navigate to fallback user creation page', {error: err});
     });
@@ -858,10 +858,10 @@ export default function UserInvitePage(): JSX.Element {
     [setBreadcrumbs],
   );
 
-  const handleInviteComplete = useCallback(() => {
+  const handleCreationComplete = useCallback(() => {
     if (prevStepLabelRef.current !== 'complete') {
       prevStepLabelRef.current = 'complete';
-      setBreadcrumbs((prev) => [...prev, t('users:invite.steps.complete', 'Complete')]);
+      setBreadcrumbs((prev) => [...prev, t('users:create.steps.complete', 'Complete')]);
     }
   }, [setBreadcrumbs, t]);
 
@@ -959,12 +959,12 @@ export default function UserInvitePage(): JSX.Element {
                 }}
               >
                 {(renderProps: InviteUserRenderProps) => (
-                  <InviteUserFlowBridge
+                  <UserCreationFlowBridge
                     renderProps={renderProps}
                     flowError={flowError}
                     handleClose={handleClose}
                     onStepLabelChange={handleStepLabelChange}
-                    onInviteComplete={handleInviteComplete}
+                    onCreationComplete={handleCreationComplete}
                     onOuStepDetected={handleOuStepDetected}
                     onResetLocalState={handleResetLocalState}
                   />

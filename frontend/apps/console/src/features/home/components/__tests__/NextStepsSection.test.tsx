@@ -40,8 +40,8 @@ vi.mock('framer-motion', async () => {
   };
 });
 
-vi.mock('../cards/InviteMembersCard', () => ({
-  default: () => <div data-testid="invite-members-card" />,
+vi.mock('../cards/AddUsersCard', () => ({
+  default: () => <div data-testid="add-users-card" />,
 }));
 
 vi.mock('../cards/LoginBoxCard', () => ({
@@ -62,9 +62,9 @@ describe('NextStepsSection', () => {
     expect(screen.getByText('Quick Links')).toBeInTheDocument();
   });
 
-  it('renders InviteMembersCard', () => {
+  it('renders AddUsersCard', () => {
     render(<NextStepsSection />);
-    expect(screen.getByTestId('invite-members-card')).toBeInTheDocument();
+    expect(screen.getByTestId('add-users-card')).toBeInTheDocument();
   });
 
   it('renders LoginBoxCard', () => {

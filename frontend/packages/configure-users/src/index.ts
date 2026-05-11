@@ -58,7 +58,7 @@ export * from './models/users';
 // Pages
 export {default as UserCreatePage} from './pages/UserCreatePage';
 export {default as UserEditPage} from './pages/UserEditPage';
-export {default as UserInvitePage} from './pages/UserInvitePage';
+export {default as UserCreationPage} from './pages/UserCreationPage';
 export {default as UsersListPage} from './pages/UsersListPage';
 
 // Utils

@@ -103,7 +103,7 @@ describe('UsersListPage', () => {
     const createButton = screen.getByRole('button', {name: /add user/i});
     await user.click(createButton);
 
-    expect(mockNavigate).toHaveBeenCalledWith('/users/invite');
+    expect(mockNavigate).toHaveBeenCalledWith('/users/create');
   });
 
   it('renders UsersList component', () => {
@@ -144,7 +144,7 @@ describe('UsersListPage', () => {
     const createButton = screen.getByRole('button', {name: /add user/i});
     await user.click(createButton);
 
-    expect(mockNavigate).toHaveBeenCalledWith('/users/invite');
+    expect(mockNavigate).toHaveBeenCalledWith('/users/create');
 
     await waitFor(() => {
       expect(mockLoggerError).toHaveBeenCalledWith(

@@ -34,7 +34,7 @@ import {
   UserCreateProvider,
   UserCreatePage,
   UserEditPage,
-  UserInvitePage,
+  UserCreationPage,
   UsersListPage,
 } from '@thunderid/configure-users';
 import {ToastProvider} from '@thunderid/contexts';
@@ -158,6 +158,16 @@ export default function App(): JSX.Element {
             path="/users/create"
             element={
               <ProtectedRoute>
+                <FullScreenLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<UserCreationPage />} />
+          </Route>
+          <Route
+            path="/users/create/manual"
+            element={
+              <ProtectedRoute>
                 <UserCreateProvider>
                   <FullScreenLayout />
                 </UserCreateProvider>
@@ -165,16 +175,6 @@ export default function App(): JSX.Element {
             }
           >
             <Route index element={<UserCreatePage />} />
-          </Route>
-          <Route
-            path="/users/invite"
-            element={
-              <ProtectedRoute>
-                <FullScreenLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<UserInvitePage />} />
           </Route>
           <Route
             path="/user-types/create"

@@ -96,7 +96,7 @@ function MembersPreview({isLoading, isEmpty, users, extraCount, emptyLabel, coun
   );
 }
 
-export default function InviteMembersCard(): JSX.Element {
+export default function AddUsersCard(): JSX.Element {
   const {t} = useTranslation('home');
   const {data, isLoading} = useGetUsers({limit: AVATAR_LIMIT});
 
@@ -113,8 +113,8 @@ export default function InviteMembersCard(): JSX.Element {
         isEmpty={isEmpty}
         users={users}
         extraCount={extraCount}
-        emptyLabel={t('next_steps.invite_members.status.empty', 'No members yet — add collaborators')}
-        countLabel={t('next_steps.invite_members.status.count', {
+        emptyLabel={t('next_steps.add_users.status.empty', 'No members yet — add collaborators')}
+        countLabel={t('next_steps.add_users.status.count', {
           count: totalResults,
           defaultValue: '{{count}} member',
         })}
@@ -125,15 +125,13 @@ export default function InviteMembersCard(): JSX.Element {
   return (
     <HomeNextStepCard
       icon={<UsersRound size={24} />}
-      title={t('next_steps.invite_members.title', 'Invite Members')}
+      title={t('next_steps.add_users.title', 'Add Users')}
       description={t(
-        'next_steps.invite_members.description',
+        'next_steps.add_users.description',
         'Add collaborators to help manage your organization and act as a backup.',
       )}
-      primaryLabel={t('next_steps.invite_members.actions.primary.label', 'Add User')}
-      primaryRoute="/users/invite"
-      secondaryLabel={t('next_steps.invite_members.actions.secondary.label', 'Invite User')}
-      secondaryRoute="/users?invite=true"
+      primaryLabel={t('next_steps.add_users.actions.primary.label', 'Add User')}
+      primaryRoute="/users/create"
       preview={preview}
     />
   );
