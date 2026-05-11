@@ -320,7 +320,7 @@ For code contributions, refer to the [Contributing Code](https://asgardeo.github
 
 ## Documentation
 
-Please refer to the [Documentation](https://asgardeo.github.io/thunder/docs/next/guides/getting-started/what-is-thunder) for additional guidance on getting started with ThunderID and exploring its features, concepts, and usage.
+Please refer to the [Documentation](https://asgardeo.github.io/thunder/docs/next/guides/getting-started/what-is-thunderid) for additional guidance on getting started with ThunderID and exploring its features, concepts, and usage.
 
 <details>
 <summary><h2>Advanced Setup & Configuration</h2></summary>
