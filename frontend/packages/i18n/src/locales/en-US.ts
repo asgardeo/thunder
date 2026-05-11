@@ -393,7 +393,7 @@ const translations = {
     inviteAnother: 'Invite Another User',
     'invite.steps.userdetails': 'User Details',
     'invite.steps.invitelink': 'Invite Link',
-    'create.steps.complete': 'Complete',
+    'creation.steps.complete': 'Complete',
     editUser: 'Edit User',
     deleteUser: 'Delete User',
     userDetails: 'User Details',

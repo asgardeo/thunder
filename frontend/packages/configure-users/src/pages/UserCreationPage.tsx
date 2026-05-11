@@ -861,7 +861,7 @@ export default function UserCreationPage(): JSX.Element {
   const handleFlowComplete = useCallback(() => {
     if (prevStepLabelRef.current !== 'complete') {
       prevStepLabelRef.current = 'complete';
-      setBreadcrumbs((prev) => [...prev, t('users:create.steps.complete', 'Complete')]);
+      setBreadcrumbs((prev) => [...prev, t('users:creation.steps.complete', 'Complete')]);
     }
   }, [setBreadcrumbs, t]);
 
