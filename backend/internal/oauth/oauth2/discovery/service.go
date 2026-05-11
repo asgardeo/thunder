@@ -20,13 +20,14 @@ package discovery
 
 import (
 	"context"
+	"slices"
 	"sort"
 
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/pkce"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm/pkiservice"
+	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 )
 
 // DiscoveryServiceInterface defines the interface for discovery services
@@ -37,14 +38,14 @@ type DiscoveryServiceInterface interface {
 
 // discoveryService implements DiscoveryServiceInterface
 type discoveryService struct {
-	baseURL    string
-	pkiService pkiservice.PKIServiceInterface
+	baseURL        string
+	cryptoProvider kmprovider.RuntimeCryptoProvider
 }
 
 // newDiscoveryService creates a new discovery service instance
-func newDiscoveryService(pkiService pkiservice.PKIServiceInterface) DiscoveryServiceInterface {
+func newDiscoveryService(cryptoProvider kmprovider.RuntimeCryptoProvider) DiscoveryServiceInterface {
 	runtime := config.GetServerRuntime()
-	ds := &discoveryService{pkiService: pkiService}
+	ds := &discoveryService{cryptoProvider: cryptoProvider}
 	ds.baseURL = config.GetServerURL(&runtime.Config.Server)
 	return ds
 }
@@ -78,11 +79,12 @@ func (ds *discoveryService) GetOAuth2AuthorizationServerMetadata(
 func (ds *discoveryService) GetOIDCMetadata(ctx context.Context) *OIDCProviderMetadata {
 	oauth2Meta := ds.GetOAuth2AuthorizationServerMetadata(ctx)
 
+	signingAlgs := ds.getSupportedSigningAlgorithms(ctx)
 	return &OIDCProviderMetadata{
 		OAuth2AuthorizationServerMetadata:    *oauth2Meta,
 		SubjectTypesSupported:                ds.getSupportedSubjectTypes(),
-		IDTokenSigningAlgValuesSupported:     ds.pkiService.GetSupportedSigningAlgorithms(),
-		UserInfoSigningAlgValuesSupported:    ds.pkiService.GetSupportedSigningAlgorithms(),
+		IDTokenSigningAlgValuesSupported:     signingAlgs,
+		UserInfoSigningAlgValuesSupported:    signingAlgs,
 		UserInfoEncryptionAlgValuesSupported: inboundmodel.SupportedUserInfoEncryptionAlgs,
 		UserInfoEncryptionEncValuesSupported: inboundmodel.SupportedUserInfoEncryptionEncs,
 		IDTokenEncryptionAlgValuesSupported:  inboundmodel.SupportedIDTokenEncryptionAlgs,
@@ -158,6 +160,21 @@ func (ds *discoveryService) getSupportedSubjectTypes() []string {
 }
 
 // getSupportedAcrValues returns the sorted ACR values from the auth_class.acr_amr mapping.
+func (ds *discoveryService) getSupportedSigningAlgorithms(ctx context.Context) []string {
+	keys, err := ds.cryptoProvider.GetPublicKeys(ctx, kmprovider.PublicKeyFilter{})
+	if err != nil {
+		return nil
+	}
+	var result []string
+	for _, k := range keys {
+		alg := string(k.Algorithm)
+		if !slices.Contains(result, alg) {
+			result = append(result, alg)
+		}
+	}
+	return result
+}
+
 func (ds *discoveryService) getSupportedAcrValues() []string {
 	acrAMR := config.GetServerRuntime().Config.OAuth.AuthClass.AcrAMR
 	acrs := make([]string, 0, len(acrAMR))

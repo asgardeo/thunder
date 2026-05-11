@@ -21,6 +21,7 @@ package defaultkm
 import (
 	"context"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
@@ -34,6 +35,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
+	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/tests/mocks/crypto/pki/pkimock"
 )
 
@@ -44,6 +46,10 @@ func newTestSvcErr() *serviceerror.ServiceError {
 		Code:  "TEST-001",
 		Error: core.I18nMessage{DefaultValue: "key not found"},
 	}
+}
+
+func newTestLogger() *log.Logger {
+	return log.GetLogger()
 }
 
 func TestEncrypt_RSAOAEP256_SuccessViaConstructor(t *testing.T) {
@@ -431,4 +437,155 @@ func TestDecrypt_ECDHESVariants_RoundTrip(t *testing.T) {
 			assert.Equal(t, encDetails.CEK, derivedCEK)
 		})
 	}
+}
+
+// GetPublicKeys
+
+func TestGetPublicKeys_NilPKIService(t *testing.T) {
+	svc := &runtimeCryptoService{pkiService: nil}
+	_, err := svc.GetPublicKeys(context.Background(), kmprovider.PublicKeyFilter{})
+	assert.EqualError(t, err, "PKI service not initialized")
+}
+
+func TestGetPublicKeys_GetAllX509CertificatesError(t *testing.T) {
+	pki := pkimock.NewPKIServiceInterfaceMock(t)
+	pki.EXPECT().GetAllX509Certificates().Return(nil, &serviceerror.InternalServerError)
+
+	svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
+	_, err := svc.GetPublicKeys(context.Background(), kmprovider.PublicKeyFilter{})
+	assert.Error(t, err)
+}
+
+func TestGetPublicKeys_RSA(t *testing.T) {
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	pki := pkimock.NewPKIServiceInterfaceMock(t)
+	pki.EXPECT().GetAllX509Certificates().Return(
+		map[string]*x509.Certificate{"key1": {Raw: []byte("der"), PublicKey: &rsaKey.PublicKey}}, nil,
+	)
+	pki.EXPECT().GetCertThumbprint("key1").Return("thumbprint-1")
+
+	svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
+	keys, err := svc.GetPublicKeys(context.Background(), kmprovider.PublicKeyFilter{})
+	require.NoError(t, err)
+	require.Len(t, keys, 1)
+	assert.Equal(t, "key1", keys[0].KeyID)
+	assert.Equal(t, cryptolab.AlgorithmRS256, keys[0].Algorithm)
+	assert.Equal(t, &rsaKey.PublicKey, keys[0].PublicKey)
+	assert.Equal(t, "thumbprint-1", keys[0].Thumbprint)
+	assert.Equal(t, []byte("der"), keys[0].CertificateDER)
+}
+
+func TestGetPublicKeys_ECDSA(t *testing.T) {
+	tests := []struct {
+		name  string
+		curve elliptic.Curve
+		alg   cryptolab.Algorithm
+	}{
+		{"P-256", elliptic.P256(), cryptolab.AlgorithmES256},
+		{"P-384", elliptic.P384(), cryptolab.AlgorithmES384},
+		{"P-521", elliptic.P521(), cryptolab.AlgorithmES512},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ecKey, err := ecdsa.GenerateKey(tt.curve, rand.Reader)
+			require.NoError(t, err)
+
+			pki := pkimock.NewPKIServiceInterfaceMock(t)
+			pki.EXPECT().GetAllX509Certificates().Return(
+				map[string]*x509.Certificate{"key1": {Raw: []byte("der"), PublicKey: &ecKey.PublicKey}}, nil,
+			)
+			pki.EXPECT().GetCertThumbprint("key1").Return("tp")
+
+			svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
+			keys, err := svc.GetPublicKeys(context.Background(), kmprovider.PublicKeyFilter{})
+			require.NoError(t, err)
+			require.Len(t, keys, 1)
+			assert.Equal(t, tt.alg, keys[0].Algorithm)
+		})
+	}
+}
+
+func TestGetPublicKeys_EdDSA(t *testing.T) {
+	_, edPriv, err := ed25519.GenerateKey(rand.Reader)
+	require.NoError(t, err)
+
+	pki := pkimock.NewPKIServiceInterfaceMock(t)
+	pki.EXPECT().GetAllX509Certificates().Return(
+		map[string]*x509.Certificate{"key1": {Raw: []byte("der"), PublicKey: edPriv.Public()}}, nil,
+	)
+	pki.EXPECT().GetCertThumbprint("key1").Return("tp")
+
+	svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
+	keys, err := svc.GetPublicKeys(context.Background(), kmprovider.PublicKeyFilter{})
+	require.NoError(t, err)
+	require.Len(t, keys, 1)
+	assert.Equal(t, cryptolab.AlgorithmEdDSA, keys[0].Algorithm)
+}
+
+func TestGetPublicKeys_UnsupportedKeyTypeSkipped(t *testing.T) {
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	pki := pkimock.NewPKIServiceInterfaceMock(t)
+	pki.EXPECT().GetAllX509Certificates().Return(
+		map[string]*x509.Certificate{
+			"good": {Raw: []byte("der"), PublicKey: &rsaKey.PublicKey},
+			"bad":  {PublicKey: "unsupported"},
+		}, nil,
+	)
+	pki.EXPECT().GetCertThumbprint("good").Return("tp")
+
+	svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
+	keys, err := svc.GetPublicKeys(context.Background(), kmprovider.PublicKeyFilter{})
+	require.NoError(t, err)
+	assert.Len(t, keys, 1)
+	assert.Equal(t, "good", keys[0].KeyID)
+}
+
+func TestGetPublicKeys_FilterByKeyID(t *testing.T) {
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	pki := pkimock.NewPKIServiceInterfaceMock(t)
+	pki.EXPECT().GetAllX509Certificates().Return(
+		map[string]*x509.Certificate{
+			"rsa-key": {Raw: []byte("rsa-der"), PublicKey: &rsaKey.PublicKey},
+			"ec-key":  {Raw: []byte("ec-der"), PublicKey: &ecKey.PublicKey},
+		}, nil,
+	)
+	pki.EXPECT().GetCertThumbprint("rsa-key").Return("rsa-tp")
+
+	svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
+	keys, err := svc.GetPublicKeys(context.Background(), kmprovider.PublicKeyFilter{KeyID: "rsa-key"})
+	require.NoError(t, err)
+	require.Len(t, keys, 1)
+	assert.Equal(t, "rsa-key", keys[0].KeyID)
+}
+
+func TestGetPublicKeys_FilterByAlgorithm(t *testing.T) {
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	pki := pkimock.NewPKIServiceInterfaceMock(t)
+	pki.EXPECT().GetAllX509Certificates().Return(
+		map[string]*x509.Certificate{
+			"rsa-key": {Raw: []byte("rsa-der"), PublicKey: &rsaKey.PublicKey},
+			"ec-key":  {Raw: []byte("ec-der"), PublicKey: &ecKey.PublicKey},
+		}, nil,
+	)
+	pki.EXPECT().GetCertThumbprint("ec-key").Return("ec-tp")
+
+	svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
+	keys, err := svc.GetPublicKeys(context.Background(),
+		kmprovider.PublicKeyFilter{Algorithm: cryptolab.AlgorithmES256})
+	require.NoError(t, err)
+	require.Len(t, keys, 1)
+	assert.Equal(t, "ec-key", keys[0].KeyID)
 }

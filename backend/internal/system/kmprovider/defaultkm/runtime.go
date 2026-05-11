@@ -21,6 +21,7 @@ package defaultkm
 import (
 	"context"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rsa"
 	"errors"
 	"fmt"
@@ -130,9 +131,59 @@ func (s *runtimeCryptoService) Sign(
 }
 
 func (s *runtimeCryptoService) GetPublicKeys(
-	_ context.Context, _ kmprovider.PublicKeyFilter,
+	_ context.Context, filter kmprovider.PublicKeyFilter,
 ) ([]kmprovider.PublicKeyInfo, error) {
-	return nil, errors.New("not implemented")
+	if s.pkiService == nil {
+		return nil, errors.New("PKI service not initialized")
+	}
+
+	allCerts, svcErr := s.pkiService.GetAllX509Certificates()
+	if svcErr != nil {
+		return nil, fmt.Errorf("failed to retrieve certificates: [%s] %s",
+			svcErr.Code, svcErr.Error.DefaultValue)
+	}
+
+	keys := make([]kmprovider.PublicKeyInfo, 0, len(allCerts))
+	for id, cert := range allCerts {
+		var alg cryptolab.Algorithm
+		switch pub := cert.PublicKey.(type) {
+		case *rsa.PublicKey:
+			_ = pub
+			alg = cryptolab.AlgorithmRS256
+		case *ecdsa.PublicKey:
+			switch pub.Curve.Params().Name {
+			case "P-384":
+				alg = cryptolab.AlgorithmES384
+			case "P-521":
+				alg = cryptolab.AlgorithmES512
+			default:
+				alg = cryptolab.AlgorithmES256
+			}
+		case ed25519.PublicKey:
+			_ = pub
+			alg = cryptolab.AlgorithmEdDSA
+		default:
+			s.logger.Debug("Unsupported public key type; skipping", log.String("keyID", id))
+			continue
+		}
+
+		if filter.KeyID != "" && filter.KeyID != id {
+			continue
+		}
+		if filter.Algorithm != "" && filter.Algorithm != alg {
+			continue
+		}
+
+		keys = append(keys, kmprovider.PublicKeyInfo{
+			KeyID:          id,
+			Algorithm:      alg,
+			PublicKey:      cert.PublicKey,
+			Thumbprint:     s.pkiService.GetCertThumbprint(id),
+			CertificateDER: cert.Raw,
+		})
+	}
+
+	return keys, nil
 }
 
 func (s *runtimeCryptoService) GetTLSMaterial(
