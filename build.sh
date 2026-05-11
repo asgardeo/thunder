@@ -205,19 +205,6 @@ read_config() {
             PORT=${PORT:-8090}
         fi
 
-        # Read system resource server config (nested under resource:)
-        if command -v yq >/dev/null 2>&1; then
-            SYSTEM_RS_HANDLE=$(yq eval '.resource.system_resource_server.handle // ""' "$config_file" 2>/dev/null)
-            SYSTEM_RS_IDENTIFIER=$(yq eval '.resource.system_resource_server.identifier // ""' "$config_file" 2>/dev/null)
-        else
-            SYSTEM_RS_HANDLE=$(grep -A5 'system_resource_server:' "$config_file" 2>/dev/null | grep -E '^\s*handle:' | awk -F':' '{gsub(/[[:space:]"'\'']/,""); s=""; for(i=2;i<=NF;i++) s=s (i>2?":":"") $i; print s}' | head -1)
-            SYSTEM_RS_IDENTIFIER=$(grep -A5 'system_resource_server:' "$config_file" 2>/dev/null | grep -E '^\s*identifier:' | grep -o '"[^"]*"' | tr -d '"' | head -1)
-            if [ -z "$SYSTEM_RS_IDENTIFIER" ]; then
-                SYSTEM_RS_IDENTIFIER=$(grep -A5 'system_resource_server:' "$config_file" 2>/dev/null | grep -E '^\s*identifier:' | awk -F':' '{gsub(/[[:space:]"'\'']/,""); s=""; for(i=2;i<=NF;i++) s=s (i>2?":":"") $i; print s}' | head -1)
-            fi
-        fi
-        SYSTEM_RS_HANDLE=${SYSTEM_RS_HANDLE:-}
-        SYSTEM_RS_IDENTIFIER=${SYSTEM_RS_IDENTIFIER:-}
     fi
 
     # Determine protocol
@@ -1047,8 +1034,6 @@ function run() {
     
     # Run the bootstrap script directly with environment variable and arguments
     API_BASE="$BASE_URL" \
-        SYSTEM_RS_HANDLE="$SYSTEM_RS_HANDLE" \
-        SYSTEM_RS_IDENTIFIER="$SYSTEM_RS_IDENTIFIER" \
         "$BACKEND_BASE_DIR/cmd/server/bootstrap/01-default-resources.sh" \
         --console-redirect-uris "https://localhost:$CONSOLE_APP_DEFAULT_PORT/console"
 

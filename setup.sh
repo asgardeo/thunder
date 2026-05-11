@@ -192,8 +192,6 @@ read_config() {
         PORT=$(yq eval '.server.port // 8090' "$config_file" 2>/dev/null)
         HTTP_ONLY=$(yq eval '.server.http_only // false' "$config_file" 2>/dev/null)
         PUBLIC_URL=$(yq eval '.server.public_url // ""' "$config_file" 2>/dev/null)
-        SYSTEM_RS_HANDLE=$(yq eval '.resource.system_resource_server.handle // ""' "$config_file" 2>/dev/null)
-        SYSTEM_RS_IDENTIFIER=$(yq eval '.resource.system_resource_server.identifier // ""' "$config_file" 2>/dev/null)
     else
         # Fallback: basic parsing with grep/awk
         HOSTNAME=$(grep -E '^\s*hostname:' "$config_file" | sed 's/#.*//' | awk -F':' '{gsub(/[[:space:]"'\'']/,"",$2); print $2}' | head -1)
@@ -215,15 +213,7 @@ read_config() {
         HOSTNAME=${HOSTNAME:-localhost}
         PORT=${PORT:-8090}
 
-        # Read system resource server config (nested under resource:)
-        SYSTEM_RS_HANDLE=$(grep -A5 'system_resource_server:' "$config_file" 2>/dev/null | grep -E '^\s*handle:' | awk -F':' '{gsub(/[[:space:]"'\'']/,"",$2); print $2}' | head -1)
-        SYSTEM_RS_IDENTIFIER=$(grep -A5 'system_resource_server:' "$config_file" 2>/dev/null | grep -E '^\s*identifier:' | grep -o '"[^"]*"' | tr -d '"' | head -1)
-        if [ -z "$SYSTEM_RS_IDENTIFIER" ]; then
-            SYSTEM_RS_IDENTIFIER=$(grep -A5 'system_resource_server:' "$config_file" 2>/dev/null | grep -E '^\s*identifier:' | awk -F':' '{gsub(/[[:space:]"'\'']/,""); s=""; for(i=2;i<=NF;i++) s=s (i>2?":":"") $i; print s}' | head -1)
-        fi
     fi
-    SYSTEM_RS_HANDLE=${SYSTEM_RS_HANDLE:-}
-    SYSTEM_RS_IDENTIFIER=${SYSTEM_RS_IDENTIFIER:-}
 
     # Determine protocol
     if [ "$HTTP_ONLY" = "true" ]; then
@@ -397,8 +387,6 @@ fi
 # Export variables to be used in scripts
 export API_BASE="${BASE_URL}"
 export PUBLIC_URL="${PUBLIC_URL}"
-export SYSTEM_RS_HANDLE="${SYSTEM_RS_HANDLE}"
-export SYSTEM_RS_IDENTIFIER="${SYSTEM_RS_IDENTIFIER}"
 
 # Check if bootstrap directory exists
 if [ ! -d "$BOOTSTRAP_DIR" ]; then

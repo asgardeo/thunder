@@ -393,6 +393,11 @@ func (f *fileBasedResourceStore) UpdateResourcePermission(
 	return errImmutableStore
 }
 
+func (f *fileBasedResourceStore) UpdateRolePermission(
+	ctx context.Context, rsID string, oldPermission string, newPermission string) error {
+	return errImmutableStore
+}
+
 func (f *fileBasedResourceStore) DeleteResource(ctx context.Context, id string, resServerID string) error {
 	return errImmutableStore
 }

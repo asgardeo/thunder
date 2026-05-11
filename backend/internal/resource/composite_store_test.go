@@ -363,6 +363,16 @@ func (s *CompositeResourceStoreTestSuite) TestUpdateResourceServer_DelegatesToDB
 	s.fileStoreMock.AssertNotCalled(s.T(), "UpdateResourceServer")
 }
 
+func (s *CompositeResourceStoreTestSuite) TestUpdateRolePermission_DelegatesToDB() {
+	s.dbStoreMock.On("UpdateRolePermission", s.ctx, "rs1", "old:perm", "new:perm").Return(nil)
+
+	err := s.compositeStore.UpdateRolePermission(s.ctx, "rs1", "old:perm", "new:perm")
+
+	assert.NoError(s.T(), err)
+	s.dbStoreMock.AssertExpectations(s.T())
+	s.fileStoreMock.AssertNotCalled(s.T(), "UpdateRolePermission")
+}
+
 func (s *CompositeResourceStoreTestSuite) TestDeleteResourceServer_DelegatesToDB() {
 	s.dbStoreMock.On("DeleteResourceServer", s.ctx, "rs1").Return(nil)
 

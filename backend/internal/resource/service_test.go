@@ -40,6 +40,9 @@ const (
 	testNewDescription  = "new description"
 	testWrongResourceID = "res-wrong"
 	declarativeRSID     = "declarative-rs"
+	testResID           = "res-001"
+	testActionID        = "act-001"
+	testRSActionID      = "rsact-001"
 )
 
 var testParentResourceID = "parent-123"
@@ -4073,6 +4076,48 @@ func (suite *ResourceServiceTestSuite) TestDerivePermission() {
 	}
 }
 
+func (suite *ResourceServiceTestSuite) TestSortResourcesByHierarchy() {
+	parentID := "parent-001"
+
+	suite.Run("ChildBeforeParentGetsSorted", func() {
+		resources := []Resource{
+			{ID: "child-001", Handle: "child", Parent: &parentID},
+			{ID: "parent-001", Handle: "parent", Parent: nil},
+		}
+		sortResourcesByHierarchy(resources)
+		suite.Nil(resources[0].Parent)
+		suite.Equal("parent-001", resources[0].ID)
+		suite.NotNil(resources[1].Parent)
+		suite.Equal("child-001", resources[1].ID)
+	})
+
+	suite.Run("AlreadyOrderedUnchanged", func() {
+		resources := []Resource{
+			{ID: "parent-001", Handle: "parent", Parent: nil},
+			{ID: "child-001", Handle: "child", Parent: &parentID},
+		}
+		sortResourcesByHierarchy(resources)
+		suite.Equal("parent-001", resources[0].ID)
+		suite.Equal("child-001", resources[1].ID)
+	})
+
+	suite.Run("AllRootsPreservesOrder", func() {
+		resources := []Resource{
+			{ID: "r1", Handle: "a", Parent: nil},
+			{ID: "r2", Handle: "b", Parent: nil},
+		}
+		sortResourcesByHierarchy(resources)
+		suite.Equal("r1", resources[0].ID)
+		suite.Equal("r2", resources[1].ID)
+	})
+
+	suite.Run("EmptySlice", func() {
+		resources := []Resource{}
+		sortResourcesByHierarchy(resources)
+		suite.Empty(resources)
+	})
+}
+
 // Permission Character Validation Tests
 
 func (suite *ResourceServiceTestSuite) TestPermissionCharacterValidation() {
@@ -4615,9 +4660,9 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_HandleChanged_Pe
 		OUID:      "ou-123",
 	}
 
-	resID := "res-001"
-	actionID := "act-001"
-	rsActionID := "rsact-001"
+	resID := testResID
+	actionID := testActionID
+	rsActionID := testRSActionID
 
 	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
 	suite.mockStore.On("GetResourceServer", mock.Anything, "rs-123").Return(existingRS, nil)
@@ -4627,14 +4672,21 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_HandleChanged_Pe
 	suite.mockStore.On("GetResourceList", mock.Anything, "rs-123", mock.Anything, mock.Anything).
 		Return([]Resource{{ID: resID, Name: "res", Handle: "res", Permission: "old-handle:res"}}, nil)
 	suite.mockStore.On("GetActionList", mock.Anything, "rs-123", (*string)(nil), mock.Anything, mock.Anything).
-		Return([]Action{{ID: rsActionID, Name: "rs-action", Handle: "rs-act", Permission: "old-handle:rs-act"}}, nil)
+		Return([]Action{{ID: rsActionID, Name: "rs-action", Handle: "rs-act",
+			Permission: "old-handle:rs-act"}}, nil)
 	suite.mockStore.On("GetActionList", mock.Anything, "rs-123", &resID, mock.Anything, mock.Anything).
 		Return([]Action{{ID: actionID, Name: "act", Handle: "do", Permission: "old-handle:res:do"}}, nil)
 	suite.mockStore.On("UpdateResourceServer", mock.Anything, "rs-123", mock.Anything).Return(nil)
 	suite.mockStore.On("UpdateResourcePermission", mock.Anything, resID, "rs-123", "new-handle:res").Return(nil)
+	suite.mockStore.On("UpdateRolePermission", mock.Anything, "rs-123", "old-handle:res",
+		"new-handle:res").Return(nil)
 	suite.mockStore.On("UpdateActionPermission", mock.Anything, rsActionID, "rs-123", (*string)(nil),
 		"new-handle:rs-act").Return(nil)
+	suite.mockStore.On("UpdateRolePermission", mock.Anything, "rs-123", "old-handle:rs-act",
+		"new-handle:rs-act").Return(nil)
 	suite.mockStore.On("UpdateActionPermission", mock.Anything, actionID, "rs-123", &resID,
+		"new-handle:res:do").Return(nil)
+	suite.mockStore.On("UpdateRolePermission", mock.Anything, "rs-123", "old-handle:res:do",
 		"new-handle:res:do").Return(nil)
 
 	result, svcErr := suite.service.UpdateResourceServer(context.Background(), "rs-123", rs)
@@ -4642,6 +4694,198 @@ func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_HandleChanged_Pe
 	suite.Nil(svcErr)
 	suite.NotNil(result)
 	suite.Equal("new-handle", result.Handle)
+	suite.mockStore.AssertExpectations(suite.T())
+}
+
+func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_HandleChanged_RolePermUpdateFailsForResource() {
+	rs := ResourceServer{
+		Name:   "my-rs",
+		Handle: "new-handle",
+		OUID:   "ou-123",
+	}
+
+	existingRS := ResourceServer{
+		ID:        "rs-123",
+		Name:      "my-rs",
+		Handle:    "old-handle",
+		Delimiter: ":",
+		OUID:      "ou-123",
+	}
+
+	resID := testResID
+	rsActionID := testRSActionID
+	actionID := testActionID
+
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
+	suite.mockStore.On("GetResourceServer", mock.Anything, "rs-123").Return(existingRS, nil)
+	suite.mockStore.On("CheckResourceServerHandleExists", mock.Anything, "new-handle").Return(false, nil)
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
+		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
+	suite.mockStore.On("GetResourceList", mock.Anything, "rs-123", mock.Anything, mock.Anything).
+		Return([]Resource{{ID: resID, Name: "res", Handle: "res", Permission: "old-handle:res"}}, nil)
+	suite.mockStore.On("GetActionList", mock.Anything, "rs-123", (*string)(nil), mock.Anything, mock.Anything).
+		Return([]Action{{ID: rsActionID, Name: "rs-action", Handle: "rs-act",
+			Permission: "old-handle:rs-act"}}, nil)
+	suite.mockStore.On("GetActionList", mock.Anything, "rs-123", &resID, mock.Anything, mock.Anything).
+		Return([]Action{{ID: actionID, Name: "act", Handle: "do", Permission: "old-handle:res:do"}}, nil)
+	suite.mockStore.On("UpdateResourceServer", mock.Anything, "rs-123", mock.Anything).Return(nil)
+	suite.mockStore.On("UpdateResourcePermission", mock.Anything, resID, "rs-123",
+		"new-handle:res").Return(nil)
+	suite.mockStore.On("UpdateRolePermission", mock.Anything, "rs-123", "old-handle:res",
+		"new-handle:res").Return(errors.New("db error"))
+
+	result, svcErr := suite.service.UpdateResourceServer(context.Background(), "rs-123", rs)
+
+	suite.Nil(result)
+	suite.NotNil(svcErr)
+	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+}
+
+func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_HandleChanged_RolePermUpdateFailsForRSAction() {
+	rs := ResourceServer{
+		Name:   "my-rs",
+		Handle: "new-handle",
+		OUID:   "ou-123",
+	}
+
+	existingRS := ResourceServer{
+		ID:        "rs-123",
+		Name:      "my-rs",
+		Handle:    "old-handle",
+		Delimiter: ":",
+		OUID:      "ou-123",
+	}
+
+	resID := testResID
+	rsActionID := testRSActionID
+	actionID := testActionID
+
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
+	suite.mockStore.On("GetResourceServer", mock.Anything, "rs-123").Return(existingRS, nil)
+	suite.mockStore.On("CheckResourceServerHandleExists", mock.Anything, "new-handle").Return(false, nil)
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
+		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
+	suite.mockStore.On("GetResourceList", mock.Anything, "rs-123", mock.Anything, mock.Anything).
+		Return([]Resource{{ID: resID, Name: "res", Handle: "res", Permission: "old-handle:res"}}, nil)
+	suite.mockStore.On("GetActionList", mock.Anything, "rs-123", (*string)(nil), mock.Anything, mock.Anything).
+		Return([]Action{{ID: rsActionID, Name: "rs-action", Handle: "rs-act",
+			Permission: "old-handle:rs-act"}}, nil)
+	suite.mockStore.On("GetActionList", mock.Anything, "rs-123", &resID, mock.Anything, mock.Anything).
+		Return([]Action{{ID: actionID, Name: "act", Handle: "do", Permission: "old-handle:res:do"}}, nil)
+	suite.mockStore.On("UpdateResourceServer", mock.Anything, "rs-123", mock.Anything).Return(nil)
+	suite.mockStore.On("UpdateResourcePermission", mock.Anything, resID, "rs-123",
+		"new-handle:res").Return(nil)
+	suite.mockStore.On("UpdateRolePermission", mock.Anything, "rs-123", "old-handle:res",
+		"new-handle:res").Return(nil)
+	suite.mockStore.On("UpdateActionPermission", mock.Anything, rsActionID, "rs-123", (*string)(nil),
+		"new-handle:rs-act").Return(nil)
+	suite.mockStore.On("UpdateRolePermission", mock.Anything, "rs-123", "old-handle:rs-act",
+		"new-handle:rs-act").Return(errors.New("db error"))
+
+	result, svcErr := suite.service.UpdateResourceServer(context.Background(), "rs-123", rs)
+
+	suite.Nil(result)
+	suite.NotNil(svcErr)
+	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+}
+
+func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_HandleChanged_RolePermUpdateFailsForResAction() {
+	rs := ResourceServer{
+		Name:   "my-rs",
+		Handle: "new-handle",
+		OUID:   "ou-123",
+	}
+
+	existingRS := ResourceServer{
+		ID:        "rs-123",
+		Name:      "my-rs",
+		Handle:    "old-handle",
+		Delimiter: ":",
+		OUID:      "ou-123",
+	}
+
+	resID := testResID
+	rsActionID := testRSActionID
+	actionID := testActionID
+
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
+	suite.mockStore.On("GetResourceServer", mock.Anything, "rs-123").Return(existingRS, nil)
+	suite.mockStore.On("CheckResourceServerHandleExists", mock.Anything, "new-handle").Return(false, nil)
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
+		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
+	suite.mockStore.On("GetResourceList", mock.Anything, "rs-123", mock.Anything, mock.Anything).
+		Return([]Resource{{ID: resID, Name: "res", Handle: "res", Permission: "old-handle:res"}}, nil)
+	suite.mockStore.On("GetActionList", mock.Anything, "rs-123", (*string)(nil), mock.Anything, mock.Anything).
+		Return([]Action{{ID: rsActionID, Name: "rs-action", Handle: "rs-act",
+			Permission: "old-handle:rs-act"}}, nil)
+	suite.mockStore.On("GetActionList", mock.Anything, "rs-123", &resID, mock.Anything, mock.Anything).
+		Return([]Action{{ID: actionID, Name: "act", Handle: "do", Permission: "old-handle:res:do"}}, nil)
+	suite.mockStore.On("UpdateResourceServer", mock.Anything, "rs-123", mock.Anything).Return(nil)
+	suite.mockStore.On("UpdateResourcePermission", mock.Anything, resID, "rs-123",
+		"new-handle:res").Return(nil)
+	suite.mockStore.On("UpdateRolePermission", mock.Anything, "rs-123", "old-handle:res",
+		"new-handle:res").Return(nil)
+	suite.mockStore.On("UpdateActionPermission", mock.Anything, rsActionID, "rs-123", (*string)(nil),
+		"new-handle:rs-act").Return(nil)
+	suite.mockStore.On("UpdateRolePermission", mock.Anything, "rs-123", "old-handle:rs-act",
+		"new-handle:rs-act").Return(nil)
+	suite.mockStore.On("UpdateActionPermission", mock.Anything, actionID, "rs-123", &resID,
+		"new-handle:res:do").Return(nil)
+	suite.mockStore.On("UpdateRolePermission", mock.Anything, "rs-123", "old-handle:res:do",
+		"new-handle:res:do").Return(errors.New("db error"))
+
+	result, svcErr := suite.service.UpdateResourceServer(context.Background(), "rs-123", rs)
+
+	suite.Nil(result)
+	suite.NotNil(svcErr)
+	suite.Equal(serviceerror.InternalServerError.Code, svcErr.Code)
+}
+
+func (suite *ResourceServiceTestSuite) TestUpdateResourceServer_HandleChanged_ChildBeforeParent() {
+	rs := ResourceServer{
+		Name:   "my-rs",
+		Handle: "mgmt",
+		OUID:   "ou-123",
+	}
+
+	existingRS := ResourceServer{
+		ID:        "rs-123",
+		Name:      "my-rs",
+		Handle:    "system",
+		Delimiter: ":",
+		OUID:      "ou-123",
+	}
+
+	parentResID := "parent-res-001"
+	childResID := "child-res-001"
+
+	suite.mockStore.On("IsResourceServerDeclarative", "rs-123").Return(false)
+	suite.mockStore.On("GetResourceServer", mock.Anything, "rs-123").Return(existingRS, nil)
+	suite.mockStore.On("CheckResourceServerHandleExists", mock.Anything, "mgmt").Return(false, nil)
+	suite.mockOU.On("GetOrganizationUnit", mock.Anything, "ou-123").
+		Return(oupkg.OrganizationUnit{ID: "ou-123"}, nil)
+	suite.mockStore.On("GetResourceList", mock.Anything, "rs-123", mock.Anything, mock.Anything).
+		Return([]Resource{
+			{ID: childResID, Name: "group", Handle: "group", Permission: "system:ou:group", Parent: &parentResID},
+			{ID: parentResID, Name: "ou", Handle: "ou", Permission: "system:ou"},
+		}, nil)
+	suite.mockStore.On("GetActionList", mock.Anything, "rs-123", (*string)(nil), mock.Anything, mock.Anything).
+		Return([]Action{}, nil)
+	suite.mockStore.On("GetActionList", mock.Anything, "rs-123", &childResID, mock.Anything, mock.Anything).
+		Return([]Action{}, nil)
+	suite.mockStore.On("GetActionList", mock.Anything, "rs-123", &parentResID, mock.Anything, mock.Anything).
+		Return([]Action{}, nil)
+	suite.mockStore.On("UpdateResourceServer", mock.Anything, "rs-123", mock.Anything).Return(nil)
+	suite.mockStore.On("UpdateResourcePermission", mock.Anything, parentResID, "rs-123", "mgmt:ou").Return(nil)
+	suite.mockStore.On("UpdateRolePermission", mock.Anything, "rs-123", "system:ou", "mgmt:ou").Return(nil)
+	suite.mockStore.On("UpdateResourcePermission", mock.Anything, childResID, "rs-123", "mgmt:ou:group").Return(nil)
+	suite.mockStore.On("UpdateRolePermission", mock.Anything, "rs-123", "system:ou:group", "mgmt:ou:group").Return(nil)
+
+	result, svcErr := suite.service.UpdateResourceServer(context.Background(), "rs-123", rs)
+
+	suite.Nil(svcErr)
+	suite.NotNil(result)
+	suite.Equal("mgmt", result.Handle)
 	suite.mockStore.AssertExpectations(suite.T())
 }
 
