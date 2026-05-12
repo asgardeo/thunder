@@ -115,7 +115,7 @@ func (u *userTypeResolver) handleAuthenticationFlows(ctx *core.NodeContext, exec
 	if len(ctx.Application.AllowedUserTypes) == 0 {
 		logger.Debug("No allowed user types configured for authentication")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Authentication not available for this application"
+		execResp.Error = &ErrAuthNotAvailableForApp
 		return execResp, nil
 	}
 
@@ -138,7 +138,7 @@ func (u *userTypeResolver) handleRegistrationFlows(ctx *core.NodeContext, execRe
 
 		logger.Debug("No allowed user types found for the application")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Self-registration not available for this application"
+		execResp.Error = &ErrSelfRegNotAvailableForApp
 		return execResp, nil
 	}
 
@@ -156,7 +156,7 @@ func (u *userTypeResolver) handleRegistrationFlows(ctx *core.NodeContext, execRe
 			logger.Debug("No valid user types after filtering with node allowedUserTypes",
 				log.Any("applicationAllowed", allowed), log.Any("nodeAllowed", nodeAllowedUserTypes))
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "No valid user types available for this flow"
+			execResp.Error = &ErrNoValidUserTypes
 			return execResp, nil
 		}
 
@@ -196,14 +196,14 @@ func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 			logger.Debug("User type not in allowed list", log.String(userTypeKey, userType),
 				log.Any("allowedUserTypes", allowedUserTypes))
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "User type not allowed for this flow"
+			execResp.Error = &ErrUserTypeNotAllowed
 			return execResp, nil
 		}
 
 		entityType, ouID, err := u.getEntityTypeAndOU(ctx.Context, userType)
 		if err != nil {
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "Invalid user type"
+			execResp.Error = &ErrInvalidUserType
 			return execResp, nil
 		}
 
@@ -221,7 +221,7 @@ func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 				logger.Debug("User type not valid for selected OU",
 					log.String(userTypeKey, userType), log.String(ouIDKey, selectedOUID))
 				execResp.Status = common.ExecFailure
-				execResp.FailureReason = "User type is not valid for the selected organization unit"
+				execResp.Error = &ErrUserTypeNotValidForOU
 				return execResp, nil
 			}
 		}
@@ -240,14 +240,14 @@ func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 	if svcErr != nil {
 		logger.Debug("Failed to list user types", log.String("error", svcErr.Error.DefaultValue))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Failed to retrieve user types"
+		execResp.Error = &ErrUserTypeRetrievalFailed
 		return execResp, nil
 	}
 
 	if len(schemas.Types) == 0 {
 		logger.Debug("No user types available")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "No user types available"
+		execResp.Error = &ErrNoUserTypesAvailable
 		return execResp, nil
 	}
 
@@ -269,7 +269,7 @@ func (u *userTypeResolver) handleUserOnboardingFlows(ctx *core.NodeContext,
 		logger.Debug("No valid user types found after filtering",
 			log.Any("allowedUserTypes", allowedUserTypes))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "No valid user types available for this flow"
+		execResp.Error = &ErrNoValidUserTypes
 		return execResp, nil
 	}
 
@@ -386,7 +386,7 @@ func (u *userTypeResolver) resolveUserTypeFromInput(ctx context.Context, execRes
 		if !entityType.AllowSelfRegistration {
 			logger.Debug("Self registration not enabled for user type", log.String(userTypeKey, userType))
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "Self-registration not enabled for the user type"
+			execResp.Error = &ErrSelfRegistrationDisabled
 			return nil
 		}
 
@@ -399,7 +399,7 @@ func (u *userTypeResolver) resolveUserTypeFromInput(ctx context.Context, execRes
 	}
 
 	execResp.Status = common.ExecFailure
-	execResp.FailureReason = "Application does not allow registration for the user type"
+	execResp.Error = &ErrUserTypeNotAllowed
 	return nil
 }
 
@@ -415,7 +415,7 @@ func (u *userTypeResolver) resolveUserTypeFromSingleAllowed(ctx context.Context,
 	if !entityType.AllowSelfRegistration {
 		logger.Debug("Self registration not enabled for user type", log.String(userTypeKey, allowedUserType))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Self-registration not enabled for the user type"
+		execResp.Error = &ErrSelfRegistrationDisabled
 		return nil
 	}
 
@@ -453,7 +453,7 @@ func (u *userTypeResolver) resolveUserTypeFromMultipleAllowed(ctx context.Contex
 	if len(selfRegEnabledUserTypes) == 0 {
 		logger.Debug("No user types with self registration enabled")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Self-registration not available for this application"
+		execResp.Error = &ErrSelfRegNotAvailableForApp
 		return nil
 	}
 

@@ -192,7 +192,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserNotAuthenticated() {
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Equal(suite.T(), failureReasonUserNotAuthenticated, resp.FailureReason)
+	assert.Equal(suite.T(), ErrUserNotAuthenticated.Error.DefaultValue, resp.Error.Error.DefaultValue)
 }
 
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAuthorizedPermissions() {

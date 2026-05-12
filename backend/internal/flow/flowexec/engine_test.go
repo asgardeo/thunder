@@ -28,6 +28,8 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/system/cryptolab"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 	"github.com/thunder-id/thunderid/tests/mocks/observability/observabilitymock"
@@ -835,7 +837,7 @@ func (s *EngineTestSuite) TestResolveStepDetailsForPrompt_WithMeta() {
 	s.NotNil(flowStep.Data.Meta)
 }
 
-func (s *EngineTestSuite) TestResolveStepDetailsForPrompt_WithFailureReason() {
+func (s *EngineTestSuite) TestResolveStepDetailsForPrompt_WithError() {
 	fe := &flowEngine{}
 
 	ctx := &EngineContext{}
@@ -844,7 +846,17 @@ func (s *EngineTestSuite) TestResolveStepDetailsForPrompt_WithFailureReason() {
 		Inputs: []common.Input{
 			{Identifier: "otp", Type: "string", Required: true},
 		},
-		FailureReason: "Invalid OTP provided",
+		Error: &serviceerror.ServiceError{
+			Code: "FET-20010",
+			Error: i18ncore.I18nMessage{
+				Key:          "flows.executor.errors.invalid_otp",
+				DefaultValue: "Invalid OTP provided",
+			},
+			ErrorDescription: i18ncore.I18nMessage{
+				Key:          "flows.executor.errors.invalid_otp_desc",
+				DefaultValue: "The one-time password provided is invalid or has expired",
+			},
+		},
 	}
 
 	flowStep := &FlowStep{
@@ -854,7 +866,9 @@ func (s *EngineTestSuite) TestResolveStepDetailsForPrompt_WithFailureReason() {
 	err := fe.resolveStepDetailsForPrompt(ctx, nodeResp, flowStep)
 
 	s.NoError(err)
-	s.Equal("Invalid OTP provided", flowStep.FailureReason)
+	s.NotNil(flowStep.Error)
+	s.Equal("FET-20010", flowStep.Error.Code)
+	s.Equal("Invalid OTP provided", flowStep.Error.Error.DefaultValue)
 	s.Equal(common.FlowStatusIncomplete, flowStep.Status)
 	s.Equal(common.StepTypeView, flowStep.Type)
 }

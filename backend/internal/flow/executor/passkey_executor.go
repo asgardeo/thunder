@@ -30,6 +30,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -38,7 +39,6 @@ const (
 	passkeyExecutorModeVerify    = "verify"
 	passkeyExecutorModeRegStart  = "register_start"
 	passkeyExecutorModeRegFinish = "register_finish"
-	errorInvalidPasskey          = "invalid passkey credentials provided"
 )
 
 // Passkey authentication input identifiers
@@ -204,7 +204,10 @@ func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 				log.MaskedString(log.LoggerKeyUserID, userID),
 				log.String("error", svcErr.ErrorDescription.DefaultValue))
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
+			execResp.Error = serviceerror.CustomServiceError(ErrPasskeyAuthFailed, i18ncore.I18nMessage{
+				Key: 		  ErrOUResolutionFailed.ErrorDescription.Key,
+				DefaultValue: "Failed to start passkey authentication: " + svcErr.ErrorDescription.DefaultValue,
+			})
 			return execResp, nil
 		}
 		logger.Error("Failed to start passkey authentication",
@@ -314,7 +317,7 @@ func (p *passkeyAuthExecutor) validatePasskey(ctx *core.NodeContext, execResp *c
 			// Return USER_INPUT_REQUIRED to allow retry on invalid passkey
 			execResp.Status = common.ExecUserInputRequired
 			execResp.Inputs = p.GetRequiredInputs(ctx)
-			execResp.FailureReason = errorInvalidPasskey
+			execResp.Error = &ErrInvalidPasskey
 			return nil
 		}
 		logger.Error("Failed to verify passkey", log.MaskedString(log.LoggerKeyUserID, userID),
@@ -380,7 +383,7 @@ func (p *passkeyAuthExecutor) executeRegisterStart(ctx *core.NodeContext,
 	userID := p.GetUserIDFromContext(ctx)
 	if userID == "" {
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "User ID is required for passkey registration"
+		execResp.Error = &ErrUserIDRequiredForPasskeyReg
 		return execResp, nil
 	}
 
@@ -413,7 +416,10 @@ func (p *passkeyAuthExecutor) executeRegisterStart(ctx *core.NodeContext,
 				log.MaskedString(log.LoggerKeyUserID, userID),
 				log.String("error", svcErr.ErrorDescription.DefaultValue))
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
+			execResp.Error = serviceerror.CustomServiceError(ErrPasskeyRegistrationFailed, i18ncore.I18nMessage{
+				Key: 		  ErrPasskeyRegistrationFailed.ErrorDescription.Key,
+				DefaultValue: "Failed to start passkey registration: " + svcErr.ErrorDescription.DefaultValue,
+			})
 			return execResp, nil
 		}
 		logger.Error("Failed to start passkey registration",
@@ -505,7 +511,10 @@ func (p *passkeyAuthExecutor) executeRegisterFinish(ctx *core.NodeContext,
 			// Return USER_INPUT_REQUIRED to allow retry on invalid registration
 			execResp.Status = common.ExecUserInputRequired
 			execResp.Inputs = allInputs
-			execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
+			execResp.Error = serviceerror.CustomServiceError(ErrPasskeyRegistrationFailed, i18ncore.I18nMessage{
+				Key: 		  ErrPasskeyRegistrationFailed.ErrorDescription.Key,
+				DefaultValue: "Failed to finish passkey registration: " + svcErr.ErrorDescription.DefaultValue,
+			})
 			return execResp, nil
 		}
 		logger.Error("Failed to finish passkey registration", log.String("error", svcErr.ErrorDescription.DefaultValue))

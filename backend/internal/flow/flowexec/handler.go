@@ -65,6 +65,13 @@ func (h *flowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 		return
 	}
 
+	// Convert service error to API error if present in the flow step response
+	var stepErrorResp *apierror.ErrorResponse
+	if flowStep.Error != nil {
+		resp := convertToAPIError(flowStep.Error)
+		stepErrorResp = &resp
+	}
+
 	flowResp := FlowResponse{
 		ExecutionID:    flowStep.ExecutionID,
 		StepID:         flowStep.StepID,
@@ -72,7 +79,7 @@ func (h *flowExecutionHandler) HandleFlowExecutionRequest(w http.ResponseWriter,
 		Type:           string(flowStep.Type),
 		Data:           flowStep.Data,
 		Assertion:      flowStep.Assertion,
-		FailureReason:  flowStep.FailureReason,
+		Error:          stepErrorResp,
 		ChallengeToken: flowStep.ChallengeToken,
 	}
 
@@ -96,4 +103,15 @@ func handleFlowError(w http.ResponseWriter, flowErr *serviceerror.ServiceError) 
 	}
 
 	sysutils.WriteErrorResponse(w, statusCode, errResp)
+}
+
+// convertToAPIError converts service errors that occur during flow step execution as an API error response.
+func convertToAPIError(flowErr *serviceerror.ServiceError) apierror.ErrorResponse {
+	errResp := apierror.ErrorResponse{
+		Code:        flowErr.Code,
+		Message:     flowErr.Error,
+		Description: flowErr.ErrorDescription,
+	}
+
+	return errResp
 }

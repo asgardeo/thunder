@@ -706,7 +706,7 @@ func (suite *MagicLinkAuthExecutorTestSuite) TestExecute_VerifyMode_Failure_Inva
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Equal(suite.T(), "The provided magic link token is invalid", resp.FailureReason)
+	assert.Equal(suite.T(), "The provided magic link token is invalid", resp.Error.ErrorDescription.DefaultValue)
 	suite.mockMagicLinkService.AssertExpectations(suite.T())
 }
 
@@ -734,7 +734,7 @@ func (suite *MagicLinkAuthExecutorTestSuite) TestExecute_VerifyMode_Failure_Repl
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Equal(suite.T(), "Magic link has already been used", resp.FailureReason)
+	assert.Equal(suite.T(), ErrInvalidMagicLinkToken.Error.DefaultValue, resp.Error.Error.DefaultValue)
 }
 
 func (suite *MagicLinkAuthExecutorTestSuite) TestExecute_VerifyMode_Success_ReplacesStoredJTI() {
@@ -793,7 +793,7 @@ func (suite *MagicLinkAuthExecutorTestSuite) TestExecute_VerifyMode_Failure_User
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Equal(suite.T(), failureReasonUserNotFound, resp.FailureReason)
+	assert.Equal(suite.T(), ErrUserNotFound.Error.DefaultValue, resp.Error.Error.DefaultValue)
 	suite.mockMagicLinkService.AssertExpectations(suite.T())
 }
 
@@ -1149,7 +1149,7 @@ func (suite *MagicLinkAuthExecutorTestSuite) TestValidateMagicLinkToken_FlowIdMi
 	tokenJTI, failure, err := suite.executor.validateMagicLinkToken(ctx, logger)
 
 	suite.Empty(tokenJTI)
-	suite.Equal("Invalid magic link token", failure)
+	suite.Equal(ErrInvalidMagicLinkToken.Error.DefaultValue, failure.Error.DefaultValue)
 	suite.Nil(err)
 }
 
@@ -1167,7 +1167,7 @@ func (suite *MagicLinkAuthExecutorTestSuite) TestValidateMagicLinkToken_MissingD
 	tokenJTI, failure, err := suite.executor.validateMagicLinkToken(ctx, logger)
 
 	suite.Empty(tokenJTI)
-	suite.Empty(failure)
+	suite.Nil(failure)
 	suite.Error(err)
 	suite.Contains(err.Error(), "magic link destination attribute missing from runtime data")
 }
@@ -1187,7 +1187,7 @@ func (suite *MagicLinkAuthExecutorTestSuite) TestValidateMagicLinkToken_ReplayAt
 	tokenJTI, failure, err := suite.executor.validateMagicLinkToken(ctx, logger)
 
 	suite.Empty(tokenJTI)
-	suite.Equal("Magic link has already been used", failure)
+	suite.Equal(ErrInvalidMagicLinkToken.Error.DefaultValue, failure.Error.DefaultValue)
 	suite.Nil(err)
 }
 
@@ -1211,7 +1211,7 @@ func (suite *MagicLinkAuthExecutorTestSuite) TestValidateMagicLinkToken_NewToken
 	tokenJTI, failure, err := suite.executor.validateMagicLinkToken(ctx, logger)
 
 	suite.Equal("new-jti-456", tokenJTI)
-	suite.Empty(failure)
+	suite.Nil(failure)
 	suite.Nil(err)
 	suite.Equal("old-jti-123", ctx.RuntimeData[common.RuntimeKeyMagicLinkUsedJti])
 }
@@ -1248,8 +1248,7 @@ func (suite *MagicLinkAuthExecutorTestSuite) TestValidateMagicLinkToken_DecodeFa
 	tokenJTI, failure, err := suite.executor.validateMagicLinkToken(ctx, logger)
 
 	suite.Empty(tokenJTI)
-	// Asserts that we gracefully fail with the new unexported constant
-	suite.Equal(failureReasonInvalidMagicLink, failure)
+	suite.Equal(ErrInvalidMagicLinkToken.Error.DefaultValue, failure.Error.DefaultValue)
 	suite.Nil(err)
 }
 
@@ -1276,6 +1275,6 @@ func (suite *MagicLinkAuthExecutorTestSuite) TestValidateMagicLinkToken_MissingJ
 	tokenJTI, failure, err := suite.executor.validateMagicLinkToken(ctx, logger)
 
 	suite.Empty(tokenJTI)
-	suite.Equal(failureReasonInvalidMagicLink, failure)
+	suite.Equal(ErrInvalidMagicLinkToken.Error.DefaultValue, failure.Error.DefaultValue)
 	suite.Nil(err)
 }

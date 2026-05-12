@@ -67,7 +67,7 @@ func newAttributeUniquenessValidator(
 // Execute iterates over the unique attributes defined in the user type and checks whether
 // any value already present in UserInputs belongs to an existing user.
 // Returns ExecUserInputRequired (triggering onIncomplete routing) with the specific attribute
-// named in FailureReason when a conflict is detected, or ExecComplete when all values are free.
+// named in the structured error when a conflict is detected, or ExecComplete when all values are free.
 func (e *attributeUniquenessValidator) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, error) {
 	logger := e.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	logger.Debug("Executing uniqueness checker executor")
@@ -107,8 +107,7 @@ func (e *attributeUniquenessValidator) Execute(ctx *core.NodeContext) (*common.E
 		if userID != nil {
 			logger.Debug("Unique attribute conflict detected", log.String("attribute", attr))
 			execResp.Status = common.ExecUserInputRequired
-			execResp.FailureReason = fmt.Sprintf(
-				"A user with this %s already exists. Please use a different value.", attr)
+			execResp.Error = ErrAttributeNotUniqueFor(attr)
 			return execResp, nil
 		}
 	}

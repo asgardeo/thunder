@@ -34,6 +34,8 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	httpservice "github.com/thunder-id/thunderid/internal/system/http"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
@@ -115,7 +117,7 @@ func (h *httpRequestExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRe
 	if err != nil {
 		logger.Error("Failed to parse/validate HTTP request configuration", log.Error(err))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Configuration error: " + err.Error()
+		execResp.Error = &ErrHTTPRequestConfigInvalid
 		return execResp, nil
 	}
 
@@ -531,7 +533,10 @@ func (h *httpRequestExecutor) handleRequestError(execResp *common.ExecutorRespon
 	if failOnError {
 		logger.Debug("Failing execution due to HTTP request error")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = errorMessage
+		execResp.Error = serviceerror.CustomServiceError(ErrHTTPRequestFailed, i18ncore.I18nMessage{
+			Key: 		  ErrHTTPRequestFailed.ErrorDescription.Key,
+			DefaultValue: errorMessage,
+		})
 	} else {
 		logger.Debug("Continuing execution despite HTTP request error", log.String("error", errorMessage))
 		execResp.Status = common.ExecComplete

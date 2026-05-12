@@ -31,6 +31,8 @@ import (
 	managerpkg "github.com/thunder-id/thunderid/internal/authnprovider/manager"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/error/apierror"
 )
 
 // EngineContext holds the overall context used by the flow engine during execution.
@@ -73,7 +75,7 @@ type FlowStep struct {
 	ChallengeToken string
 	Data           FlowData
 	Assertion      string
-	FailureReason  string
+	Error          *serviceerror.ServiceError
 }
 
 // FlowData holds the data returned by a flow execution step
@@ -87,14 +89,14 @@ type FlowData struct {
 
 // FlowResponse represents the flow execution API response body
 type FlowResponse struct {
-	ExecutionID    string   `json:"executionId"`
-	StepID         string   `json:"stepId,omitempty"`
-	FlowStatus     string   `json:"flowStatus"`
-	Type           string   `json:"type,omitempty"`
-	ChallengeToken string   `json:"challengeToken,omitempty"`
-	Data           FlowData `json:"data,omitempty"`
-	Assertion      string   `json:"assertion,omitempty"`
-	FailureReason  string   `json:"failureReason,omitempty"`
+	ExecutionID    string                  `json:"executionId"`
+	StepID         string                  `json:"stepId,omitempty"`
+	FlowStatus     string                  `json:"flowStatus"`
+	Type           string                  `json:"type,omitempty"`
+	ChallengeToken string                  `json:"challengeToken,omitempty"`
+	Data           FlowData                `json:"data,omitempty"`
+	Assertion      string                  `json:"assertion,omitempty"`
+	Error          *apierror.ErrorResponse `json:"error,omitempty"`
 }
 
 // FlowRequest represents the flow execution API request body

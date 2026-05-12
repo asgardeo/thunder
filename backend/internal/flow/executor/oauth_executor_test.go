@@ -226,7 +226,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_EmailMismatch_F
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-	assert.Equal(suite.T(), "Invalid federated user", execResp.FailureReason)
+	assert.Equal(suite.T(), ErrInvalidFederatedUser.Error.DefaultValue, execResp.Error.Error.DefaultValue)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
@@ -265,7 +265,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_SubMismatch_Fai
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-	assert.Equal(suite.T(), "Invalid federated user", execResp.FailureReason)
+	assert.Equal(suite.T(), ErrInvalidFederatedUser.Error.DefaultValue, execResp.Error.Error.DefaultValue)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
@@ -295,7 +295,7 @@ func (suite *OAuthExecutorTestSuite) TestBuildAuthorizeFlow_BuildURLClientError(
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-	assert.Equal(suite.T(), "Invalid IDP configuration", execResp.FailureReason)
+	assert.Equal(suite.T(), "Invalid IDP configuration", execResp.Error.ErrorDescription.DefaultValue)
 	suite.mockOAuthService.AssertExpectations(suite.T())
 }
 
@@ -422,7 +422,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_AuthFlow_UserNo
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-	assert.Equal(suite.T(), "User not found", execResp.FailureReason)
+	assert.Equal(suite.T(), ErrUserNotFound.Error.DefaultValue, execResp.Error.Error.DefaultValue)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
@@ -456,7 +456,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_UserAlreadyExis
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-	assert.Contains(suite.T(), execResp.FailureReason, "User already exists")
+	assert.Contains(suite.T(), execResp.Error.Error.DefaultValue, "User already exists")
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
@@ -509,7 +509,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_ProviderClientE
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-	assert.Equal(suite.T(), "Invalid authorization code", execResp.FailureReason)
+	assert.Equal(suite.T(), "Invalid authorization code", execResp.Error.ErrorDescription.DefaultValue)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
@@ -799,7 +799,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventAuthWith
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-	assert.Equal(suite.T(), "User not found", execResp.FailureReason)
+	assert.Equal(suite.T(), ErrUserNotFound.Error.DefaultValue, execResp.Error.Error.DefaultValue)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
@@ -875,7 +875,7 @@ func (suite *OAuthExecutorTestSuite) TestProcessAuthFlowResponse_PreventRegistra
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-	assert.Equal(suite.T(), "User already exists with the provided sub claim.", execResp.FailureReason)
+	assert.Equal(suite.T(), ErrUserAlreadyExists.Error.DefaultValue, execResp.Error.Error.DefaultValue)
 	suite.mockAuthnProvider.AssertExpectations(suite.T())
 }
 
@@ -922,7 +922,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 			name:                  "NoAllowedUserTypes",
 			allowedUserTypes:      []string{},
 			mockSetup:             func() {},
-			expectedFailureReason: errCannotProvisionUserAutomatically,
+			expectedFailureReason: ErrCannotProvisionAutomatically.Error.DefaultValue,
 		},
 		{
 			name:             "NoSelfRegistrationEnabled",
@@ -935,7 +935,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 						OUID:                  "ou-123",
 					}, nil).Once()
 			},
-			expectedFailureReason: errSelfRegistrationDisabled,
+			expectedFailureReason: ErrSelfRegistrationDisabled.Error.DefaultValue,
 		},
 		{
 			name:             "MultipleSelfRegistrationEnabled",
@@ -954,7 +954,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 						OUID:                  "ou-456",
 					}, nil).Once()
 			},
-			expectedFailureReason: errCannotProvisionUserAutomatically,
+			expectedFailureReason: ErrCannotProvisionAutomatically.Error.DefaultValue,
 		},
 	}
 
@@ -981,7 +981,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 
 			assert.NoError(suite.T(), err)
 			assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-			assert.Equal(suite.T(), tt.expectedFailureReason, execResp.FailureReason)
+			assert.Equal(suite.T(), tt.expectedFailureReason, execResp.Error.Error.DefaultValue)
 			suite.mockEntityTypeService.AssertExpectations(suite.T())
 		})
 	}
@@ -1071,7 +1071,7 @@ func (suite *OAuthExecutorTestSuite) TestGetContextUserForRegistration_Ambiguous
 	assert.NoError(suite.T(), err)
 	assert.Nil(suite.T(), contextUser)
 	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-	assert.Equal(suite.T(), "User identity is ambiguous and cannot be registered.", execResp.FailureReason)
+	assert.Equal(suite.T(), ErrAmbiguousUserIdentity.Error.DefaultValue, execResp.Error.Error.DefaultValue)
 }
 
 func (suite *OAuthExecutorTestSuite) TestGetContextUserForRegistration_AmbiguousUser_AllowRegistrationOnly() {
@@ -1097,7 +1097,7 @@ func (suite *OAuthExecutorTestSuite) TestGetContextUserForRegistration_Ambiguous
 	assert.NoError(suite.T(), err)
 	assert.Nil(suite.T(), contextUser)
 	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-	assert.Equal(suite.T(), "User identity is ambiguous and cannot be registered.", execResp.FailureReason)
+	assert.Equal(suite.T(), ErrAmbiguousUserIdentity.Error.DefaultValue, execResp.Error.Error.DefaultValue)
 }
 
 func (suite *OAuthExecutorTestSuite) TestGetContextUserForRegistration_AmbiguousUser_CrossOUProvisioningAllowed() {
@@ -1124,7 +1124,7 @@ func (suite *OAuthExecutorTestSuite) TestGetContextUserForRegistration_Ambiguous
 	assert.NotNil(suite.T(), contextUser)
 	assert.False(suite.T(), contextUser.IsAuthenticated)
 	assert.Equal(suite.T(), common.ExecComplete, execResp.Status)
-	assert.Empty(suite.T(), execResp.FailureReason)
+	assert.Nil(suite.T(), execResp.Error)
 	assert.Equal(suite.T(), "ambiguous-sub", execResp.RuntimeData[userAttributeSub])
 }
 
@@ -1139,7 +1139,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 			name:                  "NoAllowedUserTypes",
 			allowedUserTypes:      []string{},
 			entityTypes:           nil,
-			expectedFailureReason: errCannotProvisionUserAutomatically,
+			expectedFailureReason: ErrCannotProvisionAutomatically.Error.DefaultValue,
 		},
 		{
 			name:             "NoSelfRegistrationEnabled",
@@ -1154,7 +1154,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 					AllowSelfRegistration: false,
 				},
 			},
-			expectedFailureReason: errSelfRegistrationDisabled,
+			expectedFailureReason: ErrSelfRegistrationDisabled.Error.DefaultValue,
 		},
 		{
 			name:             "MultipleEligibleTypes",
@@ -1171,7 +1171,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 					OUID:                  "ou-2",
 				},
 			},
-			expectedFailureReason: errCannotProvisionUserAutomatically,
+			expectedFailureReason: ErrCannotProvisionAutomatically.Error.DefaultValue,
 		},
 	}
 
@@ -1206,7 +1206,7 @@ func (suite *OAuthExecutorTestSuite) TestResolveUserTypeForAutoProvisioning_Fail
 
 			assert.NoError(suite.T(), err)
 			assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-			assert.Equal(suite.T(), tt.expectedFailureReason, execResp.FailureReason)
+			assert.Equal(suite.T(), tt.expectedFailureReason, execResp.Error.Error.DefaultValue)
 
 			if tt.entityTypes != nil {
 				suite.mockEntityTypeService.AssertExpectations(suite.T())
@@ -1235,7 +1235,7 @@ func (suite *OAuthExecutorTestSuite) TestGetContextUserForAuthentication_Without
 	assert.NoError(suite.T(), err)
 	assert.Nil(suite.T(), contextUser)
 	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-	assert.Equal(suite.T(), "User not found", execResp.FailureReason)
+	assert.Equal(suite.T(), ErrUserNotFound.Error.DefaultValue, execResp.Error.Error.DefaultValue)
 }
 
 func (suite *OAuthExecutorTestSuite) TestExecute_InvalidFlowType() {

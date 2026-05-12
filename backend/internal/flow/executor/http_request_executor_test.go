@@ -493,7 +493,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestExecute_ErrorHandling_FailOnError
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-	assert.Contains(suite.T(), execResp.FailureReason, "HTTP request failed with status 400")
+	assert.Contains(suite.T(), execResp.Error.ErrorDescription.DefaultValue, "HTTP request failed with status 400")
 }
 
 func (suite *HTTPRequestExecutorTestSuite) TestExecute_MissingURL() {
@@ -512,7 +512,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestExecute_MissingURL() {
 	assert.NoError(suite.T(), err)
 	// Configuration errors always fail the flow regardless of failOnError setting
 	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-	assert.Contains(suite.T(), execResp.FailureReason, "url is required")
+	assert.Equal(suite.T(), ErrHTTPRequestConfigInvalid.Error.DefaultValue, execResp.Error.Error.DefaultValue)
 }
 
 func (suite *HTTPRequestExecutorTestSuite) TestExecute_InvalidHTTPMethod() {
@@ -531,7 +531,7 @@ func (suite *HTTPRequestExecutorTestSuite) TestExecute_InvalidHTTPMethod() {
 	assert.NoError(suite.T(), err)
 	// Configuration errors always fail the flow regardless of failOnError setting
 	assert.Equal(suite.T(), common.ExecFailure, execResp.Status)
-	assert.Contains(suite.T(), execResp.FailureReason, "invalid HTTP method")
+	assert.Equal(suite.T(), ErrHTTPRequestConfigInvalid.Error.DefaultValue, execResp.Error.Error.DefaultValue)
 }
 
 func (suite *HTTPRequestExecutorTestSuite) TestParseAndValidateConfig_TimeoutLimits() {

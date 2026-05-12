@@ -45,7 +45,6 @@ var DataKey = struct {
 	AuthMethod    string
 	RedirectTo    string
 	FailedStep    string
-	FailureReason string
 
 	// OAuth/Token Keys
 	Scope     string
@@ -59,6 +58,7 @@ var DataKey = struct {
 	DurationMs  string
 	LatencyUs   string
 	TraceParent string
+	Description string
 
 	// Testing Keys
 	Key   string
@@ -83,7 +83,6 @@ var DataKey = struct {
 	AuthMethod:    "auth_method",
 	RedirectTo:    "redirect_to",
 	FailedStep:    "failed_step",
-	FailureReason: "failure_reason",
 
 	// OAuth/Token Keys
 	Scope:     "scope",
@@ -97,6 +96,7 @@ var DataKey = struct {
 	DurationMs:  "duration_ms",
 	LatencyUs:   "latency_us",
 	TraceParent: "trace_parent",
+	Description: "description",
 
 	// Testing Keys
 	Key:   "key",

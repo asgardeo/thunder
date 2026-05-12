@@ -105,14 +105,3 @@ const (
 
 // nonSearchableInputs contains the list of user inputs/ attributes that are non-searchable.
 var nonSearchableInputs = []string{"password", "code", "nonce", "otp", "token", "userInputMagicLinkToken"}
-
-// Failure reason constants
-const (
-	failureReasonUserNotAuthenticated = "User is not authenticated"
-	failureReasonUserNotFound         = "User not found"
-	failureReasonInvalidCredentials   = "Invalid credentials provided" // #nosec G101
-	failureReasonFailedToIdentifyUser = "Failed to identify user"
-	failureReasonAmbiguousUser        = "User identity is ambiguous"
-	failureReasonInvalidOTP           = "invalid OTP provided"
-	failureReasonInvalidMagicLink     = "Invalid magic link token"
-)

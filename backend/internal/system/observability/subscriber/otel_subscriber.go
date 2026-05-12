@@ -231,9 +231,9 @@ func (o *OTelSubscriber) createSpan(evt *event.Event) error {
 
 	// Set span status based on event status
 	if evt.Status == event.StatusFailure {
-		errorMsg := o.getStringData(evt, event.DataKey.Error)
+		errorMsg := o.getStringData(evt, event.DataKey.Message)
 		if errorMsg == "" {
-			errorMsg = o.getStringData(evt, event.DataKey.FailureReason)
+			errorMsg = o.getStringData(evt, event.DataKey.Error)
 		}
 		if errorMsg == "" {
 			errorMsg = "unknown error"

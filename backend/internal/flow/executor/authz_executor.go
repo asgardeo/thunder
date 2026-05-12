@@ -85,7 +85,7 @@ func (a *authorizationExecutor) Execute(ctx *core.NodeContext) (*common.Executor
 
 	if !ctx.AuthenticatedUser.IsAuthenticated {
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = failureReasonUserNotAuthenticated
+		execResp.Error = &ErrUserNotAuthenticated
 		return execResp, nil
 	}
 
@@ -123,7 +123,7 @@ func (a *authorizationExecutor) Execute(ctx *core.NodeContext) (*common.Executor
 	if svcErr != nil {
 		logger.Error("Authorization service call failed", log.String("error", svcErr.Error.DefaultValue))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Authorization validation failure"
+		execResp.Error = &ErrAuthorizationFailed
 		return execResp, nil
 	}
 

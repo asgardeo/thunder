@@ -119,13 +119,11 @@ func (s *flowExecService) Execute(ctx context.Context,
 					WithStatus(event.StatusFailure).
 					WithData(event.DataKey.EntityID, appID).
 					WithData(event.DataKey.FlowType, flowType).
-					WithData(event.DataKey.Error, loadErr.Error.DefaultValue).
 					WithData(event.DataKey.ErrorCode, loadErr.Code).
-					WithData(event.DataKey.ErrorType, string(loadErr.Type))
+					WithData(event.DataKey.ErrorType, string(loadErr.Type)).
+					WithData(event.DataKey.Message, loadErr.Error.DefaultValue).
+					WithData(event.DataKey.Description, loadErr.ErrorDescription.DefaultValue)
 
-				if loadErr.ErrorDescription.DefaultValue != "" {
-					evt.WithData(event.DataKey.Message, loadErr.ErrorDescription.DefaultValue)
-				}
 				s.observabilitySvc.PublishEvent(evt)
 			}
 			return nil, loadErr

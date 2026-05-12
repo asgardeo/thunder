@@ -182,7 +182,7 @@ func (m *magicLinkAuthExecutor) InitiateMagicLink(ctx *core.NodeContext,
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
+			execResp.Error = &ErrInvalidMagicLinkToken
 			return execResp, nil
 		}
 		return execResp, errors.New("failed to generate magic link")
@@ -304,13 +304,13 @@ func (m *magicLinkAuthExecutor) executeVerify(ctx *core.NodeContext) (*common.Ex
 		return execResp, nil
 	}
 
-	tokenJTI, failure, err := m.validateMagicLinkToken(ctx, logger)
+	tokenJTI, execErr, err := m.validateMagicLinkToken(ctx, logger)
 	if err != nil {
 		return execResp, err
 	}
-	if failure != "" {
+	if execErr != nil {
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = failure
+		execResp.Error = execErr
 		return execResp, nil
 	}
 
@@ -332,10 +332,10 @@ func (m *magicLinkAuthExecutor) executeVerify(ctx *core.NodeContext) (*common.Ex
 
 // validateMagicLinkToken validates the magic link token from user input and returns the associated subject.
 func (m *magicLinkAuthExecutor) validateMagicLinkToken(ctx *core.NodeContext,
-	logger *log.Logger) (string, string, error) {
+	logger *log.Logger) (string, *serviceerror.ServiceError, error) {
 	token, ok := ctx.UserInputs[userInputMagicLinkToken]
 	if !ok || token == "" {
-		return "", "Magic link token is required", nil
+		return "", &ErrInvalidMagicLinkToken, nil
 	}
 
 	isRegistration := ctx.FlowType == common.FlowTypeRegistration
@@ -344,7 +344,7 @@ func (m *magicLinkAuthExecutor) validateMagicLinkToken(ctx *core.NodeContext,
 	if isRegistration {
 		destinationAttribute = ctx.RuntimeData[common.RuntimeKeyMagicLinkDestinationAttribute]
 		if destinationAttribute == "" {
-			return "", "", errors.New("magic link destination attribute missing from runtime data")
+			return "", nil, errors.New("magic link destination attribute missing from runtime data")
 		}
 	}
 
@@ -355,41 +355,41 @@ func (m *magicLinkAuthExecutor) validateMagicLinkToken(ctx *core.NodeContext,
 		// In registration, it's expected that the user doesn't exist in the DB yet.
 		if !(isRegistration && svcErr.Code == authncm.ErrorUserNotFound.Code) {
 			if svcErr.Type == serviceerror.ClientErrorType {
-				return "", svcErr.ErrorDescription.DefaultValue, nil
+				return "", svcErr, nil
 			}
-			return "", "", errors.New("failed to verify magic link token")
+			return "", nil, errors.New("failed to verify magic link token")
 		}
 	} else if isRegistration {
 		// If VerifyMagicLink found a user during a registration flow, something is wrong.
 		logger.Debug("User already exists during magic link registration verification.")
-		return "", "Invalid registration state", nil
+		return "", &ErrInvalidMagicLinkToken, nil
 	} else if user == nil {
-		return "", failureReasonUserNotFound, nil
+		return "", &ErrUserNotFound, nil
 	}
 
 	payload, decodeErr := jwt.DecodeJWTPayload(token)
 	if decodeErr != nil {
 		logger.Debug("Failed to decode magic link token", log.Error(decodeErr))
-		return "", failureReasonInvalidMagicLink, nil
+		return "", &ErrInvalidMagicLinkToken, nil
 	}
 
 	executionIDClaim := utils.ConvertInterfaceValueToString(payload["executionId"])
 	if executionIDClaim == "" || executionIDClaim != ctx.ExecutionID {
 		logger.Debug("Magic link token executionId mismatch")
-		return "", failureReasonInvalidMagicLink, nil
+		return "", &ErrInvalidMagicLinkToken, nil
 	}
 
 	jtiClaim := utils.ConvertInterfaceValueToString(payload["jti"])
 	if jtiClaim == "" {
-		return "", failureReasonInvalidMagicLink, nil
+		return "", &ErrInvalidMagicLinkToken, nil
 	}
 	if usedJti, exists := ctx.RuntimeData[common.RuntimeKeyMagicLinkUsedJti]; exists && usedJti == jtiClaim {
 		logger.Debug("Magic link token has already been used", log.String("jti", jtiClaim))
-		return "", "Magic link has already been used", nil
+		return "", &ErrInvalidMagicLinkToken, nil
 	}
 
 	logger.Debug("Magic link token validated successfully")
-	return jtiClaim, "", nil
+	return jtiClaim, nil, nil
 }
 
 // resolveDestinationAttribute infers the destination attribute from the first configured node input.

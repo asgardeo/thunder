@@ -118,7 +118,7 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 	if len(identifyingAttrs) == 0 && len(credentialAttrs) == 0 {
 		logger.Debug("No user attributes provided for provisioning")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "No user attributes provided for provisioning"
+		execResp.Error = &ErrProvisioningUserAttrsMissing
 		return execResp, nil
 	}
 
@@ -126,11 +126,11 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 	if err != nil {
 		logger.Error("Failed to identify user", log.Error(err))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = failureReasonFailedToIdentifyUser
+		execResp.Error = &ErrFailedToIdentifyUser
 		return execResp, nil
 	}
 	if execResp.Status == common.ExecFailure &&
-		execResp.FailureReason == failureReasonAmbiguousUser &&
+		execResp.Error == &ErrAmbiguousUserIdentity &&
 		isCrossOUProvisioningAllowed(ctx) {
 		resolved, err := p.resolveAmbiguousUserForProvisioning(ctx, identifyingAttrs)
 		if err != nil {
@@ -138,9 +138,9 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 		}
 		userID = resolved
 		execResp.Status = ""
-		execResp.FailureReason = ""
+		execResp.Error = nil
 	}
-	if execResp.Status == common.ExecFailure && execResp.FailureReason != failureReasonUserNotFound {
+	if execResp.Status == common.ExecFailure && (execResp.Error == nil || execResp.Error.Code != ErrUserNotFound.Code) {
 		return execResp, nil
 	}
 	if userID != nil && *userID != "" {
@@ -165,13 +165,13 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 	if err != nil {
 		logger.Error("Failed to create user in the store", log.Error(err))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Failed to create user"
+		execResp.Error = &ErrProvisioningFailed
 		return execResp, nil
 	}
 	if createdEntity == nil || createdEntity.ID == "" {
 		logger.Error("Created user is nil or has no ID")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Something went wrong while creating the user"
+		execResp.Error = &ErrProvisioningFailed
 		return execResp, nil
 	}
 
@@ -183,7 +183,7 @@ func (p *provisioningExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorR
 			log.MaskedString(log.LoggerKeyUserID, createdEntity.ID),
 			log.Error(err))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Failed to assign groups and roles"
+		execResp.Error = &ErrProvisioningAssignmentFailed
 		return execResp, nil
 	}
 
@@ -241,7 +241,7 @@ func (p *provisioningExecutor) handleExistingUser(ctx *core.NodeContext, userID 
 		} else {
 			execResp.Status = common.ExecFailure
 		}
-		execResp.FailureReason = "User already exists"
+		execResp.Error = &ErrUserAlreadyExists
 		return false, nil
 	}
 
@@ -249,7 +249,7 @@ func (p *provisioningExecutor) handleExistingUser(ctx *core.NodeContext, userID 
 	targetOUID := p.getOUID(ctx)
 	if targetOUID == "" {
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Target OU is not set for cross-OU provisioning"
+		execResp.Error = &ErrCrossOUProvisioningTargetMissing
 		return false, nil
 	}
 
@@ -265,7 +265,7 @@ func (p *provisioningExecutor) handleExistingUser(ctx *core.NodeContext, userID 
 		} else {
 			execResp.Status = common.ExecFailure
 		}
-		execResp.FailureReason = "User already exists in the target organization"
+		execResp.Error = &ErrUserAlreadyExistsInTargetOU
 		return false, nil
 	}
 
