@@ -18,7 +18,6 @@ require (
 	golang.org/x/crypto v0.46.0
 	golang.org/x/text v0.32.0
 	gopkg.in/yaml.v3 v3.0.1
-	gopkg.in/yaml.v3 v3.0.0
 	modernc.org/sqlite v1.37.0
 )
 
