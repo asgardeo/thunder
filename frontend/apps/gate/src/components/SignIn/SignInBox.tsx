@@ -27,6 +27,22 @@ import {useTranslation} from 'react-i18next';
 import {useSearchParams} from 'react-router';
 import generateFallbackSignUpUrl from '../../utils/generateFallbackSignUpUrl';
 
+const parseSignInErrorMessage = (rawMessage: string): string => {
+  const jsonStart = rawMessage.indexOf('{');
+  if (jsonStart !== -1) {
+    try {
+      const parsed = JSON.parse(rawMessage.substring(jsonStart)) as Record<string, unknown>;
+      const description = parsed.description as {defaultValue?: string} | undefined;
+      const message = parsed.message as {defaultValue?: string} | undefined;
+      if (description?.defaultValue) return description.defaultValue;
+      if (message?.defaultValue) return message.defaultValue;
+    } catch {
+      // fall through to return raw message
+    }
+  }
+  return rawMessage;
+};
+
 export default function SignInBox(): JSX.Element {
   const [searchParams] = useSearchParams();
   const {resolve, resolveAll} = useTemplateLiteralResolver();
@@ -95,7 +111,7 @@ export default function SignInBox(): JSX.Element {
             <>
               {error && (
                 <Alert severity="error" sx={{mb: 2}}>
-                  {error.message ?? t('signin:errors.signin.failed.description')}
+                  {parseSignInErrorMessage(error.message ?? '') || t('signin:errors.signin.failed.description')}
                 </Alert>
               )}
               {(() => {
