@@ -6,11 +6,11 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/go-webauthn/webauthn v0.15.0
 	github.com/google/jsonschema-go v0.4.2
-	github.com/lib/pq v1.10.9
+	github.com/lib/pq v1.11.9
 	github.com/modelcontextprotocol/go-sdk v1.4.1
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/stretchr/testify v1.11.1
-	go.opentelemetry.io/otel v1.43.0
+	go.opentelemetry.io/otel v1.44.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.39.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.39.0
 	go.opentelemetry.io/otel/sdk v1.43.0
@@ -18,6 +18,7 @@ require (
 	golang.org/x/crypto v0.46.0
 	golang.org/x/text v0.32.0
 	gopkg.in/yaml.v3 v3.0.1
+	gopkg.in/yaml.v3 v3.0.0
 	modernc.org/sqlite v1.37.0
 )
 
