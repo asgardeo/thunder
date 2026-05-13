@@ -23,6 +23,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
 	dbmodel "github.com/thunder-id/thunderid/internal/system/database/model"
@@ -184,6 +186,8 @@ func (s *organizationUnitStore) CreateOrganizationUnit(ctx context.Context, ou O
 		ou.LayoutID,
 		string(ouMetadataBytes),
 		s.deploymentID,
+		ou.CreatedAt,
+		ou.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to execute query: %w", err)
@@ -368,6 +372,7 @@ func (s *organizationUnitStore) UpdateOrganizationUnit(ctx context.Context, ou O
 		ou.ThemeID,
 		ou.LayoutID,
 		string(ouMetadataBytes),
+		ou.UpdatedAt,
 		s.deploymentID,
 	)
 	if err != nil {
@@ -507,12 +512,24 @@ func buildOrganizationUnitBasicFromResultRow(
 		return OrganizationUnitBasic{}, err
 	}
 
+	createdAt, err := parseTimeField(row["created_at"], "created_at")
+	if err != nil {
+		return OrganizationUnitBasic{}, fmt.Errorf("failed to parse created_at: %w", err)
+	}
+
+	updatedAt, err := parseTimeField(row["updated_at"], "updated_at")
+	if err != nil {
+		return OrganizationUnitBasic{}, fmt.Errorf("failed to parse updated_at: %w", err)
+	}
+
 	return OrganizationUnitBasic{
 		ID:          ouID,
 		Handle:      handle,
 		Name:        name,
 		Description: description,
 		LogoURL:     logoURL,
+		CreatedAt:   createdAt,
+		UpdatedAt:   updatedAt,
 	}, nil
 }
 
@@ -573,6 +590,16 @@ func buildOrganizationUnitFromResultRow(
 		return OrganizationUnit{}, err
 	}
 
+	createdAt, err := parseTimeField(row["created_at"], "created_at")
+	if err != nil {
+		return OrganizationUnit{}, fmt.Errorf("failed to parse created_at: %w", err)
+	}
+
+	updatedAt, err := parseTimeField(row["updated_at"], "updated_at")
+	if err != nil {
+		return OrganizationUnit{}, fmt.Errorf("failed to parse updated_at: %w", err)
+	}
+
 	return OrganizationUnit{
 		ID:              ou.ID,
 		Handle:          ou.Handle,
@@ -585,7 +612,42 @@ func buildOrganizationUnitFromResultRow(
 		TosURI:          tosURI,
 		PolicyURI:       policyURI,
 		CookiePolicyURI: cookiePolicyURI,
+		CreatedAt:       createdAt,
+		UpdatedAt:       updatedAt,
 	}, nil
+}
+
+// parseTimeField parses a time field from the database result.
+func parseTimeField(field interface{}, fieldName string) (time.Time, error) {
+	const customTimeFormat = "2006-01-02 15:04:05.999999999"
+
+	switch v := field.(type) {
+	case string:
+		trimmedTime := trimTimeString(v)
+		parsedTime, err := time.Parse(customTimeFormat, trimmedTime)
+		if err != nil {
+			parsedTime, err = time.Parse(time.RFC3339, v)
+			if err != nil {
+				return time.Time{}, fmt.Errorf("error parsing %s: %w", fieldName, err)
+			}
+		}
+		return parsedTime, nil
+	case time.Time:
+		return v, nil
+	case nil:
+		return time.Time{}, fmt.Errorf("%s is nil", fieldName)
+	default:
+		return time.Time{}, fmt.Errorf("unexpected type for %s: %T", fieldName, field)
+	}
+}
+
+// trimTimeString trims extra information from a time string to match the expected format.
+func trimTimeString(timeStr string) string {
+	parts := strings.SplitN(timeStr, " ", 3)
+	if len(parts) >= 2 {
+		return parts[0] + " " + parts[1]
+	}
+	return timeStr
 }
 
 // checkConflict is a helper function to check for conflicts in organization unit attributes.

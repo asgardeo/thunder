@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
@@ -299,6 +300,7 @@ func (ous *organizationUnitService) CreateOrganizationUnit(
 			}
 		}
 
+		now := time.Now().UTC()
 		createdOU = OrganizationUnit{
 			ID:              ouID,
 			Handle:          request.Handle,
@@ -311,6 +313,8 @@ func (ous *organizationUnitService) CreateOrganizationUnit(
 			TosURI:          request.TosURI,
 			PolicyURI:       request.PolicyURI,
 			CookiePolicyURI: request.CookiePolicyURI,
+			CreatedAt:       now,
+			UpdatedAt:       now,
 		}
 
 		err = ous.ouStore.CreateOrganizationUnit(txCtx, createdOU)
@@ -612,6 +616,8 @@ func (ous *organizationUnitService) updateOUInternal(
 		TosURI:          request.TosURI,
 		PolicyURI:       request.PolicyURI,
 		CookiePolicyURI: request.CookiePolicyURI,
+		CreatedAt:       existingOU.CreatedAt,
+		UpdatedAt:       time.Now().UTC(),
 	}
 
 	err = ous.ouStore.UpdateOrganizationUnit(ctx, updatedOU)

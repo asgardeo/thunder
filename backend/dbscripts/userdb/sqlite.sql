@@ -9,8 +9,8 @@ CREATE TABLE "ORGANIZATION_UNIT" (
     THEME_ID    VARCHAR(36),
     LAYOUT_ID   VARCHAR(36),
     METADATA     TEXT,
-    CREATED_AT  TEXT DEFAULT (datetime('now')),
-    UPDATED_AT  TEXT DEFAULT (datetime('now'))
+    CREATED_AT  TEXT NOT NULL,
+    UPDATED_AT  TEXT NOT NULL
 );
 
 -- Composite index for handle-based OU lookups (queryGetRootOrganizationUnitByHandle, queryGetOrganizationUnitByHandle)

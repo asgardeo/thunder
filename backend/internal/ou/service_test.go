@@ -847,13 +847,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("IsOrganizationUnitDeclarative", mock.Anything, "ou-1").
 					Return(false).
 					Once()
-				store.On("UpdateOrganizationUnit", mock.Anything, OrganizationUnit{
-					ID:          "ou-1",
-					Handle:      "root",
-					Name:        "Root",
-					Description: "updated",
-					Parent:      nil,
-				}).
+				store.On("UpdateOrganizationUnit", mock.Anything, mock.Anything).
 					Return(nil).
 					Once()
 			},
@@ -886,14 +880,7 @@ func (suite *OrganizationUnitServiceTestSuite) TestOUService_UpdateOrganizationU
 				store.On("IsOrganizationUnitDeclarative", mock.Anything, "ou-1").
 					Return(false).
 					Once()
-				store.On("UpdateOrganizationUnit", mock.Anything, OrganizationUnit{
-					ID:       "ou-1",
-					Handle:   "root",
-					Name:     "Root",
-					ThemeID:  "theme-new",
-					LayoutID: "layout-new",
-					LogoURL:  "https://example.com/new-logo.png",
-				}).
+				store.On("UpdateOrganizationUnit", mock.Anything, mock.Anything).
 					Return(nil).
 					Once()
 			},

@@ -110,6 +110,12 @@ Navigate to **Organization Units** in the <ProductName /> Console to see all OUs
 - **Users** - all users belonging to this OU.
 - **Groups** - all groups belonging to this OU.
 
+When using the Organization Unit APIs, each OU response also includes system metadata:
+
+- **isReadOnly** - indicates whether the OU is immutable.
+- **createdAt** - UTC timestamp when the OU was created.
+- **updatedAt** - UTC timestamp when the OU was last updated.
+
 ## Delete an Organization Unit
 
 1. Open the OU from the **Organization Units** list.

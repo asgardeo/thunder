@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -283,6 +284,8 @@ func makeOUResultRow(id, handle, name, description string, parent *string) map[s
 		"name":        name,
 		"description": description,
 		"metadata":    nil,
+		"created_at":  "2025-01-01 10:00:00",
+		"updated_at":  "2025-01-01 10:00:00",
 	}
 	if parent != nil {
 		row["parent_id"] = *parent
@@ -307,6 +310,8 @@ func TestBuildOrganizationUnitBasicFromResultRow(t *testing.T) {
 			"handle":      "root",
 			"name":        "Root",
 			"description": "desc",
+			"created_at":  "2025-01-01 10:00:00",
+			"updated_at":  "2025-01-01 10:00:00",
 		}
 
 		ou, err := buildOrganizationUnitBasicFromResultRow(row)
@@ -323,6 +328,8 @@ func TestBuildOrganizationUnitBasicFromResultRow(t *testing.T) {
 			"name":        "Root",
 			"description": "desc",
 			"metadata":    `{"logo_url":"https://example.com/logo.png"}`,
+			"created_at":  "2025-01-01 10:00:00",
+			"updated_at":  "2025-01-01 10:00:00",
 		}
 
 		ou, err := buildOrganizationUnitBasicFromResultRow(row)
@@ -339,6 +346,8 @@ func TestBuildOrganizationUnitBasicFromResultRow(t *testing.T) {
 			"name":        "Root",
 			"description": "desc",
 			"metadata":    nil,
+			"created_at":  "2025-01-01 10:00:00",
+			"updated_at":  "2025-01-01 10:00:00",
 		}
 
 		ou, err := buildOrganizationUnitBasicFromResultRow(row)
@@ -412,6 +421,8 @@ func TestBuildOrganizationUnitFromResultRow(t *testing.T) {
 		"name":        "Child",
 		"description": "",
 		"parent_id":   parentID,
+		"created_at":  "2025-01-01 10:00:00",
+		"updated_at":  "2025-01-01 10:00:00",
 	}
 
 	ou, err := buildOrganizationUnitFromResultRow(row)
@@ -429,6 +440,8 @@ func TestBuildOrganizationUnitFromResultRow(t *testing.T) {
 			"parent_id":   nil,
 			"theme_id":    "theme-abc",
 			"layout_id":   "layout-def",
+			"created_at":  "2025-01-01 10:00:00",
+			"updated_at":  "2025-06-15 12:30:00",
 			"metadata": `{"logo_url":"https://example.com/logo.png","tos_uri":""` +
 				`,"policy_uri":"","cookie_policy_uri":""}`,
 		}
@@ -449,6 +462,8 @@ func TestBuildOrganizationUnitFromResultRow(t *testing.T) {
 			"name":        "Root",
 			"description": "",
 			"parent_id":   123,
+			"created_at":  "2025-01-01 10:00:00",
+			"updated_at":  "2025-01-01 10:00:00",
 		}
 
 		ou, err := buildOrganizationUnitFromResultRow(row)
@@ -644,6 +659,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 						ou.ThemeID,
 						ou.LayoutID,
 						`{"cookie_policy_uri":"","logo_url":"","policy_uri":"","tos_uri":""}`,
+						mock.Anything,
 						testDeploymentID,
 					).
 					Return(int64(1), nil).
@@ -680,6 +696,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 						ou.LayoutID,
 						`{"cookie_policy_uri":"","logo_url":"https://example.com/logo.png",`+
 							`"policy_uri":"","tos_uri":""}`,
+						mock.Anything,
 						testDeploymentID,
 					).
 					Return(int64(1), nil).
@@ -703,6 +720,7 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_UpdateOrganizationUnit(
 						ou.ThemeID,
 						ou.LayoutID,
 						`{"cookie_policy_uri":"","logo_url":"","policy_uri":"","tos_uri":""}`,
+						mock.Anything,
 						testDeploymentID,
 					).
 					Return(int64(0), errors.New("update failed")).
@@ -1312,6 +1330,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 						ou.LayoutID,
 						`{"cookie_policy_uri":"","logo_url":"","policy_uri":"","tos_uri":""}`,
 						testDeploymentID,
+						mock.Anything,
+						mock.Anything,
 					).
 					Return(int64(1), nil).
 					Once()
@@ -1344,6 +1364,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 						`{"cookie_policy_uri":"","logo_url":"https://example.com/logo.png",`+
 							`"policy_uri":"","tos_uri":""}`,
 						testDeploymentID,
+						mock.Anything,
+						mock.Anything,
 					).
 					Return(int64(1), nil).
 					Once()
@@ -1372,6 +1394,8 @@ func (suite *OrganizationUnitStoreTestSuite) TestOUStore_CreateOrganizationUnit(
 						ou.LayoutID,
 						`{"cookie_policy_uri":"","logo_url":"","policy_uri":"","tos_uri":""}`,
 						testDeploymentID,
+						mock.Anything,
+						mock.Anything,
 					).
 					Return(int64(0), errors.New("insert failed")).
 					Once()
@@ -1729,4 +1753,232 @@ func TestNewOrganizationUnitStore_TransactionerError(t *testing.T) {
 
 	_, _, err := newOrganizationUnitStore()
 	require.Error(t, err)
+}
+
+func TestParseTimeField(t *testing.T) {
+	t.Run("parses custom time with suffix", func(t *testing.T) {
+		parsed, err := parseTimeField("2025-01-01 10:00:00.123456789 +0000 UTC", "created_at")
+
+		require.NoError(t, err)
+		require.Equal(t, 2025, parsed.Year())
+		require.Equal(t, time.January, parsed.Month())
+		require.Equal(t, 1, parsed.Day())
+	})
+
+	t.Run("parses rfc3339", func(t *testing.T) {
+		parsed, err := parseTimeField("2025-01-01T10:00:00Z", "updated_at")
+
+		require.NoError(t, err)
+		require.Equal(t, 10, parsed.Hour())
+	})
+
+	t.Run("accepts time type", func(t *testing.T) {
+		now := time.Now().UTC()
+		parsed, err := parseTimeField(now, "created_at")
+
+		require.NoError(t, err)
+		require.Equal(t, now, parsed)
+	})
+
+	t.Run("errors on invalid string", func(t *testing.T) {
+		_, err := parseTimeField("bad-time", "created_at")
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "error parsing created_at")
+	})
+
+	t.Run("errors on nil", func(t *testing.T) {
+		_, err := parseTimeField(nil, "created_at")
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "created_at is nil")
+	})
+
+	t.Run("errors on unsupported type", func(t *testing.T) {
+		_, err := parseTimeField(42, "created_at")
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "unexpected type for created_at")
+	})
+}
+
+func TestTrimTimeString(t *testing.T) {
+	require.Equal(t, "2025-01-01 10:00:00.123456789", trimTimeString("2025-01-01 10:00:00.123456789 +0000 UTC"))
+	require.Equal(t, "2025-01-01T10:00:00Z", trimTimeString("2025-01-01T10:00:00Z"))
+}
+
+func TestParseOUMetadata(t *testing.T) {
+	t.Run("missing metadata key", func(t *testing.T) {
+		data, err := parseOUMetadata(map[string]interface{}{})
+
+		require.NoError(t, err)
+		require.Empty(t, data)
+	})
+
+	t.Run("nil metadata", func(t *testing.T) {
+		data, err := parseOUMetadata(map[string]interface{}{"metadata": nil})
+
+		require.NoError(t, err)
+		require.Empty(t, data)
+	})
+
+	t.Run("empty metadata string", func(t *testing.T) {
+		data, err := parseOUMetadata(map[string]interface{}{"metadata": ""})
+
+		require.NoError(t, err)
+		require.Empty(t, data)
+	})
+
+	t.Run("metadata as bytes", func(t *testing.T) {
+		data, err := parseOUMetadata(map[string]interface{}{
+			"metadata": []byte(`{"logo_url":"https://example.com/logo.png"}`),
+		})
+
+		require.NoError(t, err)
+		require.Equal(t, "https://example.com/logo.png", data["logo_url"])
+	})
+
+	t.Run("invalid metadata type", func(t *testing.T) {
+		_, err := parseOUMetadata(map[string]interface{}{"metadata": 123})
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to parse metadata as string or []byte")
+	})
+
+	t.Run("invalid metadata json", func(t *testing.T) {
+		_, err := parseOUMetadata(map[string]interface{}{"metadata": "{"})
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to unmarshal OU Metadata")
+	})
+}
+
+func TestExtractStringFromOUMetadata(t *testing.T) {
+	t.Run("returns empty for missing key", func(t *testing.T) {
+		value, err := extractStringFromOUMetadata(map[string]interface{}{}, "logo_url")
+
+		require.NoError(t, err)
+		require.Equal(t, "", value)
+	})
+
+	t.Run("returns empty for nil key", func(t *testing.T) {
+		value, err := extractStringFromOUMetadata(map[string]interface{}{"logo_url": nil}, "logo_url")
+
+		require.NoError(t, err)
+		require.Equal(t, "", value)
+	})
+
+	t.Run("returns value for string", func(t *testing.T) {
+		value, err := extractStringFromOUMetadata(
+			map[string]interface{}{"logo_url": "https://example.com/logo.png"},
+			"logo_url",
+		)
+
+		require.NoError(t, err)
+		require.Equal(t, "https://example.com/logo.png", value)
+	})
+
+	t.Run("errors on non string", func(t *testing.T) {
+		_, err := extractStringFromOUMetadata(map[string]interface{}{"logo_url": 1}, "logo_url")
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to parse logo_url from OU Metadata")
+	})
+}
+
+func TestBuildOrganizationUnitBasicFromResultRow_MetadataAndTimeErrors(t *testing.T) {
+	t.Run("metadata field type error", func(t *testing.T) {
+		row := map[string]interface{}{
+			"ou_id":       "ou1",
+			"handle":      "root",
+			"name":        "Root",
+			"description": "desc",
+			"metadata":    `{"logo_url":1}`,
+			"created_at":  "2025-01-01 10:00:00",
+			"updated_at":  "2025-01-01 10:00:00",
+		}
+
+		_, err := buildOrganizationUnitBasicFromResultRow(row)
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to parse logo_url from OU Metadata")
+	})
+
+	t.Run("created_at parse error", func(t *testing.T) {
+		row := map[string]interface{}{
+			"ou_id":       "ou1",
+			"handle":      "root",
+			"name":        "Root",
+			"description": "desc",
+			"metadata":    nil,
+			"created_at":  nil,
+			"updated_at":  "2025-01-01 10:00:00",
+		}
+
+		_, err := buildOrganizationUnitBasicFromResultRow(row)
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to parse created_at")
+	})
+
+	t.Run("updated_at parse error", func(t *testing.T) {
+		row := map[string]interface{}{
+			"ou_id":       "ou1",
+			"handle":      "root",
+			"name":        "Root",
+			"description": "desc",
+			"metadata":    nil,
+			"created_at":  "2025-01-01 10:00:00",
+			"updated_at":  true,
+		}
+
+		_, err := buildOrganizationUnitBasicFromResultRow(row)
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to parse updated_at")
+	})
+}
+
+func TestBuildOrganizationUnitFromResultRow_MetadataFieldErrors(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata string
+		wantErr  string
+	}{
+		{
+			name:     "tos_uri type error",
+			metadata: `{"logo_url":"https://example.com/logo.png","tos_uri":1}`,
+			wantErr:  "failed to parse tos_uri from OU Metadata",
+		},
+		{
+			name:     "policy_uri type error",
+			metadata: `{"logo_url":"https://example.com/logo.png","tos_uri":"","policy_uri":1}`,
+			wantErr:  "failed to parse policy_uri from OU Metadata",
+		},
+		{
+			name:     "cookie_policy_uri type error",
+			metadata: `{"logo_url":"https://example.com/logo.png","tos_uri":"","policy_uri":"","cookie_policy_uri":1}`,
+			wantErr:  "failed to parse cookie_policy_uri from OU Metadata",
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			row := map[string]interface{}{
+				"ou_id":       "ou1",
+				"handle":      "root",
+				"name":        "Root",
+				"description": "desc",
+				"metadata":    tc.metadata,
+				"created_at":  "2025-01-01 10:00:00",
+				"updated_at":  "2025-01-01 10:00:00",
+			}
+
+			_, err := buildOrganizationUnitFromResultRow(row)
+
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tc.wantErr)
+		})
+	}
 }

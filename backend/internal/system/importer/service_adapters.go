@@ -93,8 +93,20 @@ func (s *importService) importOrganizationUnit(
 		return decodeErrorOutcome(resourceTypeOrganizationUnit, req.ID, req.Name, err)
 	}
 
-	createReq := ou.OrganizationUnitRequestWithID(req)
-	updateReq := ou.OrganizationUnitRequestWithID(req)
+	createReq := ou.OrganizationUnitRequestWithID{
+		ID:              req.ID,
+		Handle:          req.Handle,
+		Name:            req.Name,
+		Description:     req.Description,
+		Parent:          req.Parent,
+		ThemeID:         req.ThemeID,
+		LayoutID:        req.LayoutID,
+		LogoURL:         req.LogoURL,
+		TosURI:          req.TosURI,
+		PolicyURI:       req.PolicyURI,
+		CookiePolicyURI: req.CookiePolicyURI,
+	}
+	updateReq := createReq
 
 	if dryRun {
 		if options.IsUpsertEnabled() && req.ID != "" {
