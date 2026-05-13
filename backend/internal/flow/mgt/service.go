@@ -485,7 +485,8 @@ func (s *flowMgtService) IsValidFlow(
 func isValidFlowType(flowType common.FlowType) bool {
 	return flowType == common.FlowTypeAuthentication ||
 		flowType == common.FlowTypeRegistration ||
-		flowType == common.FlowTypeUserOnboarding
+		flowType == common.FlowTypeUserOnboarding ||
+		flowType == common.FlowTypeRecovery
 }
 
 // buildPaginationLinks constructs pagination links for the flow list response.

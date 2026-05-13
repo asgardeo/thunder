@@ -105,7 +105,7 @@ describe('useGetUserType', () => {
 
     expect(mockHttpRequest).toHaveBeenCalledWith(
       expect.objectContaining({
-        url: `https://api.test.com/user-types/`,
+        url: `https://api.test.com/user-types/schema-1`,
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

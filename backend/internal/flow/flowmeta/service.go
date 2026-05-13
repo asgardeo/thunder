@@ -187,6 +187,7 @@ func (fms *flowMetaService) populateTypeMetadata(
 	}
 
 	response.IsRegistrationFlowEnabled = client.IsRegistrationFlowEnabled
+	response.IsRecoveryFlowEnabled = client.IsRecoveryFlowEnabled
 	response.Application = buildApplicationMetadata(client.ID, entity, client.Properties)
 
 	ouList, ouErr := fms.ouService.GetOrganizationUnitList(ctx, 1, 0)

@@ -122,23 +122,23 @@ const mockUseGetUserType = vi.fn<() => UseGetUserTypeReturn>();
 const mockUseUpdateUser = vi.fn<() => UseUpdateUserReturn>();
 const mockUseDeleteUser = vi.fn<() => UseDeleteUserReturn>();
 
-vi.mock('../../api/useGetUser', () => ({
+vi.mock('@/api/useGetUser', () => ({
   default: () => mockUseGetUser(),
 }));
 
-vi.mock('../../api/useGetUserTypes', () => ({
+vi.mock('@/api/useGetUserTypes', () => ({
   default: () => mockUseGetUserTypes(),
 }));
 
-vi.mock('../../api/useGetUserType', () => ({
+vi.mock('@/api/useGetUserType', () => ({
   default: () => mockUseGetUserType(),
 }));
 
-vi.mock('../../api/useUpdateUser', () => ({
+vi.mock('@/api/useUpdateUser', () => ({
   default: () => mockUseUpdateUser(),
 }));
 
-vi.mock('../../api/useDeleteUser', () => ({
+vi.mock('@/api/useDeleteUser', () => ({
   default: () => mockUseDeleteUser(),
 }));
 

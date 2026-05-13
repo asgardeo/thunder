@@ -1755,6 +1755,12 @@ const translations = {
     'edit.flows.registrationFlow.hint': 'Select the flow that handles user registration for this {{entity}}.',
     'edit.flows.registrationFlow.alert':
       'To modify the selected flow, <0>open the flow builder</0>. To create a new flow, visit the <1>Flows page</1>.',
+    'edit.flows.labels.recoveryFlow': 'Recovery Flow',
+    'edit.flows.labels.recoveryFlow.description': 'Choose the flow that handles password and account recovery.',
+    'edit.flows.recoveryFlow.placeholder': 'Select a recovery flow',
+    'edit.flows.recoveryFlow.hint': 'Select the flow that handles account recovery for this {{entity}}.',
+    'edit.flows.recoveryFlow.alert':
+      'To modify the selected flow, <0>open the flow builder</0>. To create a new flow, visit the <1>Flows page</1>.',
     'edit.flows.editFlow': 'Edit flow',
 
     // Customization section
@@ -2174,6 +2180,8 @@ const translations = {
     'create.type.signin.description': 'Authenticate users with passwords, passkeys, or social providers',
     'create.type.signup.label': 'Self Sign-up',
     'create.type.signup.description': 'Let users register themselves with your application',
+    'create.type.recovery.label': 'Password Recovery',
+    'create.type.recovery.description': 'Let users recover their password or account',
     'create.type.onboarding.label': 'Onboarding',
     'create.type.onboarding.description': 'Onboard invited users to your organization',
     'create.template.title': 'Choose a starting template',

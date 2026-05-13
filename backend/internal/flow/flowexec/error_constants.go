@@ -109,6 +109,20 @@ var ErrorRegistrationFlowDisabled = serviceerror.ServiceError{
 	},
 }
 
+// ErrorRecoveryFlowDisabled defines the error response for recovery flow disabled errors.
+var ErrorRecoveryFlowDisabled = serviceerror.ServiceError{
+	Code: "FES-1010",
+	Type: serviceerror.ClientErrorType,
+	Error: core.I18nMessage{
+		Key:          "error.flowexecservice.recovery_not_allowed",
+		DefaultValue: "Recovery not allowed",
+	},
+	ErrorDescription: core.I18nMessage{
+		Key:          "error.flowexecservice.recovery_not_allowed_description",
+		DefaultValue: "Recovery flow is disabled for the application",
+	},
+}
+
 // ErrorApplicationRetrievalClientError defines the error response for application retrieval client errors.
 var ErrorApplicationRetrievalClientError = serviceerror.ServiceError{
 	Code: "FES-1007",

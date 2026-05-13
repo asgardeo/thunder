@@ -62,6 +62,8 @@ export default function FlowComponentRenderer({
   maxImageSize,
   additionalData,
   signUpFallbackUrl,
+  signInFallbackUrl,
+  forgotPasswordFallbackUrl,
 }: FlowComponentRendererProps): JSX.Element | null {
   const comp = component as FlowComponent;
 
@@ -72,7 +74,15 @@ export default function FlowComponentRenderer({
 
   // RICH_TEXT
   if (comp.type === 'RICH_TEXT') {
-    return <RichTextAdapter component={comp} resolve={resolve} signUpFallbackUrl={signUpFallbackUrl} />;
+    return (
+      <RichTextAdapter
+        component={comp}
+        resolve={resolve}
+        signUpFallbackUrl={signUpFallbackUrl}
+        signInFallbackUrl={signInFallbackUrl}
+        forgotPasswordFallbackUrl={forgotPasswordFallbackUrl}
+      />
+    );
   }
 
   // IMAGE
@@ -99,6 +109,8 @@ export default function FlowComponentRenderer({
         onSubmit={onSubmit}
         onValidate={onValidate}
         signUpFallbackUrl={signUpFallbackUrl}
+        signInFallbackUrl={signInFallbackUrl}
+        forgotPasswordFallbackUrl={forgotPasswordFallbackUrl}
       />
     );
   }
@@ -150,6 +162,8 @@ export default function FlowComponentRenderer({
             onSubmit={onSubmit}
             onValidate={onValidate}
             signUpFallbackUrl={signUpFallbackUrl}
+            signInFallbackUrl={signInFallbackUrl}
+            forgotPasswordFallbackUrl={forgotPasswordFallbackUrl}
           />
         </>
       );
@@ -168,6 +182,8 @@ export default function FlowComponentRenderer({
         onSubmit={onSubmit}
         onValidate={onValidate}
         signUpFallbackUrl={signUpFallbackUrl}
+        signInFallbackUrl={signInFallbackUrl}
+        forgotPasswordFallbackUrl={forgotPasswordFallbackUrl}
       />
     );
   }

@@ -1299,17 +1299,39 @@ func (suite *InboundClientServiceTestSuite) TestValidateAuthFlowID_ValidNoError(
 	assert.NoError(suite.T(), svc.validateAuthFlowID(context.Background(), "good"))
 }
 
-func (suite *InboundClientServiceTestSuite) TestValidateRegistrationFlowID_AllBranches() {
+func (suite *InboundClientServiceTestSuite) testValidateFlowID(
+	flowType flowcommon.FlowType,
+	validateFn func(*inboundClientService, context.Context, string) error,
+	invalidErr, serverErr error,
+) {
 	flowMgt := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
-	flowMgt.EXPECT().IsValidFlow(mock.Anything, "x", flowcommon.FlowTypeRegistration).Return(false, nil).Once()
-	flowMgt.EXPECT().IsValidFlow(mock.Anything, "y", flowcommon.FlowTypeRegistration).
+	flowMgt.EXPECT().IsValidFlow(mock.Anything, "x", flowType).Return(false, nil).Once()
+	flowMgt.EXPECT().IsValidFlow(mock.Anything, "y", flowType).
 		Return(false, &serviceerror.ServiceError{Code: "E"}).Once()
-	flowMgt.EXPECT().IsValidFlow(mock.Anything, "z", flowcommon.FlowTypeRegistration).Return(true, nil).Once()
+	flowMgt.EXPECT().IsValidFlow(mock.Anything, "z", flowType).Return(true, nil).Once()
 	svc := &inboundClientService{flowMgt: flowMgt}
-	assert.ErrorIs(suite.T(), svc.validateRegistrationFlowID(context.Background(), "x"), ErrFKInvalidRegistrationFlow)
-	assert.ErrorIs(suite.T(), svc.validateRegistrationFlowID(context.Background(), "y"), ErrFKFlowServerError)
-	assert.NoError(suite.T(), svc.validateRegistrationFlowID(context.Background(), "z"))
-	assert.NoError(suite.T(), (&inboundClientService{}).validateRegistrationFlowID(context.Background(), ""))
+	assert.ErrorIs(suite.T(), validateFn(svc, context.Background(), "x"), invalidErr)
+	assert.ErrorIs(suite.T(), validateFn(svc, context.Background(), "y"), serverErr)
+	assert.NoError(suite.T(), validateFn(svc, context.Background(), "z"))
+	assert.NoError(suite.T(), validateFn(&inboundClientService{}, context.Background(), ""))
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateRegistrationFlowID_AllBranches() {
+	suite.testValidateFlowID(
+		flowcommon.FlowTypeRegistration,
+		(*inboundClientService).validateRegistrationFlowID,
+		ErrFKInvalidRegistrationFlow,
+		ErrFKFlowServerError,
+	)
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateRecoveryFlowID_AllBranches() {
+	suite.testValidateFlowID(
+		flowcommon.FlowTypeRecovery,
+		(*inboundClientService).validateRecoveryFlowID,
+		ErrFKInvalidRecoveryFlow,
+		ErrFKFlowServerError,
+	)
 }
 
 func (suite *InboundClientServiceTestSuite) TestValidateThemeID_AllBranches() {
@@ -1379,6 +1401,83 @@ func (suite *InboundClientServiceTestSuite) TestValidateAllowedUserTypes_Service
 	svc := &inboundClientService{entityType: us, logger: log.GetLogger()}
 	err := svc.validateAllowedUserTypes(context.Background(), []string{"a"})
 	assert.ErrorIs(suite.T(), err, ErrUserSchemaLookupFailed)
+}
+
+// ----- resolveFlowDefaults -----
+
+func (suite *InboundClientServiceTestSuite) TestResolveFlowDefaults_NilOrNoMgtIsNoOp() {
+	svc := &inboundClientService{}
+	c := validInboundClient()
+	assert.NoError(suite.T(), svc.resolveFlowDefaults(context.Background(), &c))
+
+	svc2 := &inboundClientService{flowMgt: nil}
+	c2 := validInboundClient()
+	assert.NoError(suite.T(), svc2.resolveFlowDefaults(context.Background(), &c2))
+}
+
+func (suite *InboundClientServiceTestSuite) TestResolveFlowDefaults_RecoveryFlowDisabledWhenEmpty() {
+	c := &inboundmodel.InboundClient{
+		ID:             "p1",
+		AuthFlowID:     "auth-1",
+		RecoveryFlowID: "",
+	}
+	svc := &inboundClientService{}
+	err := svc.resolveFlowDefaults(context.Background(), c)
+	assert.NoError(suite.T(), err)
+	assert.False(suite.T(), c.IsRecoveryFlowEnabled)
+}
+
+func (suite *InboundClientServiceTestSuite) TestResolveFlowDefaults_RecoveryFlowEnabledWhenPopulated() {
+	c := &inboundmodel.InboundClient{
+		ID:                    "p1",
+		AuthFlowID:            "auth-1",
+		RecoveryFlowID:        "recovery-1",
+		IsRecoveryFlowEnabled: true,
+	}
+	svc := &inboundClientService{}
+	err := svc.resolveFlowDefaults(context.Background(), c)
+	assert.NoError(suite.T(), err)
+	assert.True(suite.T(), c.IsRecoveryFlowEnabled)
+	assert.Equal(suite.T(), "recovery-1", c.RecoveryFlowID)
+}
+
+func (suite *InboundClientServiceTestSuite) TestCreateInboundClient_WithoutRecoveryFlow() {
+	store := newInboundClientStoreInterfaceMock(suite.T())
+	store.EXPECT().IsDeclarative(mock.Anything, "p1").Return(false)
+	store.EXPECT().CreateInboundClient(mock.Anything, mock.MatchedBy(func(c inboundmodel.InboundClient) bool {
+		// Verify that when RecoveryFlowID is empty, IsRecoveryFlowEnabled is false
+		return c.RecoveryFlowID == "" && !c.IsRecoveryFlowEnabled
+	})).Return(nil)
+
+	svc := newServiceForTest(store)
+	client := ptrInboundClient()
+	client.RecoveryFlowID = ""
+	client.IsRecoveryFlowEnabled = false
+	err := svc.CreateInboundClient(context.Background(), client, nil, nil, false, "")
+
+	assert.NoError(suite.T(), err)
+}
+
+func (suite *InboundClientServiceTestSuite) TestUpdateInboundClient_WithRecoveryFlow() {
+	store := newInboundClientStoreInterfaceMock(suite.T())
+	store.EXPECT().IsDeclarative(mock.Anything, "p1").Return(false)
+	store.EXPECT().UpdateInboundClient(mock.Anything, mock.MatchedBy(func(c inboundmodel.InboundClient) bool {
+		// Verify that when RecoveryFlowID is set, IsRecoveryFlowEnabled can be true
+		return c.RecoveryFlowID == "recovery-1" && c.IsRecoveryFlowEnabled
+	})).Return(nil)
+	store.EXPECT().GetOAuthProfileByEntityID(mock.Anything, "p1").Return(nil, ErrInboundClientNotFound)
+
+	mockCert := certmock.NewCertificateServiceInterfaceMock(suite.T())
+	mockCert.EXPECT().GetCertificateByReference(mock.Anything, mock.Anything, mock.Anything).
+		Return(nil, &cert.ErrorCertificateNotFound)
+
+	svc := newInboundClientService(store, transaction.NewNoOpTransactioner(), mockCert, nil, nil, nil, nil, nil, nil)
+	client := ptrInboundClient()
+	client.RecoveryFlowID = "recovery-1"
+	client.IsRecoveryFlowEnabled = true
+	err := svc.UpdateInboundClient(context.Background(), client, nil, nil, false, "", "")
+
+	assert.NoError(suite.T(), err)
 }
 
 // ----- validateFKs aggregate -----
@@ -1510,6 +1609,14 @@ func (suite *InboundClientServiceTestSuite) TestValidateFKs_AuthFlowErrorPropaga
 	svc := &inboundClientService{flowMgt: flowMgt}
 	c := &inboundmodel.InboundClient{AuthFlowID: "bad"}
 	assert.ErrorIs(suite.T(), svc.validateFKs(context.Background(), c), ErrFKInvalidAuthFlow)
+}
+
+func (suite *InboundClientServiceTestSuite) TestValidateFKs_RecoveryFlowErrorPropagated() {
+	flowMgt := flowmgtmock.NewFlowMgtServiceInterfaceMock(suite.T())
+	flowMgt.EXPECT().IsValidFlow(mock.Anything, "bad", flowcommon.FlowTypeRecovery).Return(false, nil)
+	svc := &inboundClientService{flowMgt: flowMgt}
+	c := &inboundmodel.InboundClient{RecoveryFlowID: "bad"}
+	assert.ErrorIs(suite.T(), svc.validateFKs(context.Background(), c), ErrFKInvalidRecoveryFlow)
 }
 
 func (suite *InboundClientServiceTestSuite) TestValidateFKs_AllPassWithEmptyOptionals() {

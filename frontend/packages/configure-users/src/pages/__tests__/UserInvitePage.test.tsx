@@ -120,11 +120,15 @@ vi.mock('@asgardeo/react', async () => {
   };
 });
 
-vi.mock('@thunderid/hooks', () => ({
-  useTemplateLiteralResolver: () => ({
-    resolve: (key: string) => key,
-  }),
-}));
+vi.mock('@thunderid/hooks', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...(actual as object),
+    useTemplateLiteralResolver: () => ({
+      resolve: (key: string) => key,
+    }),
+  };
+});
 
 vi.mock('../../../organization-units/components/OrganizationUnitTreePicker', () => ({
   default: ({value, onChange, rootOuId}: {value: string; onChange: (id: string) => void; rootOuId?: string}) => (

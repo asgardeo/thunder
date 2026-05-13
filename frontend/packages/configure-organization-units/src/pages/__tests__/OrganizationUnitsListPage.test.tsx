@@ -48,7 +48,7 @@ const mockOUData: OrganizationUnitListResponse = {
   ],
 };
 
-vi.mock('../../api/useGetOrganizationUnits', () => ({
+vi.mock('@/api/useGetOrganizationUnits', () => ({
   default: () => ({
     data: mockOUData,
     isLoading: false,
@@ -57,7 +57,7 @@ vi.mock('../../api/useGetOrganizationUnits', () => ({
 }));
 
 // Mock delete hook
-vi.mock('../../api/useDeleteOrganizationUnit', () => ({
+vi.mock('@/api/useDeleteOrganizationUnit', () => ({
   default: () => ({
     mutate: vi.fn(),
     isPending: false,
@@ -71,7 +71,7 @@ vi.mock('@asgardeo/react', () => ({
 }));
 
 // Mock useOrganizationUnit hook with React state for reactivity
-vi.mock('../../contexts/useOrganizationUnit', async () => {
+vi.mock('@/contexts/useOrganizationUnit', async () => {
   const {useState, useCallback} = await import('react');
   type OrganizationUnitTreeItem = import('../../models/organization-unit-tree').OrganizationUnitTreeItem;
   function useOrganizationUnit() {

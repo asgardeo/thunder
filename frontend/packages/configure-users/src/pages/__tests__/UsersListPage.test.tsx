@@ -43,7 +43,7 @@ vi.mock('react-router', async () => {
 });
 
 // Mock the UsersList component
-vi.mock('../../components/UsersList', () => ({
+vi.mock('@/components/UsersList', () => ({
   default: () => <div data-testid="users-list">Users List Component</div>,
 }));
 

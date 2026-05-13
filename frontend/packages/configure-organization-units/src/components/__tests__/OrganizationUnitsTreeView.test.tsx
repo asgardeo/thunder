@@ -40,7 +40,7 @@ vi.mock('@thunderid/logger/react', () => ({
 
 // Mock the API hook
 const mockUseGetOrganizationUnits = vi.fn();
-vi.mock('../../api/useGetOrganizationUnits', () => ({
+vi.mock('@/api/useGetOrganizationUnits', () => ({
   default: () =>
     mockUseGetOrganizationUnits() as {
       data: OrganizationUnitListResponse | undefined;
@@ -59,7 +59,7 @@ vi.mock('@asgardeo/react', () => ({
 // Mock useOrganizationUnit hook with React state for reactivity
 // Allow tests to pre-seed expandedItems via mockOrganizationUnitConfig.initialExpandedItems
 const mockOrganizationUnitConfig = {initialExpandedItems: [] as string[]};
-vi.mock('../../contexts/useOrganizationUnit', async () => {
+vi.mock('@/contexts/useOrganizationUnit', async () => {
   const {useState, useCallback} = await import('react');
   type OrganizationUnitTreeItem = import('../../models/organization-unit-tree').OrganizationUnitTreeItem;
   function useOrganizationUnit() {
@@ -88,7 +88,7 @@ vi.mock('@thunderid/contexts', async (importOriginal) => {
 // Mock delete hook — controllable per test
 const mockDeleteMutate = vi.fn();
 const mockDeleteHook = {mutate: mockDeleteMutate, isPending: false};
-vi.mock('../../api/useDeleteOrganizationUnit', () => ({
+vi.mock('@/api/useDeleteOrganizationUnit', () => ({
   default: () => mockDeleteHook,
 }));
 

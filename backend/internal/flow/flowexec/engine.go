@@ -462,6 +462,11 @@ func (fe *flowEngine) shouldUpdateAuthenticatedUser(engineCtx *EngineContext) bo
 			executorInst.GetName() == executor.ExecutorNameProvisioning
 	}
 
+	// For recovery flows, update from authentication executors (e.g., OTP verification).
+	if engineCtx.FlowType == common.FlowTypeRecovery {
+		return executorInst.GetType() == common.ExecutorTypeAuthentication
+	}
+
 	return false
 }
 

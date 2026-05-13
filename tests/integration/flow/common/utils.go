@@ -43,6 +43,12 @@ func InitiateRegistrationFlow(appID string, verbose bool, inputs map[string]stri
 	return initiateFlow(appID, "REGISTRATION", verbose, inputs, action)
 }
 
+// InitiateRecoveryFlow initiates the recovery flow
+func InitiateRecoveryFlow(appID string, verbose bool, inputs map[string]string, action string) (
+	*FlowStep, error) {
+	return initiateFlow(appID, "RECOVERY", verbose, inputs, action)
+}
+
 // initiateFlow is a generic helper to initiate a flow of a given type
 func initiateFlow(appID, flowType string, verbose bool, inputs map[string]string, action string) (
 	*FlowStep, error) {

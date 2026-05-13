@@ -30,7 +30,7 @@ vi.mock('@thunderid/logger/react', () => ({
 
 // Mock the API hooks
 const mockUseGetOrganizationUnits = vi.fn();
-vi.mock('../../api/useGetOrganizationUnits', () => ({
+vi.mock('@/api/useGetOrganizationUnits', () => ({
   default: () =>
     mockUseGetOrganizationUnits() as {
       data: OrganizationUnitListResponse | undefined;
@@ -40,7 +40,7 @@ vi.mock('../../api/useGetOrganizationUnits', () => ({
 }));
 
 const mockUseGetOrganizationUnit = vi.fn();
-vi.mock('../../api/useGetOrganizationUnit', () => ({
+vi.mock('@/api/useGetOrganizationUnit', () => ({
   default: () =>
     mockUseGetOrganizationUnit() as {
       data: OrganizationUnit | undefined;
@@ -50,7 +50,7 @@ vi.mock('../../api/useGetOrganizationUnit', () => ({
 }));
 
 const mockUseGetChildOrganizationUnits = vi.fn();
-vi.mock('../../api/useGetChildOrganizationUnits', () => ({
+vi.mock('@/api/useGetChildOrganizationUnits', () => ({
   default: () =>
     mockUseGetChildOrganizationUnits() as {
       data: OrganizationUnitListResponse | undefined;

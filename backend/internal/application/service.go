@@ -155,6 +155,7 @@ func (as *applicationService) CreateApplication(ctx context.Context, app *model.
 	appForReturn := *app
 	appForReturn.AuthFlowID = inboundClient.AuthFlowID
 	appForReturn.RegistrationFlowID = inboundClient.RegistrationFlowID
+	appForReturn.RecoveryFlowID = inboundClient.RecoveryFlowID
 	if app.Certificate == nil || app.Certificate.Type == "" {
 		appForReturn.Certificate = nil
 	}
@@ -236,6 +237,7 @@ func (as *applicationService) ValidateApplication(ctx context.Context, app *mode
 	}
 	processedDTO.AuthFlowID = inboundClient.AuthFlowID
 	processedDTO.RegistrationFlowID = inboundClient.RegistrationFlowID
+	processedDTO.RecoveryFlowID = inboundClient.RecoveryFlowID
 
 	return processedDTO, inboundAuthConfig, nil
 }
@@ -396,6 +398,7 @@ func (as *applicationService) UpdateApplication(ctx context.Context, appID strin
 	appForReturn := *app
 	appForReturn.AuthFlowID = inboundClient.AuthFlowID
 	appForReturn.RegistrationFlowID = inboundClient.RegistrationFlowID
+	appForReturn.RecoveryFlowID = inboundClient.RecoveryFlowID
 	if app.Certificate == nil || app.Certificate.Type == "" {
 		appForReturn.Certificate = nil
 	}
@@ -615,6 +618,8 @@ func toInboundClient(dto *model.ApplicationProcessedDTO) inboundmodel.InboundCli
 		AuthFlowID:                dto.AuthFlowID,
 		RegistrationFlowID:        dto.RegistrationFlowID,
 		IsRegistrationFlowEnabled: dto.IsRegistrationFlowEnabled,
+		RecoveryFlowID:            dto.RecoveryFlowID,
+		IsRecoveryFlowEnabled:     dto.IsRecoveryFlowEnabled,
 		ThemeID:                   dto.ThemeID,
 		LayoutID:                  dto.LayoutID,
 		Assertion:                 dto.Assertion,
@@ -663,6 +668,8 @@ func toProcessedDTO(
 			AuthFlowID:                dao.AuthFlowID,
 			RegistrationFlowID:        dao.RegistrationFlowID,
 			IsRegistrationFlowEnabled: dao.IsRegistrationFlowEnabled,
+			RecoveryFlowID:            dao.RecoveryFlowID,
+			IsRecoveryFlowEnabled:     dao.IsRecoveryFlowEnabled,
 			ThemeID:                   dao.ThemeID,
 			LayoutID:                  dao.LayoutID,
 			Assertion:                 dao.Assertion,
@@ -1267,6 +1274,8 @@ func translateInboundClientFKError(err error) *serviceerror.ServiceError {
 		return &ErrorInvalidAuthFlowID
 	case errors.Is(err, inboundclient.ErrFKInvalidRegistrationFlow):
 		return &ErrorInvalidRegistrationFlowID
+	case errors.Is(err, inboundclient.ErrFKInvalidRecoveryFlow):
+		return &ErrorInvalidRecoveryFlowID
 	case errors.Is(err, inboundclient.ErrFKFlowDefinitionRetrievalFailed):
 		return &ErrorWhileRetrievingFlowDefinition
 	case errors.Is(err, inboundclient.ErrFKFlowServerError):
@@ -1499,6 +1508,8 @@ func buildApplicationResponse(dto *model.ApplicationProcessedDTO) *model.Applica
 			AuthFlowID:                dto.AuthFlowID,
 			RegistrationFlowID:        dto.RegistrationFlowID,
 			IsRegistrationFlowEnabled: dto.IsRegistrationFlowEnabled,
+			RecoveryFlowID:            dto.RecoveryFlowID,
+			IsRecoveryFlowEnabled:     dto.IsRecoveryFlowEnabled,
 			ThemeID:                   dto.ThemeID,
 			LayoutID:                  dto.LayoutID,
 			Assertion:                 dto.Assertion,
@@ -1550,6 +1561,8 @@ func buildBasicApplicationResponse(
 		AuthFlowID:                cfg.AuthFlowID,
 		RegistrationFlowID:        cfg.RegistrationFlowID,
 		IsRegistrationFlowEnabled: cfg.IsRegistrationFlowEnabled,
+		RecoveryFlowID:            cfg.RecoveryFlowID,
+		IsRecoveryFlowEnabled:     cfg.IsRecoveryFlowEnabled,
 		ThemeID:                   cfg.ThemeID,
 		LayoutID:                  cfg.LayoutID,
 		IsReadOnly:                cfg.IsReadOnly,
@@ -1596,6 +1609,8 @@ func buildBaseApplicationProcessedDTO(appID string, app *model.ApplicationDTO,
 			AuthFlowID:                app.AuthFlowID,
 			RegistrationFlowID:        app.RegistrationFlowID,
 			IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
+			RecoveryFlowID:            app.RecoveryFlowID,
+			IsRecoveryFlowEnabled:     app.IsRecoveryFlowEnabled,
 			ThemeID:                   app.ThemeID,
 			LayoutID:                  app.LayoutID,
 			Assertion:                 assertion,
@@ -1672,6 +1687,8 @@ func buildReturnApplicationDTO(
 			AuthFlowID:                app.AuthFlowID,
 			RegistrationFlowID:        app.RegistrationFlowID,
 			IsRegistrationFlowEnabled: app.IsRegistrationFlowEnabled,
+			RecoveryFlowID:            app.RecoveryFlowID,
+			IsRecoveryFlowEnabled:     app.IsRecoveryFlowEnabled,
 			ThemeID:                   app.ThemeID,
 			LayoutID:                  app.LayoutID,
 			Assertion:                 assertion,

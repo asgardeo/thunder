@@ -488,4 +488,17 @@ var (
 			DefaultValue: "One or more user attributes are not valid for the configured allowed user types",
 		},
 	}
+	// ErrorInvalidRecoveryFlowID is the error returned when an invalid recovery flow ID is provided.
+	ErrorInvalidRecoveryFlowID = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "APP-1036",
+		Error: core.I18nMessage{
+			Key:          "error.applicationservice.invalid_recovery_flow_id",
+			DefaultValue: "Invalid recovery flow ID",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.applicationservice.invalid_recovery_flow_id_description",
+			DefaultValue: "The provided recovery flow ID is invalid",
+		},
+	}
 )

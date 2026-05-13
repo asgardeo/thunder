@@ -51,6 +51,7 @@
   "devDependencies": {
     "@thunderid/eslint-plugin": "workspace:^",
     "@thunderid/prettier-config": "workspace:^",
+    "@vitest/browser-playwright": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
@@ -62,7 +63,6 @@
     "rimraf": "catalog:",
     "rolldown": "catalog:",
     "typescript": "catalog:",
-    "@vitest/browser-playwright": "catalog:",
     "playwright": "catalog:",
     "vitest": "catalog:"
   },

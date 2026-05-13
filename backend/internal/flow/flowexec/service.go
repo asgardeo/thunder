@@ -55,6 +55,7 @@ const (
 	defaultAuthFlowExpiry           int64 = 1800  // 30 minutes in seconds
 	defaultRegistrationFlowExpiry   int64 = 3600  // 60 minutes in seconds
 	defaultUserOnboardingFlowExpiry int64 = 86400 // 24 hours in seconds
+	defaultRecoveryFlowExpiry       int64 = 1800  // 30 minutes in seconds
 )
 
 // flowExecService is the implementation of FlowExecServiceInterface
@@ -248,6 +249,8 @@ func (s *flowExecService) getFlowExpirySeconds(flowType common.FlowType) int64 {
 		return defaultRegistrationFlowExpiry
 	case common.FlowTypeUserOnboarding:
 		return defaultUserOnboardingFlowExpiry
+	case common.FlowTypeRecovery:
+		return defaultRecoveryFlowExpiry
 	default:
 		// Fallback to auth flow expiry
 		return defaultAuthFlowExpiry
@@ -522,6 +525,17 @@ func (s *flowExecService) getFlowGraph(ctx context.Context, appID string, flowTy
 		return client.RegistrationFlowID, nil
 	}
 
+	if flowType == common.FlowTypeRecovery {
+		if !client.IsRecoveryFlowEnabled {
+			return "", &ErrorRecoveryFlowDisabled
+		} else if client.RecoveryFlowID == "" {
+			logger.Error("Recovery flow is not configured for the application",
+				log.String("appID", appID))
+			return "", &serviceerror.InternalServerError
+		}
+		return client.RecoveryFlowID, nil
+	}
+
 	// Default to authentication flow ID
 	if client.AuthFlowID == "" {
 		logger.Error("Authentication flow is not configured for the entity",
@@ -535,7 +549,8 @@ func (s *flowExecService) getFlowGraph(ctx context.Context, appID string, flowTy
 // validateFlowType validates the provided flow type string and returns the corresponding FlowType.
 func validateFlowType(flowTypeStr string) (common.FlowType, *serviceerror.ServiceError) {
 	switch common.FlowType(flowTypeStr) {
-	case common.FlowTypeAuthentication, common.FlowTypeRegistration, common.FlowTypeUserOnboarding:
+	case common.FlowTypeAuthentication, common.FlowTypeRegistration, common.FlowTypeUserOnboarding,
+		common.FlowTypeRecovery:
 		return common.FlowType(flowTypeStr), nil
 	default:
 		return "", &ErrorInvalidFlowType

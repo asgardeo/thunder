@@ -31,6 +31,8 @@ type InboundClient struct {
 	AuthFlowID                string
 	RegistrationFlowID        string
 	IsRegistrationFlowEnabled bool
+	RecoveryFlowID            string
+	IsRecoveryFlowEnabled     bool
 	ThemeID                   string
 	LayoutID                  string
 	Assertion                 *AssertionConfig
@@ -45,6 +47,8 @@ type InboundAuthProfile struct {
 	AuthFlowID                string              `json:"authFlowId,omitempty"           yaml:"auth_flow_id,omitempty"           jsonschema:"Authentication flow ID. Optional. Specifies which login flow to use (e.g., MFA, passwordless). If omitted, the default authentication flow is used."`
 	RegistrationFlowID        string              `json:"registrationFlowId,omitempty"   yaml:"registration_flow_id,omitempty"   jsonschema:"Registration flow ID. Optional. Specifies the user registration/signup flow."`
 	IsRegistrationFlowEnabled bool                `json:"isRegistrationFlowEnabled"      yaml:"is_registration_flow_enabled"     jsonschema:"Enable self-service registration. Set to true to allow users to sign up themselves. Requires registrationFlowId to be set."`
+	RecoveryFlowID            string              `json:"recoveryFlowId,omitempty"        yaml:"recovery_flow_id,omitempty"        jsonschema:"Recovery flow ID. Optional. Specifies the user recovery flow."`
+	IsRecoveryFlowEnabled     bool                `json:"isRecoveryFlowEnabled"          yaml:"is_recovery_flow_enabled"       jsonschema:"Enable self-service recovery. Set to true to allow users to recover their accounts (e.g., password reset). Requires recoveryFlowId to be set."`
 	ThemeID                   string              `json:"themeId,omitempty"              yaml:"theme_id,omitempty"               jsonschema:"Theme configuration ID. Optional. Customizes the visual styling of login pages."`
 	LayoutID                  string              `json:"layoutId,omitempty"             yaml:"layout_id,omitempty"              jsonschema:"Layout configuration ID. Optional. Customizes the screen structure and component positioning of login pages."`
 	Assertion                 *AssertionConfig    `json:"assertion,omitempty"            yaml:"assertion,omitempty"              jsonschema:"Assertion configuration. Optional. Customize assertion validity periods and included user attributes."`

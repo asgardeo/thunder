@@ -88,15 +88,15 @@ const mockUseCreateUser = vi.fn<() => UseCreateUserReturn>();
 const mockUseGetUserTypes = vi.fn<() => UseGetUserTypesReturn>();
 const mockUseGetUserType = vi.fn<() => UseGetUserTypeReturn>();
 
-vi.mock('../../api/useCreateUser', () => ({
+vi.mock('@/api/useCreateUser', () => ({
   default: () => mockUseCreateUser(),
 }));
 
-vi.mock('../../api/useGetUserTypes', () => ({
+vi.mock('@/api/useGetUserTypes', () => ({
   default: () => mockUseGetUserTypes(),
 }));
 
-vi.mock('../../api/useGetUserType', () => ({
+vi.mock('@/api/useGetUserType', () => ({
   default: () => mockUseGetUserType(),
 }));
 
@@ -113,12 +113,16 @@ vi.mock('../../../organization-units/api/useGetChildOrganizationUnits', () => ({
 
 // Mock useAsgardeo
 const mockUseAsgardeo = vi.fn();
-vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: () => mockUseAsgardeo() as {user: {ouId?: string} | null | undefined},
-}));
+vi.mock('@asgardeo/react', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...(actual as object),
+    useAsgardeo: () => mockUseAsgardeo() as {user: {ouId?: string} | null | undefined},
+  };
+});
 
 // Mock ConfigureOrganizationUnit — mirrors real component's auto-select behavior
-vi.mock('../../components/create-user/ConfigureOrganizationUnit', async () => {
+vi.mock('@/components/create-user/ConfigureOrganizationUnit', async () => {
   const React = await import('react');
 
   function MockConfigureOrganizationUnit({
@@ -174,7 +178,7 @@ vi.mock('../../components/create-user/ConfigureOrganizationUnit', async () => {
 });
 
 // Mock child components with controlled test behavior
-vi.mock('../../components/create-user/ConfigureUserType', () => ({
+vi.mock('@/components/create-user/ConfigureUserType', () => ({
   default: ({
     schemas,
     selectedSchema,
@@ -205,7 +209,7 @@ vi.mock('../../components/create-user/ConfigureUserType', () => ({
   ),
 }));
 
-vi.mock('../../components/create-user/ConfigureUserDetails', () => ({
+vi.mock('@/components/create-user/ConfigureUserDetails', () => ({
   default: ({
     onFormValuesChange,
     onReadyChange,

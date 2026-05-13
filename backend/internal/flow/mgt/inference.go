@@ -214,7 +214,8 @@ func (s *flowInferenceService) cleanPromptNodeMeta(node *NodeDefinition) {
 					continue
 				}
 				if bcMap["type"] == "RICH_TEXT" {
-					if label, ok := bcMap["label"].(string); ok && strings.Contains(label, "sign_up_url") {
+					if label, ok := bcMap["label"].(string); ok &&
+						(strings.Contains(label, "sign_up_url") || strings.Contains(label, "forgot_password_url")) {
 						continue
 					}
 				}

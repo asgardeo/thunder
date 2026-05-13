@@ -21,14 +21,18 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
-import {render} from '@testing-library/react';
-import {describe, it, expect, vi, beforeEach} from 'vitest';
+import {cleanup} from '@testing-library/react';
+import {describe, it, expect, vi, afterEach} from 'vitest';
 import type {FlowComponent} from '../../../../models/flow';
+import renderWithProviders from '../../../../test/renderWithProviders';
 import RichTextAdapter from '../RichTextAdapter';
 
-const mockUseDesign = vi.fn();
+afterEach(() => {
+  cleanup();
+});
 
 vi.mock('@wso2/oxygen-ui', () => ({
+  Alert: ({children}: any) => children,
   Box: ({sx, dangerouslySetInnerHTML}: any) => (
     <div
       data-testid="rich-text-box"
@@ -37,10 +41,9 @@ vi.mock('@wso2/oxygen-ui', () => ({
       dangerouslySetInnerHTML={dangerouslySetInnerHTML}
     />
   ),
-}));
-
-vi.mock('../../../../contexts/Design/useDesign', () => ({
-  default: () => mockUseDesign(),
+  extendTheme: vi.fn(),
+  OxygenUIThemeProvider: ({children}: any) => children,
+  Snackbar: ({children}: any) => children,
 }));
 
 const baseComponent: FlowComponent = {
@@ -50,39 +53,43 @@ const baseComponent: FlowComponent = {
 };
 
 describe('RichTextAdapter', () => {
-  beforeEach(() => {
-    mockUseDesign.mockReturnValue({isDesignEnabled: false});
-  });
-
   it('renders resolved HTML content', () => {
-    const {getByTestId} = render(<RichTextAdapter component={baseComponent} resolve={(s: string | undefined) => s} />);
+    const {getByTestId} = renderWithProviders(
+      <RichTextAdapter component={baseComponent} resolve={(s: string | undefined) => s} />,
+    );
     expect(getByTestId('rich-text-box').innerHTML).toBe('<p>Hello <strong>World</strong></p>');
   });
 
   it('uses resolved label from resolve function', () => {
-    const {getByTestId} = render(<RichTextAdapter component={baseComponent} resolve={() => '<em>Resolved</em>'} />);
+    const {getByTestId} = renderWithProviders(
+      <RichTextAdapter component={baseComponent} resolve={() => '<em>Resolved</em>'} />,
+    );
     expect(getByTestId('rich-text-box').innerHTML).toBe('<em>Resolved</em>');
   });
 
   it('falls back to component.label when resolve returns undefined', () => {
-    const {getByTestId} = render(<RichTextAdapter component={baseComponent} resolve={() => undefined} />);
+    const {getByTestId} = renderWithProviders(<RichTextAdapter component={baseComponent} resolve={() => undefined} />);
     expect(getByTestId('rich-text-box').innerHTML).toBe('<p>Hello <strong>World</strong></p>');
   });
 
   it('renders empty string when resolve returns undefined and label is not a string', () => {
     const component = {...baseComponent, label: undefined};
-    const {getByTestId} = render(<RichTextAdapter component={component} resolve={() => undefined} />);
+    const {getByTestId} = renderWithProviders(<RichTextAdapter component={component} resolve={() => undefined} />);
     expect(getByTestId('rich-text-box').innerHTML).toBe('');
   });
 
   it('aligns text to center when isDesignEnabled is true', () => {
-    mockUseDesign.mockReturnValue({isDesignEnabled: true});
-    const {getByTestId} = render(<RichTextAdapter component={baseComponent} resolve={(s: string | undefined) => s} />);
+    const {getByTestId} = renderWithProviders(
+      <RichTextAdapter component={baseComponent} resolve={(s: string | undefined) => s} />,
+      {designContext: {isDesignEnabled: true}},
+    );
     expect(getByTestId('rich-text-box')).toHaveAttribute('data-align', 'center');
   });
 
   it('aligns text to left when isDesignEnabled is false', () => {
-    const {getByTestId} = render(<RichTextAdapter component={baseComponent} resolve={(s: string | undefined) => s} />);
+    const {getByTestId} = renderWithProviders(
+      <RichTextAdapter component={baseComponent} resolve={(s: string | undefined) => s} />,
+    );
     expect(getByTestId('rich-text-box')).toHaveAttribute('data-align', 'left');
   });
 
@@ -98,7 +105,7 @@ describe('RichTextAdapter', () => {
       const resolve = (template: string | undefined) =>
         template?.includes('isRegistrationFlowEnabled') ? 'false' : template;
 
-      const {queryByTestId} = render(
+      const {queryByTestId} = renderWithProviders(
         <RichTextAdapter component={signUpComponent} resolve={resolve} signUpFallbackUrl="/signup" />,
       );
       expect(queryByTestId('rich-text-box')).not.toBeInTheDocument();
@@ -110,7 +117,7 @@ describe('RichTextAdapter', () => {
         return template?.replace('{{meta(application.sign_up_url)}}', '/custom/signup');
       };
 
-      const {getByTestId} = render(<RichTextAdapter component={signUpComponent} resolve={resolve} />);
+      const {getByTestId} = renderWithProviders(<RichTextAdapter component={signUpComponent} resolve={resolve} />);
       const box = getByTestId('rich-text-box');
       expect(box).toBeInTheDocument();
       expect(box.innerHTML).toContain('/custom/signup');
@@ -120,7 +127,7 @@ describe('RichTextAdapter', () => {
       const resolve = (template: string | undefined) =>
         template?.includes('isRegistrationFlowEnabled') ? 'true' : template;
 
-      const {getByTestId} = render(
+      const {getByTestId} = renderWithProviders(
         <RichTextAdapter component={signUpComponent} resolve={resolve} signUpFallbackUrl="/signup?client_id=abc" />,
       );
       expect(getByTestId('rich-text-box').innerHTML).toContain('/signup?client_id=abc');
@@ -130,7 +137,7 @@ describe('RichTextAdapter', () => {
       const resolve = (template: string | undefined) =>
         template?.includes('isRegistrationFlowEnabled') ? 'true' : template;
 
-      const {getByTestId} = render(<RichTextAdapter component={signUpComponent} resolve={resolve} />);
+      const {getByTestId} = renderWithProviders(<RichTextAdapter component={signUpComponent} resolve={resolve} />);
       // Component renders (registration enabled) but no fallback URL is substituted
       expect(getByTestId('rich-text-box')).toBeInTheDocument();
       expect(getByTestId('rich-text-box').innerHTML).not.toContain('/signup?');
