@@ -30,17 +30,14 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/cryptolab"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 	"github.com/thunder-id/thunderid/tests/mocks/crypto/cryptomock"
-	"github.com/thunder-id/thunderid/tests/mocks/crypto/pki/pkimock"
 )
 
 type JOSEInitTestSuite struct {
 	suite.Suite
-	mockPKIService *pkimock.PKIServiceInterfaceMock
 	mockRuntime    *cryptomock.RuntimeCryptoProviderMock
 	testPrivateKey *rsa.PrivateKey
 }
@@ -50,7 +47,6 @@ func TestJOSEInitTestSuite(t *testing.T) {
 }
 
 func (suite *JOSEInitTestSuite) SetupTest() {
-	suite.mockPKIService = pkimock.NewPKIServiceInterfaceMock(suite.T())
 	suite.mockRuntime = cryptomock.NewRuntimeCryptoProviderMock(suite.T())
 
 	// Generate a test RSA private key
@@ -78,7 +74,6 @@ func (suite *JOSEInitTestSuite) SetupTest() {
 }
 
 func (suite *JOSEInitTestSuite) TearDownTest() {
-	suite.mockPKIService.AssertExpectations(suite.T())
 	suite.mockRuntime.AssertExpectations(suite.T())
 }
 
@@ -93,10 +88,8 @@ func (suite *JOSEInitTestSuite) TestInitialize_Success() {
 				Thumbprint: "test-thumbprint",
 			},
 		}, nil)
-	suite.mockPKIService.On("GetPrivateKey", "test-key-id").Return(suite.testPrivateKey, nil).Once()
-	suite.mockPKIService.On("GetCertThumbprint", "test-key-id").Return("test-thumbprint").Once()
 
-	jwtService, jweService, err := Initialize(suite.mockRuntime, suite.mockPKIService)
+	jwtService, jweService, err := Initialize(suite.mockRuntime)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), jwtService)
@@ -110,35 +103,12 @@ func (suite *JOSEInitTestSuite) TestInitialize_JWTInitializationFailure() {
 		GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{KeyID: "test-key-id"}).
 		Return(nil, errors.New("provider unavailable"))
 
-	jwtService, jweService, err := Initialize(suite.mockRuntime, suite.mockPKIService)
+	jwtService, jweService, err := Initialize(suite.mockRuntime)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), jwtService)
 	assert.Nil(suite.T(), jweService)
 	assert.Contains(suite.T(), err.Error(), "failed to retrieve public key")
-}
-
-func (suite *JOSEInitTestSuite) TestInitialize_JWEInitializationFailure() {
-	suite.mockRuntime.EXPECT().
-		GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{KeyID: "test-key-id"}).
-		Return([]kmprovider.PublicKeyInfo{
-			{
-				KeyID:      "test-key-id",
-				Algorithm:  cryptolab.AlgorithmRS256,
-				PublicKey:  &suite.testPrivateKey.PublicKey,
-				Thumbprint: "test-thumbprint",
-			},
-		}, nil)
-	pkiErr := serviceerror.InternalServerError
-	suite.mockPKIService.On("GetPrivateKey", "test-key-id").
-		Return(nil, &pkiErr).Once()
-
-	jwtService, jweService, err := Initialize(suite.mockRuntime, suite.mockPKIService)
-
-	assert.Error(suite.T(), err)
-	assert.Nil(suite.T(), jwtService)
-	assert.Nil(suite.T(), jweService)
-	assert.Contains(suite.T(), err.Error(), "failed to retrieve private key")
 }
 
 func (suite *JOSEInitTestSuite) TestInitialize_NilRuntimeProvider() {
@@ -148,7 +118,7 @@ func (suite *JOSEInitTestSuite) TestInitialize_NilRuntimeProvider() {
 		}
 	}()
 
-	jwtService, jweService, err := Initialize(nil, suite.mockPKIService)
+	jwtService, jweService, err := Initialize(nil)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), jwtService)
@@ -166,10 +136,8 @@ func (suite *JOSEInitTestSuite) TestInitialize_ValidatesServiceInterfaces() {
 				Thumbprint: "test-thumbprint",
 			},
 		}, nil)
-	suite.mockPKIService.On("GetPrivateKey", "test-key-id").Return(suite.testPrivateKey, nil).Once()
-	suite.mockPKIService.On("GetCertThumbprint", "test-key-id").Return("test-thumbprint").Once()
 
-	jwtService, jweService, err := Initialize(suite.mockRuntime, suite.mockPKIService)
+	jwtService, jweService, err := Initialize(suite.mockRuntime)
 
 	assert.NoError(suite.T(), err)
 	if jwtService != nil {

@@ -103,7 +103,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 	runtimeCryptoSvc := defaultkm.NewRuntimeCryptoService(pkiService, configCryptoSvc)
 
-	jwtService, jweService, err := jose.Initialize(runtimeCryptoSvc, pkiService)
+	jwtService, jweService, err := jose.Initialize(runtimeCryptoSvc)
 	if err != nil {
 		logger.Fatal("Failed to initialize JOSE services", log.Error(err))
 	}

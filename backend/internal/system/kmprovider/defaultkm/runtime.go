@@ -61,18 +61,19 @@ func (s *runtimeCryptoService) Encrypt(
 		}
 		encrypted, err := s.cfgService.Encrypt(ctx, content)
 		return encrypted, nil, err
-	case cryptolab.AlgorithmRSAOAEP256:
+	case cryptolab.AlgorithmRSAOAEP, cryptolab.AlgorithmRSAOAEP256:
 		if keyRef == nil {
-			return nil, nil, errors.New("keyRef required for RSA-OAEP-256")
+			return nil, nil, fmt.Errorf("keyRef required for %s", params.Algorithm)
 		}
 		rsaPub, err := s.getRSAPublicKey(*keyRef)
 		if err != nil {
 			return nil, nil, err
 		}
 		return cryptolab.Encrypt(rsaPub, &params, content)
-	case cryptolab.AlgorithmECDHES, cryptolab.AlgorithmECDHESA128KW, cryptolab.AlgorithmECDHESA256KW:
+	case cryptolab.AlgorithmECDHES,
+		cryptolab.AlgorithmECDHESA128KW, cryptolab.AlgorithmECDHESA192KW, cryptolab.AlgorithmECDHESA256KW:
 		if keyRef == nil {
-			return nil, nil, errors.New("keyRef required for ECDH-ES")
+			return nil, nil, fmt.Errorf("keyRef required for %s", params.Algorithm)
 		}
 		ecPub, err := s.getECPublicKey(*keyRef)
 		if err != nil {
@@ -93,18 +94,19 @@ func (s *runtimeCryptoService) Decrypt(
 			return nil, errors.New("config crypto service not initialized")
 		}
 		return s.cfgService.Decrypt(ctx, content)
-	case cryptolab.AlgorithmRSAOAEP256:
+	case cryptolab.AlgorithmRSAOAEP, cryptolab.AlgorithmRSAOAEP256:
 		if keyRef == nil {
-			return nil, errors.New("keyRef required for RSA-OAEP-256")
+			return nil, fmt.Errorf("keyRef required for %s", params.Algorithm)
 		}
 		rsaPriv, err := s.getRSAPrivateKey(*keyRef)
 		if err != nil {
 			return nil, err
 		}
 		return cryptolab.Decrypt(rsaPriv, params, content)
-	case cryptolab.AlgorithmECDHES, cryptolab.AlgorithmECDHESA128KW, cryptolab.AlgorithmECDHESA256KW:
+	case cryptolab.AlgorithmECDHES,
+		cryptolab.AlgorithmECDHESA128KW, cryptolab.AlgorithmECDHESA192KW, cryptolab.AlgorithmECDHESA256KW:
 		if keyRef == nil {
-			return nil, errors.New("keyRef required for ECDH-ES")
+			return nil, fmt.Errorf("keyRef required for %s", params.Algorithm)
 		}
 		ecPriv, err := s.getECPrivateKey(*keyRef)
 		if err != nil {

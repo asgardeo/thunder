@@ -271,6 +271,7 @@ func TestEncrypt_ECDHESVariants_Success(t *testing.T) {
 	algorithms := []cryptolab.Algorithm{
 		cryptolab.AlgorithmECDHES,
 		cryptolab.AlgorithmECDHESA128KW,
+		cryptolab.AlgorithmECDHESA192KW,
 		cryptolab.AlgorithmECDHESA256KW,
 	}
 
@@ -336,33 +337,6 @@ func TestDecrypt_RSAOAEP256_NonRSAPrivateKey(t *testing.T) {
 	assert.EqualError(t, err, "key is not an RSA private key")
 }
 
-func TestDecrypt_RSAOAEP256_RoundTrip(t *testing.T) {
-	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	require.NoError(t, err)
-
-	pki := pkimock.NewPKIServiceInterfaceMock(t)
-	pki.EXPECT().GetX509Certificate("key1").Return(
-		&x509.Certificate{PublicKey: &rsaKey.PublicKey}, nil,
-	)
-	pki.EXPECT().GetPrivateKey("key1").Return(rsaKey, nil)
-
-	svc := &runtimeCryptoService{pkiService: pki}
-	keyRef := &kmprovider.KeyRef{KeyID: "key1"}
-	encParams := cryptolab.AlgorithmParams{
-		Algorithm:  cryptolab.AlgorithmRSAOAEP256,
-		RSAOAEP256: cryptolab.RSAOAEP256Params{ContentEncryptionAlgorithm: "A256GCM"},
-	}
-
-	wrappedCEK, details, err := svc.Encrypt(context.Background(), keyRef, encParams, nil)
-	require.NoError(t, err)
-	require.NotNil(t, details)
-
-	decParams := cryptolab.AlgorithmParams{Algorithm: cryptolab.AlgorithmRSAOAEP256}
-	unwrappedCEK, err := svc.Decrypt(context.Background(), keyRef, decParams, wrappedCEK)
-	require.NoError(t, err)
-	assert.Equal(t, details.CEK, unwrappedCEK)
-}
-
 // Decrypt – ECDH-ES variants
 func TestDecrypt_ECDHES_NilKeyRef(t *testing.T) {
 	svc := &runtimeCryptoService{pkiService: pkimock.NewPKIServiceInterfaceMock(t)}
@@ -403,6 +377,7 @@ func TestDecrypt_ECDHESVariants_RoundTrip(t *testing.T) {
 	algorithms := []cryptolab.Algorithm{
 		cryptolab.AlgorithmECDHES,
 		cryptolab.AlgorithmECDHESA128KW,
+		cryptolab.AlgorithmECDHESA192KW,
 		cryptolab.AlgorithmECDHESA256KW,
 	}
 
@@ -435,6 +410,80 @@ func TestDecrypt_ECDHESVariants_RoundTrip(t *testing.T) {
 			derivedCEK, err := svc.Decrypt(context.Background(), keyRef, decParams, ciphertext)
 			require.NoError(t, err)
 			assert.Equal(t, encDetails.CEK, derivedCEK)
+		})
+	}
+}
+
+// GetPublicKeys
+
+func TestEncrypt_RSAOAEP_Success(t *testing.T) {
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	pki := pkimock.NewPKIServiceInterfaceMock(t)
+	pki.EXPECT().GetX509Certificate("key1").Return(
+		&x509.Certificate{PublicKey: &rsaKey.PublicKey}, nil,
+	)
+
+	svc := &runtimeCryptoService{pkiService: pki}
+	keyRef := &kmprovider.KeyRef{KeyID: "key1"}
+	params := cryptolab.AlgorithmParams{
+		Algorithm: cryptolab.AlgorithmRSAOAEP,
+		RSAOAEP:   cryptolab.RSAOAEPParams{ContentEncryptionAlgorithm: "A256GCM"},
+	}
+
+	ciphertext, details, err := svc.Encrypt(context.Background(), keyRef, params, nil)
+	require.NoError(t, err)
+	assert.NotEmpty(t, ciphertext)
+	require.NotNil(t, details)
+	assert.NotEmpty(t, details.CEK)
+}
+
+func TestDecrypt_RSAVariants_RoundTrip(t *testing.T) {
+	tests := []struct {
+		name      string
+		encParams cryptolab.AlgorithmParams
+		decParams cryptolab.AlgorithmParams
+	}{
+		{
+			name: "RSA-OAEP-256",
+			encParams: cryptolab.AlgorithmParams{
+				Algorithm:  cryptolab.AlgorithmRSAOAEP256,
+				RSAOAEP256: cryptolab.RSAOAEP256Params{ContentEncryptionAlgorithm: "A256GCM"},
+			},
+			decParams: cryptolab.AlgorithmParams{Algorithm: cryptolab.AlgorithmRSAOAEP256},
+		},
+		{
+			name: "RSA-OAEP",
+			encParams: cryptolab.AlgorithmParams{
+				Algorithm: cryptolab.AlgorithmRSAOAEP,
+				RSAOAEP:   cryptolab.RSAOAEPParams{ContentEncryptionAlgorithm: "A256GCM"},
+			},
+			decParams: cryptolab.AlgorithmParams{Algorithm: cryptolab.AlgorithmRSAOAEP},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
+			require.NoError(t, err)
+
+			pki := pkimock.NewPKIServiceInterfaceMock(t)
+			pki.EXPECT().GetX509Certificate("key1").Return(
+				&x509.Certificate{PublicKey: &rsaKey.PublicKey}, nil,
+			)
+			pki.EXPECT().GetPrivateKey("key1").Return(rsaKey, nil)
+
+			svc := &runtimeCryptoService{pkiService: pki}
+			keyRef := &kmprovider.KeyRef{KeyID: "key1"}
+
+			wrappedCEK, details, err := svc.Encrypt(context.Background(), keyRef, tc.encParams, nil)
+			require.NoError(t, err)
+			require.NotNil(t, details)
+
+			unwrappedCEK, err := svc.Decrypt(context.Background(), keyRef, tc.decParams, wrappedCEK)
+			require.NoError(t, err)
+			assert.Equal(t, details.CEK, unwrappedCEK)
 		})
 	}
 }
