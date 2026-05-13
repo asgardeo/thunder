@@ -1857,7 +1857,7 @@ Explore the latest updates, features, and improvements to **ThunderID**.
 <div style={{ borderLeft: '3px solid #ff8c00', paddingLeft: '5px', marginLeft: '8px', marginBottom: '24px' }}>
 - Add react-api-based-sample app to the release artifacts
 - Allow defining meta for TASK_EXECUTION nodes
-- Bump golang.org/x/crypto from 0.44.0 to 0.45.0 in /backend by @dependabot[bot] in https://github.com/asgardeo/thunder/pull/1108
+- Bump golang.org/x/crypto from 0.44.0 to 0.45.0 in /backend by @dependabot[bot] in https://github.com/thunder-id/thunderid/pull/1108
 - Remove i18n keys from default flows
 - Add i18n resolution support for the flow builder UI
 - Add React SDK integration MCP tool
@@ -2013,8 +2013,8 @@ Explore the latest updates, features, and improvements to **ThunderID**.
 - Improve logic in flow-builder UI and remove SCSS styling
 - Introduce unit tests to the flow-builder
 - Improve test coverage in develop app
-- Bump golang.org/x/net from 0.19.0 to 0.38.0 in /backend by @dependabot[bot] in https://github.com/asgardeo/thunder/pull/1050
-- Bump google.golang.org/protobuf from 1.32.0 to 1.33.0 in /backend by @dependabot[bot] in https://github.com/asgardeo/thunder/pull/1051
+- Bump golang.org/x/net from 0.19.0 to 0.38.0 in /backend by @dependabot[bot] in https://github.com/thunder-id/thunderid/pull/1050
+- Bump google.golang.org/protobuf from 1.32.0 to 1.33.0 in /backend by @dependabot[bot] in https://github.com/thunder-id/thunderid/pull/1051
 - Update dockerfile UID&GID to 10001
 </div>
 
