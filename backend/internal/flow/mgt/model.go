@@ -156,10 +156,21 @@ type NodeDefinition struct {
 
 // InputDefinition represents an input parameter for a node.
 type InputDefinition struct {
-	Ref        string `json:"ref,omitempty" yaml:"ref,omitempty" jsonschema:"Reference ID for the input."`
-	Type       string `json:"type" yaml:"type" jsonschema:"Input type (e.g., 'text', 'password', 'email')."`
-	Identifier string `json:"identifier" yaml:"identifier" jsonschema:"Field identifier or name."`
-	Required   bool   `json:"required" yaml:"required" jsonschema:"Whether this input is mandatory."`
+	Ref        string                     `json:"ref,omitempty" yaml:"ref,omitempty" jsonschema:"Reference ID for the input."`
+	Type       string                     `json:"type" yaml:"type" jsonschema:"Input type (e.g., 'text', 'password', 'email')."`
+	Identifier string                     `json:"identifier" yaml:"identifier" jsonschema:"Field identifier or name."`
+	Required   bool                       `json:"required" yaml:"required" jsonschema:"Whether this input is mandatory."`
+	Validation []ValidationRuleDefinition `json:"validation,omitempty" yaml:"validation,omitempty" jsonschema:"Server-enforced validation rules applied to the submitted value."`
+}
+
+// ValidationRuleDefinition represents a single validation constraint on an input.
+// Type is one of "regex", "minLength", or "maxLength"; Value holds the constraint
+// parameter (string for regex, number for length types); Message is an i18n key or
+// literal string returned in fieldErrors when the rule fails.
+type ValidationRuleDefinition struct {
+	Type    string      `json:"type" yaml:"type" jsonschema:"Rule type: 'regex', 'minLength', or 'maxLength'."`
+	Value   interface{} `json:"value" yaml:"value" jsonschema:"Constraint value: regex pattern (string) or length (number)."`
+	Message string      `json:"message,omitempty" yaml:"message,omitempty" jsonschema:"i18n key or literal message returned when the rule fails."`
 }
 
 // ActionDefinition represents an action to be executed by a node.

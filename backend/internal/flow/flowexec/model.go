@@ -78,11 +78,12 @@ type FlowStep struct {
 
 // FlowData holds the data returned by a flow execution step
 type FlowData struct {
-	Inputs         []common.Input    `json:"inputs,omitempty"`
-	RedirectURL    string            `json:"redirectURL,omitempty"`
-	Actions        []common.Action   `json:"actions,omitempty"`
-	Meta           interface{}       `json:"meta,omitempty"`
-	AdditionalData map[string]string `json:"additionalData,omitempty"`
+	Inputs         []common.Input      `json:"inputs,omitempty"`
+	RedirectURL    string              `json:"redirectURL,omitempty"`
+	Actions        []common.Action     `json:"actions,omitempty"`
+	Meta           interface{}         `json:"meta,omitempty"`
+	AdditionalData map[string]string   `json:"additionalData,omitempty"`
+	FieldErrors    []common.FieldError `json:"fieldErrors,omitempty"`
 }
 
 // FlowResponse represents the flow execution API response body

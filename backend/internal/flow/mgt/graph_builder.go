@@ -257,6 +257,9 @@ func (b *graphBuilder) validateOnIncompleteTarget(nodes []NodeDefinition, target
 }
 
 // configureNodeInputs configures the inputs for executor-backed nodes.
+// Validation rules on executor inputs are intentionally not propagated:
+// executor inputs are read from runtime context (already validated at the
+// preceding PROMPT node), so per-rule re-validation here would be redundant.
 func (b *graphBuilder) configureNodeInputs(nodeDef *NodeDefinition, node core.NodeInterface) {
 	logger := b.logger.With(log.String("nodeID", nodeDef.ID))
 
@@ -266,7 +269,6 @@ func (b *graphBuilder) configureNodeInputs(nodeDef *NodeDefinition, node core.No
 		return
 	}
 
-	// Get inputs from executor definition if available
 	if nodeDef.Executor == nil || len(nodeDef.Executor.Inputs) == 0 {
 		logger.Debug("No inputs defined for executor; setting empty input list")
 		executorNode.SetInputs([]common.Input{})
@@ -283,6 +285,26 @@ func (b *graphBuilder) configureNodeInputs(nodeDef *NodeDefinition, node core.No
 		}
 	}
 	executorNode.SetInputs(inputs)
+}
+
+// toValidationRules converts mgt rule definitions to runtime ValidationRule
+// values and pre-compiles their regex patterns. Returns nil for an empty input.
+func toValidationRules(defs []ValidationRuleDefinition) ([]common.ValidationRule, error) {
+	if len(defs) == 0 {
+		return nil, nil
+	}
+	rules := make([]common.ValidationRule, len(defs))
+	for i, d := range defs {
+		rules[i] = common.ValidationRule{
+			Type:    common.ValidationType(d.Type),
+			Value:   d.Value,
+			Message: d.Message,
+		}
+	}
+	if err := common.PrepareValidationRules(rules); err != nil {
+		return nil, err
+	}
+	return rules, nil
 }
 
 // configureNodeVariant sets the prompt node's variant from the node definition.
@@ -339,11 +361,17 @@ func (b *graphBuilder) configureNodePrompts(nodeDef *NodeDefinition, node core.N
 		// Convert inputs
 		inputs := make([]common.Input, len(promptDef.Inputs))
 		for j, inputDef := range promptDef.Inputs {
+			validation, err := toValidationRules(inputDef.Validation)
+			if err != nil {
+				return fmt.Errorf("node %s, prompt %d, input %s: %w",
+					nodeDef.ID, i, inputDef.Identifier, err)
+			}
 			inputs[j] = common.Input{
 				Ref:        inputDef.Ref,
 				Identifier: inputDef.Identifier,
 				Type:       inputDef.Type,
 				Required:   inputDef.Required,
+				Validation: validation,
 			}
 		}
 		prompts[i].Inputs = inputs

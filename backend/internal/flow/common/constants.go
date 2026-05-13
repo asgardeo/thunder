@@ -313,3 +313,24 @@ const (
 	// ForwardedDataKeyTemplateData holds template parameters for notification executors
 	ForwardedDataKeyTemplateData = "templateData"
 )
+
+// ValidationType identifies the constraint type of a ValidationRule.
+type ValidationType string
+
+// Validation rule types.
+const (
+	// ValidationTypeRegex matches the submitted value against a regex pattern.
+	ValidationTypeRegex ValidationType = "regex"
+	// ValidationTypeMinLength enforces a minimum string length on the submitted value.
+	ValidationTypeMinLength ValidationType = "minLength"
+	// ValidationTypeMaxLength enforces a maximum string length on the submitted value.
+	ValidationTypeMaxLength ValidationType = "maxLength"
+)
+
+// Default i18n fallback message keys returned in fieldErrors when a validation
+// rule does not specify a message.
+const (
+	DefaultValidationMessageRegex     = "validation.pattern.invalid"
+	DefaultValidationMessageMinLength = "validation.minLength.invalid"
+	DefaultValidationMessageMaxLength = "validation.maxLength.invalid"
+)

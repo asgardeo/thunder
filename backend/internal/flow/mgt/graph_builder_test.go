@@ -1490,3 +1490,67 @@ func (s *GraphBuilderTestSuite) TestComputeSegments_GetStartNodeFails() {
 		{boundaryNodeID: "prompt", nextNodeID: "task"},
 	})
 }
+
+// Prompt inputs' regex rules must be compiled at graph-build time so the
+// request-path validator never recompiles.
+func (s *GraphBuilderTestSuite) TestConfigureNodePrompts_ValidationRulesCompiled() {
+	nodeDef := &NodeDefinition{
+		ID:   "prompt-1",
+		Type: "PROMPT",
+		Prompts: []PromptDefinition{
+			{
+				Inputs: []InputDefinition{
+					{
+						Identifier: "password",
+						Validation: []ValidationRuleDefinition{
+							{Type: "regex", Value: "[A-Z]+", Message: "needs.upper"},
+						},
+					},
+				},
+				Action: &ActionDefinition{Ref: "submit", NextNode: "next"},
+			},
+		},
+	}
+
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(s.T())
+	mockPromptNode.EXPECT().SetPrompts(mock.MatchedBy(func(prompts []common.Prompt) bool {
+		if len(prompts) != 1 || len(prompts[0].Inputs) != 1 || len(prompts[0].Inputs[0].Validation) != 1 {
+			return false
+		}
+		rule := prompts[0].Inputs[0].Validation[0]
+		return rule.Type == common.ValidationTypeRegex && rule.CompiledRegex != nil
+	}))
+
+	err := s.builder.configureNodePrompts(nodeDef, mockPromptNode, map[string][]string{})
+	s.Nil(err)
+}
+
+// Invalid regex on a prompt input must fail the build with a useful error message.
+func (s *GraphBuilderTestSuite) TestConfigureNodePrompts_InvalidRegexFailsBuild() {
+	nodeDef := &NodeDefinition{
+		ID:   "prompt-1",
+		Type: "PROMPT",
+		Prompts: []PromptDefinition{
+			{
+				Inputs: []InputDefinition{
+					{
+						Identifier: "password",
+						Validation: []ValidationRuleDefinition{
+							{Type: "regex", Value: "[unterminated", Message: "bad"},
+						},
+					},
+				},
+				Action: &ActionDefinition{Ref: "submit", NextNode: "next"},
+			},
+		},
+	}
+
+	mockPromptNode := coremock.NewPromptNodeInterfaceMock(s.T())
+	// SetPrompts must NOT be called.
+
+	err := s.builder.configureNodePrompts(nodeDef, mockPromptNode, map[string][]string{})
+	s.NotNil(err)
+	s.Contains(err.Error(), "prompt-1")
+	s.Contains(err.Error(), "password")
+	s.Contains(err.Error(), "invalid validation regex")
+}
