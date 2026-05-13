@@ -4,7 +4,7 @@ packages:
   - ../docs
 
 catalog:
-  '@asgardeo/react': 0.24.2
+  '@asgardeo/react': 0.25.2
   '@asgardeo/react-router': 2.0.0
   '@hookform/resolvers': 5.2.2
   '@monaco-editor/react': 4.7.0
