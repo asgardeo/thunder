@@ -4,6 +4,149 @@ Explore the latest updates, features, and improvements to **ThunderID**.
 
 ---
 
+## v0.37.0 {#v0-37-0}
+<p style={{ fontSize: '0.9rem', color: '#666', marginTop: '-10px', marginBottom: '20px' }}>
+  <span>📅 Published on <strong>May 8, 2026</strong></span> • 
+  <a href="https://github.com/thunder-id/thunderid/releases/tag/v0.37.0" target="_blank" style={{ textDecoration: 'none' }}>View on GitHub ↗</a>
+</p>
+
+<div style={{ padding: '15px', marginBottom: '10px',}}>
+<span style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'block', marginBottom: '10px', color: '#555', textTransform: 'uppercase' }}>Contributors</span>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+  <a href="https://github.com/brionmario" title="brionmario" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/25959096?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="brionmario" />
+  </a>
+  <a href="https://github.com/thiva-k" title="thiva-k" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/114133267?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="thiva-k" />
+  </a>
+  <a href="https://github.com/KaveeshaPiumini" title="KaveeshaPiumini" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/62582918?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="KaveeshaPiumini" />
+  </a>
+  <a href="https://github.com/RandithaK" title="RandithaK" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/154749626?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="RandithaK" />
+  </a>
+  <a href="https://github.com/sacrana0" title="sacrana0" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/183357006?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="sacrana0" />
+  </a>
+  <a href="https://github.com/jeradrutnam" title="jeradrutnam" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/7569427?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="jeradrutnam" />
+  </a>
+  <a href="https://github.com/nandhu-kumar" title="nandhu-kumar" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/100744358?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="nandhu-kumar" />
+  </a>
+  <a href="https://github.com/NutharaNR" title="NutharaNR" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/119397108?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="NutharaNR" />
+  </a>
+  <a href="https://github.com/DonOmalVindula" title="DonOmalVindula" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/42619922?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="DonOmalVindula" />
+  </a>
+  <a href="https://github.com/sahandilshan" title="sahandilshan" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/32576163?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="sahandilshan" />
+  </a>
+  <a href="https://github.com/Dilusha-Madushan" title="Dilusha-Madushan" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/77233788?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="Dilusha-Madushan" />
+  </a>
+  <a href="https://github.com/rajithacharith" title="rajithacharith" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/32898873?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="rajithacharith" />
+  </a>
+  <a href="https://github.com/JeethJJ" title="JeethJJ" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/50905371?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="JeethJJ" />
+  </a>
+  <a href="https://github.com/RushanNanayakkara" title="RushanNanayakkara" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/42939752?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="RushanNanayakkara" />
+  </a>
+  <a href="https://github.com/Malith-19" title="Malith-19" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/79596630?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="Malith-19" />
+  </a>
+  <a href="https://github.com/ranuka-laksika" title="ranuka-laksika" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/110180949?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="ranuka-laksika" />
+  </a>
+  <a href="https://github.com/ravindu439" title="ravindu439" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/150885192?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="ravindu439" />
+  </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
+  </a>
+</div></div>
+
+<div style={{ padding: '15px', marginBottom: '40px',}}>
+<span style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'block', marginBottom: '10px', color: '#555', textTransform: 'uppercase' }}>New Contributors</span>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+  <a href="https://github.com/ranuka-laksika" title="ranuka-laksika" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/110180949?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="ranuka-laksika" />
+  </a>
+  <a href="https://github.com/ravindu439" title="ravindu439" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/150885192?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="ravindu439" />
+  </a>
+  <a href="https://github.com/Malith-19" title="Malith-19" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/79596630?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="Malith-19" />
+  </a>
+</div></div>
+
+#### ⚠️ Breaking Changes
+
+<div style={{ borderLeft: '3px solid #ff8c00', paddingLeft: '5px', marginLeft: '8px', marginBottom: '24px' }}>
+- Rebrand `Thunder` -> `ThunderID`
+- Migrate user schema to entity type and introduce `/agent-types` API
+- Refactor SQL queries to use double quotes for table names.
+- Add standardized authentication error responses to security middleware
+</div>
+
+#### 🚀 Features
+
+<div style={{ borderLeft: '3px solid #ff8c00', paddingLeft: '5px', marginLeft: '8px', marginBottom: '24px' }}>
+- Introduce agent entity and APIs
+- Magic Link Implementation
+- ACR values support
+- Onboard Agent management UI
+</div>
+
+#### ✨ Improvements
+
+<div style={{ borderLeft: '3px solid #ff8c00', paddingLeft: '5px', marginLeft: '8px', marginBottom: '24px' }}>
+- Add test coverage for import-export feature UIs
+- Add localized client metadata support for applications and DCR
+- Allow retry of flow step on recoverable error
+- Add layout positions and missing variants to user onboarding flow
+- Make system resource server handle and identifier configurable
+- Add dynamic input control properties to ProvisioningExecutor
+- Add export support for resource servers and roles
+- Make welcome page to show for any new tab session
+- Implement and migrate runtime signing flows to RuntimeCryptoProvider.Sign
+- Add state parameter to federated OAuth authorize URL
+- Disable auto-inferred registration flow by default
+- Rename export field to user type
+- Re-arrange crypto service structure
+- Refactor welcome screen redirection logic
+- Add executor input configuration UI to flow builder
+- Refactor Dependency Injection of Cache and Encryption
+- Export/Improt imporvement: support groups and import roles and resources
+- 1219 | Add JWE encryption support for ID tokens
+- Revamp Thunder OSS Site Landing
+- Refactor inbound models usage
+- Allow agent login through flows and improve application-agent separation
+- Add support for wildcards in the host component of registered redirect URIs
+- Add production deployment guideline documentation
+- Update API Contracts
+- Validate user attributes with user types
+- Make the encrypt function accept AlgorithmParams pointer
+- Add new Thunder ID theme
+- Refactor agent frontend components
+</div>
+
+#### 🐛 Bug Fixes
+
+<div style={{ borderLeft: '3px solid #ff8c00', paddingLeft: '5px', marginLeft: '8px', marginBottom: '24px' }}>
+- Resolve credential attributes from schema in provisioning executor
+- Update agent yaml error codes
+- Add support to customize app favicon of Console & Gate
+- Fix listing tables scrolling issue
+- Update subtitle translation to include product name
+</div>
+
+
+<hr style={{ border: 'none', borderTop: '1px solid #eaeaea', margin: '40px 0' }} />
+
 ## v0.36.0 {#v0-36-0}
 <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '-10px', marginBottom: '20px' }}>
   <span>📅 Published on <strong>April 30, 2026</strong></span> • 
@@ -15,6 +158,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
   <a href="https://github.com/RushanNanayakkara" title="RushanNanayakkara" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/42939752?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="RushanNanayakkara" />
+  </a>
+  <a href="https://github.com/thiva-k" title="thiva-k" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/114133267?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="thiva-k" />
   </a>
   <a href="https://github.com/sacrana0" title="sacrana0" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/183357006?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="sacrana0" />
@@ -43,9 +189,6 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   <a href="https://github.com/nandhu-kumar" title="nandhu-kumar" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/100744358?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="nandhu-kumar" />
   </a>
-  <a href="https://github.com/thiva-k" title="thiva-k" target="_blank" style={{ transition: 'transform 0.2s' }}>
-    <img src="https://avatars.githubusercontent.com/u/114133267?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="thiva-k" />
-  </a>
   <a href="https://github.com/rajithacharith" title="rajithacharith" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/32898873?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="rajithacharith" />
   </a>
@@ -57,6 +200,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   </a>
   <a href="https://github.com/brionmario" title="brionmario" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/25959096?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="brionmario" />
+  </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
   </a>
 </div></div>
 
@@ -75,6 +221,7 @@ Explore the latest updates, features, and improvements to **ThunderID**.
 
 <div style={{ borderLeft: '3px solid #ff8c00', paddingLeft: '5px', marginLeft: '8px', marginBottom: '24px' }}>
 - Harden CORS origin matching and preflight handling
+- Extract OAuth and client configurations from application into a reusable module
 </div>
 
 #### 🚀 Features
@@ -96,7 +243,6 @@ Explore the latest updates, features, and improvements to **ThunderID**.
 - JWE encrypt and decrypt migration to use RuntimeCryptoProvider
 - Add flow template layouts, validation, and auto-assign connections
 - add JWE and nested JWT support for UserInfo endpoint
-- Extract OAuth and client configurations from application into a reusable module
 - Add import endpoint support
 - JWE encrypt and decrypt alg support to use RuntimeCryptoProvider
 - Email Executor generic template data handling
@@ -170,6 +316,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   </a>
   <a href="https://github.com/LinukaAr" title="LinukaAr" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/89442011?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="LinukaAr" />
+  </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
   </a>
 </div></div>
 
@@ -274,6 +423,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   <a href="https://github.com/rajithacharith" title="rajithacharith" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/32898873?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="rajithacharith" />
   </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
+  </a>
 </div></div>
 
 <div style={{ padding: '15px', marginBottom: '40px',}}>
@@ -364,6 +516,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   <a href="https://github.com/KaveeshaPiumini" title="KaveeshaPiumini" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/62582918?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="KaveeshaPiumini" />
   </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
+  </a>
 </div></div>
 
 <div style={{ padding: '15px', marginBottom: '40px',}}>
@@ -448,6 +603,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   <a href="https://github.com/7" title="7" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/7853494?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="7" />
   </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
+  </a>
 </div></div>
 
 #### ⚠️ Breaking Changes
@@ -524,6 +682,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   </a>
   <a href="https://github.com/ThaminduR" title="ThaminduR" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/45028707?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="ThaminduR" />
+  </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
   </a>
 </div></div>
 
@@ -606,6 +767,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   <a href="https://github.com/ThaminduR" title="ThaminduR" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/45028707?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="ThaminduR" />
   </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
+  </a>
 </div></div>
 
 <div style={{ padding: '15px', marginBottom: '40px',}}>
@@ -684,6 +848,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   </a>
   <a href="https://github.com/JeethJJ" title="JeethJJ" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/50905371?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="JeethJJ" />
+  </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
   </a>
   <a href="https://github.com/thiva-k" title="thiva-k" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/114133267?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="thiva-k" />
@@ -787,6 +954,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   <a href="https://github.com/brionmario" title="brionmario" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/25959096?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="brionmario" />
   </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
+  </a>
 </div></div>
 
 #### ✨ Improvements
@@ -851,6 +1021,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   </a>
   <a href="https://github.com/jeradrutnam" title="jeradrutnam" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/7569427?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="jeradrutnam" />
+  </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
   </a>
 </div></div>
 
@@ -939,6 +1112,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   </a>
   <a href="https://github.com/rajithacharith" title="rajithacharith" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/32898873?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="rajithacharith" />
+  </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
   </a>
 </div></div>
 
@@ -1035,6 +1211,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   </a>
   <a href="https://github.com/RandithaK" title="RandithaK" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/154749626?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="RandithaK" />
+  </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
   </a>
 </div></div>
 
@@ -1168,6 +1347,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   <a href="https://github.com/DharshanSR" title="DharshanSR" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/150146619?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="DharshanSR" />
   </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
+  </a>
 </div></div>
 
 <div style={{ padding: '15px', marginBottom: '40px',}}>
@@ -1292,6 +1474,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   <a href="https://github.com/sacrana0" title="sacrana0" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/183357006?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="sacrana0" />
   </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
+  </a>
 </div></div>
 
 <div style={{ padding: '15px', marginBottom: '40px',}}>
@@ -1395,6 +1580,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   <a href="https://github.com/ThumulaPerera" title="ThumulaPerera" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/42399179?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="ThumulaPerera" />
   </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
+  </a>
 </div></div>
 
 <div style={{ padding: '15px', marginBottom: '40px',}}>
@@ -1488,6 +1676,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   <a href="https://github.com/brionmario" title="brionmario" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/25959096?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="brionmario" />
   </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
+  </a>
 </div></div>
 
 <div style={{ padding: '15px', marginBottom: '40px',}}>
@@ -1556,6 +1747,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   </a>
   <a href="https://github.com/DonOmalVindula" title="DonOmalVindula" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/42619922?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="DonOmalVindula" />
+  </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
   </a>
   <a href="https://github.com/JeethJJ" title="JeethJJ" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/50905371?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="JeethJJ" />
@@ -1643,6 +1837,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   <a href="https://github.com/rajithacharith" title="rajithacharith" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/32898873?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="rajithacharith" />
   </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
+  </a>
 </div></div>
 
 #### 🚀 Features
@@ -1717,6 +1914,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   <a href="https://github.com/ThumulaPerera" title="ThumulaPerera" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/42399179?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="ThumulaPerera" />
   </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
+  </a>
 </div></div>
 
 #### ⚠️ Breaking Changes
@@ -1783,6 +1983,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   </a>
   <a href="https://github.com/senthalan" title="senthalan" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/11584828?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="senthalan" />
+  </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
   </a>
 </div></div>
 
@@ -1867,6 +2070,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   </a>
   <a href="https://github.com/darshanasbg" title="darshanasbg" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/1617810?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="darshanasbg" />
+  </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
   </a>
 </div></div>
 
@@ -1960,6 +2166,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   <a href="https://github.com/ThaminduDilshan" title="ThaminduDilshan" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/35653110?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="ThaminduDilshan" />
   </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
+  </a>
 </div></div>
 
 #### ✨ Improvements
@@ -2019,6 +2228,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   </a>
   <a href="https://github.com/rajithacharith" title="rajithacharith" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/32898873?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="rajithacharith" />
+  </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
   </a>
   <a href="https://github.com/DonOmalVindula" title="DonOmalVindula" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/42619922?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="DonOmalVindula" />
@@ -2102,6 +2314,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   </a>
   <a href="https://github.com/DonOmalVindula" title="DonOmalVindula" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/42619922?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="DonOmalVindula" />
+  </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
   </a>
   <a href="https://github.com/jeradrutnam" title="jeradrutnam" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/7569427?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="jeradrutnam" />
@@ -2333,6 +2548,9 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   <a href="https://github.com/darshanasbg" title="darshanasbg" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/1617810?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="darshanasbg" />
   </a>
+  <a href="https://github.com/asgardeo" title="asgardeo" target="_blank" style={{ transition: 'transform 0.2s' }}>
+    <img src="https://avatars.githubusercontent.com/u/65653669?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="asgardeo" />
+  </a>
   <a href="https://github.com/brionmario" title="brionmario" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/25959096?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="brionmario" />
   </a>
@@ -2524,38 +2742,6 @@ Explore the latest updates, features, and improvements to **ThunderID**.
   </a>
   <a href="https://github.com/Lakshan-Banneheke" title="Lakshan-Banneheke" target="_blank" style={{ transition: 'transform 0.2s' }}>
     <img src="https://avatars.githubusercontent.com/u/62496951?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="Lakshan-Banneheke" />
-  </a>
-</div></div>
-
-
-<hr style={{ border: 'none', borderTop: '1px solid #eaeaea', margin: '40px 0' }} />
-
-## v0.7.0 {#v0-7-0}
-<p style={{ fontSize: '0.9rem', color: '#666', marginTop: '-10px', marginBottom: '20px' }}>
-  <span>📅 Published on <strong>September 10, 2025</strong></span> • 
-  <a href="https://github.com/thunder-id/thunderid/releases/tag/v0.7.0" target="_blank" style={{ textDecoration: 'none' }}>View on GitHub ↗</a>
-</p>
-
-<div style={{ padding: '15px', marginBottom: '10px',}}>
-<span style={{ fontSize: '0.85rem', fontWeight: 'bold', display: 'block', marginBottom: '10px', color: '#555', textTransform: 'uppercase' }}>Contributors</span>
-<div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-  <a href="https://github.com/darshanasbg" title="darshanasbg" target="_blank" style={{ transition: 'transform 0.2s' }}>
-    <img src="https://avatars.githubusercontent.com/u/1617810?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="darshanasbg" />
-  </a>
-  <a href="https://github.com/ThaminduDilshan" title="ThaminduDilshan" target="_blank" style={{ transition: 'transform 0.2s' }}>
-    <img src="https://avatars.githubusercontent.com/u/35653110?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="ThaminduDilshan" />
-  </a>
-  <a href="https://github.com/Osara-B" title="Osara-B" target="_blank" style={{ transition: 'transform 0.2s' }}>
-    <img src="https://avatars.githubusercontent.com/u/124599924?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="Osara-B" />
-  </a>
-  <a href="https://github.com/Lakshan-Banneheke" title="Lakshan-Banneheke" target="_blank" style={{ transition: 'transform 0.2s' }}>
-    <img src="https://avatars.githubusercontent.com/u/62496951?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="Lakshan-Banneheke" />
-  </a>
-  <a href="https://github.com/thiva-k" title="thiva-k" target="_blank" style={{ transition: 'transform 0.2s' }}>
-    <img src="https://avatars.githubusercontent.com/u/114133267?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="thiva-k" />
-  </a>
-  <a href="https://github.com/PasinduRavimal" title="PasinduRavimal" target="_blank" style={{ transition: 'transform 0.2s' }}>
-    <img src="https://avatars.githubusercontent.com/u/34201061?v=4" width="55" height="55" style={{ borderRadius: '50%', border: '2px solid #ff8c00', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} alt="PasinduRavimal" />
   </a>
 </div></div>
 
