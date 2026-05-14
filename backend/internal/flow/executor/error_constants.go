@@ -289,7 +289,7 @@ var ErrPasskeyRegistrationFailed = serviceerror.ServiceError{
 	},
 }
 
-// ErrPasskeyAuthFailed is returned when passkey authentication fails.	
+// ErrPasskeyAuthFailed is returned when passkey authentication fails.
 var ErrPasskeyAuthFailed = serviceerror.ServiceError{
 	Type: serviceerror.ClientErrorType,
 	Code: "FET-20044",
@@ -1069,7 +1069,8 @@ func ErrAttributeNotUniqueFor(attrName string) *serviceerror.ServiceError {
 // ErrMaxOTPAttemptsReachedFor returns a ServiceError for reaching the maximum OTP attempts.
 func ErrMaxOTPAttemptsReachedFor(count int) *serviceerror.ServiceError {
 	e := ErrMaxOTPAttemptsReached
-	e.ErrorDescription.DefaultValue = fmt.Sprintf("The maximum number of OTP verification attempts (%d) has been reached", count)
+	e.ErrorDescription.DefaultValue = fmt.Sprintf(
+		"The maximum number of OTP verification attempts (%d) has been reached", count)
 	return &e
 }
 

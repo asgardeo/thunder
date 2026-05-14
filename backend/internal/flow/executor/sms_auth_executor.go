@@ -190,7 +190,8 @@ func (s *smsOTPAuthExecutor) InitiateOTP(ctx *core.NodeContext,
 
 	// Handle registration flows.
 	if ctx.FlowType == common.FlowTypeRegistration {
-		if execResp.Status == common.ExecFailure && (execResp.Error == nil || execResp.Error.Code != ErrUserNotFound.Code) {
+		if execResp.Status == common.ExecFailure &&
+			(execResp.Error == nil || execResp.Error.Code != ErrUserNotFound.Code) {
 			logger.Error("Failed to identify user during registration flow", log.Error(err))
 			return fmt.Errorf("failed to identify user during registration flow: %w", err)
 		}
@@ -201,7 +202,7 @@ func (s *smsOTPAuthExecutor) InitiateOTP(ctx *core.NodeContext,
 			execResp.Status = common.ExecUserInputRequired
 			execResp.Inputs = []common.Input{s.resolvePhoneInput(ctx, mobileNumberInput)}
 			execResp.Error = serviceerror.CustomServiceError(ErrUserAlreadyExists, i18ncore.I18nMessage{
-				Key: 		  ErrUserAlreadyExists.ErrorDescription.Key,
+				Key:          ErrUserAlreadyExists.ErrorDescription.Key,
 				DefaultValue: "User already exists with the provided mobile number",
 			})
 			return nil
@@ -497,7 +498,7 @@ func (s *smsOTPAuthExecutor) getUserMobileNumber(userID string, ctx *core.NodeCo
 		logger.Debug("Mobile number not found in user attributes or context")
 		execResp.Status = common.ExecFailure
 		execResp.Error = serviceerror.CustomServiceError(ErrAttributeRetrievalFailed, i18ncore.I18nMessage{
-			Key: 		  ErrAttributeRetrievalFailed.ErrorDescription.Key,
+			Key:          ErrAttributeRetrievalFailed.ErrorDescription.Key,
 			DefaultValue: "Mobile number not found for the user in attributes or context",
 		})
 		return "", nil

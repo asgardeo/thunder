@@ -483,7 +483,8 @@ func (suite *SMSAuthExecutorTestSuite) TestInitiateOTP_RegistrationFlow_UserAlre
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecUserInputRequired, execResp.Status)
-	assert.Contains(suite.T(), execResp.Error.ErrorDescription.DefaultValue, "User already exists with the provided mobile number")
+	assert.Contains(suite.T(), execResp.Error.ErrorDescription.DefaultValue,
+		"User already exists with the provided mobile number")
 	assert.Len(suite.T(), execResp.Inputs, 1)
 	assert.Equal(suite.T(), common.AttributeMobileNumber, execResp.Inputs[0].Identifier)
 	assert.Equal(suite.T(), common.InputTypePhone, execResp.Inputs[0].Type)

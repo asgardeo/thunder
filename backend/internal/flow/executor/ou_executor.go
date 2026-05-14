@@ -115,7 +115,7 @@ func (o *ouExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, e
 			case ou.ErrorOrganizationUnitHandleConflict.Code:
 				execResp.Error = &ErrOUHandleConflict
 			default:
-				execResp.Error = serviceerror.CustomServiceError( ErrOUCreationFailed, i18ncore.I18nMessage{
+				execResp.Error = serviceerror.CustomServiceError(ErrOUCreationFailed, i18ncore.I18nMessage{
 					Key:          ErrOUCreationFailed.ErrorDescription.Key,
 					DefaultValue: "Failed to create organization unit:" + svcErr.ErrorDescription.DefaultValue,
 				})

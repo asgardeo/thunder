@@ -1150,7 +1150,8 @@ func publishFlowFailedEvent(ctx *EngineContext, svcErr *serviceerror.ServiceErro
 	obsSvc.PublishEvent(evt)
 }
 
-// processNodeResponseErrorForEventPublish processes the node response error to extract relevant information for observability events.
+// processNodeResponseErrorForEventPublish processes the node response error to extract relevant information
+// for observability events.
 func processNodeResponseErrorForEventPublish(nodeResp *common.NodeResponse) map[string]interface{} {
 	if nodeResp == nil || nodeResp.Error == nil {
 		return nil

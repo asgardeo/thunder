@@ -162,7 +162,8 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_UnsupportedResolveFrom() {
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Contains(suite.T(), resp.Error.ErrorDescription.DefaultValue, "Unsupported OU resolution strategy: unsupported")
+	assert.Contains(suite.T(), resp.Error.ErrorDescription.DefaultValue,
+		"Unsupported OU resolution strategy: unsupported")
 }
 
 func (suite *OUResolverExecutorTestSuite) TestExecute_PropertyMissing() {

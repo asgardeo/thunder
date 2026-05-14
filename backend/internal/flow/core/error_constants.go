@@ -25,7 +25,7 @@ import (
 
 // Define core flow errors
 
-// Executor prerequisite not met error
+// ErrExecutorPrerequisiteNotMet is returned when an executor prerequisite is not met.
 var ErrExecutorPrerequisiteNotMet = serviceerror.ServiceError{
 	Type: serviceerror.ClientErrorType,
 	Code: "FLC-1001",
@@ -34,12 +34,13 @@ var ErrExecutorPrerequisiteNotMet = serviceerror.ServiceError{
 		DefaultValue: "A prerequisite for the executor was not met",
 	},
 	ErrorDescription: core.I18nMessage{
-		Key:          "error.flow.core.executor_prerequisite_not_met_description",
-		DefaultValue: "One or more prerequisites required for the executor were not satisfied. Please check the inputs and try again.",
+		Key: "error.flow.core.executor_prerequisite_not_met_description",
+		DefaultValue: "One or more prerequisites required for the executor were not satisfied. " +
+			"Please check the inputs and try again.",
 	},
 }
 
-// Invalid action provided in prompt node error
+// ErrInvalidActionProvided is returned when an invalid action is provided in a prompt node.
 var ErrInvalidActionProvided = serviceerror.ServiceError{
 	Type: serviceerror.ClientErrorType,
 	Code: "FLC-1002",

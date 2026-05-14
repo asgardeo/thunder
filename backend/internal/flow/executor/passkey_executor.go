@@ -205,7 +205,7 @@ func (p *passkeyAuthExecutor) executeChallenge(ctx *core.NodeContext,
 				log.String("error", svcErr.ErrorDescription.DefaultValue))
 			execResp.Status = common.ExecFailure
 			execResp.Error = serviceerror.CustomServiceError(ErrPasskeyAuthFailed, i18ncore.I18nMessage{
-				Key: 		  ErrOUResolutionFailed.ErrorDescription.Key,
+				Key:          ErrOUResolutionFailed.ErrorDescription.Key,
 				DefaultValue: "Failed to start passkey authentication: " + svcErr.ErrorDescription.DefaultValue,
 			})
 			return execResp, nil
@@ -417,7 +417,7 @@ func (p *passkeyAuthExecutor) executeRegisterStart(ctx *core.NodeContext,
 				log.String("error", svcErr.ErrorDescription.DefaultValue))
 			execResp.Status = common.ExecFailure
 			execResp.Error = serviceerror.CustomServiceError(ErrPasskeyRegistrationFailed, i18ncore.I18nMessage{
-				Key: 		  ErrPasskeyRegistrationFailed.ErrorDescription.Key,
+				Key:          ErrPasskeyRegistrationFailed.ErrorDescription.Key,
 				DefaultValue: "Failed to start passkey registration: " + svcErr.ErrorDescription.DefaultValue,
 			})
 			return execResp, nil
@@ -512,7 +512,7 @@ func (p *passkeyAuthExecutor) executeRegisterFinish(ctx *core.NodeContext,
 			execResp.Status = common.ExecUserInputRequired
 			execResp.Inputs = allInputs
 			execResp.Error = serviceerror.CustomServiceError(ErrPasskeyRegistrationFailed, i18ncore.I18nMessage{
-				Key: 		  ErrPasskeyRegistrationFailed.ErrorDescription.Key,
+				Key:          ErrPasskeyRegistrationFailed.ErrorDescription.Key,
 				DefaultValue: "Failed to finish passkey registration: " + svcErr.ErrorDescription.DefaultValue,
 			})
 			return execResp, nil

@@ -593,7 +593,9 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason_ClearsUserInputs(
 	})
 
 	// User submitted inputs, but downstream task failed - routed back with failureReasonJSON
-	svcErr := serviceerror.ServiceError{Error: i18ncore.I18nMessage{DefaultValue: "A user with this username already exists"}}
+	svcErr := serviceerror.ServiceError{
+		Error: i18ncore.I18nMessage{DefaultValue: "A user with this username already exists"},
+	}
 	svcErrJSON, _ := json.Marshal(svcErr)
 	ctx := &NodeContext{
 		ExecutionID: "test-flow",
@@ -628,7 +630,9 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason_ClearsCurrentActi
 		},
 	})
 
-	svcErr := serviceerror.ServiceError{Error: i18ncore.I18nMessage{DefaultValue: "A user with this email already exists"}}
+	svcErr := serviceerror.ServiceError{
+		Error: i18ncore.I18nMessage{DefaultValue: "A user with this email already exists"},
+	}
 	svcErrJSON, _ := json.Marshal(svcErr)
 	ctx := &NodeContext{
 		ExecutionID:   "test-flow",

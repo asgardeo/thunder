@@ -210,7 +210,7 @@ func (i *identifyingExecutor) executeResolve(ctx *core.NodeContext,
 	if err != nil {
 		execResp.Status = common.ExecFailure
 		execResp.Error = serviceerror.CustomServiceError(ErrFailedToIdentifyUser, i18ncore.I18nMessage{
-			Key: 		  ErrFailedToIdentifyUser.ErrorDescription.Key,
+			Key:          ErrFailedToIdentifyUser.ErrorDescription.Key,
 			DefaultValue: err.Error(),
 		})
 		return execResp, nil

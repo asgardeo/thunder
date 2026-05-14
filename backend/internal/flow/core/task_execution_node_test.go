@@ -675,7 +675,9 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteFailureWithOnFailureClearsNodeIn
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{
 			Status: common.ExecFailure,
-			Error:  &serviceerror.ServiceError{Error: i18ncore.I18nMessage{DefaultValue: "A user with this email already exists"}},
+			Error: &serviceerror.ServiceError{
+				Error: i18ncore.I18nMessage{DefaultValue: "A user with this email already exists"},
+			},
 		}, nil,
 	).Once()
 
@@ -792,9 +794,11 @@ func (s *TaskExecutionNodeTestSuite) TestExecuteIncompleteWithOnIncompleteAndFai
 	mockExec.On("GetName").Return("test-executor").Once()
 	mockExec.On("Execute", mock.Anything).Return(
 		&common.ExecutorResponse{
-			Status:      common.ExecUserInputRequired,
-			Inputs:      inputs,
-			Error:       &serviceerror.ServiceError{Error: i18ncore.I18nMessage{DefaultValue: "Invalid credentials provided"}},
+			Status: common.ExecUserInputRequired,
+			Inputs: inputs,
+			Error: &serviceerror.ServiceError{
+				Error: i18ncore.I18nMessage{DefaultValue: "Invalid credentials provided"},
+			},
 			RuntimeData: map[string]string{"existing": "data"},
 		}, nil,
 	).Once()
