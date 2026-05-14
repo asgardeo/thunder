@@ -317,7 +317,7 @@ func (suite *OUResolverExecutorTestSuite) TestExecute_Prompt_UserSelectedOU_NotI
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecUserInputRequired, result.Status)
-	assert.Contains(suite.T(), result.Error.ErrorDescription.DefaultValue, "not valid for the chosen user type")
+	assert.Contains(suite.T(), result.Error.ErrorDescription.DefaultValue, "not valid for the chosen organization unit")
 	suite.mockOUService.AssertExpectations(suite.T())
 }
 

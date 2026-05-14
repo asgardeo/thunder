@@ -3309,7 +3309,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CrossOU_AmbiguousUser_Ma
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
-	assert.Equal(suite.T(), &ErrUserAlreadyExistsInTargetOU.Error.DefaultValue, resp.Error.Error.DefaultValue)
+	assert.Equal(suite.T(), ErrUserAlreadyExistsInTargetOU.Error.DefaultValue, resp.Error.Error.DefaultValue)
 }
 
 // Ambiguous user + cross-OU NOT allowed → fail immediately without searching.
@@ -3336,7 +3336,7 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CrossOU_AmbiguousUser_Cr
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Equal(suite.T(), &ErrAmbiguousUserIdentity.Error.DefaultValue, resp.Error.Error.DefaultValue)
+	assert.Equal(suite.T(), ErrAmbiguousUserIdentity.Error.DefaultValue, resp.Error.Error.DefaultValue)
 }
 
 // Ambiguous user + cross-OU allowed + SearchEntities returns error
@@ -3394,6 +3394,6 @@ func (suite *ProvisioningExecutorTestSuite) TestExecute_CrossOU_SystemError_NoSe
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Equal(suite.T(), &ErrFailedToIdentifyUser.Error.DefaultValue, resp.Error.Error.DefaultValue)
+	assert.Equal(suite.T(), ErrFailedToIdentifyUser.Error.DefaultValue, resp.Error.Error.DefaultValue)
 	suite.mockEntityProvider.AssertNotCalled(suite.T(), "SearchEntities", mock.Anything)
 }

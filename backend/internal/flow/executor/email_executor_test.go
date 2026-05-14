@@ -107,7 +107,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UserInviteTemplate_Suc
 	resp, err := suite.executor.Execute(ctx)
 
 	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status, resp.Error.Error.DefaultValue)
+	suite.Equal(common.ExecComplete, resp.Status)
 	suite.Equal(dataValueTrue, resp.AdditionalData[common.DataEmailSent])
 }
 
@@ -149,7 +149,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_SelfRegistration_Invit
 	resp, err := suite.executor.Execute(ctx)
 
 	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status, resp.Error.Error.DefaultValue)
+	suite.Equal(common.ExecComplete, resp.Status)
 	suite.Equal(dataValueTrue, resp.AdditionalData[common.DataEmailSent])
 	// For SELF_REGISTRATION, invite link must NOT be exposed in AdditionalData
 	suite.Empty(resp.AdditionalData[common.DataInviteLink])
@@ -193,7 +193,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_UsesRuntimeRecipientOv
 	resp, err := suite.executor.Execute(ctx)
 
 	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status, resp.Error.Error.DefaultValue)
+	suite.Equal(common.ExecComplete, resp.Status)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailFromRuntimeData() {
@@ -232,7 +232,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmailFromRuntimeData()
 	resp, err := suite.executor.Execute(ctx)
 
 	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status, resp.Error.Error.DefaultValue)
+	suite.Equal(common.ExecComplete, resp.Status)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingRecipient() {
@@ -369,7 +369,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_MissingTemplatePropert
 	resp, err := suite.executor.Execute(ctx)
 
 	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status, resp.Error.Error.DefaultValue)
+	suite.Equal(common.ExecComplete, resp.Status)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmptyTemplateString_DefaultsToUserInvite() {
@@ -409,7 +409,7 @@ func (suite *EmailExecutorTestSuite) TestExecute_SendMode_EmptyTemplateString_De
 	resp, err := suite.executor.Execute(ctx)
 
 	suite.NoError(err)
-	suite.Equal(common.ExecComplete, resp.Status, resp.Error.Error.DefaultValue)
+	suite.Equal(common.ExecComplete, resp.Status)
 }
 
 func (suite *EmailExecutorTestSuite) TestExecute_SendMode_InvalidTemplateType_ReturnsError() {
