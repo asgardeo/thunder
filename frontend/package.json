@@ -65,7 +65,7 @@
       "svgo": "3.3.3",
       "brace-expansion@>=4.0.0 <5.0.5": "5.0.5",
       "lodash": "4.18.1",
-      "protobufjs": "7.5.5",
+      "protobufjs": "7.5.8",
       "js-yaml@>=4.0.0 <4.1.1": "4.1.1"
     },
     "packageExtensions": {
@@ -75,5 +75,6 @@
         }
       }
     }
-  }
+  },
+  "packageManager": "pnpm@9.15.9+sha512.68046141893c66fad01c079231128e9afb89ef87e2691d69e4d40eee228988295fd4682181bae55b58418c3a253bde65a505ec7c5f9403ece5cc3cd37dcf2531"
 }
