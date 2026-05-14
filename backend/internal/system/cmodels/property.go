@@ -75,7 +75,7 @@ func (p *Property) GetValue() (string, error) {
 		return p.value, nil
 	}
 
-	cryptoProvider, err := defaultkm.GetEncryptionService()
+	cryptoProvider, err := defaultkm.GetConfigCryptoService()
 	if err != nil {
 		return "", fmt.Errorf("failed to initialize encryption service: %w", err)
 	}
@@ -93,7 +93,7 @@ func (p *Property) Encrypt() error {
 		return nil
 	}
 
-	cryptoProvider, err := defaultkm.GetEncryptionService()
+	cryptoProvider, err := defaultkm.GetConfigCryptoService()
 	if err != nil {
 		return fmt.Errorf("failed to initialize encryption service: %w", err)
 	}

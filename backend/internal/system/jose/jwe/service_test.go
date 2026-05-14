@@ -30,7 +30,7 @@ import (
 	"testing"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab"
+	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/tests/mocks/crypto/cryptomock"
@@ -75,9 +75,9 @@ func (suite *JWEServiceTestSuite) TestEncryptDecrypt_RSA() {
 	mockProvider.EXPECT().Decrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		RunAndReturn(func(
 			ctx context.Context, keyRef *kmprovider.KeyRef,
-			params cryptolab.AlgorithmParams, content []byte,
+			params crypto_lib.AlgorithmParams, content []byte,
 		) ([]byte, error) {
-			return cryptolab.Decrypt(suite.testRSAPrivateKey, params, content)
+			return crypto_lib.Decrypt(suite.testRSAPrivateKey, params, content)
 		}).Times(len(encAlgs))
 
 	suite.jweService = &jweService{
@@ -114,9 +114,9 @@ func (suite *JWEServiceTestSuite) TestEncryptDecrypt_ECDH() {
 	mockProvider.EXPECT().Decrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		RunAndReturn(func(
 			ctx context.Context, keyRef *kmprovider.KeyRef,
-			params cryptolab.AlgorithmParams, content []byte,
+			params crypto_lib.AlgorithmParams, content []byte,
 		) ([]byte, error) {
-			return cryptolab.Decrypt(suite.testECPrivateKey, params, content)
+			return crypto_lib.Decrypt(suite.testECPrivateKey, params, content)
 		}).Times(len(testCases))
 
 	suite.jweService = &jweService{
@@ -181,9 +181,9 @@ func (suite *JWEServiceTestSuite) TestDecrypt_Errors() {
 	mockProvider.EXPECT().Decrypt(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 		RunAndReturn(func(
 			ctx context.Context, keyRef *kmprovider.KeyRef,
-			params cryptolab.AlgorithmParams, content []byte,
+			params crypto_lib.AlgorithmParams, content []byte,
 		) ([]byte, error) {
-			return cryptolab.Decrypt(suite.testRSAPrivateKey, params, content)
+			return crypto_lib.Decrypt(suite.testRSAPrivateKey, params, content)
 		}).Once()
 	parts := strings.Split(jweToken, ".")
 	parts[4] = base64.RawURLEncoding.EncodeToString([]byte("wrong-tag"))

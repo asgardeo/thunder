@@ -16,6 +16,57 @@
  * under the License.
  */
 
+// Package kmprovider defines interfaces for key manager providers.
 package kmprovider
 
-// TODO: Define the key manager registry and provider selection interface.
+import (
+	"context"
+	gocrypto "crypto"
+	"crypto/tls"
+
+	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
+)
+
+// ConfigCryptoProvider provides symmetric encryption and decryption functionality
+// using statically configured keys.
+type ConfigCryptoProvider interface {
+	Encrypt(ctx context.Context, content []byte) ([]byte, error)
+	Decrypt(ctx context.Context, content []byte) ([]byte, error)
+}
+
+// RuntimeCryptoProvider provides asymmetric cryptographic operations including
+// encryption, decryption, signing, and key discovery.
+type RuntimeCryptoProvider interface {
+	Encrypt(
+		ctx context.Context, keyRef *KeyRef, params crypto_lib.AlgorithmParams, content []byte,
+	) ([]byte, *crypto_lib.CryptoDetails, error)
+	Decrypt(ctx context.Context, keyRef *KeyRef, params crypto_lib.AlgorithmParams, content []byte) ([]byte, error)
+	Sign(ctx context.Context, keyRef KeyRef, algorithm crypto_lib.SignAlgorithm, content []byte) ([]byte, error)
+	GetPublicKeys(ctx context.Context, filter PublicKeyFilter) ([]PublicKeyInfo, error)
+	GetTLSMaterial(ctx context.Context, keyRef *KeyRef) (*TLSMaterial, error)
+}
+
+// KeyRef identifies a cryptographic key by its ID.
+type KeyRef struct {
+	KeyID string
+}
+
+// PublicKeyFilter specifies criteria for filtering public keys in GetPublicKeys.
+type PublicKeyFilter struct {
+	KeyID     string
+	Algorithm crypto_lib.Algorithm
+}
+
+// PublicKeyInfo describes a public key returned by GetPublicKeys.
+type PublicKeyInfo struct {
+	KeyID          string
+	Algorithm      crypto_lib.Algorithm
+	PublicKey      gocrypto.PublicKey
+	Thumbprint     string
+	CertificateDER []byte // raw DER-encoded X.509 certificate; nil if not certificate-backed
+}
+
+// TLSMaterial holds the TLS certificate material for a key reference.
+type TLSMaterial struct {
+	Certificate tls.Certificate
+}

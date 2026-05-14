@@ -32,7 +32,7 @@ import (
 	"time"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab"
+	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	httpservice "github.com/thunder-id/thunderid/internal/system/http"
 	"github.com/thunder-id/thunderid/internal/system/jose/jws"
@@ -64,7 +64,7 @@ type jwksCacheEntry struct {
 type jwtService struct {
 	cryptoProvider kmprovider.RuntimeCryptoProvider
 	keyRef         kmprovider.KeyRef
-	signAlg        cryptolab.SignAlgorithm
+	signAlg        crypto_lib.SignAlgorithm
 	jwsAlg         jws.Algorithm
 	kid            string
 	logger         *log.Logger
@@ -319,7 +319,7 @@ func (js *jwtService) VerifyJWTSignature(jwtToken string) *serviceerror.ServiceE
 	}
 
 	// Verify the signature using the matched public key
-	if err = cryptolab.Verify([]byte(signingInput), signature, signAlg, matchedKey.PublicKey); err != nil {
+	if err = crypto_lib.Verify([]byte(signingInput), signature, signAlg, matchedKey.PublicKey); err != nil {
 		return &ErrorInvalidTokenSignature
 	}
 	return nil
@@ -354,7 +354,7 @@ func (js *jwtService) VerifyJWTSignatureWithPublicKey(jwtToken string,
 	}
 
 	// Verify the signature
-	err = cryptolab.Verify([]byte(signingInput), signature, alg, jwtPublicKey)
+	err = crypto_lib.Verify([]byte(signingInput), signature, alg, jwtPublicKey)
 	if err != nil {
 		return &ErrorInvalidTokenSignature
 	}

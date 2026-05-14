@@ -27,7 +27,7 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/entitytype"
 	"github.com/thunder-id/thunderid/internal/ou"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/crypto_lib/hash"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 	sysutils "github.com/thunder-id/thunderid/internal/system/utils"

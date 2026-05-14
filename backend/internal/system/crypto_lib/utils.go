@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package cryptolab
+package crypto_lib
 
 import (
 	"crypto/aes"

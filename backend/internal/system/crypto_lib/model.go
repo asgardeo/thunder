@@ -16,10 +16,10 @@
  * under the License.
  */
 
-// Package cryptolab provides pure cryptographic primitives: signing, encryption,
+// Package crypto_lib provides pure cryptographic primitives: signing, encryption,
 // decryption, hashing, and secure token utilities. It has no internal dependencies
 // and operates only on keys and data passed directly by the caller.
-package cryptolab
+package crypto_lib
 
 import (
 	gocrypto "crypto"

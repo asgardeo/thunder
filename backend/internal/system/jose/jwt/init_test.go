@@ -32,7 +32,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab"
+	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 	"github.com/thunder-id/thunderid/tests/mocks/crypto/cryptomock"
 )
@@ -110,7 +110,7 @@ func (suite *InitTestSuite) TestInitialize_Success() {
 		GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{KeyID: "test-kid"}).
 		Return([]kmprovider.PublicKeyInfo{{
 			KeyID:      "test-kid",
-			Algorithm:  cryptolab.AlgorithmRS256,
+			Algorithm:  crypto_lib.AlgorithmRS256,
 			PublicKey:  &suite.testPrivateKey.PublicKey,
 			Thumbprint: "test-kid",
 		}}, nil)
@@ -159,7 +159,7 @@ func (suite *InitTestSuite) TestInitialize_WithoutPreferredKeyID() {
 		GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{KeyID: ""}).
 		Return([]kmprovider.PublicKeyInfo{{
 			KeyID:      "",
-			Algorithm:  cryptolab.AlgorithmRS256,
+			Algorithm:  crypto_lib.AlgorithmRS256,
 			PublicKey:  &suite.testPrivateKey.PublicKey,
 			Thumbprint: "test-kid",
 		}}, nil)

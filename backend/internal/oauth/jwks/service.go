@@ -30,7 +30,7 @@ import (
 	// Use crypto/sha1 only for JWKS x5t as required by spec for thumbprint.
 	"crypto/sha1" //nolint:gosec
 
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/crypto_lib/hash"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 	"github.com/thunder-id/thunderid/internal/system/log"

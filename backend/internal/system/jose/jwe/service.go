@@ -26,7 +26,7 @@ import (
 	"fmt"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab"
+	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -72,8 +72,8 @@ func (js *jweService) Encrypt(payload []byte, recipientPublicKey crypto.PublicKe
 		return "", &ErrorUnsupportedJWEAlgorithm
 	}
 
-	// Establish the CEK via cryptolab key establishment.
-	encryptedKey, details, err := cryptolab.Encrypt(recipientPublicKey, &params, nil)
+	// Establish the CEK via crypto_lib key establishment.
+	encryptedKey, details, err := crypto_lib.Encrypt(recipientPublicKey, &params, nil)
 	if err != nil {
 		js.logger.Error("Failed to encrypt CEK: " + err.Error())
 		return "", &ErrorUnsupportedJWEAlgorithm
@@ -156,7 +156,7 @@ func (js *jweService) Decrypt(jweToken string) ([]byte, *serviceerror.ServiceErr
 	alg := KeyEncAlgorithm(algStr)
 	enc := ContentEncAlgorithm(encStr)
 
-	// Build cryptolab params for CEK decryption using the server's key.
+	// Build crypto_lib params for CEK decryption using the server's key.
 	params, paramsErr := buildDecryptParams(alg, enc, header)
 	if paramsErr != nil {
 		js.logger.Debug("Failed to build decrypt params: " + paramsErr.Error())
@@ -191,124 +191,124 @@ func isSupportedEnc(enc ContentEncAlgorithm) bool {
 }
 
 // buildEncryptParams converts a JWE key management algorithm and content encryption algorithm
-// into a cryptolab.AlgorithmParams for key establishment during Encrypt.
-func buildEncryptParams(alg KeyEncAlgorithm, enc ContentEncAlgorithm) (cryptolab.AlgorithmParams, error) {
-	encAlg := cryptolab.Algorithm(enc)
+// into a crypto_lib.AlgorithmParams for key establishment during Encrypt.
+func buildEncryptParams(alg KeyEncAlgorithm, enc ContentEncAlgorithm) (crypto_lib.AlgorithmParams, error) {
+	encAlg := crypto_lib.Algorithm(enc)
 	switch alg {
 	case RSAOAEP:
-		return cryptolab.AlgorithmParams{
-			Algorithm: cryptolab.AlgorithmRSAOAEP,
-			RSAOAEP:   cryptolab.RSAOAEPParams{ContentEncryptionAlgorithm: encAlg},
+		return crypto_lib.AlgorithmParams{
+			Algorithm: crypto_lib.AlgorithmRSAOAEP,
+			RSAOAEP:   crypto_lib.RSAOAEPParams{ContentEncryptionAlgorithm: encAlg},
 		}, nil
 	case RSAOAEP256:
-		return cryptolab.AlgorithmParams{
-			Algorithm:  cryptolab.AlgorithmRSAOAEP256,
-			RSAOAEP256: cryptolab.RSAOAEP256Params{ContentEncryptionAlgorithm: encAlg},
+		return crypto_lib.AlgorithmParams{
+			Algorithm:  crypto_lib.AlgorithmRSAOAEP256,
+			RSAOAEP256: crypto_lib.RSAOAEP256Params{ContentEncryptionAlgorithm: encAlg},
 		}, nil
 	case ECDHES:
-		return cryptolab.AlgorithmParams{
-			Algorithm: cryptolab.AlgorithmECDHES,
-			ECDHES:    cryptolab.ECDHESParams{ContentEncryptionAlgorithm: encAlg},
+		return crypto_lib.AlgorithmParams{
+			Algorithm: crypto_lib.AlgorithmECDHES,
+			ECDHES:    crypto_lib.ECDHESParams{ContentEncryptionAlgorithm: encAlg},
 		}, nil
 	case ECDHESA128KW:
-		return cryptolab.AlgorithmParams{
-			Algorithm: cryptolab.AlgorithmECDHESA128KW,
-			ECDHES:    cryptolab.ECDHESParams{ContentEncryptionAlgorithm: encAlg},
+		return crypto_lib.AlgorithmParams{
+			Algorithm: crypto_lib.AlgorithmECDHESA128KW,
+			ECDHES:    crypto_lib.ECDHESParams{ContentEncryptionAlgorithm: encAlg},
 		}, nil
 	case ECDHESA192KW:
-		return cryptolab.AlgorithmParams{
-			Algorithm: cryptolab.AlgorithmECDHESA192KW,
-			ECDHES:    cryptolab.ECDHESParams{ContentEncryptionAlgorithm: encAlg},
+		return crypto_lib.AlgorithmParams{
+			Algorithm: crypto_lib.AlgorithmECDHESA192KW,
+			ECDHES:    crypto_lib.ECDHESParams{ContentEncryptionAlgorithm: encAlg},
 		}, nil
 	case ECDHESA256KW:
-		return cryptolab.AlgorithmParams{
-			Algorithm: cryptolab.AlgorithmECDHESA256KW,
-			ECDHES:    cryptolab.ECDHESParams{ContentEncryptionAlgorithm: encAlg},
+		return crypto_lib.AlgorithmParams{
+			Algorithm: crypto_lib.AlgorithmECDHESA256KW,
+			ECDHES:    crypto_lib.ECDHESParams{ContentEncryptionAlgorithm: encAlg},
 		}, nil
 	case A128KW:
-		return cryptolab.AlgorithmParams{
-			Algorithm: cryptolab.AlgorithmA128KW,
-			AESKW:     cryptolab.AESKWParams{ContentEncryptionAlgorithm: encAlg},
+		return crypto_lib.AlgorithmParams{
+			Algorithm: crypto_lib.AlgorithmA128KW,
+			AESKW:     crypto_lib.AESKWParams{ContentEncryptionAlgorithm: encAlg},
 		}, nil
 	case A192KW:
-		return cryptolab.AlgorithmParams{
-			Algorithm: cryptolab.AlgorithmA192KW,
-			AESKW:     cryptolab.AESKWParams{ContentEncryptionAlgorithm: encAlg},
+		return crypto_lib.AlgorithmParams{
+			Algorithm: crypto_lib.AlgorithmA192KW,
+			AESKW:     crypto_lib.AESKWParams{ContentEncryptionAlgorithm: encAlg},
 		}, nil
 	case A256KW:
-		return cryptolab.AlgorithmParams{
-			Algorithm: cryptolab.AlgorithmA256KW,
-			AESKW:     cryptolab.AESKWParams{ContentEncryptionAlgorithm: encAlg},
+		return crypto_lib.AlgorithmParams{
+			Algorithm: crypto_lib.AlgorithmA256KW,
+			AESKW:     crypto_lib.AESKWParams{ContentEncryptionAlgorithm: encAlg},
 		}, nil
 	case A128GCMKW:
-		return cryptolab.AlgorithmParams{
-			Algorithm: cryptolab.AlgorithmA128GCMKW,
-			AESGCMKW:  cryptolab.AESGCMKWParams{ContentEncryptionAlgorithm: encAlg},
+		return crypto_lib.AlgorithmParams{
+			Algorithm: crypto_lib.AlgorithmA128GCMKW,
+			AESGCMKW:  crypto_lib.AESGCMKWParams{ContentEncryptionAlgorithm: encAlg},
 		}, nil
 	case A192GCMKW:
-		return cryptolab.AlgorithmParams{
-			Algorithm: cryptolab.AlgorithmA192GCMKW,
-			AESGCMKW:  cryptolab.AESGCMKWParams{ContentEncryptionAlgorithm: encAlg},
+		return crypto_lib.AlgorithmParams{
+			Algorithm: crypto_lib.AlgorithmA192GCMKW,
+			AESGCMKW:  crypto_lib.AESGCMKWParams{ContentEncryptionAlgorithm: encAlg},
 		}, nil
 	case A256GCMKW:
-		return cryptolab.AlgorithmParams{
-			Algorithm: cryptolab.AlgorithmA256GCMKW,
-			AESGCMKW:  cryptolab.AESGCMKWParams{ContentEncryptionAlgorithm: encAlg},
+		return crypto_lib.AlgorithmParams{
+			Algorithm: crypto_lib.AlgorithmA256GCMKW,
+			AESGCMKW:  crypto_lib.AESGCMKWParams{ContentEncryptionAlgorithm: encAlg},
 		}, nil
 	default:
-		return cryptolab.AlgorithmParams{}, fmt.Errorf("unsupported JWE algorithm: %s", alg)
+		return crypto_lib.AlgorithmParams{}, fmt.Errorf("unsupported JWE algorithm: %s", alg)
 	}
 }
 
-// buildDecryptParams builds cryptolab.AlgorithmParams for server-side CEK decryption.
+// buildDecryptParams builds crypto_lib.AlgorithmParams for server-side CEK decryption.
 // For ECDH-ES variants it reads the ephemeral public key from the JWE protected header.
 func buildDecryptParams(alg KeyEncAlgorithm, enc ContentEncAlgorithm,
-	header map[string]interface{}) (cryptolab.AlgorithmParams, error) {
+	header map[string]interface{}) (crypto_lib.AlgorithmParams, error) {
 	switch alg {
 	case RSAOAEP:
-		return cryptolab.AlgorithmParams{Algorithm: cryptolab.AlgorithmRSAOAEP}, nil
+		return crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmRSAOAEP}, nil
 	case RSAOAEP256:
-		return cryptolab.AlgorithmParams{Algorithm: cryptolab.AlgorithmRSAOAEP256}, nil
+		return crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmRSAOAEP256}, nil
 	case ECDHES:
 		epk, err := extractEPKFromHeader(header)
 		if err != nil {
-			return cryptolab.AlgorithmParams{}, err
+			return crypto_lib.AlgorithmParams{}, err
 		}
-		return cryptolab.AlgorithmParams{
-			Algorithm: cryptolab.AlgorithmECDHES,
-			ECDHES: cryptolab.ECDHESParams{
+		return crypto_lib.AlgorithmParams{
+			Algorithm: crypto_lib.AlgorithmECDHES,
+			ECDHES: crypto_lib.ECDHESParams{
 				EPK:                        epk,
-				ContentEncryptionAlgorithm: cryptolab.Algorithm(enc),
+				ContentEncryptionAlgorithm: crypto_lib.Algorithm(enc),
 			},
 		}, nil
 	case ECDHESA128KW:
 		epk, err := extractEPKFromHeader(header)
 		if err != nil {
-			return cryptolab.AlgorithmParams{}, err
+			return crypto_lib.AlgorithmParams{}, err
 		}
-		return cryptolab.AlgorithmParams{
-			Algorithm: cryptolab.AlgorithmECDHESA128KW,
-			ECDHES:    cryptolab.ECDHESParams{EPK: epk},
+		return crypto_lib.AlgorithmParams{
+			Algorithm: crypto_lib.AlgorithmECDHESA128KW,
+			ECDHES:    crypto_lib.ECDHESParams{EPK: epk},
 		}, nil
 	case ECDHESA192KW:
 		epk, err := extractEPKFromHeader(header)
 		if err != nil {
-			return cryptolab.AlgorithmParams{}, err
+			return crypto_lib.AlgorithmParams{}, err
 		}
-		return cryptolab.AlgorithmParams{
-			Algorithm: cryptolab.AlgorithmECDHESA192KW,
-			ECDHES:    cryptolab.ECDHESParams{EPK: epk},
+		return crypto_lib.AlgorithmParams{
+			Algorithm: crypto_lib.AlgorithmECDHESA192KW,
+			ECDHES:    crypto_lib.ECDHESParams{EPK: epk},
 		}, nil
 	case ECDHESA256KW:
 		epk, err := extractEPKFromHeader(header)
 		if err != nil {
-			return cryptolab.AlgorithmParams{}, err
+			return crypto_lib.AlgorithmParams{}, err
 		}
-		return cryptolab.AlgorithmParams{
-			Algorithm: cryptolab.AlgorithmECDHESA256KW,
-			ECDHES:    cryptolab.ECDHESParams{EPK: epk},
+		return crypto_lib.AlgorithmParams{
+			Algorithm: crypto_lib.AlgorithmECDHESA256KW,
+			ECDHES:    crypto_lib.ECDHESParams{EPK: epk},
 		}, nil
 	default:
-		return cryptolab.AlgorithmParams{}, fmt.Errorf("unsupported JWE algorithm for server-side decryption: %s", alg)
+		return crypto_lib.AlgorithmParams{}, fmt.Errorf("unsupported JWE algorithm for server-side decryption: %s", alg)
 	}
 }

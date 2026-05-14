@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/crypto_lib/hash"
 	"github.com/thunder-id/thunderid/internal/system/transaction"
 	"github.com/thunder-id/thunderid/tests/mocks/crypto/hashmock"
 )

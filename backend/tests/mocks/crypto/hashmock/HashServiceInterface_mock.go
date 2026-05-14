@@ -6,7 +6,7 @@ package hashmock
 
 import (
 	mock "github.com/stretchr/testify/mock"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/crypto_lib/hash"
 )
 
 // NewHashServiceInterfaceMock creates a new instance of HashServiceInterfaceMock. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

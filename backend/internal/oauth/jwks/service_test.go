@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/thunder-id/thunderid/internal/system/cryptolab"
+	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 	"github.com/thunder-id/thunderid/tests/mocks/crypto/cryptomock"
@@ -56,7 +56,7 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_RSA_Success() {
 	key, _ := rsa.GenerateKey(rand.Reader, 2048)
 	info := kmprovider.PublicKeyInfo{
 		KeyID:          "kid-1",
-		Algorithm:      cryptolab.AlgorithmRS256,
+		Algorithm:      crypto_lib.AlgorithmRS256,
 		PublicKey:      &key.PublicKey,
 		Thumbprint:     "kid-1",
 		CertificateDER: []byte("rsa-cert-raw"),
@@ -82,7 +82,7 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_ECDSA_P256_Success() {
 	ecdsaKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	info := kmprovider.PublicKeyInfo{
 		KeyID:          "kid-1",
-		Algorithm:      cryptolab.AlgorithmES256,
+		Algorithm:      crypto_lib.AlgorithmES256,
 		PublicKey:      &ecdsaKey.PublicKey,
 		Thumbprint:     "kid-1",
 		CertificateDER: []byte("ec-cert-raw"),
@@ -109,7 +109,7 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_EdDSA_Success() {
 	_, edPriv, _ := ed25519.GenerateKey(rand.Reader)
 	info := kmprovider.PublicKeyInfo{
 		KeyID:          "kid-1",
-		Algorithm:      cryptolab.AlgorithmEdDSA,
+		Algorithm:      crypto_lib.AlgorithmEdDSA,
 		PublicKey:      edPriv.Public(),
 		Thumbprint:     "kid-1",
 		CertificateDER: []byte("ed-cert-raw"),
@@ -161,7 +161,7 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_UnsupportedPublicKeyType() {
 		},
 		{
 			KeyID:          "kid-2",
-			Algorithm:      cryptolab.AlgorithmRS256,
+			Algorithm:      crypto_lib.AlgorithmRS256,
 			PublicKey:      &rsaKey.PublicKey,
 			Thumbprint:     "kid-2",
 			CertificateDER: []byte("rsa-cert-raw"),
@@ -195,14 +195,14 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_MultipleCertificates() {
 	keys := []kmprovider.PublicKeyInfo{
 		{
 			KeyID:          "rsa-kid",
-			Algorithm:      cryptolab.AlgorithmRS256,
+			Algorithm:      crypto_lib.AlgorithmRS256,
 			PublicKey:      &rsaKey.PublicKey,
 			Thumbprint:     "rsa-kid",
 			CertificateDER: []byte("rsa-cert-raw"),
 		},
 		{
 			KeyID:          "ec-kid",
-			Algorithm:      cryptolab.AlgorithmES256,
+			Algorithm:      crypto_lib.AlgorithmES256,
 			PublicKey:      &ecdsaKey.PublicKey,
 			Thumbprint:     "ec-kid",
 			CertificateDER: []byte("ec-cert-raw"),
@@ -236,11 +236,11 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_ECDSA_AdditionalCurves() {
 	tests := []struct {
 		name  string
 		curve elliptic.Curve
-		alg   cryptolab.Algorithm
+		alg   crypto_lib.Algorithm
 		crv   string
 	}{
-		{name: "P-384", curve: elliptic.P384(), alg: cryptolab.AlgorithmES384, crv: "P-384"},
-		{name: "P-521", curve: elliptic.P521(), alg: cryptolab.AlgorithmES512, crv: "P-521"},
+		{name: "P-384", curve: elliptic.P384(), alg: crypto_lib.AlgorithmES384, crv: "P-384"},
+		{name: "P-521", curve: elliptic.P521(), alg: crypto_lib.AlgorithmES512, crv: "P-521"},
 	}
 
 	for _, tt := range tests {
@@ -275,7 +275,7 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_RSA_ZeroExponent() {
 	key.PublicKey.E = 0
 	info := kmprovider.PublicKeyInfo{
 		KeyID:          "kid-zero",
-		Algorithm:      cryptolab.AlgorithmRS256,
+		Algorithm:      crypto_lib.AlgorithmRS256,
 		PublicKey:      &key.PublicKey,
 		Thumbprint:     "kid-zero",
 		CertificateDER: []byte("rsa-cert-raw-zero"),
@@ -296,7 +296,7 @@ func (suite *JWKSServiceTestSuite) TestGetJWKS_NoCertificateDER() {
 	rsaKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	info := kmprovider.PublicKeyInfo{
 		KeyID:      "kid-1",
-		Algorithm:  cryptolab.AlgorithmRS256,
+		Algorithm:  crypto_lib.AlgorithmRS256,
 		PublicKey:  &rsaKey.PublicKey,
 		Thumbprint: "kid-1",
 		// CertificateDER intentionally nil
