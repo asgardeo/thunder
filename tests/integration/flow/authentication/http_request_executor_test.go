@@ -364,7 +364,7 @@ func (ts *HTTPRequestExecutorTestSuite) TestHTTPRequestAuthFlow_Success() {
 	ts.NotNil(step1, "Flow response should not be nil")
 	ts.Equal("COMPLETE", step1.FlowStatus, "Flow status should be COMPLETE")
 	ts.Require().NotEmpty(step1.Assertion, "JWT assertion should be returned")
-	ts.Require().Empty(step1.FailureReason, "Failure reason should be empty")
+	ts.Require().Nil(step1.Error, "Error should be nil")
 
 	time.Sleep(200 * time.Millisecond)
 
@@ -418,7 +418,7 @@ func (ts *HTTPRequestExecutorTestSuite) TestHTTPRequestAuthFlow_WithFailOnErrorF
 	ts.NotNil(step1, "Flow response should not be nil")
 	ts.Equal("COMPLETE", step1.FlowStatus, "Flow status should be COMPLETE")
 	ts.NotEmpty(step1.Assertion, "JWT assertion should be returned")
-	ts.Empty(step1.FailureReason, "Failure reason should be empty")
+	ts.Nil(step1.Error, "Error should be nil")
 }
 
 func (ts *HTTPRequestExecutorTestSuite) TestHTTPRequestAuthFlow_WithFailOnErrorTrue() {

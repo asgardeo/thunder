@@ -41,7 +41,7 @@ type FlowStep struct {
 	Type           string   `json:"type,omitempty"`
 	Data           FlowData `json:"data,omitempty"`
 	Assertion      string   `json:"assertion,omitempty"`
-	FailureReason  string   `json:"failureReason,omitempty"`
+	Error          *ErrorResponse `json:"error,omitempty"`
 	ChallengeToken string   `json:"challengeToken,omitempty"`
 }
 

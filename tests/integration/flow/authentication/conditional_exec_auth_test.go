@@ -399,7 +399,7 @@ func (ts *ConditionalExecAuthFlowTestSuite) TestSkipConditionalNodes() {
 	ts.Require().Equal("COMPLETE", flowStep.FlowStatus,
 		"Expected flow status to be COMPLETE (conditional nodes should be skipped for existing user)")
 	ts.Require().NotEmpty(flowStep.Assertion, "Assertion token should be present")
-	ts.Empty(flowStep.FailureReason, "Failure reason should be empty")
+	ts.Nil(flowStep.Error, "Error should be nil")
 
 	// Validate JWT assertion
 	jwtClaims, err := testutils.ValidateJWTAssertionFields(

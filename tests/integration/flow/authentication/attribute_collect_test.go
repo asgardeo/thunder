@@ -436,9 +436,9 @@ func (ts *AttributeCollectFlowTestSuite) TestInvalidCredentials() {
 
 	errorResp, err := common.CompleteFlow(flowStep.ExecutionID, invalidCredentials, "", flowStep.ChallengeToken)
 	ts.Require().NoError(err, "Expected error response for invalid credentials")
-	ts.Require().NotEmpty(errorResp.FailureReason, "Expected failure reason for invalid credentials")
-	ts.Require().Contains(errorResp.FailureReason, "User not found",
-		"Expected failure reason to indicate user not found")
+	ts.Require().NotNil(errorResp.Error, "Expected error for invalid credentials")
+	ts.Require().Contains(errorResp.Error.Message.DefaultValue, "User not found",
+		"Expected error message to indicate user not found")
 }
 
 func (ts *AttributeCollectFlowTestSuite) validateRequiredInputs(actualInputs []common.Inputs,
