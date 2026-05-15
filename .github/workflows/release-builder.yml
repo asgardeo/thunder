@@ -400,7 +400,8 @@ jobs:
         uses: ./.github/actions/setup-node
         with:
           node-version: ${{ env.NODE_VERSION }}
-          package-manager: 'npm'
+          package-manager: 'pnpm'
+          dependency-path: '.'
 
       - name: 📦 Install pnpm for Frontend Build
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
