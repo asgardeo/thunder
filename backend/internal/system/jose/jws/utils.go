@@ -21,8 +21,9 @@ package jws
 
 import (
 	"crypto"
-	"crypto/ecdh"
+	"crypto/ecdsa"
 	"crypto/ed25519"
+	"crypto/elliptic"
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
@@ -87,7 +88,7 @@ func JWKToPublicKey(jwk map[string]interface{}) (crypto.PublicKey, error) {
 	case "RSA":
 		return jwkToRSAPublicKey(jwk)
 	case "EC":
-		return JWKToECPublicKey(jwk)
+		return jwkToECDSAPublicKey(jwk)
 	case "OKP":
 		return jwkToOKPPublicKey(jwk)
 	default:
@@ -121,8 +122,8 @@ func jwkToRSAPublicKey(jwk map[string]interface{}) (*rsa.PublicKey, error) {
 	return &rsa.PublicKey{N: n, E: int(e)}, nil
 }
 
-// JWKToECPublicKey converts a JWK to an EC public key.
-func JWKToECPublicKey(jwk map[string]interface{}) (*ecdh.PublicKey, error) {
+// jwkToECDSAPublicKey converts a JWK to an ECDSA public key for JWS signature verification.
+func jwkToECDSAPublicKey(jwk map[string]interface{}) (*ecdsa.PublicKey, error) {
 	crv, crvOK := jwk["crv"].(string)
 	xStr, xOK := jwk["x"].(string)
 	yStr, yOK := jwk["y"].(string)
@@ -130,7 +131,7 @@ func JWKToECPublicKey(jwk map[string]interface{}) (*ecdh.PublicKey, error) {
 		return nil, errors.New("JWK missing EC parameters")
 	}
 
-	curve, expectedKeySize, err := getECCurveInfo(crv)
+	curve, expectedKeySize, err := getECDSACurveInfo(crv)
 	if err != nil {
 		return nil, err
 	}
@@ -148,25 +149,25 @@ func JWKToECPublicKey(jwk map[string]interface{}) (*ecdh.PublicKey, error) {
 		return nil, errors.New("invalid EC coordinate length")
 	}
 
-	// Construct the uncompressed point encoding: 0x04 || x || y
-	uncompressed := make([]byte, 1+len(xBytes)+len(yBytes))
-	uncompressed[0] = 0x04 // uncompressed point marker
-	copy(uncompressed[1:], xBytes)
-	copy(uncompressed[1+len(xBytes):], yBytes)
+	x := new(big.Int).SetBytes(xBytes)
+	y := new(big.Int).SetBytes(yBytes)
 
-	// NewPublicKey performs on-curve validation automatically
-	return curve.NewPublicKey(uncompressed)
+	if !curve.IsOnCurve(x, y) {
+		return nil, errors.New("EC point not on curve")
+	}
+
+	return &ecdsa.PublicKey{Curve: curve, X: x, Y: y}, nil
 }
 
-// getECCurveInfo returns the elliptic curve and expected key size for a given curve name.
-func getECCurveInfo(crv string) (ecdh.Curve, int, error) {
+// getECDSACurveInfo returns the ECDSA elliptic curve and expected key size for a given curve name.
+func getECDSACurveInfo(crv string) (elliptic.Curve, int, error) {
 	switch crv {
 	case P256:
-		return ecdh.P256(), 32, nil
+		return elliptic.P256(), 32, nil
 	case P384:
-		return ecdh.P384(), 48, nil
+		return elliptic.P384(), 48, nil
 	case P521:
-		return ecdh.P521(), 66, nil
+		return elliptic.P521(), 66, nil
 	default:
 		return nil, 0, fmt.Errorf("unsupported EC curve: %s", crv)
 	}

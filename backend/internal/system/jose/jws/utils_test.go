@@ -19,7 +19,6 @@
 package jws
 
 import (
-	"crypto/ecdh"
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
@@ -357,58 +356,100 @@ func (suite *JWSUtilsTestSuite) TestJWKToOKPPublicKeyInvalidKeyLength() {
 	assert.Contains(suite.T(), err.Error(), "invalid Ed25519 public key length")
 }
 
-func (suite *JWSUtilsTestSuite) TestGetECCurveInfoP256() {
-	curve, keySize, err := getECCurveInfo(P256)
-
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), ecdh.P256(), curve)
-	assert.Equal(suite.T(), 32, keySize)
-}
-
-func (suite *JWSUtilsTestSuite) TestGetECCurveInfoP384() {
-	curve, keySize, err := getECCurveInfo(P384)
-
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), ecdh.P384(), curve)
-	assert.Equal(suite.T(), 48, keySize)
-}
-
-func (suite *JWSUtilsTestSuite) TestGetECCurveInfoP521() {
-	curve, keySize, err := getECCurveInfo(P521)
-
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), ecdh.P521(), curve)
-	assert.Equal(suite.T(), 66, keySize)
-}
-
-func (suite *JWSUtilsTestSuite) TestGetECCurveInfoUnsupported() {
-	curve, keySize, err := getECCurveInfo("P-999")
-
-	assert.Error(suite.T(), err)
-	assert.Nil(suite.T(), curve)
-	assert.Equal(suite.T(), 0, keySize)
-	assert.Contains(suite.T(), err.Error(), "unsupported EC curve")
-}
-
-func (suite *JWSUtilsTestSuite) TestJWKToPublicKeyInvalidEC() {
-	// Use a known valid point on P-256
-	validX := new(big.Int).SetBytes([]byte{
-		0x6b, 0x17, 0xd1, 0xf2, 0xe1, 0x2c, 0x42, 0x47, 0xf8, 0xbc, 0xe6, 0xe5, 0x63, 0xa4, 0x40, 0xf2,
-		0x77, 0x03, 0x7d, 0x81, 0x2d, 0xeb, 0x33, 0xa0, 0xf4, 0xa1, 0x39, 0x45, 0xd8, 0x98, 0xc2, 0x96,
-	})
-	validY := new(big.Int).SetBytes([]byte{
-		0x4f, 0xe3, 0x42, 0xe2, 0xfe, 0x61, 0xa7, 0xf5, 0x73, 0xb3, 0x5b, 0x0b, 0x82, 0x41, 0xa8, 0xc2,
-		0x8e, 0x4f, 0xb5, 0x35, 0x86, 0x4a, 0xf3, 0xd4, 0x0f, 0x55, 0xd5, 0x96, 0xb6, 0x7f, 0x4c, 0x8b,
-	})
+func (suite *JWSUtilsTestSuite) TestJWKToPublicKeyEC() {
+	xPadded := make([]byte, 32)
+	yPadded := make([]byte, 32)
+	xb := suite.ecPublicKey.X.Bytes()
+	yb := suite.ecPublicKey.Y.Bytes()
+	copy(xPadded[32-len(xb):], xb)
+	copy(yPadded[32-len(yb):], yb)
 
 	jwk := map[string]interface{}{
 		"kty": "EC",
 		"crv": "P-256",
-		"x":   base64.RawURLEncoding.EncodeToString(validX.Bytes()),
-		"y":   base64.RawURLEncoding.EncodeToString(validY.Bytes()),
+		"x":   base64.RawURLEncoding.EncodeToString(xPadded),
+		"y":   base64.RawURLEncoding.EncodeToString(yPadded),
 	}
 
 	publicKey, err := JWKToPublicKey(jwk)
-	assert.Contains(suite.T(), err.Error(), "point not on curve")
-	assert.Nil(suite.T(), publicKey)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), publicKey)
+	ecKey, ok := publicKey.(*ecdsa.PublicKey)
+	assert.True(suite.T(), ok)
+	assert.Equal(suite.T(), suite.ecPublicKey.X, ecKey.X)
+	assert.Equal(suite.T(), suite.ecPublicKey.Y, ecKey.Y)
+}
+
+func (suite *JWSUtilsTestSuite) TestJWKToPublicKeyInvalidEC() {
+	invalidCoord := make([]byte, 32)
+	invalidCoord[31] = 1
+	validCoord := make([]byte, 32)
+	validCoord[31] = 1
+	shortCoord := []byte{0, 0, 0, 0}
+
+	testCases := []struct {
+		name          string
+		jwk           map[string]interface{}
+		errorContains string
+	}{
+		{
+			name: "PointNotOnCurve",
+			jwk: map[string]interface{}{
+				"kty": "EC",
+				"crv": "P-256",
+				"x":   base64.RawURLEncoding.EncodeToString(invalidCoord),
+				"y":   base64.RawURLEncoding.EncodeToString(invalidCoord),
+			},
+			errorContains: "not on curve",
+		},
+		{
+			name: "MissingCrv",
+			jwk: map[string]interface{}{
+				"kty": "EC",
+				"x":   base64.RawURLEncoding.EncodeToString(validCoord),
+				"y":   base64.RawURLEncoding.EncodeToString(validCoord),
+			},
+			errorContains: "missing EC parameters",
+		},
+		{
+			name: "MissingX",
+			jwk: map[string]interface{}{
+				"kty": "EC",
+				"crv": "P-256",
+				"y":   base64.RawURLEncoding.EncodeToString(validCoord),
+			},
+			errorContains: "missing EC parameters",
+		},
+		{
+			name: "InvalidBase64X",
+			jwk: map[string]interface{}{
+				"kty": "EC",
+				"crv": "P-256",
+				"x":   "!!!invalid!!!",
+				"y":   base64.RawURLEncoding.EncodeToString(validCoord),
+			},
+			errorContains: "failed to decode EC x",
+		},
+		{
+			name: "WrongCoordinateLength",
+			jwk: map[string]interface{}{
+				"kty": "EC",
+				"crv": "P-256",
+				"x":   base64.RawURLEncoding.EncodeToString(shortCoord),
+				"y":   base64.RawURLEncoding.EncodeToString(validCoord),
+			},
+			errorContains: "invalid EC coordinate length",
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.T().Run(tc.name, func(t *testing.T) {
+			publicKey, err := JWKToPublicKey(tc.jwk)
+
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tc.errorContains)
+			assert.Nil(t, publicKey)
+		})
+	}
 }

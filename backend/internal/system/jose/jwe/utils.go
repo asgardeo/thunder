@@ -683,7 +683,7 @@ func decryptWithECDHES(privateKey crypto.PrivateKey, header map[string]interface
 	if !ok {
 		return nil, errors.New("missing epk in header")
 	}
-	ephemeralPub, err := jws.JWKToECPublicKey(epkMap)
+	ephemeralPub, err := jwkToECDHPublicKey(epkMap)
 	if err != nil {
 		return nil, err
 	}
@@ -715,7 +715,7 @@ func decryptWithECDHESKW(encryptedKey []byte, privateKey crypto.PrivateKey,
 	if !ok {
 		return nil, errors.New("missing epk in header")
 	}
-	ephemeralPub, err := jws.JWKToECPublicKey(epkMap)
+	ephemeralPub, err := jwkToECDHPublicKey(epkMap)
 	if err != nil {
 		return nil, err
 	}
@@ -877,4 +877,55 @@ func decryptWithAESGCMKW(encryptedKey []byte, kek crypto.PrivateKey,
 	}
 
 	return gcm.Open(nil, iv, append(encryptedKey, tag...), nil)
+}
+
+// jwkToECDHPublicKey converts a JWK to an ECDH public key for key agreement.
+func jwkToECDHPublicKey(jwk map[string]interface{}) (*ecdh.PublicKey, error) {
+	crv, crvOK := jwk["crv"].(string)
+	xStr, xOK := jwk["x"].(string)
+	yStr, yOK := jwk["y"].(string)
+	if !crvOK || !xOK || !yOK {
+		return nil, errors.New("JWK missing EC parameters")
+	}
+
+	curve, expectedKeySize, err := getECCurveInfo(crv)
+	if err != nil {
+		return nil, err
+	}
+
+	xBytes, err := base64.RawURLEncoding.DecodeString(xStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode EC x: %w", err)
+	}
+	yBytes, err := base64.RawURLEncoding.DecodeString(yStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode EC y: %w", err)
+	}
+
+	if len(xBytes) != expectedKeySize || len(yBytes) != expectedKeySize {
+		return nil, errors.New("invalid EC coordinate length")
+	}
+
+	// Construct the uncompressed point encoding: 0x04 || x || y
+	uncompressed := make([]byte, 1+len(xBytes)+len(yBytes))
+	uncompressed[0] = 0x04 // uncompressed point marker
+	copy(uncompressed[1:], xBytes)
+	copy(uncompressed[1+len(xBytes):], yBytes)
+
+	// NewPublicKey performs on-curve validation automatically
+	return curve.NewPublicKey(uncompressed)
+}
+
+// getECCurveInfo returns the elliptic curve and expected key size for a given curve name.
+func getECCurveInfo(crv string) (ecdh.Curve, int, error) {
+	switch crv {
+	case jws.P256:
+		return ecdh.P256(), 32, nil
+	case jws.P384:
+		return ecdh.P384(), 48, nil
+	case jws.P521:
+		return ecdh.P521(), 66, nil
+	default:
+		return nil, 0, fmt.Errorf("unsupported EC curve: %s", crv)
+	}
 }

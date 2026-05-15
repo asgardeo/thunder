@@ -355,7 +355,7 @@ func (suite *SignUtilsTestSuite) TestRoundTrip() {
 	}
 }
 
-func (suite *SignUtilsTestSuite) TestSignECDSAASN1Format() {
+func (suite *SignUtilsTestSuite) TestSignECDSARawFormat() {
 	signature, err := Generate(suite.testData, ECDSASHA256, suite.ecdsaPrivateKey)
 	assert.NoError(suite.T(), err)
 	err = Verify(suite.testData, signature, ECDSASHA256, &suite.ecdsaPrivateKey.PublicKey)
