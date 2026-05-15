@@ -22,6 +22,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+
 	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/internal/system/middleware"
@@ -33,7 +35,9 @@ import (
 // It returns the service, a hierarchy resolver (for injection into the authz service to
 // avoid an import cycle), and the declarative resource exporter.
 func Initialize(
-	mux *http.ServeMux, authzService sysauthz.SystemAuthorizationServiceInterface,
+	mux *http.ServeMux,
+	mcpServer *mcp.Server,
+	authzService sysauthz.SystemAuthorizationServiceInterface,
 ) (ConfigurableOUService, sysauthz.OUHierarchyResolver, declarativeresource.ResourceExporter, error) {
 	ouStore, transactioner, err := initializeStore()
 	if err != nil {
@@ -44,6 +48,10 @@ func Initialize(
 
 	ouHandler := newOrganizationUnitHandler(ouService)
 	registerRoutes(mux, ouHandler)
+
+	if mcpServer != nil {
+		registerMCPTools(mcpServer, ouService)
+	}
 
 	// Create the hierarchy resolver backed directly by the store (no authz checks) so
 	// the authz service can traverse the OU tree without recursive authorization calls.

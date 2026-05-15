@@ -89,7 +89,7 @@ func (suite *InitTestSuite) TestInitialize() {
 	assert.NoError(suite.T(), err)
 
 	service, _, err := Initialize(
-		suite.mux, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
+		suite.mux, nil, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
 	assert.NoError(suite.T(), err)
 
 	suite.NotNil(service)
@@ -113,7 +113,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_ListEndpoint() {
 	assert.NoError(suite.T(), err)
 
 	_, _, err = Initialize(
-		suite.mux, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
+		suite.mux, nil, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodGet, "/user-types", nil)
@@ -141,7 +141,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CreateEndpoint() {
 	assert.NoError(suite.T(), err)
 
 	_, _, err = Initialize(
-		suite.mux, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
+		suite.mux, nil, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodPost, "/user-types", nil)
@@ -177,7 +177,7 @@ func (suite *InitTestSuite) TestInitialize_DBTransactionerError() {
 	assert.NoError(suite.T(), err)
 
 	_, _, err = Initialize(
-		suite.mux, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
+		suite.mux, nil, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
 	assert.Error(suite.T(), err)
 	if err != nil {
 		assert.Contains(suite.T(), err.Error(), "failed to get config database client")
@@ -201,7 +201,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_GetByIDEndpoint() {
 	assert.NoError(suite.T(), err)
 
 	_, _, err = Initialize(
-		suite.mux, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
+		suite.mux, nil, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodGet, "/user-types/test-id", nil)
@@ -229,7 +229,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_UpdateEndpoint() {
 	assert.NoError(suite.T(), err)
 
 	_, _, err = Initialize(
-		suite.mux, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
+		suite.mux, nil, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodPut, "/user-types/test-id", nil)
@@ -257,7 +257,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_DeleteEndpoint() {
 	assert.NoError(suite.T(), err)
 
 	_, _, err = Initialize(
-		suite.mux, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
+		suite.mux, nil, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodDelete, "/user-types/test-id", nil)
@@ -285,7 +285,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflight() {
 	assert.NoError(suite.T(), err)
 
 	_, _, err = Initialize(
-		suite.mux, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
+		suite.mux, nil, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodOptions, "/user-types", nil)
@@ -313,7 +313,7 @@ func (suite *InitTestSuite) TestRegisterRoutes_CORSPreflightByID() {
 	assert.NoError(suite.T(), err)
 
 	_, _, err = Initialize(
-		suite.mux, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
+		suite.mux, nil, cache.Initialize(), suite.mockOUService, nil, suite.mockConsentService)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodOptions, "/user-types/test-id", nil)
@@ -521,7 +521,7 @@ func TestInitialize_Standalone(t *testing.T) {
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	mockConsentService := mockConsentServiceWithDisabled(t)
 
-	service, exporter, err := Initialize(mux, cache.Initialize(), mockOUService, nil, mockConsentService)
+	service, exporter, err := Initialize(mux, nil, cache.Initialize(), mockOUService, nil, mockConsentService)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, service)
@@ -714,7 +714,7 @@ func TestInitialize_MutableMode(t *testing.T) {
 	mockOUService := oumock.NewOrganizationUnitServiceInterfaceMock(t)
 	mockConsentService := mockConsentServiceWithDisabled(t)
 
-	service, exporter, err := Initialize(mux, cache.Initialize(), mockOUService, nil, mockConsentService)
+	service, exporter, err := Initialize(mux, nil, cache.Initialize(), mockOUService, nil, mockConsentService)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, service)
@@ -757,7 +757,7 @@ func TestInitialize_StoreModes(t *testing.T) {
 				Maybe()
 			mockConsentService := mockConsentServiceWithDisabled(t)
 
-			service, exporter, err := Initialize(mux, cache.Initialize(), mockOUService, nil, mockConsentService)
+			service, exporter, err := Initialize(mux, nil, cache.Initialize(), mockOUService, nil, mockConsentService)
 
 			assert.NoError(t, err)
 			assert.NotNil(t, service)
@@ -1148,7 +1148,7 @@ func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 	mockConsentService := mockConsentServiceWithDisabled(t)
 
 	// Initialize should return an error due to invalid YAML
-	_, _, err = Initialize(mux, cache.Initialize(), mockOUService, nil, mockConsentService)
+	_, _, err = Initialize(mux, nil, cache.Initialize(), mockOUService, nil, mockConsentService)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load entity type resources")
 }
@@ -1208,7 +1208,7 @@ schema: |
 	mockConsentService := mockConsentServiceWithDisabled(t)
 
 	// Initialize should return an error due to validation failure
-	_, _, err = Initialize(mux, cache.Initialize(), mockOUService, nil, mockConsentService)
+	_, _, err = Initialize(mux, nil, cache.Initialize(), mockOUService, nil, mockConsentService)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load entity type resources")
 }
@@ -1282,7 +1282,7 @@ schema: |
 	mockConsentService := mockConsentServiceWithDisabled(t)
 
 	// Initialize should return an error due to OU service failure
-	_, _, err = Initialize(mux, cache.Initialize(), mockOUService, nil, mockConsentService)
+	_, _, err = Initialize(mux, nil, cache.Initialize(), mockOUService, nil, mockConsentService)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load entity type resources")
 
@@ -1342,7 +1342,7 @@ schema: |
 	mockConsentService := mockConsentServiceWithDisabled(t)
 
 	// Initialize should return an error due to invalid JSON
-	_, _, err = Initialize(mux, cache.Initialize(), mockOUService, nil, mockConsentService)
+	_, _, err = Initialize(mux, nil, cache.Initialize(), mockOUService, nil, mockConsentService)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load entity type resources")
 }
