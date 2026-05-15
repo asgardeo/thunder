@@ -225,7 +225,7 @@ func (tv *tokenValidator) resolveExternalIssuer(ctx context.Context, issuer stri
 	}
 
 	idpDTOs, svcErr := tv.idpService.GetIdentityProvidersByProperty(ctx, idp.PropIssuer, issuer)
-	if svcErr != nil {
+	if svcErr != nil || len(idpDTOs) == 0 {
 		return nil, fmt.Errorf("no external issuer configured for '%s'", issuer)
 	}
 
