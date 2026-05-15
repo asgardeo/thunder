@@ -261,7 +261,7 @@ func pkcs7Unpad(data []byte) ([]byte, error) {
 }
 
 // extractEPKFromHeader parses the "epk" field from the JWE protected header and returns
-// the ephemeral public key as *ecdh.PublicKey required by crypto_lib.
+// the ephemeral public key as *ecdh.PublicKey required by cryptolib.
 func extractEPKFromHeader(header map[string]interface{}) (crypto.PublicKey, error) {
 	epkMap, ok := header["epk"].(map[string]interface{})
 	if !ok {

@@ -25,7 +25,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
+	cryptolib "github.com/thunder-id/thunderid/internal/system/crypto_lib"
 	"github.com/thunder-id/thunderid/internal/system/crypto_lib/hash"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 )
@@ -35,7 +35,7 @@ type configCryptoService struct {
 	keys         map[string][]byte
 }
 
-func newConfigCryptoService(key []byte) kmprovider.ConfigCryptoProvider {  
+func newConfigCryptoService(key []byte) kmprovider.ConfigCryptoProvider {
 	kid := hash.GenerateThumbprint(key)
 	return &configCryptoService{
 		defaultKeyID: kid,
@@ -48,8 +48,8 @@ func (es *configCryptoService) Encrypt(_ context.Context, plaintext []byte) ([]b
 	if len(key) == 0 {
 		return nil, errors.New("default encryption key not found")
 	}
-	ciphertext, _, err := crypto_lib.Encrypt(
-		key, &crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmAESGCM}, plaintext,
+	ciphertext, _, err := cryptolib.Encrypt(
+		key, &cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmAESGCM}, plaintext,
 	)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (es *configCryptoService) Decrypt(_ context.Context, encodedData []byte) ([
 	if len(key) == 0 {
 		return nil, errors.New("decryption key not found for kid")
 	}
-	return crypto_lib.Decrypt(key, crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmAESGCM}, ciphertext)
+	return cryptolib.Decrypt(key, cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmAESGCM}, ciphertext)
 }
 
 func (es *configCryptoService) defaultKey() []byte {

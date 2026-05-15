@@ -25,13 +25,15 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
+	cryptolib "github.com/thunder-id/thunderid/internal/system/crypto_lib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
@@ -65,9 +67,9 @@ func TestEncrypt_RSAOAEP256_SuccessViaConstructor(t *testing.T) {
 
 	svc := NewRuntimeCryptoService(pkiMock, nil)
 
-	params := crypto_lib.AlgorithmParams{
-		Algorithm: crypto_lib.AlgorithmRSAOAEP256,
-		RSAOAEP256: crypto_lib.RSAOAEP256Params{
+	params := cryptolib.AlgorithmParams{
+		Algorithm: cryptolib.AlgorithmRSAOAEP256,
+		RSAOAEP256: cryptolib.RSAOAEP256Params{
 			ContentEncryptionAlgorithm: "A256GCM",
 		},
 	}
@@ -87,9 +89,9 @@ func TestEncrypt_RSAOAEP256_GetPublicKeyError(t *testing.T) {
 
 	svc := NewRuntimeCryptoService(pkiMock, nil)
 
-	params := crypto_lib.AlgorithmParams{
-		Algorithm: crypto_lib.AlgorithmRSAOAEP256,
-		RSAOAEP256: crypto_lib.RSAOAEP256Params{
+	params := cryptolib.AlgorithmParams{
+		Algorithm: cryptolib.AlgorithmRSAOAEP256,
+		RSAOAEP256: cryptolib.RSAOAEP256Params{
 			ContentEncryptionAlgorithm: "A256GCM",
 		},
 	}
@@ -111,9 +113,9 @@ func TestEncrypt_ECDHES_Success(t *testing.T) {
 
 	svc := NewRuntimeCryptoService(pkiMock, nil)
 
-	params := crypto_lib.AlgorithmParams{
-		Algorithm: crypto_lib.AlgorithmECDHES,
-		ECDHES: crypto_lib.ECDHESParams{
+	params := cryptolib.AlgorithmParams{
+		Algorithm: cryptolib.AlgorithmECDHES,
+		ECDHES: cryptolib.ECDHESParams{
 			ContentEncryptionAlgorithm: "A128GCM",
 		},
 	}
@@ -130,9 +132,9 @@ func TestEncrypt_ECDHES_GetPublicKeyError(t *testing.T) {
 
 	svc := NewRuntimeCryptoService(pkiMock, nil)
 
-	params := crypto_lib.AlgorithmParams{
-		Algorithm: crypto_lib.AlgorithmECDHES,
-		ECDHES: crypto_lib.ECDHESParams{
+	params := cryptolib.AlgorithmParams{
+		Algorithm: cryptolib.AlgorithmECDHES,
+		ECDHES: cryptolib.ECDHESParams{
 			ContentEncryptionAlgorithm: "A128GCM",
 		},
 	}
@@ -144,7 +146,7 @@ func TestEncrypt_ECDHES_GetPublicKeyError(t *testing.T) {
 func TestEncrypt_UnsupportedAlgorithm(t *testing.T) {
 	svc := NewRuntimeCryptoService(nil, nil)
 
-	params := crypto_lib.AlgorithmParams{Algorithm: "UNSUPPORTED"}
+	params := cryptolib.AlgorithmParams{Algorithm: "UNSUPPORTED"}
 	_, _, err := svc.Encrypt(context.Background(), &kmprovider.KeyRef{KeyID: testKeyID}, params, []byte("data"))
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported algorithm")
@@ -153,9 +155,9 @@ func TestEncrypt_UnsupportedAlgorithm(t *testing.T) {
 // Encrypt – RSA-OAEP-256
 func TestEncrypt_RSAOAEP256_NilKeyRef(t *testing.T) {
 	svc := &runtimeCryptoService{pkiService: pkimock.NewPKIServiceInterfaceMock(t)}
-	params := crypto_lib.AlgorithmParams{
-		Algorithm:  crypto_lib.AlgorithmRSAOAEP256,
-		RSAOAEP256: crypto_lib.RSAOAEP256Params{ContentEncryptionAlgorithm: "A256GCM"},
+	params := cryptolib.AlgorithmParams{
+		Algorithm:  cryptolib.AlgorithmRSAOAEP256,
+		RSAOAEP256: cryptolib.RSAOAEP256Params{ContentEncryptionAlgorithm: "A256GCM"},
 	}
 
 	_, _, err := svc.Encrypt(context.Background(), nil, params, []byte("data"))
@@ -168,9 +170,9 @@ func TestEncrypt_RSAOAEP256_PKIError(t *testing.T) {
 
 	svc := &runtimeCryptoService{pkiService: pki}
 	keyRef := &kmprovider.KeyRef{KeyID: "key1"}
-	params := crypto_lib.AlgorithmParams{
-		Algorithm:  crypto_lib.AlgorithmRSAOAEP256,
-		RSAOAEP256: crypto_lib.RSAOAEP256Params{ContentEncryptionAlgorithm: "A256GCM"},
+	params := cryptolib.AlgorithmParams{
+		Algorithm:  cryptolib.AlgorithmRSAOAEP256,
+		RSAOAEP256: cryptolib.RSAOAEP256Params{ContentEncryptionAlgorithm: "A256GCM"},
 	}
 
 	_, _, err := svc.Encrypt(context.Background(), keyRef, params, []byte("data"))
@@ -188,9 +190,9 @@ func TestEncrypt_RSAOAEP256_NonRSAPublicKey(t *testing.T) {
 
 	svc := &runtimeCryptoService{pkiService: pki}
 	keyRef := &kmprovider.KeyRef{KeyID: "key1"}
-	params := crypto_lib.AlgorithmParams{
-		Algorithm:  crypto_lib.AlgorithmRSAOAEP256,
-		RSAOAEP256: crypto_lib.RSAOAEP256Params{ContentEncryptionAlgorithm: "A256GCM"},
+	params := cryptolib.AlgorithmParams{
+		Algorithm:  cryptolib.AlgorithmRSAOAEP256,
+		RSAOAEP256: cryptolib.RSAOAEP256Params{ContentEncryptionAlgorithm: "A256GCM"},
 	}
 
 	_, _, err = svc.Encrypt(context.Background(), keyRef, params, []byte("data"))
@@ -208,9 +210,9 @@ func TestEncrypt_RSAOAEP256_Success(t *testing.T) {
 
 	svc := &runtimeCryptoService{pkiService: pki}
 	keyRef := &kmprovider.KeyRef{KeyID: "key1"}
-	params := crypto_lib.AlgorithmParams{
-		Algorithm:  crypto_lib.AlgorithmRSAOAEP256,
-		RSAOAEP256: crypto_lib.RSAOAEP256Params{ContentEncryptionAlgorithm: "A256GCM"},
+	params := cryptolib.AlgorithmParams{
+		Algorithm:  cryptolib.AlgorithmRSAOAEP256,
+		RSAOAEP256: cryptolib.RSAOAEP256Params{ContentEncryptionAlgorithm: "A256GCM"},
 	}
 
 	ciphertext, details, err := svc.Encrypt(context.Background(), keyRef, params, nil)
@@ -223,9 +225,9 @@ func TestEncrypt_RSAOAEP256_Success(t *testing.T) {
 // Encrypt – ECDH-ES variants
 func TestEncrypt_ECDHES_NilKeyRef(t *testing.T) {
 	svc := &runtimeCryptoService{pkiService: pkimock.NewPKIServiceInterfaceMock(t)}
-	params := crypto_lib.AlgorithmParams{
-		Algorithm: crypto_lib.AlgorithmECDHES,
-		ECDHES:    crypto_lib.ECDHESParams{ContentEncryptionAlgorithm: "A256GCM"},
+	params := cryptolib.AlgorithmParams{
+		Algorithm: cryptolib.AlgorithmECDHES,
+		ECDHES:    cryptolib.ECDHESParams{ContentEncryptionAlgorithm: "A256GCM"},
 	}
 
 	_, _, err := svc.Encrypt(context.Background(), nil, params, []byte("data"))
@@ -238,9 +240,9 @@ func TestEncrypt_ECDHES_PKIError(t *testing.T) {
 
 	svc := &runtimeCryptoService{pkiService: pki}
 	keyRef := &kmprovider.KeyRef{KeyID: "key1"}
-	params := crypto_lib.AlgorithmParams{
-		Algorithm: crypto_lib.AlgorithmECDHES,
-		ECDHES:    crypto_lib.ECDHESParams{ContentEncryptionAlgorithm: "A256GCM"},
+	params := cryptolib.AlgorithmParams{
+		Algorithm: cryptolib.AlgorithmECDHES,
+		ECDHES:    cryptolib.ECDHESParams{ContentEncryptionAlgorithm: "A256GCM"},
 	}
 
 	_, _, err := svc.Encrypt(context.Background(), keyRef, params, []byte("data"))
@@ -258,9 +260,9 @@ func TestEncrypt_ECDHES_NonECPublicKey(t *testing.T) {
 
 	svc := &runtimeCryptoService{pkiService: pki}
 	keyRef := &kmprovider.KeyRef{KeyID: "key1"}
-	params := crypto_lib.AlgorithmParams{
-		Algorithm: crypto_lib.AlgorithmECDHES,
-		ECDHES:    crypto_lib.ECDHESParams{ContentEncryptionAlgorithm: "A256GCM"},
+	params := cryptolib.AlgorithmParams{
+		Algorithm: cryptolib.AlgorithmECDHES,
+		ECDHES:    cryptolib.ECDHESParams{ContentEncryptionAlgorithm: "A256GCM"},
 	}
 
 	_, _, err = svc.Encrypt(context.Background(), keyRef, params, nil)
@@ -268,11 +270,11 @@ func TestEncrypt_ECDHES_NonECPublicKey(t *testing.T) {
 }
 
 func TestEncrypt_ECDHESVariants_Success(t *testing.T) {
-	algorithms := []crypto_lib.Algorithm{
-		crypto_lib.AlgorithmECDHES,
-		crypto_lib.AlgorithmECDHESA128KW,
-		crypto_lib.AlgorithmECDHESA192KW,
-		crypto_lib.AlgorithmECDHESA256KW,
+	algorithms := []cryptolib.Algorithm{
+		cryptolib.AlgorithmECDHES,
+		cryptolib.AlgorithmECDHESA128KW,
+		cryptolib.AlgorithmECDHESA192KW,
+		cryptolib.AlgorithmECDHESA256KW,
 	}
 
 	for _, alg := range algorithms {
@@ -287,9 +289,9 @@ func TestEncrypt_ECDHESVariants_Success(t *testing.T) {
 
 			svc := &runtimeCryptoService{pkiService: pki}
 			keyRef := &kmprovider.KeyRef{KeyID: "key1"}
-			params := crypto_lib.AlgorithmParams{
+			params := cryptolib.AlgorithmParams{
 				Algorithm: alg,
-				ECDHES:    crypto_lib.ECDHESParams{ContentEncryptionAlgorithm: "A256GCM"},
+				ECDHES:    cryptolib.ECDHESParams{ContentEncryptionAlgorithm: "A256GCM"},
 			}
 
 			_, details, err := svc.Encrypt(context.Background(), keyRef, params, nil)
@@ -304,7 +306,7 @@ func TestEncrypt_ECDHESVariants_Success(t *testing.T) {
 // Decrypt – RSA-OAEP-256
 func TestDecrypt_RSAOAEP256_NilKeyRef(t *testing.T) {
 	svc := &runtimeCryptoService{pkiService: pkimock.NewPKIServiceInterfaceMock(t)}
-	params := crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmRSAOAEP256}
+	params := cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmRSAOAEP256}
 
 	_, err := svc.Decrypt(context.Background(), nil, params, []byte("ciphertext"))
 	assert.EqualError(t, err, "keyRef required for RSA-OAEP-256")
@@ -316,7 +318,7 @@ func TestDecrypt_RSAOAEP256_PKIError(t *testing.T) {
 
 	svc := &runtimeCryptoService{pkiService: pki}
 	keyRef := &kmprovider.KeyRef{KeyID: "key1"}
-	params := crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmRSAOAEP256}
+	params := cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmRSAOAEP256}
 
 	_, err := svc.Decrypt(context.Background(), keyRef, params, []byte("ciphertext"))
 	assert.Error(t, err)
@@ -331,7 +333,7 @@ func TestDecrypt_RSAOAEP256_NonRSAPrivateKey(t *testing.T) {
 
 	svc := &runtimeCryptoService{pkiService: pki}
 	keyRef := &kmprovider.KeyRef{KeyID: "key1"}
-	params := crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmRSAOAEP256}
+	params := cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmRSAOAEP256}
 
 	_, err = svc.Decrypt(context.Background(), keyRef, params, []byte("ciphertext"))
 	assert.EqualError(t, err, "key is not an RSA private key")
@@ -340,7 +342,7 @@ func TestDecrypt_RSAOAEP256_NonRSAPrivateKey(t *testing.T) {
 // Decrypt – ECDH-ES variants
 func TestDecrypt_ECDHES_NilKeyRef(t *testing.T) {
 	svc := &runtimeCryptoService{pkiService: pkimock.NewPKIServiceInterfaceMock(t)}
-	params := crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmECDHES}
+	params := cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmECDHES}
 
 	_, err := svc.Decrypt(context.Background(), nil, params, nil)
 	assert.EqualError(t, err, "keyRef required for ECDH-ES")
@@ -352,7 +354,7 @@ func TestDecrypt_ECDHES_PKIError(t *testing.T) {
 
 	svc := &runtimeCryptoService{pkiService: pki}
 	keyRef := &kmprovider.KeyRef{KeyID: "key1"}
-	params := crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmECDHES}
+	params := cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmECDHES}
 
 	_, err := svc.Decrypt(context.Background(), keyRef, params, nil)
 	assert.Error(t, err)
@@ -367,18 +369,18 @@ func TestDecrypt_ECDHES_NonECPrivateKey(t *testing.T) {
 
 	svc := &runtimeCryptoService{pkiService: pki}
 	keyRef := &kmprovider.KeyRef{KeyID: "key1"}
-	params := crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmECDHES}
+	params := cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmECDHES}
 
 	_, err = svc.Decrypt(context.Background(), keyRef, params, nil)
 	assert.EqualError(t, err, "key is not an EC private key")
 }
 
 func TestDecrypt_ECDHESVariants_RoundTrip(t *testing.T) {
-	algorithms := []crypto_lib.Algorithm{
-		crypto_lib.AlgorithmECDHES,
-		crypto_lib.AlgorithmECDHESA128KW,
-		crypto_lib.AlgorithmECDHESA192KW,
-		crypto_lib.AlgorithmECDHESA256KW,
+	algorithms := []cryptolib.Algorithm{
+		cryptolib.AlgorithmECDHES,
+		cryptolib.AlgorithmECDHESA128KW,
+		cryptolib.AlgorithmECDHESA192KW,
+		cryptolib.AlgorithmECDHESA256KW,
 	}
 
 	for _, alg := range algorithms {
@@ -395,17 +397,17 @@ func TestDecrypt_ECDHESVariants_RoundTrip(t *testing.T) {
 			svc := &runtimeCryptoService{pkiService: pki}
 			keyRef := &kmprovider.KeyRef{KeyID: "key1"}
 
-			encParams := crypto_lib.AlgorithmParams{
+			encParams := cryptolib.AlgorithmParams{
 				Algorithm: alg,
-				ECDHES:    crypto_lib.ECDHESParams{ContentEncryptionAlgorithm: "A256GCM"},
+				ECDHES:    cryptolib.ECDHESParams{ContentEncryptionAlgorithm: "A256GCM"},
 			}
 			ciphertext, encDetails, err := svc.Encrypt(context.Background(), keyRef, encParams, nil)
 			require.NoError(t, err)
 			require.NotNil(t, encDetails)
 
-			decParams := crypto_lib.AlgorithmParams{
+			decParams := cryptolib.AlgorithmParams{
 				Algorithm: alg,
-				ECDHES:    crypto_lib.ECDHESParams{EPK: encDetails.EPK, ContentEncryptionAlgorithm: "A256GCM"},
+				ECDHES:    cryptolib.ECDHESParams{EPK: encDetails.EPK, ContentEncryptionAlgorithm: "A256GCM"},
 			}
 			derivedCEK, err := svc.Decrypt(context.Background(), keyRef, decParams, ciphertext)
 			require.NoError(t, err)
@@ -427,9 +429,9 @@ func TestEncrypt_RSAOAEP_Success(t *testing.T) {
 
 	svc := &runtimeCryptoService{pkiService: pki}
 	keyRef := &kmprovider.KeyRef{KeyID: "key1"}
-	params := crypto_lib.AlgorithmParams{
-		Algorithm: crypto_lib.AlgorithmRSAOAEP,
-		RSAOAEP:   crypto_lib.RSAOAEPParams{ContentEncryptionAlgorithm: "A256GCM"},
+	params := cryptolib.AlgorithmParams{
+		Algorithm: cryptolib.AlgorithmRSAOAEP,
+		RSAOAEP:   cryptolib.RSAOAEPParams{ContentEncryptionAlgorithm: "A256GCM"},
 	}
 
 	ciphertext, details, err := svc.Encrypt(context.Background(), keyRef, params, nil)
@@ -442,24 +444,24 @@ func TestEncrypt_RSAOAEP_Success(t *testing.T) {
 func TestDecrypt_RSAVariants_RoundTrip(t *testing.T) {
 	tests := []struct {
 		name      string
-		encParams crypto_lib.AlgorithmParams
-		decParams crypto_lib.AlgorithmParams
+		encParams cryptolib.AlgorithmParams
+		decParams cryptolib.AlgorithmParams
 	}{
 		{
 			name: "RSA-OAEP-256",
-			encParams: crypto_lib.AlgorithmParams{
-				Algorithm:  crypto_lib.AlgorithmRSAOAEP256,
-				RSAOAEP256: crypto_lib.RSAOAEP256Params{ContentEncryptionAlgorithm: "A256GCM"},
+			encParams: cryptolib.AlgorithmParams{
+				Algorithm:  cryptolib.AlgorithmRSAOAEP256,
+				RSAOAEP256: cryptolib.RSAOAEP256Params{ContentEncryptionAlgorithm: "A256GCM"},
 			},
-			decParams: crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmRSAOAEP256},
+			decParams: cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmRSAOAEP256},
 		},
 		{
 			name: "RSA-OAEP",
-			encParams: crypto_lib.AlgorithmParams{
-				Algorithm: crypto_lib.AlgorithmRSAOAEP,
-				RSAOAEP:   crypto_lib.RSAOAEPParams{ContentEncryptionAlgorithm: "A256GCM"},
+			encParams: cryptolib.AlgorithmParams{
+				Algorithm: cryptolib.AlgorithmRSAOAEP,
+				RSAOAEP:   cryptolib.RSAOAEPParams{ContentEncryptionAlgorithm: "A256GCM"},
 			},
-			decParams: crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmRSAOAEP},
+			decParams: cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmRSAOAEP},
 		},
 	}
 
@@ -520,7 +522,7 @@ func TestGetPublicKeys_RSA(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, keys, 1)
 	assert.Equal(t, "key1", keys[0].KeyID)
-	assert.Equal(t, crypto_lib.AlgorithmRS256, keys[0].Algorithm)
+	assert.Equal(t, cryptolib.AlgorithmRS256, keys[0].Algorithm)
 	assert.Equal(t, &rsaKey.PublicKey, keys[0].PublicKey)
 	assert.Equal(t, "thumbprint-1", keys[0].Thumbprint)
 	assert.Equal(t, []byte("der"), keys[0].CertificateDER)
@@ -530,11 +532,11 @@ func TestGetPublicKeys_ECDSA(t *testing.T) {
 	tests := []struct {
 		name  string
 		curve elliptic.Curve
-		alg   crypto_lib.Algorithm
+		alg   cryptolib.Algorithm
 	}{
-		{"P-256", elliptic.P256(), crypto_lib.AlgorithmES256},
-		{"P-384", elliptic.P384(), crypto_lib.AlgorithmES384},
-		{"P-521", elliptic.P521(), crypto_lib.AlgorithmES512},
+		{"P-256", elliptic.P256(), cryptolib.AlgorithmES256},
+		{"P-384", elliptic.P384(), cryptolib.AlgorithmES384},
+		{"P-521", elliptic.P521(), cryptolib.AlgorithmES512},
 	}
 
 	for _, tt := range tests {
@@ -571,7 +573,7 @@ func TestGetPublicKeys_EdDSA(t *testing.T) {
 	keys, err := svc.GetPublicKeys(context.Background(), kmprovider.PublicKeyFilter{})
 	require.NoError(t, err)
 	require.Len(t, keys, 1)
-	assert.Equal(t, crypto_lib.AlgorithmEdDSA, keys[0].Algorithm)
+	assert.Equal(t, cryptolib.AlgorithmEdDSA, keys[0].Algorithm)
 }
 
 func TestGetPublicKeys_UnsupportedKeyTypeSkipped(t *testing.T) {
@@ -633,8 +635,50 @@ func TestGetPublicKeys_FilterByAlgorithm(t *testing.T) {
 
 	svc := &runtimeCryptoService{pkiService: pki, logger: newTestLogger()}
 	keys, err := svc.GetPublicKeys(context.Background(),
-		kmprovider.PublicKeyFilter{Algorithm: crypto_lib.AlgorithmES256})
+		kmprovider.PublicKeyFilter{Algorithm: cryptolib.AlgorithmES256})
 	require.NoError(t, err)
 	require.Len(t, keys, 1)
 	assert.Equal(t, "ec-key", keys[0].KeyID)
+}
+
+// GetTLSMaterial
+
+func TestGetTLSMaterial_NilPKIService(t *testing.T) {
+	svc := &runtimeCryptoService{pkiService: nil}
+	material, err := svc.GetTLSMaterial(context.Background())
+	assert.Nil(t, material)
+	assert.EqualError(t, err, "PKI service not initialized")
+}
+
+func TestGetTLSMaterial_GetTLSConfigFailure(t *testing.T) {
+	pkiMock := pkimock.NewPKIServiceInterfaceMock(t)
+	pkiMock.EXPECT().GetTLSConfig().Return(nil, errors.New("cert file not found"))
+
+	svc := &runtimeCryptoService{pkiService: pkiMock}
+	material, err := svc.GetTLSMaterial(context.Background())
+	assert.Nil(t, material)
+	assert.ErrorContains(t, err, "cert file not found")
+}
+
+func TestGetTLSMaterial_Success(t *testing.T) {
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	tlsCert := tls.Certificate{
+		PrivateKey: rsaKey,
+	}
+	tlsCfg := &tls.Config{
+		Certificates: []tls.Certificate{tlsCert},
+		MinVersion:   tls.VersionTLS12,
+	}
+
+	pkiMock := pkimock.NewPKIServiceInterfaceMock(t)
+	pkiMock.EXPECT().GetTLSConfig().Return(tlsCfg, nil)
+
+	svc := &runtimeCryptoService{pkiService: pkiMock}
+	material, err := svc.GetTLSMaterial(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, material)
+	assert.Equal(t, tlsCert, material.Certificate)
+	assert.Equal(t, uint16(tls.VersionTLS12), material.MinVersion)
 }

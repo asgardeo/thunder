@@ -47,7 +47,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
+	cryptolib "github.com/thunder-id/thunderid/internal/system/crypto_lib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	httpservice "github.com/thunder-id/thunderid/internal/system/http"
 	"github.com/thunder-id/thunderid/internal/system/jose/jws"
@@ -133,18 +133,18 @@ func (suite *JWTServiceTestSuite) SetupTest() {
 
 	cryptoMock := cryptomock.NewRuntimeCryptoProviderMock(suite.T())
 	cryptoMock.EXPECT().
-		Sign(mock.Anything, kmprovider.KeyRef{KeyID: "test-kid"}, crypto_lib.RSASHA256, mock.Anything).
+		Sign(mock.Anything, kmprovider.KeyRef{KeyID: "test-kid"}, cryptolib.RSASHA256, mock.Anything).
 		RunAndReturn(func(
-			_ context.Context, _ kmprovider.KeyRef, _ crypto_lib.SignAlgorithm, content []byte,
+			_ context.Context, _ kmprovider.KeyRef, _ cryptolib.SignAlgorithm, content []byte,
 		) ([]byte, error) {
-			return crypto_lib.Generate(content, crypto_lib.RSASHA256, suite.testPrivateKey)
+			return cryptolib.Generate(content, cryptolib.RSASHA256, suite.testPrivateKey)
 		}).Maybe()
 	cryptoMock.EXPECT().
 		GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{}).
 		Return([]kmprovider.PublicKeyInfo{
 			{
 				KeyID:      "test-kid",
-				Algorithm:  crypto_lib.AlgorithmRS256,
+				Algorithm:  cryptolib.AlgorithmRS256,
 				PublicKey:  &suite.testPrivateKey.PublicKey,
 				Thumbprint: "test-kid",
 			},
@@ -153,7 +153,7 @@ func (suite *JWTServiceTestSuite) SetupTest() {
 	suite.jwtService = &jwtService{
 		cryptoProvider: cryptoMock,
 		keyRef:         kmprovider.KeyRef{KeyID: "test-kid"},
-		signAlg:        crypto_lib.RSASHA256,
+		signAlg:        cryptolib.RSASHA256,
 		jwsAlg:         jws.RS256,
 		kid:            "test-kid",
 		logger:         log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService")),
@@ -194,7 +194,7 @@ func (suite *JWTServiceTestSuite) TestNewJWTService() {
 		Return([]kmprovider.PublicKeyInfo{
 			{
 				KeyID:      "test-kid",
-				Algorithm:  crypto_lib.AlgorithmRS256,
+				Algorithm:  cryptolib.AlgorithmRS256,
 				PublicKey:  &suite.testPrivateKey.PublicKey,
 				Thumbprint: "test-kid",
 			},
@@ -260,7 +260,7 @@ func (suite *JWTServiceTestSuite) TestInitScenarios() {
 					Return([]kmprovider.PublicKeyInfo{
 						{
 							KeyID:      "test-kid",
-							Algorithm:  crypto_lib.AlgorithmRS256,
+							Algorithm:  cryptolib.AlgorithmRS256,
 							PublicKey:  &privateKey.PublicKey,
 							Thumbprint: "test-kid",
 						},
@@ -1412,7 +1412,7 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignature() {
 					Return([]kmprovider.PublicKeyInfo{}, nil)
 				return &jwtService{
 					cryptoProvider: cryptoMock,
-					signAlg:        crypto_lib.RSASHA256,
+					signAlg:        cryptolib.RSASHA256,
 					jwsAlg:         jws.RS256,
 					kid:            "test-kid",
 					logger:         log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService")),
@@ -1805,7 +1805,7 @@ func (suite *JWTServiceTestSuite) createJWTWithCustomHeader(header map[string]in
 	signingInput := headerBase64 + "." + payloadBase64
 
 	// Sign
-	signature, err := crypto_lib.Generate([]byte(signingInput), crypto_lib.RSASHA256, suite.testPrivateKey)
+	signature, err := cryptolib.Generate([]byte(signingInput), cryptolib.RSASHA256, suite.testPrivateKey)
 	if err != nil {
 		suite.T().Fatalf("Failed to sign JWT for signing input %q: %v", signingInput, err)
 	}
@@ -1894,7 +1894,7 @@ func (suite *JWTServiceTestSuite) createJWTWithClaims(sub, aud, iss string, exp 
 	signingInput := headerBase64 + "." + payloadBase64
 
 	// Sign
-	signature, err := crypto_lib.Generate([]byte(signingInput), crypto_lib.RSASHA256, suite.testPrivateKey)
+	signature, err := cryptolib.Generate([]byte(signingInput), cryptolib.RSASHA256, suite.testPrivateKey)
 	if err != nil {
 		suite.T().Fatalf("Failed to sign JWT for signing input %q: %v", signingInput, err)
 	}
@@ -1928,7 +1928,7 @@ func (suite *JWTServiceTestSuite) createJWTWithCustomPayload(t *testing.T, paylo
 	payloadBase64 := base64.RawURLEncoding.EncodeToString(payloadJSON)
 
 	signingInput := headerBase64 + "." + payloadBase64
-	signature, err := crypto_lib.Generate([]byte(signingInput), crypto_lib.RSASHA256, suite.testPrivateKey)
+	signature, err := cryptolib.Generate([]byte(signingInput), cryptolib.RSASHA256, suite.testPrivateKey)
 	if err != nil {
 		t.Fatalf("Failed to sign JWT for signing input %q: %v", signingInput, err)
 	}
@@ -1947,25 +1947,25 @@ func (suite *JWTServiceTestSuite) TestInitWithECDSAKeys() {
 		name            string
 		curve           elliptic.Curve
 		expectedAlg     jws.Algorithm
-		expectedSignAlg crypto_lib.SignAlgorithm
+		expectedSignAlg cryptolib.SignAlgorithm
 	}{
 		{
 			name:            "P256Key",
 			curve:           elliptic.P256(),
 			expectedAlg:     jws.ES256,
-			expectedSignAlg: crypto_lib.ECDSASHA256,
+			expectedSignAlg: cryptolib.ECDSASHA256,
 		},
 		{
 			name:            "P384Key",
 			curve:           elliptic.P384(),
 			expectedAlg:     jws.ES384,
-			expectedSignAlg: crypto_lib.ECDSASHA384,
+			expectedSignAlg: cryptolib.ECDSASHA384,
 		},
 		{
 			name:            "P521Key",
 			curve:           elliptic.P521(),
 			expectedAlg:     jws.ES512,
-			expectedSignAlg: crypto_lib.ECDSASHA512,
+			expectedSignAlg: cryptolib.ECDSASHA512,
 		},
 	}
 
@@ -1974,7 +1974,7 @@ func (suite *JWTServiceTestSuite) TestInitWithECDSAKeys() {
 			ecKey, err := ecdsa.GenerateKey(tc.curve, rand.Reader)
 			assert.NoError(t, err)
 
-			alg := crypto_lib.Algorithm(string(tc.expectedAlg))
+			alg := cryptolib.Algorithm(string(tc.expectedAlg))
 			cryptoMock := cryptomock.NewRuntimeCryptoProviderMock(t)
 			cryptoMock.EXPECT().
 				GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{KeyID: "test-kid"}).
@@ -1987,9 +1987,9 @@ func (suite *JWTServiceTestSuite) TestInitWithECDSAKeys() {
 			cryptoMock.EXPECT().
 				Sign(mock.Anything, kmprovider.KeyRef{KeyID: "test-kid"}, tc.expectedSignAlg, mock.Anything).
 				RunAndReturn(func(
-					_ context.Context, _ kmprovider.KeyRef, sa crypto_lib.SignAlgorithm, content []byte,
+					_ context.Context, _ kmprovider.KeyRef, sa cryptolib.SignAlgorithm, content []byte,
 				) ([]byte, error) {
-					return crypto_lib.Generate(content, sa, ecKey)
+					return cryptolib.Generate(content, sa, ecKey)
 				}).Maybe()
 			cryptoMock.EXPECT().
 				GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{}).
@@ -2034,22 +2034,22 @@ func (suite *JWTServiceTestSuite) TestInitWithEd25519Key() {
 		GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{KeyID: "test-kid"}).
 		Return([]kmprovider.PublicKeyInfo{{
 			KeyID:      "test-kid",
-			Algorithm:  crypto_lib.AlgorithmEdDSA,
+			Algorithm:  cryptolib.AlgorithmEdDSA,
 			PublicKey:  priv.Public(),
 			Thumbprint: "test-kid",
 		}}, nil)
 	cryptoMock.EXPECT().
-		Sign(mock.Anything, kmprovider.KeyRef{KeyID: "test-kid"}, crypto_lib.ED25519, mock.Anything).
+		Sign(mock.Anything, kmprovider.KeyRef{KeyID: "test-kid"}, cryptolib.ED25519, mock.Anything).
 		RunAndReturn(func(
-			_ context.Context, _ kmprovider.KeyRef, sa crypto_lib.SignAlgorithm, content []byte,
+			_ context.Context, _ kmprovider.KeyRef, sa cryptolib.SignAlgorithm, content []byte,
 		) ([]byte, error) {
-			return crypto_lib.Generate(content, sa, priv)
+			return cryptolib.Generate(content, sa, priv)
 		}).Maybe()
 	cryptoMock.EXPECT().
 		GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{}).
 		Return([]kmprovider.PublicKeyInfo{{
 			KeyID:      "test-kid",
-			Algorithm:  crypto_lib.AlgorithmEdDSA,
+			Algorithm:  cryptolib.AlgorithmEdDSA,
 			PublicKey:  priv.Public(),
 			Thumbprint: "test-kid",
 		}}, nil).Maybe()
@@ -2060,7 +2060,7 @@ func (suite *JWTServiceTestSuite) TestInitWithEd25519Key() {
 
 	jwtSvc, ok := service.(*jwtService)
 	assert.True(suite.T(), ok)
-	assert.Equal(suite.T(), crypto_lib.ED25519, jwtSvc.signAlg)
+	assert.Equal(suite.T(), cryptolib.ED25519, jwtSvc.signAlg)
 	assert.Equal(suite.T(), jws.EdDSA, jwtSvc.jwsAlg)
 
 	token, _, svcErr := service.GenerateJWT(context.Background(),
@@ -2085,7 +2085,7 @@ func (suite *JWTServiceTestSuite) TestInitWithECPrivateKeyFormat() {
 		GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{KeyID: "test-kid"}).
 		Return([]kmprovider.PublicKeyInfo{{
 			KeyID:      "test-kid",
-			Algorithm:  crypto_lib.AlgorithmES256,
+			Algorithm:  cryptolib.AlgorithmES256,
 			PublicKey:  &ecKey.PublicKey,
 			Thumbprint: "test-kid",
 		}}, nil)
@@ -2096,7 +2096,7 @@ func (suite *JWTServiceTestSuite) TestInitWithECPrivateKeyFormat() {
 
 	jwtSvc, ok := service.(*jwtService)
 	assert.True(suite.T(), ok)
-	assert.Equal(suite.T(), crypto_lib.ECDSASHA256, jwtSvc.signAlg)
+	assert.Equal(suite.T(), cryptolib.ECDSASHA256, jwtSvc.signAlg)
 	assert.Equal(suite.T(), jws.ES256, jwtSvc.jwsAlg)
 }
 
@@ -2109,7 +2109,7 @@ func (suite *JWTServiceTestSuite) TestInitWithUnsupportedECCurve() {
 		GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{KeyID: "test-kid"}).
 		Return([]kmprovider.PublicKeyInfo{{
 			KeyID:      "test-kid",
-			Algorithm:  crypto_lib.Algorithm("EC-P224"),
+			Algorithm:  cryptolib.Algorithm("EC-P224"),
 			PublicKey:  &ecKey.PublicKey,
 			Thumbprint: "test-kid",
 		}}, nil)
@@ -2260,30 +2260,30 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKeyAlgorithmDe
 	// Test that VerifyJWTSignatureWithPublicKey correctly detects algorithm from header
 	testCases := []struct {
 		name        string
-		setupKey    func() (crypto.PrivateKey, crypto.PublicKey, crypto_lib.SignAlgorithm, jws.Algorithm)
+		setupKey    func() (crypto.PrivateKey, crypto.PublicKey, cryptolib.SignAlgorithm, jws.Algorithm)
 		expectError bool
 	}{
 		{
 			name: "jws.RS256Token",
-			setupKey: func() (crypto.PrivateKey, crypto.PublicKey, crypto_lib.SignAlgorithm, jws.Algorithm) {
+			setupKey: func() (crypto.PrivateKey, crypto.PublicKey, cryptolib.SignAlgorithm, jws.Algorithm) {
 				key, _ := rsa.GenerateKey(rand.Reader, 2048)
-				return key, &key.PublicKey, crypto_lib.RSASHA256, jws.RS256
+				return key, &key.PublicKey, cryptolib.RSASHA256, jws.RS256
 			},
 			expectError: false,
 		},
 		{
 			name: "jws.ES256Token",
-			setupKey: func() (crypto.PrivateKey, crypto.PublicKey, crypto_lib.SignAlgorithm, jws.Algorithm) {
+			setupKey: func() (crypto.PrivateKey, crypto.PublicKey, cryptolib.SignAlgorithm, jws.Algorithm) {
 				key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-				return key, &key.PublicKey, crypto_lib.ECDSASHA256, jws.ES256
+				return key, &key.PublicKey, cryptolib.ECDSASHA256, jws.ES256
 			},
 			expectError: false,
 		},
 		{
 			name: "jws.EdDSAToken",
-			setupKey: func() (crypto.PrivateKey, crypto.PublicKey, crypto_lib.SignAlgorithm, jws.Algorithm) {
+			setupKey: func() (crypto.PrivateKey, crypto.PublicKey, cryptolib.SignAlgorithm, jws.Algorithm) {
 				_, priv, _ := ed25519.GenerateKey(rand.Reader)
-				return priv, priv.Public(), crypto_lib.ED25519, jws.EdDSA
+				return priv, priv.Public(), cryptolib.ED25519, jws.EdDSA
 			},
 			expectError: false,
 		},
@@ -2296,9 +2296,9 @@ func (suite *JWTServiceTestSuite) TestVerifyJWTSignatureWithPublicKeyAlgorithmDe
 			keyRef := kmprovider.KeyRef{KeyID: "test-sign-key"}
 			cryptoMock.EXPECT().Sign(mock.Anything, keyRef, signAlg, mock.Anything).
 				RunAndReturn(func(
-					_ context.Context, _ kmprovider.KeyRef, _ crypto_lib.SignAlgorithm, content []byte,
+					_ context.Context, _ kmprovider.KeyRef, _ cryptolib.SignAlgorithm, content []byte,
 				) ([]byte, error) {
-					return crypto_lib.Generate(content, signAlg, priv)
+					return cryptolib.Generate(content, signAlg, priv)
 				}).Maybe()
 			jwtService := &jwtService{
 				cryptoProvider: cryptoMock,

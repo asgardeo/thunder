@@ -33,7 +33,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
+	cryptolib "github.com/thunder-id/thunderid/internal/system/crypto_lib"
 )
 
 type JWSUtilsTestSuite struct {
@@ -131,15 +131,15 @@ func (suite *JWSUtilsTestSuite) TestMapAlgorithmToSignAlgAllSupported() {
 	testCases := []struct {
 		name        string
 		alg         Algorithm
-		expectedAlg crypto_lib.SignAlgorithm
+		expectedAlg cryptolib.SignAlgorithm
 	}{
-		{"RS256", RS256, crypto_lib.RSASHA256},
-		{"RS512", RS512, crypto_lib.RSASHA512},
-		{"PS256", PS256, crypto_lib.RSAPSSSHA256},
-		{"ES256", ES256, crypto_lib.ECDSASHA256},
-		{"ES384", ES384, crypto_lib.ECDSASHA384},
-		{"ES512", ES512, crypto_lib.ECDSASHA512},
-		{"EdDSA", EdDSA, crypto_lib.ED25519},
+		{"RS256", RS256, cryptolib.RSASHA256},
+		{"RS512", RS512, cryptolib.RSASHA512},
+		{"PS256", PS256, cryptolib.RSAPSSSHA256},
+		{"ES256", ES256, cryptolib.ECDSASHA256},
+		{"ES384", ES384, cryptolib.ECDSASHA384},
+		{"ES512", ES512, cryptolib.ECDSASHA512},
+		{"EdDSA", EdDSA, cryptolib.ED25519},
 	}
 
 	for _, tc := range testCases {
@@ -168,7 +168,7 @@ func (suite *JWSUtilsTestSuite) TestMapAlgorithmToSignAlgUnsupported() {
 			alg, err := MapAlgorithmToSignAlg(tc.alg)
 
 			assert.Error(t, err)
-			assert.Equal(t, crypto_lib.SignAlgorithm(""), alg)
+			assert.Equal(t, cryptolib.SignAlgorithm(""), alg)
 			assert.Contains(t, err.Error(), "unsupported JWS alg")
 		})
 	}

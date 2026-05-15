@@ -30,7 +30,7 @@ import (
 	"time"
 
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
-	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
+	cryptolib "github.com/thunder-id/thunderid/internal/system/crypto_lib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 
@@ -118,7 +118,7 @@ func (s *TokenIntrospectionServiceTestSuite) TestIntrospectToken_InvalidSignatur
 	claimsEncoded := base64.RawURLEncoding.EncodeToString(claimsBytes)
 
 	signingInput := headerEncoded + "." + claimsEncoded
-	signature, err := crypto_lib.Generate([]byte(signingInput), crypto_lib.RSASHA256, differentKey)
+	signature, err := cryptolib.Generate([]byte(signingInput), cryptolib.RSASHA256, differentKey)
 	if err != nil {
 		s.T().Fatal("Error signing token:", err)
 	}
@@ -390,7 +390,7 @@ func (s *TokenIntrospectionServiceTestSuite) createToken(claims map[string]inter
 	claimsEncoded := base64.RawURLEncoding.EncodeToString(claimsBytes)
 
 	signingInput := headerEncoded + "." + claimsEncoded
-	signature, err := crypto_lib.Generate([]byte(signingInput), crypto_lib.RSASHA256, s.privateKey)
+	signature, err := cryptolib.Generate([]byte(signingInput), cryptolib.RSASHA256, s.privateKey)
 	if err != nil {
 		s.T().Fatal("Error signing token:", err)
 	}

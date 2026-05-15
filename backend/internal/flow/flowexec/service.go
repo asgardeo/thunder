@@ -33,7 +33,7 @@ import (
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/internal/system/config"
 	sysContext "github.com/thunder-id/thunderid/internal/system/context"
-	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
+	cryptolib "github.com/thunder-id/thunderid/internal/system/crypto_lib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -480,7 +480,7 @@ func (s *flowExecService) encryptEngineContext(ctx context.Context, engineCtx *E
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize engine context: %w", err)
 	}
-	params := crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmAESGCM}
+	params := cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmAESGCM}
 	ciphertext, _, err := s.cryptoSvc.Encrypt(ctx, nil, params, []byte(serialized.Context))
 	if err != nil {
 		return nil, fmt.Errorf("failed to encrypt context: %w", err)
@@ -674,7 +674,7 @@ func (s *flowExecService) getFlowContext(ctx context.Context, executionID string
 	}
 
 	if isContextEncrypted(dbModel.Context) {
-		decryptParams := crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmAESGCM}
+		decryptParams := cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmAESGCM}
 		decrypted, decryptErr := s.cryptoSvc.Decrypt(ctx, nil, decryptParams, []byte(dbModel.Context))
 		if decryptErr != nil {
 			logger.Error("Failed to decrypt flow context",

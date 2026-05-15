@@ -35,7 +35,7 @@ import (
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	"github.com/thunder-id/thunderid/internal/system/cache"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
+	cryptolib "github.com/thunder-id/thunderid/internal/system/crypto_lib"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
@@ -602,8 +602,8 @@ func TestEncryptedContext_SensitiveFieldsHidden(t *testing.T) {
 			func(
 				ctx context.Context,
 				_ *kmprovider.KeyRef,
-				_ crypto_lib.AlgorithmParams,
-				content []byte) ([]byte, *crypto_lib.CryptoDetails, error) {
+				_ cryptolib.AlgorithmParams,
+				content []byte) ([]byte, *cryptolib.CryptoDetails, error) {
 				encrypted, encErr := cfgSvc.Encrypt(ctx, content)
 				return encrypted, nil, encErr
 			})
@@ -671,8 +671,8 @@ func TestEncryptDecryptRoundTrip_AllFieldsPreserved(t *testing.T) {
 		RunAndReturn(func(
 			ctx context.Context,
 			_ *kmprovider.KeyRef,
-			_ crypto_lib.AlgorithmParams,
-			content []byte) ([]byte, *crypto_lib.CryptoDetails, error) {
+			_ cryptolib.AlgorithmParams,
+			content []byte) ([]byte, *cryptolib.CryptoDetails, error) {
 			encrypted, encErr := cfgSvc.Encrypt(ctx, content)
 			return encrypted, nil, encErr
 		})
@@ -680,7 +680,7 @@ func TestEncryptDecryptRoundTrip_AllFieldsPreserved(t *testing.T) {
 		RunAndReturn(func(
 			ctx context.Context,
 			_ *kmprovider.KeyRef,
-			_ crypto_lib.AlgorithmParams, content []byte) ([]byte, error) {
+			_ cryptolib.AlgorithmParams, content []byte) ([]byte, error) {
 			return cfgSvc.Decrypt(ctx, content)
 		})
 
@@ -717,7 +717,7 @@ func TestEncryptDecryptRoundTrip_AllFieldsPreserved(t *testing.T) {
 	// Step 2: Simulate getFlowContext decrypt path — call through the mock so RunAndReturn fires
 	decryptedBytes, err := mockCrypto.Decrypt(
 		context.Background(), nil,
-		crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmAESGCM},
+		cryptolib.AlgorithmParams{Algorithm: cryptolib.AlgorithmAESGCM},
 		[]byte(encryptedEngineCtx.Context))
 	assert.NoError(t, err)
 

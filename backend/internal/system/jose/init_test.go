@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
+	cryptolib "github.com/thunder-id/thunderid/internal/system/crypto_lib"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
@@ -83,7 +83,7 @@ func (suite *JOSEInitTestSuite) TestInitialize_Success() {
 		Return([]kmprovider.PublicKeyInfo{
 			{
 				KeyID:      "test-key-id",
-				Algorithm:  crypto_lib.AlgorithmRS256,
+				Algorithm:  cryptolib.AlgorithmRS256,
 				PublicKey:  &suite.testPrivateKey.PublicKey,
 				Thumbprint: "test-thumbprint",
 			},
@@ -131,7 +131,7 @@ func (suite *JOSEInitTestSuite) TestInitialize_ValidatesServiceInterfaces() {
 		Return([]kmprovider.PublicKeyInfo{
 			{
 				KeyID:      "test-key-id",
-				Algorithm:  crypto_lib.AlgorithmRS256,
+				Algorithm:  cryptolib.AlgorithmRS256,
 				PublicKey:  &suite.testPrivateKey.PublicKey,
 				Thumbprint: "test-thumbprint",
 			},

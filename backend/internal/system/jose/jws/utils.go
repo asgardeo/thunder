@@ -31,7 +31,7 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
+	cryptolib "github.com/thunder-id/thunderid/internal/system/crypto_lib"
 )
 
 // DecodeHeader decodes the header of a JWS token and returns it as a map.
@@ -55,22 +55,22 @@ func DecodeHeader(token string) (map[string]interface{}, error) {
 }
 
 // MapAlgorithmToSignAlg maps JWS alg header values to internal SignAlgorithm.
-func MapAlgorithmToSignAlg(jwsAlg Algorithm) (crypto_lib.SignAlgorithm, error) {
+func MapAlgorithmToSignAlg(jwsAlg Algorithm) (cryptolib.SignAlgorithm, error) {
 	switch jwsAlg {
 	case RS256:
-		return crypto_lib.RSASHA256, nil
+		return cryptolib.RSASHA256, nil
 	case RS512:
-		return crypto_lib.RSASHA512, nil
+		return cryptolib.RSASHA512, nil
 	case PS256:
-		return crypto_lib.RSAPSSSHA256, nil
+		return cryptolib.RSAPSSSHA256, nil
 	case ES256:
-		return crypto_lib.ECDSASHA256, nil
+		return cryptolib.ECDSASHA256, nil
 	case ES384:
-		return crypto_lib.ECDSASHA384, nil
+		return cryptolib.ECDSASHA384, nil
 	case ES512:
-		return crypto_lib.ECDSASHA512, nil
+		return cryptolib.ECDSASHA512, nil
 	case EdDSA:
-		return crypto_lib.ED25519, nil
+		return cryptolib.ED25519, nil
 	default:
 		return "", fmt.Errorf("unsupported JWS alg: %s", jwsAlg)
 	}

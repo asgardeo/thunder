@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
+	cryptolib "github.com/thunder-id/thunderid/internal/system/crypto_lib"
 	"github.com/thunder-id/thunderid/internal/system/jose/jws"
 )
 
@@ -97,7 +97,7 @@ func (suite *JWTUtilsTestSuite) createValidJWT() string {
 	payloadBase64 := base64.RawURLEncoding.EncodeToString(payloadJSON)
 	signingInput := headerBase64 + "." + payloadBase64
 
-	signature, err := crypto_lib.Generate([]byte(signingInput), crypto_lib.RSASHA256, suite.rsaPrivateKey)
+	signature, err := cryptolib.Generate([]byte(signingInput), cryptolib.RSASHA256, suite.rsaPrivateKey)
 	if err != nil {
 		suite.T().Fatalf("Failed to sign JWT: %v", err)
 	}

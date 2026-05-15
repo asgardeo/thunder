@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package crypto_lib
+package cryptolib
 
 import (
 	gocrypto "crypto"
