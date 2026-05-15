@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package cryptolab
+package crypto_lib
 
 import (
 	"crypto/aes"
@@ -25,6 +25,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha1" //nolint:gosec
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -34,11 +35,18 @@ import (
 // The key type must match the algorithm:
 //
 //   - AlgorithmAESGCM: key must be []byte (AES key). ciphertext is nonce+ciphertext. Returns plaintext.
+//   - AlgorithmRSAOAEP: key must be *rsa.PrivateKey. ciphertext is the wrapped CEK. Returns unwrapped CEK.
 //   - AlgorithmRSAOAEP256: key must be *rsa.PrivateKey. ciphertext is the wrapped CEK. Returns unwrapped CEK.
 //   - AlgorithmECDHES: key must be *ecdsa.PrivateKey. ciphertext is ignored.
 //     params.ECDHES.EPK and params.ECDHES.ContentEncryptionAlgorithm must be set. Returns derived CEK.
-//   - AlgorithmECDHESA128KW / AlgorithmECDHESA256KW: key must be *ecdsa.PrivateKey. ciphertext is wrapped CEK.
+//   - AlgorithmECDHESA128KW / AlgorithmECDHESA192KW / AlgorithmECDHESA256KW: key must be *ecdsa.PrivateKey.
+//     ciphertext is wrapped CEK.
 //     params.ECDHES.EPK must be set. Returns unwrapped CEK.
+//   - AlgorithmA128KW / AlgorithmA192KW / AlgorithmA256KW: key must be []byte (symmetric KEK).
+//     ciphertext is wrapped CEK. Returns unwrapped CEK.
+//   - AlgorithmA128GCMKW / AlgorithmA192GCMKW / AlgorithmA256GCMKW: key must be []byte (symmetric KEK).
+//     ciphertext is wrapped CEK.
+//     params.AESGCMKW.IV and params.AESGCMKW.Tag must be set. Returns unwrapped CEK.
 func Decrypt(key any, params AlgorithmParams, ciphertext []byte) ([]byte, error) {
 	switch params.Algorithm {
 	case AlgorithmAESGCM:
@@ -47,6 +55,12 @@ func Decrypt(key any, params AlgorithmParams, ciphertext []byte) ([]byte, error)
 			return nil, errors.New("AES-GCM requires a []byte key")
 		}
 		return decryptAESGCM(aesKey, ciphertext)
+	case AlgorithmRSAOAEP:
+		rsaPriv, ok := key.(*rsa.PrivateKey)
+		if !ok {
+			return nil, errors.New("RSA-OAEP requires a *rsa.PrivateKey")
+		}
+		return decryptRSAOAEP(rsaPriv, ciphertext)
 	case AlgorithmRSAOAEP256:
 		rsaPriv, ok := key.(*rsa.PrivateKey)
 		if !ok {
@@ -59,12 +73,24 @@ func Decrypt(key any, params AlgorithmParams, ciphertext []byte) ([]byte, error)
 			return nil, errors.New("ECDH-ES requires a *ecdsa.PrivateKey")
 		}
 		return decryptECDHES(ecPriv, params)
-	case AlgorithmECDHESA128KW, AlgorithmECDHESA256KW:
+	case AlgorithmECDHESA128KW, AlgorithmECDHESA192KW, AlgorithmECDHESA256KW:
 		ecPriv, ok := key.(*ecdsa.PrivateKey)
 		if !ok {
 			return nil, fmt.Errorf("%s requires a *ecdsa.PrivateKey", params.Algorithm)
 		}
 		return decryptECDHESKW(ecPriv, params, ciphertext)
+	case AlgorithmA128KW, AlgorithmA192KW, AlgorithmA256KW:
+		kek, ok := key.([]byte)
+		if !ok {
+			return nil, fmt.Errorf("%s requires a []byte key", params.Algorithm)
+		}
+		return decryptAESKW(kek, params.Algorithm, ciphertext)
+	case AlgorithmA128GCMKW, AlgorithmA192GCMKW, AlgorithmA256GCMKW:
+		kek, ok := key.([]byte)
+		if !ok {
+			return nil, fmt.Errorf("%s requires a []byte key", params.Algorithm)
+		}
+		return decryptAESGCMKW(kek, params.Algorithm, params, ciphertext)
 	default:
 		return nil, fmt.Errorf("unsupported algorithm: %s", params.Algorithm)
 	}
@@ -124,7 +150,10 @@ func decryptECDHESKW(ecdsaPriv *ecdsa.PrivateKey, params AlgorithmParams, conten
 		return nil, fmt.Errorf("ECDH key agreement failed: %w", err)
 	}
 	kekLen := 16
-	if params.Algorithm == AlgorithmECDHESA256KW {
+	switch params.Algorithm {
+	case AlgorithmECDHESA192KW:
+		kekLen = 24
+	case AlgorithmECDHESA256KW:
 		kekLen = 32
 	}
 	kek, err := ecdhConcatKDF(z, string(params.Algorithm), kekLen)
@@ -146,4 +175,51 @@ func requireECDHEPK(params AlgorithmParams, algorithm string) (*ecdh.PublicKey, 
 		return nil, errors.New("EPK must not be nil")
 	}
 	return epk, nil
+}
+
+func decryptRSAOAEP(rsaPriv *rsa.PrivateKey, content []byte) ([]byte, error) {
+	return rsa.DecryptOAEP(sha1.New(), rand.Reader, rsaPriv, content, nil) //nolint:gosec
+}
+
+func decryptAESKW(kek []byte, alg Algorithm, content []byte) ([]byte, error) {
+	expectedLen := 16
+	switch alg {
+	case AlgorithmA192KW:
+		expectedLen = 24
+	case AlgorithmA256KW:
+		expectedLen = 32
+	}
+	if len(kek) != expectedLen {
+		return nil, fmt.Errorf("%s requires a %d-byte key, got %d", alg, expectedLen, len(kek))
+	}
+	return ecdhAESKeyUnwrap(kek, content)
+}
+
+func decryptAESGCMKW(kek []byte, alg Algorithm, params AlgorithmParams, content []byte) ([]byte, error) {
+	expectedLen := 16
+	switch alg {
+	case AlgorithmA192GCMKW:
+		expectedLen = 24
+	case AlgorithmA256GCMKW:
+		expectedLen = 32
+	}
+	if len(kek) != expectedLen {
+		return nil, fmt.Errorf("%s requires a %d-byte key, got %d", alg, expectedLen, len(kek))
+	}
+	if len(params.AESGCMKW.IV) == 0 {
+		return nil, fmt.Errorf("IV required for %s decryption", alg)
+	}
+	if len(params.AESGCMKW.Tag) == 0 {
+		return nil, fmt.Errorf("authentication tag required for %s decryption", alg)
+	}
+	block, err := aes.NewCipher(kek)
+	if err != nil {
+		return nil, err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+	sealed := append(content, params.AESGCMKW.Tag...) //nolint:gocritic
+	return gcm.Open(nil, params.AESGCMKW.IV, sealed, nil)
 }

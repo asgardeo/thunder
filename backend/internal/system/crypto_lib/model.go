@@ -16,10 +16,10 @@
  * under the License.
  */
 
-// Package cryptolab provides pure cryptographic primitives: signing, encryption,
+// Package crypto_lib provides pure cryptographic primitives: signing, encryption,
 // decryption, hashing, and secure token utilities. It has no internal dependencies
 // and operates only on keys and data passed directly by the caller.
-package cryptolab
+package crypto_lib
 
 import (
 	gocrypto "crypto"
@@ -53,6 +53,22 @@ const (
 	AlgorithmECDHESA256KW Algorithm = "ECDH-ES+A256KW"
 	// AlgorithmAESGCM represents AES-GCM symmetric authenticated encryption.
 	AlgorithmAESGCM Algorithm = "AES-GCM"
+	// AlgorithmRSAOAEP represents RSA-OAEP key encryption with SHA-1 (RFC 7518 §4.3).
+	AlgorithmRSAOAEP Algorithm = "RSA-OAEP"
+	// AlgorithmECDHESA192KW represents ECDH-ES with AES-192 key wrap.
+	AlgorithmECDHESA192KW Algorithm = "ECDH-ES+A192KW"
+	// AlgorithmA128KW represents AES-128 Key Wrap.
+	AlgorithmA128KW Algorithm = "A128KW"
+	// AlgorithmA192KW represents AES-192 Key Wrap.
+	AlgorithmA192KW Algorithm = "A192KW"
+	// AlgorithmA256KW represents AES-256 Key Wrap.
+	AlgorithmA256KW Algorithm = "A256KW"
+	// AlgorithmA128GCMKW represents AES-128 GCM Key Wrap.
+	AlgorithmA128GCMKW Algorithm = "A128GCMKW"
+	// AlgorithmA192GCMKW represents AES-192 GCM Key Wrap.
+	AlgorithmA192GCMKW Algorithm = "A192GCMKW"
+	// AlgorithmA256GCMKW represents AES-256 GCM Key Wrap.
+	AlgorithmA256GCMKW Algorithm = "A256GCMKW"
 )
 
 // SignAlgorithm represents the supported digital signature algorithms.
@@ -78,21 +94,46 @@ const (
 // AlgorithmParams carries the algorithm and any algorithm-specific inputs for a crypto operation.
 // The relevant algorithm-specific ContentEncryptionAlgorithm must be set to the content encryption
 // algorithm (e.g. "A128GCM") for the following operations:
-//   - RSA-OAEP-256 encrypt (determines CEK size)
+//   - RSA-OAEP and RSA-OAEP-256 encrypt (determines CEK size)
 //   - ECDH-ES encrypt/decrypt (determines CEK size and is used as the KDF algorithm identifier)
-//   - ECDH-ES+A128KW / ECDH-ES+A256KW encrypt (determines CEK size)
+//   - ECDH-ES+A128KW / ECDH-ES+A192KW / ECDH-ES+A256KW encrypt (determines CEK size)
+//   - A128KW / A192KW / A256KW encrypt (determines CEK size)
+//   - A128GCMKW / A192GCMKW / A256GCMKW encrypt (determines CEK size)
 //
-// ECDH-ES+A128KW and ECDH-ES+A256KW decrypt do not require ContentEncryptionAlgorithm because
+// ECDH-ES+KW decrypt does not require ContentEncryptionAlgorithm because
 // the KDF uses the alg value (e.g. "ECDH-ES+A128KW") directly.
+// For AES-GCM Key Wrap decrypt, AESGCMKW.IV and AESGCMKW.Tag must be populated.
 type AlgorithmParams struct {
 	Algorithm  Algorithm
 	RSAOAEP256 RSAOAEP256Params
+	RSAOAEP    RSAOAEPParams
 	ECDHES     ECDHESParams
+	AESKW      AESKWParams
+	AESGCMKW   AESGCMKWParams
 }
 
 // RSAOAEP256Params carries RSA-OAEP-256-specific inputs.
 type RSAOAEP256Params struct {
 	ContentEncryptionAlgorithm Algorithm
+}
+
+// RSAOAEPParams carries RSA-OAEP (SHA-1)-specific inputs.
+type RSAOAEPParams struct {
+	ContentEncryptionAlgorithm Algorithm
+}
+
+// AESKWParams carries AES Key Wrap-specific inputs.
+type AESKWParams struct {
+	ContentEncryptionAlgorithm Algorithm
+}
+
+// AESGCMKWParams carries AES-GCM Key Wrap-specific inputs.
+// ContentEncryptionAlgorithm must be set during Encrypt to determine the CEK size.
+// IV and Tag must be populated during Decrypt with values from the JWE protected header.
+type AESGCMKWParams struct {
+	ContentEncryptionAlgorithm Algorithm
+	IV                         []byte
+	Tag                        []byte
 }
 
 // ECDHESParams carries ECDH-ES-specific inputs.
@@ -106,9 +147,12 @@ type ECDHESParams struct {
 // EPK is the generated ephemeral public key for ECDH-ES variants, to be embedded in the JWE header.
 // CEK is the content encryption key generated or derived during key establishment.
 // Nil CryptoDetails is returned for algorithms that produce no extra output (e.g. AES-GCM).
-// For RSA-OAEP-256 and ECDH-ES variants, both EPK (where applicable) and CEK are populated.
-// CEK is nil for AES-GCM; EPK is nil for RSA-OAEP-256 (no ephemeral key is generated).
+// For RSA-OAEP, RSA-OAEP-256 and ECDH-ES variants, both EPK (where applicable) and CEK are populated.
+// CEK is nil for AES-GCM; EPK is nil for RSA-OAEP and RSA-OAEP-256 (no ephemeral key is generated).
+// IV and Tag are set only for AES-GCM Key Wrap (A128GCMKW etc.) and must be embedded in the JWE protected header.
 type CryptoDetails struct {
-	EPK gocrypto.PublicKey // ECDH-ES variants only; nil for RSA-OAEP-256 and AES-GCM
+	EPK gocrypto.PublicKey // ECDH-ES variants only; nil for RSA-OAEP, RSA-OAEP-256 and AES-GCM
 	CEK []byte             // Generated or derived CEK; nil for AES-GCM
+	IV  []byte             // AES-GCM Key Wrap only: IV used to wrap the CEK
+	Tag []byte             // AES-GCM Key Wrap only: authentication tag from wrapping the CEK
 }

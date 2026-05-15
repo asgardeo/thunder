@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package cryptolab
+package crypto_lib
 
 import (
 	"crypto/ecdsa"
@@ -372,4 +372,212 @@ func TestDecryptUnsupportedAlgorithmFails(t *testing.T) {
 
 	_, err := Decrypt([]byte("key"), params, []byte("ciphertext"))
 	assert.Error(t, err)
+}
+
+// ----------------------------------------------------------------------------
+// RSA-OAEP tests
+// ----------------------------------------------------------------------------
+
+func TestRSAOAEPEncryptDecryptRoundTrip(t *testing.T) {
+	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	params := AlgorithmParams{
+		Algorithm: AlgorithmRSAOAEP,
+		RSAOAEP:   RSAOAEPParams{ContentEncryptionAlgorithm: "A256GCM"},
+	}
+
+	wrappedCEK, details, err := Encrypt(&privKey.PublicKey, &params, nil)
+	require.NoError(t, err)
+	require.NotNil(t, details)
+	assert.NotEmpty(t, wrappedCEK)
+	assert.NotEmpty(t, details.CEK)
+	assert.Nil(t, details.EPK)
+
+	decryptParams := AlgorithmParams{Algorithm: AlgorithmRSAOAEP}
+	unwrappedCEK, err := Decrypt(privKey, decryptParams, wrappedCEK)
+	require.NoError(t, err)
+	assert.Equal(t, details.CEK, unwrappedCEK)
+}
+
+func TestRSAOAEPMissingContentEncryptionAlgorithmFails(t *testing.T) {
+	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	params := AlgorithmParams{Algorithm: AlgorithmRSAOAEP, RSAOAEP: RSAOAEPParams{}}
+	_, _, err = Encrypt(&privKey.PublicKey, &params, nil)
+	assert.Error(t, err)
+}
+
+func TestRSAOAEPWrongKeyTypeFails(t *testing.T) {
+	params := AlgorithmParams{Algorithm: AlgorithmRSAOAEP}
+
+	_, _, err := Encrypt("not-an-rsa-key", &params, nil)
+	assert.Error(t, err)
+
+	_, err = Decrypt("not-an-rsa-key", params, []byte("wrapped"))
+	assert.Error(t, err)
+}
+
+// ----------------------------------------------------------------------------
+// ECDH-ES+A192KW tests
+// ----------------------------------------------------------------------------
+
+func TestECDHESA192KWEncryptDecryptRoundTrip(t *testing.T) {
+	receiverKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	require.NoError(t, err)
+
+	encParams := AlgorithmParams{
+		Algorithm: AlgorithmECDHESA192KW,
+		ECDHES:    ECDHESParams{ContentEncryptionAlgorithm: "A192GCM"},
+	}
+
+	wrappedCEK, details, err := Encrypt(&receiverKey.PublicKey, &encParams, nil)
+	require.NoError(t, err)
+	require.NotNil(t, details)
+	assert.NotEmpty(t, wrappedCEK)
+	assert.NotNil(t, details.EPK)
+	assert.NotEmpty(t, details.CEK)
+
+	decParams := AlgorithmParams{
+		Algorithm: AlgorithmECDHESA192KW,
+		ECDHES:    ECDHESParams{EPK: details.EPK},
+	}
+	unwrappedCEK, err := Decrypt(receiverKey, decParams, wrappedCEK)
+	require.NoError(t, err)
+	assert.Equal(t, details.CEK, unwrappedCEK)
+}
+
+// ----------------------------------------------------------------------------
+// AES Key Wrap tests
+// ----------------------------------------------------------------------------
+
+func TestAESKWEncryptDecryptRoundTrip(t *testing.T) {
+	testCases := []struct {
+		alg     Algorithm
+		keySize int
+	}{
+		{AlgorithmA128KW, 16},
+		{AlgorithmA192KW, 24},
+		{AlgorithmA256KW, 32},
+	}
+
+	for _, tc := range testCases {
+		t.Run(string(tc.alg), func(t *testing.T) {
+			kek := make([]byte, tc.keySize)
+			_, err := rand.Read(kek)
+			require.NoError(t, err)
+
+			encParams := AlgorithmParams{
+				Algorithm: tc.alg,
+				AESKW:     AESKWParams{ContentEncryptionAlgorithm: "A256GCM"},
+			}
+
+			wrappedCEK, details, err := Encrypt(kek, &encParams, nil)
+			require.NoError(t, err)
+			require.NotNil(t, details)
+			assert.NotEmpty(t, wrappedCEK)
+			assert.NotEmpty(t, details.CEK)
+			assert.Nil(t, details.EPK)
+
+			decParams := AlgorithmParams{Algorithm: tc.alg}
+			unwrappedCEK, err := Decrypt(kek, decParams, wrappedCEK)
+			require.NoError(t, err)
+			assert.Equal(t, details.CEK, unwrappedCEK)
+		})
+	}
+}
+
+func TestAESKWWrongKeyTypeFails(t *testing.T) {
+	for _, alg := range []Algorithm{AlgorithmA128KW, AlgorithmA192KW, AlgorithmA256KW} {
+		t.Run(string(alg), func(t *testing.T) {
+			params := AlgorithmParams{
+				Algorithm: alg,
+				AESKW:     AESKWParams{ContentEncryptionAlgorithm: "A256GCM"},
+			}
+			_, _, err := Encrypt("not-a-byte-slice", &params, nil)
+			assert.Error(t, err)
+		})
+	}
+}
+
+func TestAESKWWrongKeySizeFails(t *testing.T) {
+	wrongKey := make([]byte, 32) // A128KW expects 16 bytes
+	params := AlgorithmParams{
+		Algorithm: AlgorithmA128KW,
+		AESKW:     AESKWParams{ContentEncryptionAlgorithm: "A256GCM"},
+	}
+	_, _, err := Encrypt(wrongKey, &params, nil)
+	assert.Error(t, err)
+}
+
+// ----------------------------------------------------------------------------
+// AES-GCM Key Wrap tests
+// ----------------------------------------------------------------------------
+
+func TestAESGCMKWEncryptDecryptRoundTrip(t *testing.T) {
+	testCases := []struct {
+		alg     Algorithm
+		keySize int
+	}{
+		{AlgorithmA128GCMKW, 16},
+		{AlgorithmA192GCMKW, 24},
+		{AlgorithmA256GCMKW, 32},
+	}
+
+	for _, tc := range testCases {
+		t.Run(string(tc.alg), func(t *testing.T) {
+			kek := make([]byte, tc.keySize)
+			_, err := rand.Read(kek)
+			require.NoError(t, err)
+
+			encParams := AlgorithmParams{
+				Algorithm: tc.alg,
+				AESGCMKW:  AESGCMKWParams{ContentEncryptionAlgorithm: "A256GCM"},
+			}
+
+			wrappedCEK, details, err := Encrypt(kek, &encParams, nil)
+			require.NoError(t, err)
+			require.NotNil(t, details)
+			assert.NotEmpty(t, wrappedCEK)
+			assert.NotEmpty(t, details.CEK)
+			assert.NotEmpty(t, details.IV)
+			assert.NotEmpty(t, details.Tag)
+			assert.Nil(t, details.EPK)
+
+			decParams := AlgorithmParams{
+				Algorithm: tc.alg,
+				AESGCMKW:  AESGCMKWParams{IV: details.IV, Tag: details.Tag},
+			}
+			unwrappedCEK, err := Decrypt(kek, decParams, wrappedCEK)
+			require.NoError(t, err)
+			assert.Equal(t, details.CEK, unwrappedCEK)
+		})
+	}
+}
+
+func TestAESGCMKWMissingIVFails(t *testing.T) {
+	kek := make([]byte, 16)
+	_, _ = rand.Read(kek)
+
+	params := AlgorithmParams{
+		Algorithm: AlgorithmA128GCMKW,
+		AESGCMKW:  AESGCMKWParams{Tag: []byte("tag-tag-tag-tag-")},
+	}
+	_, err := Decrypt(kek, params, []byte("wrapped"))
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "IV required")
+}
+
+func TestAESGCMKWMissingTagFails(t *testing.T) {
+	kek := make([]byte, 16)
+	_, _ = rand.Read(kek)
+
+	params := AlgorithmParams{
+		Algorithm: AlgorithmA128GCMKW,
+		AESGCMKW:  AESGCMKWParams{IV: []byte("iv-iv-iv-iv-iv--")},
+	}
+	_, err := Decrypt(kek, params, []byte("wrapped"))
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "authentication tag required")
 }

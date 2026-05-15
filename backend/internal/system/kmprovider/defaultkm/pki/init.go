@@ -16,18 +16,9 @@
  * under the License.
  */
 
-// Package jwt provides functionalities for handling JSON Web Tokens (JWTs).
-package jwt
+package pki
 
-import (
-	"time"
-
-	httpservice "github.com/thunder-id/thunderid/internal/system/http"
-	"github.com/thunder-id/thunderid/internal/system/kmprovider"
-)
-
-// Initialize initializes the JWT service.
-func Initialize(runtimeProvider kmprovider.RuntimeCryptoProvider) (JWTServiceInterface, error) {
-	httpClient := httpservice.NewHTTPClientWithTimeout(10 * time.Second)
-	return newJWTService(httpClient, runtimeProvider)
+// Initialize initializes the PKI service, loading all key/certificate pairs from configuration.
+func Initialize() (PKIServiceInterface, error) {
+	return newPKIService()
 }

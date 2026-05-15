@@ -27,9 +27,9 @@ import (
 )
 
 // TestEncryptionService_Encrypt_NoDefaultKey covers lines 48-50: when the
-// encryptionService has no default key, Encrypt should return an error.
+// configCryptoService has no default key, Encrypt should return an error.
 func TestEncryptionService_Encrypt_NoDefaultKey(t *testing.T) {
-	es := &encryptionService{
+	es := &configCryptoService{
 		defaultKeyID: "",
 		keys:         map[string][]byte{},
 	}
@@ -42,7 +42,7 @@ func TestEncryptionService_Encrypt_NoDefaultKey(t *testing.T) {
 // stored key has an invalid AES size, the underlying Encrypt call returns an
 // error that the service propagates.
 func TestEncryptionService_Encrypt_InvalidKeySize(t *testing.T) {
-	es := &encryptionService{
+	es := &configCryptoService{
 		defaultKeyID: "bad-key",
 		keys:         map[string][]byte{"bad-key": {0x01}}, // 1 byte — invalid AES key length
 	}

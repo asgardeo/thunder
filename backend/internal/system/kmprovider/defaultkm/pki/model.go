@@ -16,35 +16,34 @@
  * under the License.
  */
 
-package kmprovider
+package pki
 
 import (
-	gocrypto "crypto"
+	"crypto"
 	"crypto/tls"
-
-	"github.com/thunder-id/thunderid/internal/system/cryptolab"
 )
 
-// KeyRef identifies a cryptographic key by its ID.
-type KeyRef struct {
-	KeyID string
-}
+// PKIAlgorithm represents the algorithm used in the PKI.
+type PKIAlgorithm string
 
-// PublicKeyFilter specifies criteria for filtering public keys in GetPublicKeys.
-type PublicKeyFilter struct {
-	KeyID     string
-	Algorithm cryptolab.Algorithm
-}
+const (
+	// RSA represents the RSA algorithm.
+	RSA PKIAlgorithm = "RSA"
+	// P256 represents the P-256 elliptic curve algorithm.
+	P256 PKIAlgorithm = "P-256"
+	// P384 represents the P-384 elliptic curve algorithm.
+	P384 PKIAlgorithm = "P-384"
+	// P521 represents the P-521 elliptic curve algorithm.
+	P521 PKIAlgorithm = "P-521"
+	// Ed25519 represents the Ed25519 elliptic curve algorithm.
+	Ed25519 PKIAlgorithm = "Ed25519"
+)
 
-// PublicKeyInfo describes a public key returned by GetPublicKeys.
-type PublicKeyInfo struct {
-	KeyID      string
-	Algorithm  cryptolab.Algorithm
-	PublicKey  gocrypto.PublicKey
-	Thumbprint string
-}
-
-// TLSMaterial holds the TLS certificate material for a key reference.
-type TLSMaterial struct {
+// PKI represents a Public Key Infrastructure entity.
+type PKI struct {
+	ID          string
+	Algorithm   PKIAlgorithm
+	PrivateKey  crypto.PrivateKey
 	Certificate tls.Certificate
+	ThumbPrint  string
 }

@@ -48,7 +48,7 @@ import (
 	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
-	"github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm/pkiservice"
+	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 	"github.com/thunder-id/thunderid/internal/system/observability"
 )
 
@@ -62,7 +62,7 @@ func Initialize(
 	jweService jwe.JWEServiceInterface,
 	flowExecService flowexec.FlowExecServiceInterface,
 	observabilitySvc observability.ObservabilityServiceInterface,
-	pkiService pkiservice.PKIServiceInterface,
+	runtimeCrypto kmprovider.RuntimeCryptoProvider,
 	ouService ou.OrganizationUnitServiceInterface,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	authzService authz.AuthorizationServiceInterface,
@@ -77,14 +77,14 @@ func Initialize(
 		return err
 	}
 
-	jwks.Initialize(mux, pkiService)
+	jwks.Initialize(mux, runtimeCrypto)
 	httpClient := syshttp.NewHTTPClientWithCheckRedirect(func(req *http.Request, _ []*http.Request) error {
 		return syshttp.IsSSRFSafeURL(req.URL.String())
 	})
 	resolver := jwksresolver.Initialize(httpClient)
 	tokenBuilder, tokenValidator := tokenservice.Initialize(jwtService, jweService, resolver, idpService)
 	scopeValidator := scope.Initialize()
-	discoveryService := discovery.Initialize(mux, pkiService)
+	discoveryService := discovery.Initialize(mux, runtimeCrypto)
 	parService := par.Initialize(mux, inboundClient, authnProvider, jwtService, discoveryService,
 		resourceService)
 	grantHandlerProvider, err := granthandlers.Initialize(

@@ -26,29 +26,25 @@ import (
 
 	"github.com/thunder-id/thunderid/internal/system/config"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
-	"github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm/pkiservice"
+	"github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm/pki"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
 var (
-	globalRuntimeSvc kmprovider.RuntimeCryptoProvider
-	globalCfgSvc     kmprovider.ConfigCryptoProvider
-	globalOnce       sync.Once
-	initErr          error
+	globalCfgSvc kmprovider.ConfigCryptoProvider
+	globalOnce   sync.Once
+	initErr      error
 )
 
-// GetRuntimeCryptoService returns the singleton RuntimeCryptoProvider for the default key manager.
-func GetRuntimeCryptoService() (kmprovider.RuntimeCryptoProvider, error) {
+// GetConfigCryptoService returns the singleton ConfigCryptoProvider for the default key manager.
+//
+// Deprecated
+func GetConfigCryptoService() (kmprovider.ConfigCryptoProvider, error) {
 	globalOnce.Do(func() {
-		globalRuntimeSvc, globalCfgSvc, initErr = Initialize()
+		_, globalCfgSvc, initErr = Initialize()
 	})
-	return globalRuntimeSvc, initErr
-}
-
-// GetEncryptionService returns the singleton ConfigCryptoProvider for the default key manager.
-func GetEncryptionService() (kmprovider.ConfigCryptoProvider, error) {
-	if _, err := GetRuntimeCryptoService(); err != nil {
-		return nil, err
+	if initErr != nil {
+		return nil, initErr
 	}
 	return globalCfgSvc, nil
 }
@@ -67,7 +63,7 @@ func Initialize() (kmprovider.RuntimeCryptoProvider, kmprovider.ConfigCryptoProv
 		return nil, nil, err
 	}
 
-	pkiSvc, err := pkiservice.Initialize()
+	pkiSvc, err := pki.Initialize()
 	if err != nil {
 		logger.Warn("PKI service unavailable; asymmetric operations will fail",
 			log.String("reason", err.Error()))
@@ -89,5 +85,5 @@ func initConfigProvider() (kmprovider.ConfigCryptoProvider, error) {
 	if len(key) != 16 && len(key) != 24 && len(key) != 32 {
 		return nil, errors.New("invalid AES key length: must be 16, 24, or 32 bytes")
 	}
-	return newEncryptionService(key), nil
+	return newConfigCryptoService(key), nil
 }

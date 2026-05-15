@@ -16,9 +16,9 @@
  * under the License.
  */
 
-// Package pkiservice loads PEM key/certificate pairs from configuration and provides
+// Package pki loads PEM key/certificate pairs from configuration and provides
 // key material lookup by ID for the default key manager.
-package pkiservice
+package pki
 
 import (
 	"crypto"
@@ -33,7 +33,7 @@ import (
 	"slices"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/crypto_lib/hash"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/jose/jws"
 	"github.com/thunder-id/thunderid/internal/system/log"

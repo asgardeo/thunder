@@ -21,25 +21,26 @@ package defaultkm
 import (
 	"context"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rsa"
 	"errors"
 	"fmt"
 
-	"github.com/thunder-id/thunderid/internal/system/cryptolab"
+	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
-	"github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm/pkiservice"
+	"github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm/pki"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
 type runtimeCryptoService struct {
-	pkiService pkiservice.PKIServiceInterface
+	pkiService pki.PKIServiceInterface
 	cfgService kmprovider.ConfigCryptoProvider
 	logger     *log.Logger
 }
 
 // NewRuntimeCryptoService creates a RuntimeCryptoProvider backed by the given PKI and config services.
 func NewRuntimeCryptoService(
-	pkiSvc pkiservice.PKIServiceInterface,
+	pkiSvc pki.PKIServiceInterface,
 	cfgSvc kmprovider.ConfigCryptoProvider,
 ) kmprovider.RuntimeCryptoProvider {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "RuntimeCryptoService"))
@@ -51,72 +52,74 @@ func NewRuntimeCryptoService(
 }
 
 func (s *runtimeCryptoService) Encrypt(
-	ctx context.Context, keyRef *kmprovider.KeyRef, params cryptolab.AlgorithmParams, content []byte,
-) ([]byte, *cryptolab.CryptoDetails, error) {
+	ctx context.Context, keyRef *kmprovider.KeyRef, params crypto_lib.AlgorithmParams, content []byte,
+) ([]byte, *crypto_lib.CryptoDetails, error) {
 	switch params.Algorithm {
-	case cryptolab.AlgorithmAESGCM:
+	case crypto_lib.AlgorithmAESGCM:
 		if s.cfgService == nil {
 			return nil, nil, errors.New("config crypto service not initialized")
 		}
 		encrypted, err := s.cfgService.Encrypt(ctx, content)
 		return encrypted, nil, err
-	case cryptolab.AlgorithmRSAOAEP256:
+	case crypto_lib.AlgorithmRSAOAEP, crypto_lib.AlgorithmRSAOAEP256:
 		if keyRef == nil {
-			return nil, nil, errors.New("keyRef required for RSA-OAEP-256")
+			return nil, nil, fmt.Errorf("keyRef required for %s", params.Algorithm)
 		}
 		rsaPub, err := s.getRSAPublicKey(*keyRef)
 		if err != nil {
 			return nil, nil, err
 		}
-		return cryptolab.Encrypt(rsaPub, &params, content)
-	case cryptolab.AlgorithmECDHES, cryptolab.AlgorithmECDHESA128KW, cryptolab.AlgorithmECDHESA256KW:
+		return crypto_lib.Encrypt(rsaPub, &params, content)
+	case crypto_lib.AlgorithmECDHES,
+		crypto_lib.AlgorithmECDHESA128KW, crypto_lib.AlgorithmECDHESA192KW, crypto_lib.AlgorithmECDHESA256KW:
 		if keyRef == nil {
-			return nil, nil, errors.New("keyRef required for ECDH-ES")
+			return nil, nil, fmt.Errorf("keyRef required for %s", params.Algorithm)
 		}
 		ecPub, err := s.getECPublicKey(*keyRef)
 		if err != nil {
 			return nil, nil, err
 		}
-		return cryptolab.Encrypt(ecPub, &params, content)
+		return crypto_lib.Encrypt(ecPub, &params, content)
 	default:
 		return nil, nil, fmt.Errorf("unsupported algorithm: %s", params.Algorithm)
 	}
 }
 
 func (s *runtimeCryptoService) Decrypt(
-	ctx context.Context, keyRef *kmprovider.KeyRef, params cryptolab.AlgorithmParams, content []byte,
+	ctx context.Context, keyRef *kmprovider.KeyRef, params crypto_lib.AlgorithmParams, content []byte,
 ) ([]byte, error) {
 	switch params.Algorithm {
-	case cryptolab.AlgorithmAESGCM:
+	case crypto_lib.AlgorithmAESGCM:
 		if s.cfgService == nil {
 			return nil, errors.New("config crypto service not initialized")
 		}
 		return s.cfgService.Decrypt(ctx, content)
-	case cryptolab.AlgorithmRSAOAEP256:
+	case crypto_lib.AlgorithmRSAOAEP, crypto_lib.AlgorithmRSAOAEP256:
 		if keyRef == nil {
-			return nil, errors.New("keyRef required for RSA-OAEP-256")
+			return nil, fmt.Errorf("keyRef required for %s", params.Algorithm)
 		}
 		rsaPriv, err := s.getRSAPrivateKey(*keyRef)
 		if err != nil {
 			return nil, err
 		}
-		return cryptolab.Decrypt(rsaPriv, params, content)
-	case cryptolab.AlgorithmECDHES, cryptolab.AlgorithmECDHESA128KW, cryptolab.AlgorithmECDHESA256KW:
+		return crypto_lib.Decrypt(rsaPriv, params, content)
+	case crypto_lib.AlgorithmECDHES,
+		crypto_lib.AlgorithmECDHESA128KW, crypto_lib.AlgorithmECDHESA192KW, crypto_lib.AlgorithmECDHESA256KW:
 		if keyRef == nil {
-			return nil, errors.New("keyRef required for ECDH-ES")
+			return nil, fmt.Errorf("keyRef required for %s", params.Algorithm)
 		}
 		ecPriv, err := s.getECPrivateKey(*keyRef)
 		if err != nil {
 			return nil, err
 		}
-		return cryptolab.Decrypt(ecPriv, params, content)
+		return crypto_lib.Decrypt(ecPriv, params, content)
 	default:
 		return nil, fmt.Errorf("unsupported algorithm: %s", params.Algorithm)
 	}
 }
 
 func (s *runtimeCryptoService) Sign(
-	_ context.Context, keyRef kmprovider.KeyRef, algorithm cryptolab.SignAlgorithm, content []byte,
+	_ context.Context, keyRef kmprovider.KeyRef, algorithm crypto_lib.SignAlgorithm, content []byte,
 ) ([]byte, error) {
 	if s.pkiService == nil {
 		return nil, errors.New("PKI service not initialized")
@@ -126,13 +129,63 @@ func (s *runtimeCryptoService) Sign(
 		return nil, fmt.Errorf("key not found for id %s: [%s] %s",
 			keyRef.KeyID, svcErr.Code, svcErr.Error.DefaultValue)
 	}
-	return cryptolab.Generate(content, algorithm, privKey)
+	return crypto_lib.Generate(content, algorithm, privKey)
 }
 
 func (s *runtimeCryptoService) GetPublicKeys(
-	_ context.Context, _ kmprovider.PublicKeyFilter,
+	_ context.Context, filter kmprovider.PublicKeyFilter,
 ) ([]kmprovider.PublicKeyInfo, error) {
-	return nil, errors.New("not implemented")
+	if s.pkiService == nil {
+		return nil, errors.New("PKI service not initialized")
+	}
+
+	allCerts, svcErr := s.pkiService.GetAllX509Certificates()
+	if svcErr != nil {
+		return nil, fmt.Errorf("failed to retrieve certificates: [%s] %s",
+			svcErr.Code, svcErr.Error.DefaultValue)
+	}
+
+	keys := make([]kmprovider.PublicKeyInfo, 0, len(allCerts))
+	for id, cert := range allCerts {
+		var alg crypto_lib.Algorithm
+		switch pub := cert.PublicKey.(type) {
+		case *rsa.PublicKey:
+			_ = pub
+			alg = crypto_lib.AlgorithmRS256
+		case *ecdsa.PublicKey:
+			switch pub.Curve.Params().Name {
+			case "P-384":
+				alg = crypto_lib.AlgorithmES384
+			case "P-521":
+				alg = crypto_lib.AlgorithmES512
+			default:
+				alg = crypto_lib.AlgorithmES256
+			}
+		case ed25519.PublicKey:
+			_ = pub
+			alg = crypto_lib.AlgorithmEdDSA
+		default:
+			s.logger.Debug("Unsupported public key type; skipping", log.String("keyID", id))
+			continue
+		}
+
+		if filter.KeyID != "" && filter.KeyID != id {
+			continue
+		}
+		if filter.Algorithm != "" && filter.Algorithm != alg {
+			continue
+		}
+
+		keys = append(keys, kmprovider.PublicKeyInfo{
+			KeyID:          id,
+			Algorithm:      alg,
+			PublicKey:      cert.PublicKey,
+			Thumbprint:     s.pkiService.GetCertThumbprint(id),
+			CertificateDER: cert.Raw,
+		})
+	}
+
+	return keys, nil
 }
 
 func (s *runtimeCryptoService) GetTLSMaterial(

@@ -25,31 +25,31 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/thunder-id/thunderid/internal/system/cryptolab"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/crypto_lib"
+	"github.com/thunder-id/thunderid/internal/system/crypto_lib/hash"
 	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 )
 
-type encryptionService struct {
+type configCryptoService struct {
 	defaultKeyID string
 	keys         map[string][]byte
 }
 
-func newEncryptionService(key []byte) kmprovider.ConfigCryptoProvider {
+func newConfigCryptoService(key []byte) kmprovider.ConfigCryptoProvider {  
 	kid := hash.GenerateThumbprint(key)
-	return &encryptionService{
+	return &configCryptoService{
 		defaultKeyID: kid,
 		keys:         map[string][]byte{kid: key},
 	}
 }
 
-func (es *encryptionService) Encrypt(_ context.Context, plaintext []byte) ([]byte, error) {
+func (es *configCryptoService) Encrypt(_ context.Context, plaintext []byte) ([]byte, error) {
 	key := es.defaultKey()
 	if len(key) == 0 {
 		return nil, errors.New("default encryption key not found")
 	}
-	ciphertext, _, err := cryptolab.Encrypt(
-		key, &cryptolab.AlgorithmParams{Algorithm: cryptolab.AlgorithmAESGCM}, plaintext,
+	ciphertext, _, err := crypto_lib.Encrypt(
+		key, &crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmAESGCM}, plaintext,
 	)
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (es *encryptionService) Encrypt(_ context.Context, plaintext []byte) ([]byt
 	return jsonData, nil
 }
 
-func (es *encryptionService) Decrypt(_ context.Context, encodedData []byte) ([]byte, error) {
+func (es *configCryptoService) Decrypt(_ context.Context, encodedData []byte) ([]byte, error) {
 	var encData EncryptedData
 	if err := json.Unmarshal(encodedData, &encData); err != nil {
 		return nil, fmt.Errorf("invalid data format: %w", err)
@@ -82,17 +82,17 @@ func (es *encryptionService) Decrypt(_ context.Context, encodedData []byte) ([]b
 	if len(key) == 0 {
 		return nil, errors.New("decryption key not found for kid")
 	}
-	return cryptolab.Decrypt(key, cryptolab.AlgorithmParams{Algorithm: cryptolab.AlgorithmAESGCM}, ciphertext)
+	return crypto_lib.Decrypt(key, crypto_lib.AlgorithmParams{Algorithm: crypto_lib.AlgorithmAESGCM}, ciphertext)
 }
 
-func (es *encryptionService) defaultKey() []byte {
+func (es *configCryptoService) defaultKey() []byte {
 	if es.defaultKeyID == "" || len(es.keys) == 0 {
 		return nil
 	}
 	return es.keys[es.defaultKeyID]
 }
 
-func (es *encryptionService) keyForDecrypt(kid string) []byte {
+func (es *configCryptoService) keyForDecrypt(kid string) []byte {
 	if kid == "" || len(es.keys) == 0 {
 		return nil
 	}
