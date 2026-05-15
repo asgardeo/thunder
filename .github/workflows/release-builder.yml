@@ -396,6 +396,17 @@ jobs:
           show-cert-info: 'true'
           product-name: ${{ env.PRODUCT_NAME }}
 
+      - name: ⚙️ Set up Node.js for Frontend Build
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager: 'npm'
+
+      - name: 📦 Install pnpm for Frontend Build
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          run_install: false
+
       - name: 🔨 Build Release Artifacts
         uses: ./.github/actions/build-multiplatform
 
@@ -644,13 +655,13 @@ jobs:
 
           # Update the react-sdk sample app package.json
           cd samples/apps/react-sdk-sample
-          pnpm version $NEXT_VERSION --no-git-tag-version --allow-same-version
+          pnpm version $NEXT_VERSION --no-git-tag-version --allow-same-version --no-git-checks
 
           cd "$GITHUB_WORKSPACE"
 
           # Update the react-api-based sample app package.json
           cd samples/apps/react-api-based-sample
-          pnpm version $NEXT_VERSION --no-git-tag-version --allow-same-version
+          pnpm version $NEXT_VERSION --no-git-tag-version --allow-same-version --no-git-checks
 
           cd "$GITHUB_WORKSPACE"
           echo "✅ Updated sample apps version to $NEXT_VERSION"
