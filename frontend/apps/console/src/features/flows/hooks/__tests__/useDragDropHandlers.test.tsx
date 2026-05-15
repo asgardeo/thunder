@@ -73,6 +73,15 @@ vi.mock('../../utils/autoAssignConnections', () => ({
   default: vi.fn(),
 }));
 
+// Mock widgetUtils
+const {mockWidgetNeedsViewContainer} = vi.hoisted(() => ({
+  mockWidgetNeedsViewContainer: vi.fn().mockReturnValue(false),
+}));
+
+vi.mock('../../utils/widgetUtils', () => ({
+  widgetNeedsViewContainer: mockWidgetNeedsViewContainer,
+}));
+
 describe('useDragDropHandlers', () => {
   const mockOnStepLoad = vi.fn((step: Step) => step);
   const mockSetNodes = vi.fn();
@@ -134,6 +143,7 @@ describe('useDragDropHandlers', () => {
     vi.clearAllMocks();
     mockGetNodes.mockReturnValue([]);
     mockGetEdges.mockReturnValue([]);
+    mockWidgetNeedsViewContainer.mockReturnValue(false);
   });
 
   afterEach(async () => {
@@ -240,6 +250,117 @@ describe('useDragDropHandlers', () => {
       });
 
       expect(mockSetNodes).not.toHaveBeenCalled();
+    });
+
+    it('should return early when widget needs a view container', () => {
+      mockWidgetNeedsViewContainer.mockReturnValue(true);
+
+      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+        wrapper: createWrapper(),
+      });
+
+      const sourceData: DragSourceData = {
+        dragged: createMockResource({resourceType: ResourceTypes.Widget, type: 'SIGNIN'}),
+      };
+      const event = createMockDragEvent(100, 200);
+
+      act(() => {
+        result.current.addCanvasNode(
+          event as unknown as Parameters<typeof result.current.addCanvasNode>[0],
+          sourceData,
+          {},
+        );
+      });
+
+      expect(mockSetNodes).not.toHaveBeenCalled();
+      expect(mockSetEdges).not.toHaveBeenCalled();
+      expect(mockOnResourceDropOnCanvas).not.toHaveBeenCalled();
+    });
+
+    it('should handle widget drop on canvas when widget does not need a view container', () => {
+      mockWidgetNeedsViewContainer.mockReturnValue(false);
+
+      const mockNodes: Node[] = [{id: 'node-1', position: {x: 0, y: 0}, data: {}}];
+      const mockEdges: Edge[] = [];
+      mockGetNodes.mockReturnValue(mockNodes);
+      mockGetEdges.mockReturnValue(mockEdges);
+      mockOnWidgetLoad.mockReturnValue([mockNodes, mockEdges, null, null]);
+
+      const {result} = renderHook(() => useDragDropHandlers(defaultProps), {
+        wrapper: createWrapper(),
+      });
+
+      const widgetResource: Resource = createMockResource({
+        resourceType: ResourceTypes.Widget,
+        type: 'SIGNIN',
+      });
+      const sourceData: DragSourceData = {dragged: widgetResource};
+      const event = createMockDragEvent(100, 200);
+
+      act(() => {
+        result.current.addCanvasNode(
+          event as unknown as Parameters<typeof result.current.addCanvasNode>[0],
+          sourceData,
+          {},
+        );
+      });
+
+      expect(mockOnWidgetLoad).toHaveBeenCalledWith(
+        widgetResource as Widget,
+        widgetResource as Widget,
+        mockNodes,
+        mockEdges,
+      );
+      expect(mockSetNodes).toHaveBeenCalled();
+      expect(mockSetEdges).toHaveBeenCalled();
+      expect(mockOnResourceDropOnCanvas).toHaveBeenCalled();
+    });
+
+    it('should call autoAssignConnections when dropping standalone widget on canvas with metadata', () => {
+      const mockAutoAssignConnections = vi.mocked(autoAssignConnections);
+      mockWidgetNeedsViewContainer.mockReturnValue(false);
+
+      const mockNodes: Node[] = [{id: 'node-1', position: {x: 0, y: 0}, data: {}}];
+      mockGetNodes.mockReturnValue(mockNodes);
+      mockGetEdges.mockReturnValue([]);
+      mockOnWidgetLoad.mockReturnValue([mockNodes, [], null, null]);
+
+      const propsWithMetadata: UseDragDropHandlersProps = {
+        ...defaultProps,
+        metadata: {
+          flowType: 'LOGIN',
+          supportedExecutors: [],
+          connectorConfigs: {
+            multiAttributeLoginEnabled: false,
+            accountVerificationEnabled: false,
+          },
+          attributeProfile: 'default',
+          attributeMetadata: [],
+          executorConnections: [{executorName: 'executor1', connections: ['step-2']}],
+        },
+      };
+
+      const {result} = renderHook(() => useDragDropHandlers(propsWithMetadata), {
+        wrapper: createWrapper(),
+      });
+
+      const sourceData: DragSourceData = {
+        dragged: createMockResource({resourceType: ResourceTypes.Widget, type: 'SIGNIN'}),
+      };
+      const event = createMockDragEvent(100, 200);
+
+      act(() => {
+        result.current.addCanvasNode(
+          event as unknown as Parameters<typeof result.current.addCanvasNode>[0],
+          sourceData,
+          {},
+        );
+      });
+
+      expect(mockAutoAssignConnections).toHaveBeenCalledWith(
+        mockNodes,
+        propsWithMetadata.metadata?.executorConnections,
+      );
     });
 
     it('should not add node when native event lacks clientX/clientY', () => {

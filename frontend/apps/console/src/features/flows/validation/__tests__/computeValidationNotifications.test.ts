@@ -359,6 +359,29 @@ describe('computeValidationNotifications', () => {
 
       expect(result.has('form-1_FORM_NO_SUBMIT_BUTTON')).toBe(false);
     });
+
+    it('should treat dynamic input placeholder as an input-like field for submit validation', () => {
+      const nodes = [
+        createElementNode('step-1', [
+          {
+            id: 'form-1',
+            type: 'BLOCK',
+            category: 'BLOCK',
+            components: [
+              {
+                id: 'dynamic-inputs',
+                type: 'DYNAMIC_INPUT_PLACEHOLDER',
+                category: 'DISPLAY',
+              },
+            ],
+          },
+        ]),
+      ];
+
+      const result = computeValidationNotifications(nodes, VALIDATION_RULES, t);
+
+      expect(result.has('form-1_FORM_NO_SUBMIT_BUTTON')).toBe(true);
+    });
   });
 
   describe('Execution validation', () => {

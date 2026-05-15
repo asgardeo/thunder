@@ -495,6 +495,58 @@ describe('generateUnconnectedEdges', () => {
     });
   });
 
+  describe('onIncomplete edges', () => {
+    it('should not generate incomplete edge when edge already exists with correct target', () => {
+      const nodes: Node[] = [
+        createMockNode({
+          id: 'step-1',
+          data: {action: {onSuccess: 'step-2', onIncomplete: 'step-3'}},
+        }),
+        createMockNode({id: 'step-2'}),
+        createMockNode({id: 'step-3'}),
+      ];
+
+      const existingEdges: Edge[] = [
+        createMockEdge({
+          id: 'existing-success',
+          source: 'step-1',
+          sourceHandle: 'step-1_NEXT',
+          target: 'step-2',
+        }),
+        createMockEdge({
+          id: 'existing-incomplete',
+          source: 'step-1',
+          sourceHandle: 'step-1_INCOMPLETE',
+          target: 'step-3',
+        }),
+      ];
+
+      const result = generateUnconnectedEdges(existingEdges, nodes, 'default');
+      expect(result).toEqual([]);
+    });
+
+    it('should generate edge for step-level action with onIncomplete', () => {
+      const nodes: Node[] = [
+        createMockNode({
+          id: 'step-1',
+          data: {
+            action: {onSuccess: 'step-2', onIncomplete: 'step-3'},
+          },
+        }),
+        createMockNode({id: 'step-2'}),
+        createMockNode({id: 'step-3'}),
+      ];
+
+      const result = generateUnconnectedEdges([], nodes, 'smoothstep');
+
+      expect(result).toHaveLength(2);
+      const incompleteEdge = result.find((edge) => edge.id === 'step-1_INCOMPLETE_MISSING_EDGE');
+      expect(incompleteEdge).toBeDefined();
+      expect(incompleteEdge?.sourceHandle).toBe('step-1_INCOMPLETE');
+      expect(incompleteEdge?.target).toBe('step-3');
+    });
+  });
+
   describe('Edge cases', () => {
     it('should handle action with falsy onSuccess value', () => {
       const nodes: Node[] = [

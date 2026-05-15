@@ -92,6 +92,33 @@ const generateUnconnectedEdges = (currentEdges: Edge[], currentNodes: Node[], ed
           }
         }
       }
+
+      // Process onIncomplete edges
+      if ('onIncomplete' in action && action.onIncomplete) {
+        const expectedIncompleteTarget: string = action.onIncomplete as string;
+
+        if (nodeIds.has(expectedIncompleteTarget)) {
+          const existingIncompleteEdge: Edge | undefined = currentEdges.find(
+            (edge: Edge) =>
+              edge.source === stepId &&
+              edge.sourceHandle === `${stepId}${VisualFlowConstants.FLOW_BUILDER_INCOMPLETE_HANDLE_SUFFIX}`,
+          );
+
+          if (existingIncompleteEdge?.target !== expectedIncompleteTarget) {
+            missingEdges.push({
+              animated: false,
+              id: `${stepId}_INCOMPLETE_MISSING_EDGE`,
+              markerEnd: {
+                type: MarkerType.Arrow,
+              },
+              source: stepId,
+              sourceHandle: `${stepId}${VisualFlowConstants.FLOW_BUILDER_INCOMPLETE_HANDLE_SUFFIX}`,
+              target: expectedIncompleteTarget,
+              type: edgeStyle,
+            });
+          }
+        }
+      }
     }
   };
 

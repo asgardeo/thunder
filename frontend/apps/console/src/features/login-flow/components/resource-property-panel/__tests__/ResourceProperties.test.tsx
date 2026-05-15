@@ -1157,7 +1157,7 @@ describe('ResourceProperties', () => {
       expect(mockOnChange).toHaveBeenCalledWith('label', 'test string', resource, undefined);
     });
 
-    it('should convert number values to string in onChange', () => {
+    it('should preserve number values in onChange', () => {
       const resource = createMockResource({
         category: ElementCategories.Field,
       });
@@ -1174,7 +1174,7 @@ describe('ResourceProperties', () => {
       const triggerButton = screen.getByTestId('trigger-change-maxLength');
       fireEvent.click(triggerButton);
 
-      expect(mockOnChange).toHaveBeenCalledWith('maxLength', '100', resource, undefined);
+      expect(mockOnChange).toHaveBeenCalledWith('maxLength', 100, resource, undefined);
     });
 
     it('should convert null values to empty string in onChange', () => {

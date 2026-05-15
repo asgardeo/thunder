@@ -85,6 +85,18 @@ describe('CommonWidgetPropertyFactory', () => {
       expect(container.firstChild).toBeNull();
     });
 
+    it('should return null for Provisioning widget', () => {
+      const resource: Resource = {
+        id: 'widget-10',
+        type: WidgetTypes.Provisioning,
+        config: {},
+      } as Resource;
+
+      const {container} = render(<CommonWidgetPropertyFactory resource={resource} />);
+
+      expect(container.firstChild).toBeNull();
+    });
+
     it('should return null for unknown widget type', () => {
       const resource: Resource = {
         id: 'widget-unknown',

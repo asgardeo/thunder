@@ -18,7 +18,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-assignment, react/require-default-props */
 
-import {render, screen, fireEvent, waitFor, cleanup} from '@thunderid/test-utils';
+import {render, screen, fireEvent, waitFor, cleanup, act} from '@thunderid/test-utils';
 import type {Node, Edge} from '@xyflow/react';
 import React from 'react';
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
@@ -173,6 +173,18 @@ type DragOverCallback = (event: {
 
 let capturedOnDragEnd: DragEndCallback | null = null;
 let capturedOnDragOver: DragOverCallback | null = null;
+
+const triggerCapturedDragEnd = (event: Parameters<DragEndCallback>[0]): void => {
+  act(() => {
+    capturedOnDragEnd?.(event);
+  });
+};
+
+const triggerCapturedDragOver = (event: Parameters<DragOverCallback>[0]): void => {
+  act(() => {
+    capturedOnDragOver?.(event);
+  });
+};
 
 // Mock @dnd-kit/react
 vi.mock('@dnd-kit/react', () => ({
@@ -760,22 +772,20 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate form drop on canvas
-      if (capturedOnDragEnd) {
-        capturedOnDragEnd({
-          operation: {
-            source: {
-              data: {
-                dragged: {type: 'FORM'},
-              },
-            },
-            target: {
-              id: 'flow-builder-canvas_test',
-              data: {},
+      triggerCapturedDragEnd({
+        operation: {
+          source: {
+            data: {
+              dragged: {type: 'FORM'},
             },
           },
-          canceled: false,
-        });
-      }
+          target: {
+            id: 'flow-builder-canvas_test',
+            data: {},
+          },
+        },
+        canceled: false,
+      });
 
       await waitFor(() => {
         const dialog = screen.getByTestId('form-requires-view-dialog');
@@ -787,22 +797,20 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate input drop on canvas
-      if (capturedOnDragEnd) {
-        capturedOnDragEnd({
-          operation: {
-            source: {
-              data: {
-                dragged: {category: 'FIELD'},
-              },
-            },
-            target: {
-              id: 'flow-builder-canvas_test',
-              data: {},
+      triggerCapturedDragEnd({
+        operation: {
+          source: {
+            data: {
+              dragged: {category: 'FIELD'},
             },
           },
-          canceled: false,
-        });
-      }
+          target: {
+            id: 'flow-builder-canvas_test',
+            data: {},
+          },
+        },
+        canceled: false,
+      });
 
       await waitFor(() => {
         const dialog = screen.getByTestId('form-requires-view-dialog');
@@ -814,22 +822,20 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate input drop on view
-      if (capturedOnDragEnd) {
-        capturedOnDragEnd({
-          operation: {
-            source: {
-              data: {
-                dragged: {category: 'FIELD'},
-              },
-            },
-            target: {
-              id: 'flow-builder-view_test',
-              data: {},
+      triggerCapturedDragEnd({
+        operation: {
+          source: {
+            data: {
+              dragged: {category: 'FIELD'},
             },
           },
-          canceled: false,
-        });
-      }
+          target: {
+            id: 'flow-builder-view_test',
+            data: {},
+          },
+        },
+        canceled: false,
+      });
 
       await waitFor(() => {
         const dialog = screen.getByTestId('form-requires-view-dialog');
@@ -841,22 +847,20 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate widget drop on canvas
-      if (capturedOnDragEnd) {
-        capturedOnDragEnd({
-          operation: {
-            source: {
-              data: {
-                dragged: {resourceType: 'WIDGET'},
-              },
-            },
-            target: {
-              id: 'flow-builder-canvas_test',
-              data: {},
+      triggerCapturedDragEnd({
+        operation: {
+          source: {
+            data: {
+              dragged: {resourceType: 'WIDGET'},
             },
           },
-          canceled: false,
-        });
-      }
+          target: {
+            id: 'flow-builder-canvas_test',
+            data: {},
+          },
+        },
+        canceled: false,
+      });
 
       await waitFor(() => {
         const dialog = screen.getByTestId('form-requires-view-dialog');
@@ -864,21 +868,54 @@ describe('DecoratedVisualFlow', () => {
       });
     });
 
+    it('should skip the container dialog for standalone widgets dropped on canvas', async () => {
+      renderComponent(<DecoratedVisualFlow {...defaultProps} />);
+
+      triggerCapturedDragEnd({
+        operation: {
+          source: {
+            data: {
+              dragged: {
+                resourceType: 'WIDGET',
+                config: {
+                  data: {
+                    steps: [
+                      {
+                        type: 'TASK_EXECUTION',
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+          target: {
+            id: 'flow-builder-canvas_test',
+            data: {},
+          },
+        },
+        canceled: false,
+      });
+
+      await waitFor(() => {
+        const dialog = screen.getByTestId('form-requires-view-dialog');
+        expect(dialog).toHaveAttribute('data-open', 'false');
+      });
+    });
+
     it('should return early when event is canceled', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate canceled drag event
-      if (capturedOnDragEnd) {
-        capturedOnDragEnd({
-          operation: {
-            source: {
-              data: {dragged: {}},
-            },
-            target: null,
+      triggerCapturedDragEnd({
+        operation: {
+          source: {
+            data: {dragged: {}},
           },
-          canceled: true,
-        });
-      }
+          target: null,
+        },
+        canceled: true,
+      });
 
       // Dialog should remain closed
       const dialog = screen.getByTestId('form-requires-view-dialog');
@@ -889,15 +926,13 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drag event without source
-      if (capturedOnDragEnd) {
-        capturedOnDragEnd({
-          operation: {
-            source: null,
-            target: {id: 'target-1', data: {}},
-          },
-          canceled: false,
-        });
-      }
+      triggerCapturedDragEnd({
+        operation: {
+          source: null,
+          target: {id: 'target-1', data: {}},
+        },
+        canceled: false,
+      });
 
       // Component should still be rendered
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
@@ -907,24 +942,22 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate reordering drag event
-      if (capturedOnDragEnd) {
-        capturedOnDragEnd({
-          operation: {
-            source: {
-              data: {
-                isReordering: true,
-                stepId: 'step-1',
-                dragged: {},
-              },
-            },
-            target: {
-              id: 'element-1',
-              data: {},
+      triggerCapturedDragEnd({
+        operation: {
+          source: {
+            data: {
+              isReordering: true,
+              stepId: 'step-1',
+              dragged: {},
             },
           },
-          canceled: false,
-        });
-      }
+          target: {
+            id: 'element-1',
+            data: {},
+          },
+        },
+        canceled: false,
+      });
 
       // updateNodeData should be called for reordering
       expect(mockUpdateNodeData).toHaveBeenCalled();
@@ -960,24 +993,22 @@ describe('DecoratedVisualFlow', () => {
       });
 
       // Simulate reordering drag event
-      if (capturedOnDragEnd) {
-        capturedOnDragEnd({
-          operation: {
-            source: {
-              data: {
-                isReordering: true,
-                stepId: 'step-1',
-                dragged: {},
-              },
-            },
-            target: {
-              id: 'element-1',
-              data: {},
+      triggerCapturedDragEnd({
+        operation: {
+          source: {
+            data: {
+              isReordering: true,
+              stepId: 'step-1',
+              dragged: {},
             },
           },
-          canceled: false,
-        });
-      }
+          target: {
+            id: 'element-1',
+            data: {},
+          },
+        },
+        canceled: false,
+      });
 
       expect(mockUpdateNodeData).toHaveBeenCalledWith('step-1', expect.any(Function));
     });
@@ -998,24 +1029,22 @@ describe('DecoratedVisualFlow', () => {
       });
 
       // Simulate reordering drag event
-      if (capturedOnDragEnd) {
-        capturedOnDragEnd({
-          operation: {
-            source: {
-              data: {
-                isReordering: true,
-                stepId: 'step-1',
-                dragged: {},
-              },
-            },
-            target: {
-              id: 'element-1',
-              data: {},
+      triggerCapturedDragEnd({
+        operation: {
+          source: {
+            data: {
+              isReordering: true,
+              stepId: 'step-1',
+              dragged: {},
             },
           },
-          canceled: false,
-        });
-      }
+          target: {
+            id: 'element-1',
+            data: {},
+          },
+        },
+        canceled: false,
+      });
 
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });
@@ -1024,24 +1053,22 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate reordering without stepId
-      if (capturedOnDragEnd) {
-        capturedOnDragEnd({
-          operation: {
-            source: {
-              data: {
-                isReordering: true,
-                stepId: null,
-                dragged: {},
-              },
-            },
-            target: {
-              id: 'element-1',
-              data: {},
+      triggerCapturedDragEnd({
+        operation: {
+          source: {
+            data: {
+              isReordering: true,
+              stepId: null,
+              dragged: {},
             },
           },
-          canceled: false,
-        });
-      }
+          target: {
+            id: 'element-1',
+            data: {},
+          },
+        },
+        canceled: false,
+      });
 
       // Should return early without calling updateNodeData
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
@@ -1062,22 +1089,20 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drop on view
-      if (capturedOnDragEnd) {
-        capturedOnDragEnd({
-          operation: {
-            source: {
-              data: {
-                dragged: {type: 'BUTTON'},
-              },
-            },
-            target: {
-              id: 'flow-builder-view_test',
-              data: {},
+      triggerCapturedDragEnd({
+        operation: {
+          source: {
+            data: {
+              dragged: {type: 'BUTTON'},
             },
           },
-          canceled: false,
-        });
-      }
+          target: {
+            id: 'flow-builder-view_test',
+            data: {},
+          },
+        },
+        canceled: false,
+      });
 
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
     });
@@ -1086,22 +1111,20 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drop on form
-      if (capturedOnDragEnd) {
-        capturedOnDragEnd({
-          operation: {
-            source: {
-              data: {
-                dragged: {type: 'TEXT_INPUT'},
-              },
-            },
-            target: {
-              id: 'flow-builder-form_test',
-              data: {},
+      triggerCapturedDragEnd({
+        operation: {
+          source: {
+            data: {
+              dragged: {type: 'TEXT_INPUT'},
             },
           },
-          canceled: false,
-        });
-      }
+          target: {
+            id: 'flow-builder-form_test',
+            data: {},
+          },
+        },
+        canceled: false,
+      });
 
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
     });
@@ -1122,25 +1145,23 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drop on existing element (insert at position)
-      if (capturedOnDragEnd) {
-        capturedOnDragEnd({
-          operation: {
-            source: {
-              data: {
-                dragged: {type: 'BUTTON'},
-              },
-            },
-            target: {
-              id: 'element-1',
-              data: {
-                isReordering: true,
-                stepId: 'step-1',
-              },
+      triggerCapturedDragEnd({
+        operation: {
+          source: {
+            data: {
+              dragged: {type: 'BUTTON'},
             },
           },
-          canceled: false,
-        });
-      }
+          target: {
+            id: 'element-1',
+            data: {
+              isReordering: true,
+              stepId: 'step-1',
+            },
+          },
+        },
+        canceled: false,
+      });
 
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
     });
@@ -1159,25 +1180,23 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drop on element inside form (input-1 is inside form-1)
-      if (capturedOnDragEnd) {
-        capturedOnDragEnd({
-          operation: {
-            source: {
-              data: {
-                dragged: {type: 'TEXT_INPUT'},
-              },
-            },
-            target: {
-              id: 'input-1',
-              data: {
-                isReordering: true,
-                stepId: 'step-1',
-              },
+      triggerCapturedDragEnd({
+        operation: {
+          source: {
+            data: {
+              dragged: {type: 'TEXT_INPUT'},
             },
           },
-          canceled: false,
-        });
-      }
+          target: {
+            id: 'input-1',
+            data: {
+              isReordering: true,
+              stepId: 'step-1',
+            },
+          },
+        },
+        canceled: false,
+      });
 
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
     });
@@ -1206,22 +1225,20 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drag over with reordering
-      if (capturedOnDragOver) {
-        capturedOnDragOver({
-          operation: {
-            source: {
-              data: {
-                isReordering: true,
-                stepId: 'step-1',
-              },
-            },
-            target: {
-              id: 'element-1',
-              data: {},
+      triggerCapturedDragOver({
+        operation: {
+          source: {
+            data: {
+              isReordering: true,
+              stepId: 'step-1',
             },
           },
-        });
-      }
+          target: {
+            id: 'element-1',
+            data: {},
+          },
+        },
+      });
 
       // updateNodeData should be called for reordering
       expect(mockUpdateNodeData).toHaveBeenCalledWith('step-1', expect.any(Function));
@@ -1231,14 +1248,12 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drag over without source
-      if (capturedOnDragOver) {
-        capturedOnDragOver({
-          operation: {
-            source: null,
-            target: {id: 'element-1', data: {}},
-          },
-        });
-      }
+      triggerCapturedDragOver({
+        operation: {
+          source: null,
+          target: {id: 'element-1', data: {}},
+        },
+      });
 
       // Component should still be rendered
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
@@ -1248,16 +1263,14 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drag over without target
-      if (capturedOnDragOver) {
-        capturedOnDragOver({
-          operation: {
-            source: {
-              data: {isReordering: true, stepId: 'step-1'},
-            },
-            target: null,
+      triggerCapturedDragOver({
+        operation: {
+          source: {
+            data: {isReordering: true, stepId: 'step-1'},
           },
-        });
-      }
+          target: null,
+        },
+      });
 
       // Component should still be rendered
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
@@ -1267,22 +1280,20 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drag over without reordering flag
-      if (capturedOnDragOver) {
-        capturedOnDragOver({
-          operation: {
-            source: {
-              data: {
-                isReordering: false,
-                stepId: 'step-1',
-              },
-            },
-            target: {
-              id: 'element-1',
-              data: {},
+      triggerCapturedDragOver({
+        operation: {
+          source: {
+            data: {
+              isReordering: false,
+              stepId: 'step-1',
             },
           },
-        });
-      }
+          target: {
+            id: 'element-1',
+            data: {},
+          },
+        },
+      });
 
       // updateNodeData should NOT be called when not reordering
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
@@ -1292,22 +1303,20 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drag over with reordering but no stepId
-      if (capturedOnDragOver) {
-        capturedOnDragOver({
-          operation: {
-            source: {
-              data: {
-                isReordering: true,
-                stepId: null,
-              },
-            },
-            target: {
-              id: 'element-1',
-              data: {},
+      triggerCapturedDragOver({
+        operation: {
+          source: {
+            data: {
+              isReordering: true,
+              stepId: null,
             },
           },
-        });
-      }
+          target: {
+            id: 'element-1',
+            data: {},
+          },
+        },
+      });
 
       // Component should still be rendered
       expect(screen.getByTestId('visual-flow')).toBeInTheDocument();
@@ -1317,22 +1326,20 @@ describe('DecoratedVisualFlow', () => {
       renderComponent(<DecoratedVisualFlow {...defaultProps} />);
 
       // Simulate drag over with reordering
-      if (capturedOnDragOver) {
-        capturedOnDragOver({
-          operation: {
-            source: {
-              data: {
-                isReordering: true,
-                stepId: 'step-1',
-              },
-            },
-            target: {
-              id: 'nested-element-1',
-              data: {},
+      triggerCapturedDragOver({
+        operation: {
+          source: {
+            data: {
+              isReordering: true,
+              stepId: 'step-1',
             },
           },
-        });
-      }
+          target: {
+            id: 'nested-element-1',
+            data: {},
+          },
+        },
+      });
 
       // updateNodeData should be called
       expect(mockUpdateNodeData).toHaveBeenCalled();
@@ -1368,22 +1375,20 @@ describe('DecoratedVisualFlow', () => {
       });
 
       // Simulate drag over with reordering
-      if (capturedOnDragOver) {
-        capturedOnDragOver({
-          operation: {
-            source: {
-              data: {
-                isReordering: true,
-                stepId: 'step-1',
-              },
-            },
-            target: {
-              id: 'input-1',
-              data: {},
+      triggerCapturedDragOver({
+        operation: {
+          source: {
+            data: {
+              isReordering: true,
+              stepId: 'step-1',
             },
           },
-        });
-      }
+          target: {
+            id: 'input-1',
+            data: {},
+          },
+        },
+      });
 
       expect(mockUpdateNodeData).toHaveBeenCalledWith('step-1', expect.any(Function));
     });
@@ -1409,22 +1414,20 @@ describe('DecoratedVisualFlow', () => {
       });
 
       // Simulate drag over with reordering
-      if (capturedOnDragOver) {
-        capturedOnDragOver({
-          operation: {
-            source: {
-              data: {
-                isReordering: true,
-                stepId: 'step-1',
-              },
-            },
-            target: {
-              id: 'button-1',
-              data: {},
+      triggerCapturedDragOver({
+        operation: {
+          source: {
+            data: {
+              isReordering: true,
+              stepId: 'step-1',
             },
           },
-        });
-      }
+          target: {
+            id: 'button-1',
+            data: {},
+          },
+        },
+      });
 
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });
@@ -1445,22 +1448,20 @@ describe('DecoratedVisualFlow', () => {
       });
 
       // Simulate drag over with reordering
-      if (capturedOnDragOver) {
-        capturedOnDragOver({
-          operation: {
-            source: {
-              data: {
-                isReordering: true,
-                stepId: 'step-1',
-              },
-            },
-            target: {
-              id: 'element-1',
-              data: {},
+      triggerCapturedDragOver({
+        operation: {
+          source: {
+            data: {
+              isReordering: true,
+              stepId: 'step-1',
             },
           },
-        });
-      }
+          target: {
+            id: 'element-1',
+            data: {},
+          },
+        },
+      });
 
       expect(mockUpdateNodeData).toHaveBeenCalled();
     });

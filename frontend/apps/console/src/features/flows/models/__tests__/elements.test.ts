@@ -78,6 +78,7 @@ describe('elements models', () => {
       expect(ElementTypes.RichText).toBe('RICH_TEXT');
       expect(ElementTypes.Stack).toBe('STACK');
       expect(ElementTypes.Text).toBe('TEXT');
+      expect(ElementTypes.DynamicInputPlaceholder).toBe('DYNAMIC_INPUT_PLACEHOLDER');
       expect(ElementTypes.Resend).toBe('RESEND');
       expect(ElementTypes.Timer).toBe('TIMER');
     });
@@ -86,8 +87,8 @@ describe('elements models', () => {
       expect(ElementTypes.Custom).toBe('CUSTOM');
     });
 
-    it('should have exactly 22 element types', () => {
-      expect(Object.keys(ElementTypes)).toHaveLength(22);
+    it('should have exactly 23 element types', () => {
+      expect(Object.keys(ElementTypes)).toHaveLength(23);
     });
   });
 

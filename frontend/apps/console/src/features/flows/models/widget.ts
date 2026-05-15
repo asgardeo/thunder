@@ -45,6 +45,7 @@ export const WidgetTypes = {
   GoogleFederation: 'GOOGLE_FEDERATION',
   GithubFederation: 'GITHUB_FEDERATION',
   PasskeyAuthentication: 'PASSKEY_AUTHENTICATION',
+  Provisioning: 'PROVISIONING',
   SelfSignUpLink: 'SELF_SIGN_UP_LINK',
 } as const;
 

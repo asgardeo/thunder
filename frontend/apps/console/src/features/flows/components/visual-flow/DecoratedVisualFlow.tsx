@@ -74,6 +74,7 @@ import applyAutoLayout from '../../utils/applyAutoLayout';
 import computeExecutorConnections from '../../utils/computeExecutorConnections';
 import generateResourceId from '../../utils/generateResourceId';
 import {resolveCollisions} from '../../utils/resolveCollisions';
+import {widgetNeedsViewContainer} from '../../utils/widgetUtils';
 import Droppable from '../dnd/Droppable';
 import ResourcePanel from '../resource-panel/ResourcePanel';
 import ResourcePropertyPanel from '../resource-property-panel/ResourcePropertyPanel';
@@ -408,10 +409,14 @@ function DecoratedVisualFlow({
 
       // Widget dropped on canvas -> needs View
       if (isWidgetDrop && isCanvasTarget) {
-        pendingDropRef.current = {event, sourceData, targetData};
-        setDropScenario('widget-on-canvas');
-        setIsContainerDialogOpen(true);
-        return;
+        const needsViewContainer = widgetNeedsViewContainer(sourceData.dragged as Widget);
+
+        if (needsViewContainer) {
+          pendingDropRef.current = {event, sourceData, targetData};
+          setDropScenario('widget-on-canvas');
+          setIsContainerDialogOpen(true);
+          return;
+        }
       }
 
       // Check if this is a step being added to canvas (not reordering)

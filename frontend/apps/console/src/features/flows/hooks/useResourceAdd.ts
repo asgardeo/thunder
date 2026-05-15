@@ -32,6 +32,7 @@ import {type Template} from '../models/templates';
 import type {Widget} from '../models/widget';
 import autoAssignConnections from '../utils/autoAssignConnections';
 import generateResourceId from '../utils/generateResourceId';
+import {widgetNeedsViewContainer} from '../utils/widgetUtils';
 
 /**
  * Props interface for useResourceAdd hook
@@ -158,7 +159,11 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
     if (resource.resourceType === ResourceTypes.Widget) {
       const currentNodes = getNodes();
       const currentEdges = getEdges();
-      const existingViewStep = currentNodes.find((node) => node.type === StepTypes.View);
+      const widget = clonedResource as Widget;
+      const needsViewContainer = widgetNeedsViewContainer(widget);
+      const existingViewStep = needsViewContainer
+        ? currentNodes.find((node) => node.type === StepTypes.View)
+        : undefined;
       let targetViewStep: Step;
       let nodesToPass: Node[];
 
@@ -166,7 +171,7 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
         const nodeData = existingViewStep.data as StepData | undefined;
         targetViewStep = {...existingViewStep, data: {...nodeData}} as Step;
         nodesToPass = currentNodes;
-      } else {
+      } else if (needsViewContainer) {
         const position: XYPosition = screenToFlowPosition({
           x: window.innerWidth / 2,
           y: window.innerHeight / 2,
@@ -181,9 +186,17 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
           type: StepTypes.View,
         } as Step;
         nodesToPass = [...currentNodes, targetViewStep];
+      } else {
+        targetViewStep = widget as unknown as Step;
+        nodesToPass = currentNodes;
       }
 
-      const [newNodes, newEdges] = onWidgetLoad(clonedResource as Widget, targetViewStep, nodesToPass, currentEdges);
+      const [newNodes, newEdges, defaultPropertySelector, defaultPropertySectorStepId] = onWidgetLoad(
+        widget,
+        targetViewStep,
+        nodesToPass,
+        currentEdges,
+      );
 
       if (metadata?.executorConnections) {
         autoAssignConnections(newNodes, metadata.executorConnections);
@@ -219,6 +232,8 @@ const useResourceAdd = (props: UseResourceAddProps): ((resource: Resource) => vo
 
       // Dispatch custom event to notify about element addition (for auto-layout hint)
       depsRef.current.notifyElementAdded('widget');
+
+      onResourceDropOnCanvas(defaultPropertySelector ?? widget, defaultPropertySectorStepId ?? '');
 
       // Don't open properties panel for widgets - just track the resource without opening panel
       return;
