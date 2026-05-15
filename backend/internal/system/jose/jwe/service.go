@@ -19,16 +19,16 @@
 package jwe
 
 import (
+	"context"
 	"crypto"
-	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/cryptolab"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
-	"github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm/pkiservice"
+	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
@@ -41,27 +41,20 @@ type JWEServiceInterface interface {
 
 // jweService implements the JWEServiceInterface.
 type jweService struct {
-	privateKey crypto.PrivateKey
-	kid        string
-	logger     *log.Logger
+	cryptoProvider kmprovider.RuntimeCryptoProvider
+	keyRef         kmprovider.KeyRef
+	logger         *log.Logger
 }
 
 // newJWEService creates a new JWE service instance.
-func newJWEService(pkiService pkiservice.PKIServiceInterface) (JWEServiceInterface, error) {
+func newJWEService(cryptoProvider kmprovider.RuntimeCryptoProvider) (JWEServiceInterface, error) {
 	preferredKid := config.GetServerRuntime().Config.JWT.PreferredKeyID
-
-	privateKey, err := pkiService.GetPrivateKey(preferredKid)
-	if err != nil {
-		return nil, errors.New("failed to retrieve private key for the key id: " + preferredKid)
-	}
-
-	kid := pkiService.GetCertThumbprint(preferredKid)
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWEService"))
 
 	return &jweService{
-		privateKey: privateKey,
-		kid:        kid,
-		logger:     logger,
+		cryptoProvider: cryptoProvider,
+		keyRef:         kmprovider.KeyRef{KeyID: preferredKid},
+		logger:         logger,
 	}, nil
 }
 
@@ -70,39 +63,25 @@ func newJWEService(pkiService pkiservice.PKIServiceInterface) (JWEServiceInterfa
 // kid identifies the recipient's key; it is stamped in the header only when non-empty.
 func (js *jweService) Encrypt(payload []byte, recipientPublicKey crypto.PublicKey,
 	alg KeyEncAlgorithm, enc ContentEncAlgorithm, cty string, kid string) (string, *serviceerror.ServiceError) {
-	// 1. Generate CEK
-	cekSize := 0
-	switch enc {
-	case A128CBCHS256:
-		cekSize = 32
-	case A192CBCHS384:
-		cekSize = 48
-	case A256CBCHS512:
-		cekSize = 64
-	case A128GCM:
-		cekSize = 16
-	case A192GCM:
-		cekSize = 24
-	case A256GCM:
-		cekSize = 32
-	default:
+	if !isSupportedEnc(enc) {
 		return "", &ErrorUnsupportedEncryptionAlgorithm
 	}
 
-	cek := make([]byte, cekSize)
-	if _, err := rand.Read(cek); err != nil {
-		js.logger.Error("Failed to generate CEK: " + err.Error())
-		return "", &serviceerror.InternalServerError
+	params, paramsErr := buildEncryptParams(alg, enc)
+	if paramsErr != nil {
+		return "", &ErrorUnsupportedJWEAlgorithm
 	}
 
-	// 2. Encrypt CEK
-	encryptedKey, headerExtras, err := encryptKey(cek, alg, recipientPublicKey, enc)
+	// Establish the CEK via cryptolab key establishment.
+	encryptedKey, details, err := cryptolab.Encrypt(recipientPublicKey, &params, nil)
 	if err != nil {
 		js.logger.Error("Failed to encrypt CEK: " + err.Error())
 		return "", &ErrorUnsupportedJWEAlgorithm
 	}
 
-	// 3. Create Header
+	cek := details.CEK
+
+	// Build the JWE protected header.
 	header := map[string]interface{}{
 		"typ": "JWE",
 		"alg": string(alg),
@@ -115,26 +94,37 @@ func (js *jweService) Encrypt(payload []byte, recipientPublicKey crypto.PublicKe
 		header["cty"] = cty
 	}
 
-	// Add extras (like epk for ECDH-ES)
-	for k, v := range headerExtras {
-		header[k] = v
+	// Add ECDH-ES ephemeral public key to header.
+	if details.EPK != nil {
+		epkMap, epkErr := epkToMap(details.EPK)
+		if epkErr != nil {
+			js.logger.Error("Failed to encode EPK: " + epkErr.Error())
+			return "", &serviceerror.InternalServerError
+		}
+		header["epk"] = epkMap
 	}
 
-	headerJSON, err := json.Marshal(header)
-	if err != nil {
-		js.logger.Error("Failed to marshal JWE header: " + err.Error())
+	// Add AES-GCM KW IV and tag to header.
+	if details.IV != nil {
+		header["iv"] = base64.RawURLEncoding.EncodeToString(details.IV)
+		header["tag"] = base64.RawURLEncoding.EncodeToString(details.Tag)
+	}
+
+	headerJSON, jsonErr := json.Marshal(header)
+	if jsonErr != nil {
+		js.logger.Error("Failed to marshal JWE header: " + jsonErr.Error())
 		return "", &serviceerror.InternalServerError
 	}
 	headerBase64 := base64.RawURLEncoding.EncodeToString(headerJSON)
 
-	// 4. Encrypt Content
+	// Encrypt the content payload.
 	iv, ciphertext, tag, err := encryptContent(payload, cek, enc, []byte(headerBase64))
 	if err != nil {
 		js.logger.Error("Failed to encrypt content: " + err.Error())
 		return "", &serviceerror.InternalServerError
 	}
 
-	// 5. Build Compact Serialization
+	// Assemble compact serialization.
 	jweToken := fmt.Sprintf("%s.%s.%s.%s.%s",
 		headerBase64,
 		base64.RawURLEncoding.EncodeToString(encryptedKey),
@@ -146,7 +136,7 @@ func (js *jweService) Encrypt(payload []byte, recipientPublicKey crypto.PublicKe
 	return jweToken, nil
 }
 
-// Decrypt decrypts the JWE compact serialization using the server's private key.
+// Decrypt decrypts the JWE compact serialization using the server's private key via the crypto provider.
 func (js *jweService) Decrypt(jweToken string) ([]byte, *serviceerror.ServiceError) {
 	header, headerBase64, encryptedKey, iv, ciphertext, tag, err := DecodeJWE(jweToken)
 	if err != nil {
@@ -166,14 +156,21 @@ func (js *jweService) Decrypt(jweToken string) ([]byte, *serviceerror.ServiceErr
 	alg := KeyEncAlgorithm(algStr)
 	enc := ContentEncAlgorithm(encStr)
 
-	// 1. Decrypt CEK
-	cek, err := decryptKey(encryptedKey, alg, js.privateKey, header, enc)
+	// Build cryptolab params for CEK decryption using the server's key.
+	params, paramsErr := buildDecryptParams(alg, enc, header)
+	if paramsErr != nil {
+		js.logger.Debug("Failed to build decrypt params: " + paramsErr.Error())
+		return nil, &ErrorUnsupportedJWEAlgorithm
+	}
+
+	// Decrypt CEK via the runtime crypto provider (uses server's private key).
+	cek, err := js.cryptoProvider.Decrypt(context.Background(), &js.keyRef, params, encryptedKey)
 	if err != nil {
 		js.logger.Error("Failed to decrypt CEK: " + err.Error())
 		return nil, &ErrorJWEDecryptionFailed
 	}
 
-	// 2. Decrypt Content
+	// Decrypt content.
 	payload, err := decryptContent(ciphertext, iv, tag, cek, enc, []byte(headerBase64))
 	if err != nil {
 		js.logger.Error("Failed to decrypt content: " + err.Error())
@@ -181,4 +178,137 @@ func (js *jweService) Decrypt(jweToken string) ([]byte, *serviceerror.ServiceErr
 	}
 
 	return payload, nil
+}
+
+// isSupportedEnc returns true when enc is a supported content encryption algorithm.
+func isSupportedEnc(enc ContentEncAlgorithm) bool {
+	switch enc {
+	case A128CBCHS256, A192CBCHS384, A256CBCHS512, A128GCM, A192GCM, A256GCM:
+		return true
+	default:
+		return false
+	}
+}
+
+// buildEncryptParams converts a JWE key management algorithm and content encryption algorithm
+// into a cryptolab.AlgorithmParams for key establishment during Encrypt.
+func buildEncryptParams(alg KeyEncAlgorithm, enc ContentEncAlgorithm) (cryptolab.AlgorithmParams, error) {
+	encAlg := cryptolab.Algorithm(enc)
+	switch alg {
+	case RSAOAEP:
+		return cryptolab.AlgorithmParams{
+			Algorithm: cryptolab.AlgorithmRSAOAEP,
+			RSAOAEP:   cryptolab.RSAOAEPParams{ContentEncryptionAlgorithm: encAlg},
+		}, nil
+	case RSAOAEP256:
+		return cryptolab.AlgorithmParams{
+			Algorithm:  cryptolab.AlgorithmRSAOAEP256,
+			RSAOAEP256: cryptolab.RSAOAEP256Params{ContentEncryptionAlgorithm: encAlg},
+		}, nil
+	case ECDHES:
+		return cryptolab.AlgorithmParams{
+			Algorithm: cryptolab.AlgorithmECDHES,
+			ECDHES:    cryptolab.ECDHESParams{ContentEncryptionAlgorithm: encAlg},
+		}, nil
+	case ECDHESA128KW:
+		return cryptolab.AlgorithmParams{
+			Algorithm: cryptolab.AlgorithmECDHESA128KW,
+			ECDHES:    cryptolab.ECDHESParams{ContentEncryptionAlgorithm: encAlg},
+		}, nil
+	case ECDHESA192KW:
+		return cryptolab.AlgorithmParams{
+			Algorithm: cryptolab.AlgorithmECDHESA192KW,
+			ECDHES:    cryptolab.ECDHESParams{ContentEncryptionAlgorithm: encAlg},
+		}, nil
+	case ECDHESA256KW:
+		return cryptolab.AlgorithmParams{
+			Algorithm: cryptolab.AlgorithmECDHESA256KW,
+			ECDHES:    cryptolab.ECDHESParams{ContentEncryptionAlgorithm: encAlg},
+		}, nil
+	case A128KW:
+		return cryptolab.AlgorithmParams{
+			Algorithm: cryptolab.AlgorithmA128KW,
+			AESKW:     cryptolab.AESKWParams{ContentEncryptionAlgorithm: encAlg},
+		}, nil
+	case A192KW:
+		return cryptolab.AlgorithmParams{
+			Algorithm: cryptolab.AlgorithmA192KW,
+			AESKW:     cryptolab.AESKWParams{ContentEncryptionAlgorithm: encAlg},
+		}, nil
+	case A256KW:
+		return cryptolab.AlgorithmParams{
+			Algorithm: cryptolab.AlgorithmA256KW,
+			AESKW:     cryptolab.AESKWParams{ContentEncryptionAlgorithm: encAlg},
+		}, nil
+	case A128GCMKW:
+		return cryptolab.AlgorithmParams{
+			Algorithm: cryptolab.AlgorithmA128GCMKW,
+			AESGCMKW:  cryptolab.AESGCMKWParams{ContentEncryptionAlgorithm: encAlg},
+		}, nil
+	case A192GCMKW:
+		return cryptolab.AlgorithmParams{
+			Algorithm: cryptolab.AlgorithmA192GCMKW,
+			AESGCMKW:  cryptolab.AESGCMKWParams{ContentEncryptionAlgorithm: encAlg},
+		}, nil
+	case A256GCMKW:
+		return cryptolab.AlgorithmParams{
+			Algorithm: cryptolab.AlgorithmA256GCMKW,
+			AESGCMKW:  cryptolab.AESGCMKWParams{ContentEncryptionAlgorithm: encAlg},
+		}, nil
+	default:
+		return cryptolab.AlgorithmParams{}, fmt.Errorf("unsupported JWE algorithm: %s", alg)
+	}
+}
+
+// buildDecryptParams builds cryptolab.AlgorithmParams for server-side CEK decryption.
+// For ECDH-ES variants it reads the ephemeral public key from the JWE protected header.
+func buildDecryptParams(alg KeyEncAlgorithm, enc ContentEncAlgorithm,
+	header map[string]interface{}) (cryptolab.AlgorithmParams, error) {
+	switch alg {
+	case RSAOAEP:
+		return cryptolab.AlgorithmParams{Algorithm: cryptolab.AlgorithmRSAOAEP}, nil
+	case RSAOAEP256:
+		return cryptolab.AlgorithmParams{Algorithm: cryptolab.AlgorithmRSAOAEP256}, nil
+	case ECDHES:
+		epk, err := extractEPKFromHeader(header)
+		if err != nil {
+			return cryptolab.AlgorithmParams{}, err
+		}
+		return cryptolab.AlgorithmParams{
+			Algorithm: cryptolab.AlgorithmECDHES,
+			ECDHES: cryptolab.ECDHESParams{
+				EPK:                        epk,
+				ContentEncryptionAlgorithm: cryptolab.Algorithm(enc),
+			},
+		}, nil
+	case ECDHESA128KW:
+		epk, err := extractEPKFromHeader(header)
+		if err != nil {
+			return cryptolab.AlgorithmParams{}, err
+		}
+		return cryptolab.AlgorithmParams{
+			Algorithm: cryptolab.AlgorithmECDHESA128KW,
+			ECDHES:    cryptolab.ECDHESParams{EPK: epk},
+		}, nil
+	case ECDHESA192KW:
+		epk, err := extractEPKFromHeader(header)
+		if err != nil {
+			return cryptolab.AlgorithmParams{}, err
+		}
+		return cryptolab.AlgorithmParams{
+			Algorithm: cryptolab.AlgorithmECDHESA192KW,
+			ECDHES:    cryptolab.ECDHESParams{EPK: epk},
+		}, nil
+	case ECDHESA256KW:
+		epk, err := extractEPKFromHeader(header)
+		if err != nil {
+			return cryptolab.AlgorithmParams{}, err
+		}
+		return cryptolab.AlgorithmParams{
+			Algorithm: cryptolab.AlgorithmECDHESA256KW,
+			ECDHES:    cryptolab.ECDHESParams{EPK: epk},
+		}, nil
+	default:
+		return cryptolab.AlgorithmParams{}, fmt.Errorf("unsupported JWE algorithm for server-side decryption: %s", alg)
+	}
 }

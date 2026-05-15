@@ -103,7 +103,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 	runtimeCryptoSvc := defaultkm.NewRuntimeCryptoService(pkiService, configCryptoSvc)
 
-	jwtService, jweService, err := jose.Initialize(pkiService)
+	jwtService, jweService, err := jose.Initialize(runtimeCryptoSvc)
 	if err != nil {
 		logger.Fatal("Failed to initialize JOSE services", log.Error(err))
 	}
@@ -349,8 +349,8 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	// Initialize OAuth services.
 	err = oauth.Initialize(mux, applicationService, inboundClientService, authnProvider, jwtService, jweService,
-		flowExecService, observabilitySvc, pkiService, ouService, attributeCacheService, authZService, entityProvider,
-		resourceService, i18nService, idpService)
+		flowExecService, observabilitySvc, runtimeCryptoSvc, ouService, attributeCacheService, authZService,
+		entityProvider, resourceService, i18nService, idpService)
 	if err != nil {
 		logger.Fatal("Failed to initialize OAuth services", log.Error(err))
 	}

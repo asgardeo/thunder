@@ -21,47 +21,25 @@ package discovery
 
 import (
 	"context"
-	"crypto"
-	"crypto/x509"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/cryptolab"
+	"github.com/thunder-id/thunderid/internal/system/kmprovider"
+	"github.com/thunder-id/thunderid/tests/mocks/crypto/cryptomock"
 )
-
-// testPKIService is a minimal PKIServiceInterface implementation for discovery tests.
-type testPKIService struct {
-	algorithms []string
-}
-
-func (m *testPKIService) GetSupportedSigningAlgorithms() []string {
-	return m.algorithms
-}
-
-func (m *testPKIService) GetPrivateKey(string) (crypto.PrivateKey, *serviceerror.ServiceError) {
-	return nil, nil
-}
-
-func (m *testPKIService) GetCertThumbprint(string) string { return "" }
-
-func (m *testPKIService) GetX509Certificate(string) (*x509.Certificate, *serviceerror.ServiceError) {
-	return nil, nil
-}
-
-func (m *testPKIService) GetAllX509Certificates() (map[string]*x509.Certificate, *serviceerror.ServiceError) {
-	return nil, nil
-}
 
 type DiscoveryTestSuite struct {
 	suite.Suite
-	pkiService       *testPKIService
+	cryptoMock       *cryptomock.RuntimeCryptoProviderMock
 	discoveryService DiscoveryServiceInterface
 	handler          discoveryHandlerInterface
 }
@@ -93,10 +71,8 @@ func (suite *DiscoveryTestSuite) SetupTest() {
 	}
 	_ = config.InitializeServerRuntime("test", testConfig)
 
-	suite.pkiService = &testPKIService{
-		algorithms: []string{"RS256"},
-	}
-	suite.discoveryService = newDiscoveryService(suite.pkiService)
+	suite.cryptoMock = cryptomock.NewRuntimeCryptoProviderMock(suite.T())
+	suite.discoveryService = newDiscoveryService(suite.cryptoMock)
 	suite.handler = newDiscoveryHandler(suite.discoveryService)
 }
 
@@ -142,6 +118,9 @@ func (suite *DiscoveryTestSuite) TestOAuth2AuthorizationServerMetadata() {
 }
 
 func (suite *DiscoveryTestSuite) TestOIDCDiscovery() {
+	suite.cryptoMock.EXPECT().GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{}).
+		Return([]kmprovider.PublicKeyInfo{{KeyID: "k1", Algorithm: cryptolab.AlgorithmRS256}}, nil)
+
 	req := httptest.NewRequest("GET", "/.well-known/openid-configuration", nil)
 	w := httptest.NewRecorder()
 
@@ -284,8 +263,11 @@ func TestGetStandardClaims(t *testing.T) {
 }
 
 func (suite *DiscoveryTestSuite) TestInitialize() {
+	suite.cryptoMock.EXPECT().GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{}).
+		Return([]kmprovider.PublicKeyInfo{{KeyID: "k1", Algorithm: cryptolab.AlgorithmRS256}}, nil)
+
 	mux := http.NewServeMux()
-	service := Initialize(mux, suite.pkiService)
+	service := Initialize(mux, suite.cryptoMock)
 
 	assert.NotNil(suite.T(), service)
 	assert.Implements(suite.T(), (*DiscoveryServiceInterface)(nil), service)
@@ -327,7 +309,7 @@ func (suite *DiscoveryTestSuite) TestGetBaseURL_WithPublicHostname() {
 	}
 	_ = config.InitializeServerRuntime("test", testConfig)
 
-	service := newDiscoveryService(suite.pkiService)
+	service := newDiscoveryService(suite.cryptoMock)
 	metadata := service.GetOAuth2AuthorizationServerMetadata(context.Background())
 	assert.Contains(suite.T(), metadata.AuthorizationEndpoint, "public.thunder.io")
 	config.ResetServerRuntime()
@@ -347,17 +329,21 @@ func (suite *DiscoveryTestSuite) TestGetBaseURL_WithHTTPOnly() {
 	}
 	_ = config.InitializeServerRuntime("test", testConfig)
 
-	service := newDiscoveryService(suite.pkiService)
+	service := newDiscoveryService(suite.cryptoMock)
 	metadata := service.GetOAuth2AuthorizationServerMetadata(context.Background())
 	assert.Contains(suite.T(), metadata.AuthorizationEndpoint, "http://")
 	config.ResetServerRuntime()
 }
 
 func (suite *DiscoveryTestSuite) TestOIDCDiscovery_MultipleKeyAlgorithms() {
-	multiPKI := &testPKIService{
-		algorithms: []string{"RS256", "ES256", "EdDSA"},
-	}
-	svc := newDiscoveryService(multiPKI)
+	cryptoMock := cryptomock.NewRuntimeCryptoProviderMock(suite.T())
+	cryptoMock.EXPECT().GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{}).
+		Return([]kmprovider.PublicKeyInfo{
+			{KeyID: "k1", Algorithm: cryptolab.AlgorithmRS256},
+			{KeyID: "k2", Algorithm: cryptolab.AlgorithmES256},
+			{KeyID: "k3", Algorithm: cryptolab.AlgorithmEdDSA},
+		}, nil)
+	svc := newDiscoveryService(cryptoMock)
 	algs := svc.GetOIDCMetadata(context.Background()).IDTokenSigningAlgValuesSupported
 
 	assert.Equal(suite.T(), 3, len(algs))
@@ -367,10 +353,13 @@ func (suite *DiscoveryTestSuite) TestOIDCDiscovery_MultipleKeyAlgorithms() {
 }
 
 func (suite *DiscoveryTestSuite) TestOIDCDiscovery_DeduplicatesAlgorithms() {
-	multiRSA := &testPKIService{
-		algorithms: []string{"RS256"},
-	}
-	svc := newDiscoveryService(multiRSA)
+	cryptoMock := cryptomock.NewRuntimeCryptoProviderMock(suite.T())
+	cryptoMock.EXPECT().GetPublicKeys(mock.Anything, kmprovider.PublicKeyFilter{}).
+		Return([]kmprovider.PublicKeyInfo{
+			{KeyID: "k1", Algorithm: cryptolab.AlgorithmRS256},
+			{KeyID: "k2", Algorithm: cryptolab.AlgorithmRS256},
+		}, nil)
+	svc := newDiscoveryService(cryptoMock)
 	algs := svc.GetOIDCMetadata(context.Background()).IDTokenSigningAlgValuesSupported
 
 	assert.Equal(suite.T(), 1, len(algs))

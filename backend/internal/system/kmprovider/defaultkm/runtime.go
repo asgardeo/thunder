@@ -21,6 +21,7 @@ package defaultkm
 import (
 	"context"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rsa"
 	"errors"
 	"fmt"
@@ -60,18 +61,19 @@ func (s *runtimeCryptoService) Encrypt(
 		}
 		encrypted, err := s.cfgService.Encrypt(ctx, content)
 		return encrypted, nil, err
-	case cryptolab.AlgorithmRSAOAEP256:
+	case cryptolab.AlgorithmRSAOAEP, cryptolab.AlgorithmRSAOAEP256:
 		if keyRef == nil {
-			return nil, nil, errors.New("keyRef required for RSA-OAEP-256")
+			return nil, nil, fmt.Errorf("keyRef required for %s", params.Algorithm)
 		}
 		rsaPub, err := s.getRSAPublicKey(*keyRef)
 		if err != nil {
 			return nil, nil, err
 		}
 		return cryptolab.Encrypt(rsaPub, &params, content)
-	case cryptolab.AlgorithmECDHES, cryptolab.AlgorithmECDHESA128KW, cryptolab.AlgorithmECDHESA256KW:
+	case cryptolab.AlgorithmECDHES,
+		cryptolab.AlgorithmECDHESA128KW, cryptolab.AlgorithmECDHESA192KW, cryptolab.AlgorithmECDHESA256KW:
 		if keyRef == nil {
-			return nil, nil, errors.New("keyRef required for ECDH-ES")
+			return nil, nil, fmt.Errorf("keyRef required for %s", params.Algorithm)
 		}
 		ecPub, err := s.getECPublicKey(*keyRef)
 		if err != nil {
@@ -92,18 +94,19 @@ func (s *runtimeCryptoService) Decrypt(
 			return nil, errors.New("config crypto service not initialized")
 		}
 		return s.cfgService.Decrypt(ctx, content)
-	case cryptolab.AlgorithmRSAOAEP256:
+	case cryptolab.AlgorithmRSAOAEP, cryptolab.AlgorithmRSAOAEP256:
 		if keyRef == nil {
-			return nil, errors.New("keyRef required for RSA-OAEP-256")
+			return nil, fmt.Errorf("keyRef required for %s", params.Algorithm)
 		}
 		rsaPriv, err := s.getRSAPrivateKey(*keyRef)
 		if err != nil {
 			return nil, err
 		}
 		return cryptolab.Decrypt(rsaPriv, params, content)
-	case cryptolab.AlgorithmECDHES, cryptolab.AlgorithmECDHESA128KW, cryptolab.AlgorithmECDHESA256KW:
+	case cryptolab.AlgorithmECDHES,
+		cryptolab.AlgorithmECDHESA128KW, cryptolab.AlgorithmECDHESA192KW, cryptolab.AlgorithmECDHESA256KW:
 		if keyRef == nil {
-			return nil, errors.New("keyRef required for ECDH-ES")
+			return nil, fmt.Errorf("keyRef required for %s", params.Algorithm)
 		}
 		ecPriv, err := s.getECPrivateKey(*keyRef)
 		if err != nil {
@@ -130,9 +133,59 @@ func (s *runtimeCryptoService) Sign(
 }
 
 func (s *runtimeCryptoService) GetPublicKeys(
-	_ context.Context, _ kmprovider.PublicKeyFilter,
+	_ context.Context, filter kmprovider.PublicKeyFilter,
 ) ([]kmprovider.PublicKeyInfo, error) {
-	return nil, errors.New("not implemented")
+	if s.pkiService == nil {
+		return nil, errors.New("PKI service not initialized")
+	}
+
+	allCerts, svcErr := s.pkiService.GetAllX509Certificates()
+	if svcErr != nil {
+		return nil, fmt.Errorf("failed to retrieve certificates: [%s] %s",
+			svcErr.Code, svcErr.Error.DefaultValue)
+	}
+
+	keys := make([]kmprovider.PublicKeyInfo, 0, len(allCerts))
+	for id, cert := range allCerts {
+		var alg cryptolab.Algorithm
+		switch pub := cert.PublicKey.(type) {
+		case *rsa.PublicKey:
+			_ = pub
+			alg = cryptolab.AlgorithmRS256
+		case *ecdsa.PublicKey:
+			switch pub.Curve.Params().Name {
+			case "P-384":
+				alg = cryptolab.AlgorithmES384
+			case "P-521":
+				alg = cryptolab.AlgorithmES512
+			default:
+				alg = cryptolab.AlgorithmES256
+			}
+		case ed25519.PublicKey:
+			_ = pub
+			alg = cryptolab.AlgorithmEdDSA
+		default:
+			s.logger.Debug("Unsupported public key type; skipping", log.String("keyID", id))
+			continue
+		}
+
+		if filter.KeyID != "" && filter.KeyID != id {
+			continue
+		}
+		if filter.Algorithm != "" && filter.Algorithm != alg {
+			continue
+		}
+
+		keys = append(keys, kmprovider.PublicKeyInfo{
+			KeyID:          id,
+			Algorithm:      alg,
+			PublicKey:      cert.PublicKey,
+			Thumbprint:     s.pkiService.GetCertThumbprint(id),
+			CertificateDER: cert.Raw,
+		})
+	}
+
+	return keys, nil
 }
 
 func (s *runtimeCryptoService) GetTLSMaterial(
