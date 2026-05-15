@@ -48,7 +48,7 @@ env:
   RELEASE_BRANCH: "release"
   RELEASE_GIT_USER_NAME: "thunderid-automation-bot"
   RELEASE_GIT_USER_EMAIL: "thunderid-bot@wso2.com"
-  NODE_VERSION: "lts/*"
+  NODE_VERSION: "22"
 
 jobs:
   build:
@@ -395,6 +395,17 @@ jobs:
         with:
           show-cert-info: 'true'
           product-name: ${{ env.PRODUCT_NAME }}
+
+      - name: ⚙️ Set up Node.js for Frontend Build
+        uses: ./.github/actions/setup-node
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager: 'npm'
+
+      - name: 📦 Install pnpm for Frontend Build
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          run_install: false
 
       - name: 🔨 Build Release Artifacts
         uses: ./.github/actions/build-multiplatform
