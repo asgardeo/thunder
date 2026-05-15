@@ -23,17 +23,19 @@ package jose
 import (
 	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
 	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
-	"github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm/pkiservice"
+	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 )
 
 // Initialize initializes the JOSE services (JWT and JWE).
-func Initialize(pkiService pkiservice.PKIServiceInterface) (jwt.JWTServiceInterface, jwe.JWEServiceInterface, error) {
-	jwtService, err := jwt.Initialize(pkiService)
+func Initialize(
+	runtimeProvider kmprovider.RuntimeCryptoProvider,
+) (jwt.JWTServiceInterface, jwe.JWEServiceInterface, error) {
+	jwtService, err := jwt.Initialize(runtimeProvider)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	jweService, err := jwe.Initialize(pkiService)
+	jweService, err := jwe.Initialize(runtimeProvider)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -16,9 +16,6 @@
  * under the License.
  */
 
-package pkiservice
+package kmprovider
 
-// Initialize initializes the PKI service, loading all key/certificate pairs from configuration.
-func Initialize() (PKIServiceInterface, error) {
-	return newPKIService()
-}
+// TODO: Define the key manager registry and provider selection interface.

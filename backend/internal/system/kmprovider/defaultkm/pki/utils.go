@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package pkiservice
+package pki
 
 import (
 	"crypto/tls"

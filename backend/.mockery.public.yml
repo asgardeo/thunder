@@ -425,7 +425,7 @@ packages:
       pkgname: mgtmock
       filename: "{{.InterfaceName}}_mock.go"
   
-  github.com/thunder-id/thunderid/internal/system/cryptolab/hash:
+  github.com/thunder-id/thunderid/internal/system/crypto_lib/hash:
     config:
       all: true
       dir: tests/mocks/crypto/hashmock
@@ -433,7 +433,7 @@ packages:
       pkgname: hashmock
       filename: "{{.InterfaceName}}_mock.go"
 
-  github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm/pkiservice:
+  github.com/thunder-id/thunderid/internal/system/kmprovider/defaultkm/pki:
     config:
       all: true
       dir: tests/mocks/crypto/pki/pkimock

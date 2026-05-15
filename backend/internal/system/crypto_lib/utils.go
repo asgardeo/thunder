@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package cryptolab
+package crypto_lib
 
 import (
 	"crypto/aes"
@@ -195,7 +195,13 @@ func ecdhContentEncKeyLen(alg Algorithm) (int, error) {
 		return 24, nil
 	case "A256GCM":
 		return 32, nil
+	case "A128CBC-HS256":
+		return 32, nil
+	case "A192CBC-HS384":
+		return 48, nil
+	case "A256CBC-HS512":
+		return 64, nil
 	default:
-		return 0, fmt.Errorf("unsupported content encryption algorithm for ECDH-ES: %s", alg)
+		return 0, fmt.Errorf("unsupported content encryption algorithm: %s", alg)
 	}
 }

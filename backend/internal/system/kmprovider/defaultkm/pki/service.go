@@ -16,9 +16,9 @@
  * under the License.
  */
 
-// Package pkiservice loads PEM key/certificate pairs from configuration and provides
+// Package pki loads PEM key/certificate pairs from configuration and provides
 // key material lookup by ID for the default key manager.
-package pkiservice
+package pki
 
 import (
 	"crypto"
@@ -33,7 +33,7 @@ import (
 	"slices"
 
 	"github.com/thunder-id/thunderid/internal/system/config"
-	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/crypto_lib/hash"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/jose/jws"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -46,6 +46,7 @@ type PKIServiceInterface interface {
 	GetX509Certificate(id string) (*x509.Certificate, *serviceerror.ServiceError)
 	GetAllX509Certificates() (map[string]*x509.Certificate, *serviceerror.ServiceError)
 	GetSupportedSigningAlgorithms() []string
+	GetTLSConfig() (*tls.Config, error)
 }
 
 // pkiService stores loaded certificates indexed by their ID.
@@ -177,6 +178,14 @@ func (s *pkiService) GetSupportedSigningAlgorithms() []string {
 		}
 	}
 	return result
+}
+
+// GetTLSConfig loads and returns the TLS configuration from the server's TLS cert and key files.
+func (s *pkiService) GetTLSConfig() (*tls.Config, error) {
+	serverRuntime := config.GetServerRuntime()
+	certFilePath := path.Join(serverRuntime.ServerHome, serverRuntime.Config.TLS.CertFile)
+	keyFilePath := path.Join(serverRuntime.ServerHome, serverRuntime.Config.TLS.KeyFile)
+	return LoadTLSConfig(&serverRuntime.Config, certFilePath, keyFilePath)
 }
 
 // pkiAlgorithmToJWSAlgorithms returns the JWS algorithm strings supported for the given PKI algorithm.
