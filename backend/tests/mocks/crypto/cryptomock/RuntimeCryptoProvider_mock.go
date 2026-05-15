@@ -276,8 +276,8 @@ func (_c *RuntimeCryptoProviderMock_GetPublicKeys_Call) RunAndReturn(run func(ct
 }
 
 // GetTLSMaterial provides a mock function for the type RuntimeCryptoProviderMock
-func (_mock *RuntimeCryptoProviderMock) GetTLSMaterial(ctx context.Context, keyRef *kmprovider.KeyRef) (*kmprovider.TLSMaterial, error) {
-	ret := _mock.Called(ctx, keyRef)
+func (_mock *RuntimeCryptoProviderMock) GetTLSMaterial(ctx context.Context) (*kmprovider.TLSMaterial, error) {
+	ret := _mock.Called(ctx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetTLSMaterial")
@@ -285,18 +285,18 @@ func (_mock *RuntimeCryptoProviderMock) GetTLSMaterial(ctx context.Context, keyR
 
 	var r0 *kmprovider.TLSMaterial
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *kmprovider.KeyRef) (*kmprovider.TLSMaterial, error)); ok {
-		return returnFunc(ctx, keyRef)
+	if returnFunc, ok := ret.Get(0).(func(context.Context) (*kmprovider.TLSMaterial, error)); ok {
+		return returnFunc(ctx)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *kmprovider.KeyRef) *kmprovider.TLSMaterial); ok {
-		r0 = returnFunc(ctx, keyRef)
+	if returnFunc, ok := ret.Get(0).(func(context.Context) *kmprovider.TLSMaterial); ok {
+		r0 = returnFunc(ctx)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*kmprovider.TLSMaterial)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, *kmprovider.KeyRef) error); ok {
-		r1 = returnFunc(ctx, keyRef)
+	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
+		r1 = returnFunc(ctx)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -310,24 +310,18 @@ type RuntimeCryptoProviderMock_GetTLSMaterial_Call struct {
 
 // GetTLSMaterial is a helper method to define mock.On call
 //   - ctx context.Context
-//   - keyRef *kmprovider.KeyRef
-func (_e *RuntimeCryptoProviderMock_Expecter) GetTLSMaterial(ctx interface{}, keyRef interface{}) *RuntimeCryptoProviderMock_GetTLSMaterial_Call {
-	return &RuntimeCryptoProviderMock_GetTLSMaterial_Call{Call: _e.mock.On("GetTLSMaterial", ctx, keyRef)}
+func (_e *RuntimeCryptoProviderMock_Expecter) GetTLSMaterial(ctx interface{}) *RuntimeCryptoProviderMock_GetTLSMaterial_Call {
+	return &RuntimeCryptoProviderMock_GetTLSMaterial_Call{Call: _e.mock.On("GetTLSMaterial", ctx)}
 }
 
-func (_c *RuntimeCryptoProviderMock_GetTLSMaterial_Call) Run(run func(ctx context.Context, keyRef *kmprovider.KeyRef)) *RuntimeCryptoProviderMock_GetTLSMaterial_Call {
+func (_c *RuntimeCryptoProviderMock_GetTLSMaterial_Call) Run(run func(ctx context.Context)) *RuntimeCryptoProviderMock_GetTLSMaterial_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *kmprovider.KeyRef
-		if args[1] != nil {
-			arg1 = args[1].(*kmprovider.KeyRef)
-		}
 		run(
 			arg0,
-			arg1,
 		)
 	})
 	return _c
@@ -338,7 +332,7 @@ func (_c *RuntimeCryptoProviderMock_GetTLSMaterial_Call) Return(tLSMaterial *kmp
 	return _c
 }
 
-func (_c *RuntimeCryptoProviderMock_GetTLSMaterial_Call) RunAndReturn(run func(ctx context.Context, keyRef *kmprovider.KeyRef) (*kmprovider.TLSMaterial, error)) *RuntimeCryptoProviderMock_GetTLSMaterial_Call {
+func (_c *RuntimeCryptoProviderMock_GetTLSMaterial_Call) RunAndReturn(run func(ctx context.Context) (*kmprovider.TLSMaterial, error)) *RuntimeCryptoProviderMock_GetTLSMaterial_Call {
 	_c.Call.Return(run)
 	return _c
 }
