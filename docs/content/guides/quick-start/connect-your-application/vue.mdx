@@ -156,6 +156,7 @@ app.mount('#app')
   <ThunderIDProvider
     client-id="<your-client-id>"
     base-url="https://localhost:8090"
+    platform="ThunderIDV2"
   >
     <!-- your app content goes here -->
   </ThunderIDProvider>
@@ -175,6 +176,7 @@ Replace `<your-client-id>` with the Client ID you obtained when creating the app
 |-----------|-------------|
 | `client-id` | The Client ID from your <ProductName /> application |
 | `base-url` | Your <ProductName /> instance URL (e.g., `https://localhost:8090`) |
+| `platform` | Set to `ThunderIDV2` when connecting to a <ProductName /> instance |
 
 ## Add Sign-In and Sign-Out
 
@@ -197,6 +199,7 @@ import {
   <ThunderIDProvider
     client-id="<your-client-id>"
     base-url="https://localhost:8090"
+    platform="ThunderIDV2"
   >
     <Loading>
       <div>Loading authentication...</div>
@@ -235,6 +238,7 @@ import {
   <ThunderIDProvider
     client-id="<your-client-id>"
     base-url="https://localhost:8090"
+    platform="ThunderIDV2"
   >
     <Loading>
       <div>Loading authentication...</div>
