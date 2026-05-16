@@ -35,6 +35,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/discovery"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/granthandlers"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/introspect"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/logout"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jwksresolver"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/par"
 	"github.com/thunder-id/thunderid/internal/oauth/oauth2/token"
@@ -96,6 +97,7 @@ func Initialize(
 	token.Initialize(mux, jwtService, inboundClient, authnProvider, grantHandlerProvider,
 		scopeValidator, observabilitySvc, discoveryService, transactioner)
 	introspect.Initialize(mux, jwtService, inboundClient, authnProvider, discoveryService)
+	logout.Initialize(mux, jwtService, inboundClient)
 	userinfo.Initialize(mux, jwtService, jweService, resolver,
 		tokenValidator, inboundClient, ouService, attributeCacheSvc, transactioner)
 	dcr.Initialize(mux, applicationService, ouService, i18nService, transactioner)
