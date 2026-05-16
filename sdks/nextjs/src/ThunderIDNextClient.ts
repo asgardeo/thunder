@@ -431,9 +431,14 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
       throw new Error('The second argument must be a string.');
     }
 
+    const config: T = this.getConfiguration();
+    const afterSignOutUrl: string = config?.afterSignOutUrl || '/';
+
     const resolvedSessionId: string = args[1] || (await getSessionId())!;
 
-    return super.signOut(resolvedSessionId);
+    this.clearSession(resolvedSessionId);
+
+    return afterSignOutUrl;
   }
 
   override async signUp(options?: SignUpOptions): Promise<void>;
