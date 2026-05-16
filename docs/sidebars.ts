@@ -91,6 +91,11 @@ const sidebars: SidebarsConfig = {
             },
             {
               type: 'doc',
+              id: 'guides/quick-start/connect-your-application/nextjs',
+              label: 'Next.js',
+            },
+            {
+              type: 'doc',
               id: 'guides/quick-start/connect-your-application/vue',
               label: 'Vue',
             },
