@@ -1,0 +1,342 @@
+---
+title: Nuxt Quickstart
+sidebar_position: 4
+persona: app
+description: Quick start guide to integrate with a Nuxt 3 application
+---
+
+import {
+  Boxes,
+  Package,
+  LogIn,
+  BookOpen,
+  Clock,
+  Server,
+  Hexagon,
+  FileCode,
+} from '@wso2/oxygen-ui-icons-react';
+
+# Nuxt Quickstart
+
+This is **step 4** of the getting started sequence. By the end you will have a working Nuxt 3 app with sign-in and sign-out powered by <ProductName />.
+
+<TutorialHero>
+
+## What You Will Learn
+
+<TutorialHeroItem icon={<Boxes />}>Create a new Nuxt 3 app</TutorialHeroItem>
+<TutorialHeroItem icon={<Package />}>Register the <code>@thunderid/nuxt</code> module</TutorialHeroItem>
+<TutorialHeroItem icon={<LogIn />}>Add working sign-in and sign-out</TutorialHeroItem>
+<TutorialHeroItem icon={<BookOpen />}>Display the signed-in user's profile</TutorialHeroItem>
+
+## Prerequisites
+
+<TutorialHeroItem icon={<Clock />}>About 15 minutes</TutorialHeroItem>
+<TutorialHeroItem icon={<Server />}>Steps 1–3 complete: <ProductName /> running, an application registered, and a sign-in flow built. Start at <a href="../../getting-started/get-thunderid">Get <ProductName /></a> if you haven't already.</TutorialHeroItem>
+<TutorialHeroItem icon={<Hexagon />}>Node.js 18.0 or later installed on your system</TutorialHeroItem>
+<TutorialHeroItem icon={<Package />}>npm, yarn, or pnpm</TutorialHeroItem>
+<TutorialHeroItem icon={<FileCode />}>Your preferred code editor</TutorialHeroItem>
+
+</TutorialHero>
+
+<Stepper stepNode="h2" as="h2">
+
+## Create an Application in <ProductName />
+
+Before integrating <ProductName /> with your Nuxt app, you need to create an application in <ProductName />.
+
+The `@thunderid/nuxt` module automatically registers a `/api/auth/callback` server route that handles the OAuth callback. Your redirect URL must point to this route.
+
+### Using the <ProductName /> Console
+
+1. Sign into the <ProductName /> Console at [https://localhost:8090/console](https://localhost:8090/console)
+2. Navigate to **Applications** → **New Application**
+3. Provide the following details:
+   - **Name**: `my-nuxt-app`
+   - **Type**: Web Application
+   - **Authorized Redirect URL**: `http://localhost:3000/api/auth/callback`
+
+:::info
+The SDK automatically registers `/api/auth/callback` as a Nitro server route. You do **not** need to create this file yourself.
+:::
+
+### Using the <ProductName /> API
+
+You can also create an application using the <ProductName /> API. First, [obtain a system API token](/docs/next/guides/getting-started/get-thunderid#obtain-system-api-token), then:
+
+```bash
+curl -kL -X POST https://localhost:8090/applications \
+  -H 'Authorization: Bearer <your-system-token>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "my-nuxt-app",
+    "inboundAuthConfig": [{
+      "type": "oauth2",
+      "config": {
+        "grantTypes": ["authorization_code", "refresh_token"],
+        "responseTypes": ["code"],
+        "redirectUris": ["http://localhost:3000/api/auth/callback"],
+        "tokenEndpointAuthMethod": "client_secret_post",
+        "publicClient": false,
+        "pkceRequired": true
+      }
+    }]
+  }'
+```
+
+:::warning Important
+Note down both the **Client ID** and **Client Secret** from the response. You'll need both to configure your Nuxt app.
+:::
+
+## Create a Nuxt App
+
+Create a new Nuxt 3 app:
+
+<CodeGroup>
+  <CodeBlock lang="bash" label="npm">
+    npx nuxi@latest init my-nuxt-app
+    cd my-nuxt-app
+    npm install
+  </CodeBlock>
+
+  <CodeBlock lang="bash" label="pnpm">
+    pnpm dlx nuxi@latest init my-nuxt-app
+    cd my-nuxt-app
+    pnpm install
+  </CodeBlock>
+
+  <CodeBlock lang="bash" label="Yarn">
+    yarn dlx nuxi@latest init my-nuxt-app
+    cd my-nuxt-app
+    yarn install
+  </CodeBlock>
+</CodeGroup>
+
+## Install @thunderid/nuxt
+
+Install the <ProductName /> Nuxt module:
+
+<CodeGroup>
+  <CodeBlock lang="bash" label="npm">
+    npm install @thunderid/nuxt
+  </CodeBlock>
+
+  <CodeBlock lang="bash" label="pnpm">
+    pnpm add @thunderid/nuxt
+  </CodeBlock>
+
+  <CodeBlock lang="bash" label="Yarn">
+    yarn add @thunderid/nuxt
+  </CodeBlock>
+
+  <CodeBlock lang="bash" label="Bun">
+    bun add @thunderid/nuxt
+  </CodeBlock>
+</CodeGroup>
+
+## Register the Module
+
+Add `@thunderid/nuxt` to your `nuxt.config.ts`:
+
+```typescript title="nuxt.config.ts" showLineNumbers
+export default defineNuxtConfig({
+  modules: ['@thunderid/nuxt'],
+});
+```
+
+That's all the `nuxt.config.ts` change needed — the module reads all configuration from environment variables.
+
+## Set Up Environment Variables
+
+Create a `.env` file in the root of your project:
+
+```bash title=".env"
+NUXT_PUBLIC_THUNDERID_BASE_URL=https://localhost:8090
+NUXT_PUBLIC_THUNDERID_CLIENT_ID=<your-client-id>
+THUNDERID_CLIENT_SECRET=<your-client-secret>
+THUNDERID_SESSION_SECRET=<your-session-secret>
+```
+
+:::tip Generating a session secret
+Run the following command to generate a strong random secret for `THUNDERID_SESSION_SECRET`:
+
+```bash
+openssl rand -base64 32
+```
+:::
+
+:::warning Security
+`THUNDERID_CLIENT_SECRET` and `THUNDERID_SESSION_SECRET` have no `NUXT_PUBLIC_` prefix — Nuxt keeps them server-side only and never exposes them to the browser.
+:::
+
+| Variable | Description |
+|----------|-------------|
+| `NUXT_PUBLIC_THUNDERID_BASE_URL` | Your <ProductName /> instance URL |
+| `NUXT_PUBLIC_THUNDERID_CLIENT_ID` | The Client ID from your <ProductName /> application |
+| `THUNDERID_CLIENT_SECRET` | The Client Secret (server-side only) |
+| `THUNDERID_SESSION_SECRET` | Secret for signing session JWT cookies (server-side only) |
+
+## Wrap Your App with ThunderIDRoot
+
+The `<ThunderIDRoot>` component mounts the full authentication provider tree. Wrap your application content with it in `app.vue`:
+
+```vue title="app.vue" showLineNumbers
+<template>
+  <ThunderIDRoot>
+    <NuxtPage />
+  </ThunderIDRoot>
+</template>
+```
+
+:::info Auto-imports
+The `@thunderid/nuxt` module auto-registers all `ThunderID*` components and auto-imports all composables. You do **not** need to import them manually.
+:::
+
+## Add Sign-In and Sign-Out
+
+The module provides `<ThunderIDSignedIn>`, `<ThunderIDSignedOut>`, `<ThunderIDSignInButton>`, and `<ThunderIDSignOutButton>` components for conditional rendering and authentication actions.
+
+Create `pages/index.vue`:
+
+```vue title="pages/index.vue" showLineNumbers
+<template>
+  <main>
+    <header>
+      <h1>ThunderID Auth Demo</h1>
+      <ThunderIDSignedIn>
+        <ThunderIDSignOutButton>Sign Out</ThunderIDSignOutButton>
+      </ThunderIDSignedIn>
+      <ThunderIDSignedOut>
+        <ThunderIDSignInButton>Sign In</ThunderIDSignInButton>
+      </ThunderIDSignedOut>
+    </header>
+  </main>
+</template>
+```
+
+## Display User Profile Information
+
+Use `<ThunderIDUser>` with a scoped slot to access and display profile information for the signed-in user:
+
+```vue title="pages/index.vue" showLineNumbers
+<template>
+  <main>
+    <header>
+      <h1>ThunderID Auth Demo</h1>
+      <ThunderIDSignedIn>
+        <ThunderIDSignOutButton>Sign Out</ThunderIDSignOutButton>
+      </ThunderIDSignedIn>
+      <ThunderIDSignedOut>
+        <ThunderIDSignInButton>Sign In</ThunderIDSignInButton>
+      </ThunderIDSignedOut>
+    </header>
+
+    <section>
+      <ThunderIDSignedIn>
+        <ThunderIDUser>
+          <template #default="{ user }">
+            <div class="user-profile">
+              <img
+                v-if="user.picture"
+                :src="user.picture"
+                :alt="user.name || 'User avatar'"
+                style="width: 80px; height: 80px; border-radius: 50%"
+              />
+              <h2>Welcome, {{ user.name || user.username }}!</h2>
+              <div>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                <p><strong>First Name:</strong> {{ user.given_name }}</p>
+                <p><strong>Last Name:</strong> {{ user.family_name }}</p>
+              </div>
+            </div>
+          </template>
+        </ThunderIDUser>
+      </ThunderIDSignedIn>
+    </section>
+  </main>
+</template>
+```
+
+:::tip Protecting a page
+To require authentication on a page, add the built-in `'auth'` route middleware:
+
+```vue title="pages/dashboard.vue"
+<script setup>
+definePageMeta({ middleware: ['auth'] });
+</script>
+```
+
+Unauthenticated users are automatically redirected to the sign-in page. For more control — such as requiring specific scopes or an organization context — use `defineThunderIDMiddleware`:
+
+```vue title="pages/admin.vue"
+<script setup>
+const protect = defineThunderIDMiddleware({ requireOrganization: true });
+definePageMeta({ middleware: [protect] });
+</script>
+```
+:::
+
+## Run Your App
+
+Start the development server:
+
+<CodeGroup>
+  <CodeBlock lang="bash" label="npm">
+    npm run dev
+  </CodeBlock>
+
+  <CodeBlock lang="bash" label="pnpm">
+    pnpm run dev
+  </CodeBlock>
+
+  <CodeBlock lang="bash" label="Yarn">
+    yarn dev
+  </CodeBlock>
+</CodeGroup>
+
+Visit your app at [http://localhost:3000](http://localhost:3000)
+
+:::tip Success
+You should see the sign-in button. Click it — you'll be redirected to the <ProductName />-hosted sign-in page, authenticate with the test user you created in step 2, and land back in your app with the user profile displayed.
+:::
+
+</Stepper>
+
+## You're Done
+
+You have completed the full getting started sequence:
+
+1. ✅ <ProductName /> running
+2. ✅ Application registered with a Client ID and Client Secret
+3. ✅ Sign-in flow built in the Flow Designer
+4. ✅ Nuxt 3 app integrated and authenticating
+
+## What's Next
+
+<div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginTop: '1.5rem'}}>
+
+  <a href="../../../guides/flows/build-a-flow#go-further" style={{textDecoration: 'none', color: 'inherit'}}>
+    <div style={{border: '1px solid var(--ifm-color-emphasis-300)', borderRadius: '10px', padding: '1.25rem', cursor: 'pointer'}}>
+      <div style={{fontSize: '1rem', fontWeight: '700', marginBottom: '0.4rem'}}>Upgrade the sign-in flow</div>
+      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-700)', marginBottom: '0.75rem'}}>Add MFA, passkeys, or social login to your flow — no app code changes required.</div>
+      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-primary)', fontWeight: 600}}>Flow Designer →</div>
+    </div>
+  </a>
+
+  <a href="../../../use-cases/b2c/customer-identity" style={{textDecoration: 'none', color: 'inherit'}}>
+    <div style={{border: '1px solid var(--ifm-color-emphasis-300)', borderRadius: '10px', padding: '1.25rem', cursor: 'pointer'}}>
+      <div style={{fontSize: '1rem', fontWeight: '700', marginBottom: '0.4rem'}}>Build a consumer product</div>
+      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-700)', marginBottom: '0.75rem'}}>Self-service sign-up, profile management, and passwordless login for your end users.</div>
+      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-primary)', fontWeight: 600}}>B2C guide →</div>
+    </div>
+  </a>
+
+  <a href="../../../use-cases/b2b/multi-tenant-saas" style={{textDecoration: 'none', color: 'inherit'}}>
+    <div style={{border: '1px solid var(--ifm-color-emphasis-300)', borderRadius: '10px', padding: '1.25rem', cursor: 'pointer'}}>
+      <div style={{fontSize: '1rem', fontWeight: '700', marginBottom: '0.4rem'}}>Add organizations</div>
+      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-700)', marginBottom: '0.75rem'}}>Multi-tenant SaaS with per-org identity providers and delegated admin access.</div>
+      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-primary)', fontWeight: 600}}>B2B guide →</div>
+    </div>
+  </a>
+
+</div>
