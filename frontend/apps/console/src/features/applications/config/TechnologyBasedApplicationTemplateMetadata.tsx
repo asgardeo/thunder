@@ -79,7 +79,6 @@ const TechnologyBasedApplicationTemplateMetadata: ApplicationTemplateMetadata<Te
     titleKey: 'applications:onboarding.configure.stack.technology.nextjs.title',
     descriptionKey: 'applications:onboarding.configure.stack.technology.nextjs.description',
     template: NextJSTemplate as ApplicationTemplate,
-    disabled: true,
   },
 ];
 

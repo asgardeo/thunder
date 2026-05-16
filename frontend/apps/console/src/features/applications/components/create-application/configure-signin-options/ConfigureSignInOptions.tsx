@@ -243,7 +243,7 @@ export default function ConfigureSignInOptions({
     return (
       <Alert severity="error" sx={{mb: 4}}>
         {t('applications:onboarding.configure.SignInOptions.error', {
-          error: error?.message ?? flowsError?.message ?? 'Unknown error',
+          error: String(error?.message ?? flowsError?.message ?? 'Unknown error'),
         })}
       </Alert>
     );
