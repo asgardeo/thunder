@@ -89,6 +89,11 @@ const sidebars: SidebarsConfig = {
               id: 'guides/quick-start/connect-your-application/react',
               label: 'React',
             },
+            {
+              type: 'doc',
+              id: 'guides/quick-start/connect-your-application/vue',
+              label: 'Vue',
+            },
           ],
         },
       ],
