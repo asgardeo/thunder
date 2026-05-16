@@ -107,7 +107,7 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
         baseUrl,
         clientId,
         clientSecret,
-        enablePKCE: false,
+        enablePKCE: !clientSecret,
         organizationHandle: resolvedOrganizationHandle,
         signInUrl,
         signUpUrl,
