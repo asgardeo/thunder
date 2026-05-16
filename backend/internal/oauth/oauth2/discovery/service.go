@@ -96,6 +96,7 @@ func (ds *discoveryService) GetOIDCMetadata(ctx context.Context) (*OIDCProviderM
 		IDTokenEncryptionEncValuesSupported:  inboundmodel.SupportedIDTokenEncryptionEncs,
 		ClaimsSupported:                      ds.getSupportedClaims(),
 		ClaimsParameterSupported:             true,
+		EndSessionEndpoint:                   ds.getEndSessionEndpoint(),
 		AcrValuesSupported:                   ds.getSupportedAcrValues(),
 	}, nil
 }
@@ -154,6 +155,10 @@ func (ds *discoveryService) getSupportedCodeChallengeMethods() []string {
 
 func (ds *discoveryService) getPAREndpoint() string {
 	return ds.baseURL + constants.OAuth2PAREndpoint
+}
+
+func (ds *discoveryService) getEndSessionEndpoint() string {
+	return ds.baseURL + constants.OAuth2LogoutEndpoint
 }
 
 func (ds *discoveryService) isGlobalPARRequired() bool {
