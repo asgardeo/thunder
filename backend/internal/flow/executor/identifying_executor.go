@@ -26,6 +26,8 @@ import (
 	"github.com/thunder-id/thunderid/internal/entityprovider"
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/flow/core"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/utils"
 )
@@ -88,28 +90,25 @@ func (i *identifyingExecutor) IdentifyUser(filters map[string]interface{},
 
 	userID, err := i.entityProvider.IdentifyEntity(searchableFilter)
 	if err != nil {
-		if err.Code == entityprovider.ErrorCodeEntityNotFound {
+		switch err.Code {
+		case entityprovider.ErrorCodeEntityNotFound:
 			logger.Debug("User not found for the provided filters")
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = failureReasonUserNotFound
-			return nil, nil
-		} else if err.Code == entityprovider.ErrorCodeAmbiguousEntity {
+			execResp.Error = &ErrUserNotFound
+		case entityprovider.ErrorCodeAmbiguousEntity:
 			logger.Debug("Multiple users found for the provided filters")
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = failureReasonAmbiguousUser
-			return nil, nil
-		} else {
+			execResp.Error = &ErrAmbiguousUserIdentity
+		default:
 			logger.Debug("Failed to identify user due to error: " + err.Error())
-			execResp.Status = common.ExecFailure
-			execResp.FailureReason = failureReasonFailedToIdentifyUser
-			return nil, nil
+			execResp.Error = &ErrFailedToIdentifyUser
 		}
+		execResp.Status = common.ExecFailure
+		return nil, nil
 	}
 
 	if userID == nil || *userID == "" {
 		logger.Debug("User not found for the provided filter")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = failureReasonUserNotFound
+		execResp.Error = &ErrUserNotFound
 		return nil, nil
 	}
 
@@ -154,7 +153,7 @@ func (i *identifyingExecutor) executeIdentify(ctx *core.NodeContext,
 	if err != nil {
 		logger.Debug("Failed to identify user due to error: " + err.Error())
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = failureReasonFailedToIdentifyUser
+		execResp.Error = &ErrFailedToIdentifyUser
 		return execResp, nil
 	}
 
@@ -162,7 +161,7 @@ func (i *identifyingExecutor) executeIdentify(ctx *core.NodeContext,
 	// errors (i.e. user not found). Other failures reported by IdentifyUser — such
 	// as ambiguous matches or system errors — are not recoverable in identify mode
 	// and must be returned as-is so the caller can handle them appropriately.
-	if execResp.Status == common.ExecFailure && execResp.FailureReason == failureReasonUserNotFound {
+	if execResp.Status == common.ExecFailure && execResp.Error != nil && execResp.Error.Code == ErrUserNotFound.Code {
 		execResp.Status = common.ExecUserInputRequired
 		execResp.Inputs = i.GetRequiredInputs(ctx)
 		return execResp, nil
@@ -175,7 +174,7 @@ func (i *identifyingExecutor) executeIdentify(ctx *core.NodeContext,
 		logger.Debug("User not found for the provided attributes")
 		execResp.Status = common.ExecUserInputRequired
 		execResp.Inputs = i.GetRequiredInputs(ctx)
-		execResp.FailureReason = failureReasonUserNotFound
+		execResp.Error = &ErrUserNotFound
 		return execResp, nil
 	}
 
@@ -210,7 +209,10 @@ func (i *identifyingExecutor) executeResolve(ctx *core.NodeContext,
 	candidates, err := i.getCandidates(ctx, userSearchAttributes, logger)
 	if err != nil {
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = err.Error()
+		execResp.Error = serviceerror.CustomServiceError(ErrFailedToIdentifyUser, i18ncore.I18nMessage{
+			Key:          ErrFailedToIdentifyUser.ErrorDescription.Key,
+			DefaultValue: err.Error(),
+		})
 		return execResp, nil
 	}
 
@@ -219,7 +221,7 @@ func (i *identifyingExecutor) executeResolve(ctx *core.NodeContext,
 		logger.Debug("No matching users after filtering")
 		execResp.Status = common.ExecUserInputRequired
 		execResp.Inputs = i.GetRequiredInputs(ctx)
-		execResp.FailureReason = failureReasonUserNotFound
+		execResp.Error = &ErrUserNotFound
 		return execResp, nil
 	case 1:
 		execResp.RuntimeData[userAttributeUserID] = candidates[0].ID
@@ -273,7 +275,7 @@ func (i *identifyingExecutor) searchCandidates(
 			return []*entityprovider.Entity{}, nil
 		}
 		logger.Debug("Failed to search users: " + err.Error())
-		return nil, errors.New(failureReasonFailedToIdentifyUser)
+		return nil, errors.New(ErrFailedToIdentifyUser.Error.DefaultValue)
 	}
 
 	return users, nil
@@ -286,7 +288,7 @@ func (i *identifyingExecutor) getFilteredCandidates(
 	var candidates []*entityprovider.Entity
 	if err := json.Unmarshal([]byte(storedCandidates), &candidates); err != nil {
 		logger.Debug("Failed to deserialize candidate users")
-		return nil, errors.New(failureReasonFailedToIdentifyUser)
+		return nil, errors.New(ErrFailedToIdentifyUser.Error.DefaultValue)
 	}
 
 	return filterUsersByAttributes(candidates, searchAttrs), nil
@@ -303,7 +305,7 @@ func (i *identifyingExecutor) handleAmbiguousCandidates(
 		logger.Debug("Candidates are indistinguishable, no disambiguation options available",
 			log.Int("candidateCount", len(candidates)))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = failureReasonFailedToIdentifyUser
+		execResp.Error = &ErrFailedToIdentifyUser
 		return execResp, nil
 	}
 
@@ -311,7 +313,7 @@ func (i *identifyingExecutor) handleAmbiguousCandidates(
 	if err != nil {
 		logger.Debug("Failed to serialize candidate users")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = failureReasonFailedToIdentifyUser
+		execResp.Error = &ErrFailedToIdentifyUser
 		return execResp, nil
 	}
 

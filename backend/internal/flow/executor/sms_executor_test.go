@@ -214,7 +214,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_PrerequisiteNotMet_ReturnsFailure
 
 	suite.NoError(err)
 	suite.Equal(common.ExecFailure, resp.Status)
-	suite.Equal("SMS recipient is required", resp.FailureReason)
+	suite.Equal(ErrSMSRecipientMissing.Error.DefaultValue, resp.Error.Error.DefaultValue)
 	suite.mockSMSSenderSvc.AssertNotCalled(suite.T(), "Send",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
@@ -238,7 +238,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_MissingRecipient() {
 
 	suite.NoError(err)
 	suite.Equal(common.ExecFailure, resp.Status)
-	suite.Equal("SMS recipient is required", resp.FailureReason)
+	suite.Equal(ErrSMSRecipientMissing.Error.DefaultValue, resp.Error.Error.DefaultValue)
 	suite.mockSMSSenderSvc.AssertNotCalled(suite.T(), "Send",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
@@ -312,7 +312,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_InvalidPhoneNumber() {
 
 	suite.NoError(err)
 	suite.Equal(common.ExecFailure, resp.Status)
-	suite.Equal("SMS recipient is not a valid phone number", resp.FailureReason)
+	suite.Equal(ErrSMSInvalidPhone.Error.DefaultValue, resp.Error.Error.DefaultValue)
 	suite.mockSMSSenderSvc.AssertNotCalled(suite.T(), "Send",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything)
 }
@@ -387,7 +387,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserOnboarding_ClientErr
 
 	suite.NoError(err)
 	suite.Equal(common.ExecFailure, resp.Status)
-	suite.Equal("Notification configuration is wrong or not set.", resp.FailureReason)
+	suite.Equal(ErrSMSProviderNotConfigured.Error.DefaultValue, resp.Error.Error.DefaultValue)
 }
 
 func (suite *SMSExecutorTestSuite) TestExecute_SendMode_UserOnboarding_ServerError_ReturnsError() {
@@ -489,7 +489,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_NoSMSTemplateProperty_ReturnsFlow
 
 	suite.NoError(err)
 	suite.Equal(common.ExecFailure, resp.Status)
-	suite.Equal("SMS template is required", resp.FailureReason)
+	suite.Equal(ErrSMSTemplateMissing.Error.DefaultValue, resp.Error.Error.DefaultValue)
 	suite.mockTemplateService.AssertNotCalled(suite.T(), "Render", mock.Anything, mock.Anything, mock.Anything)
 	suite.mockSMSSenderSvc.AssertNotCalled(suite.T(), "Send",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything)
@@ -517,7 +517,7 @@ func (suite *SMSExecutorTestSuite) TestExecute_EmptySMSTemplateProperty_ReturnsF
 
 	suite.NoError(err)
 	suite.Equal(common.ExecFailure, resp.Status)
-	suite.Equal("SMS template is required", resp.FailureReason)
+	suite.Equal(ErrSMSTemplateMissing.Error.DefaultValue, resp.Error.Error.DefaultValue)
 	suite.mockTemplateService.AssertNotCalled(suite.T(), "Render", mock.Anything, mock.Anything, mock.Anything)
 	suite.mockSMSSenderSvc.AssertNotCalled(suite.T(), "Send",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything)

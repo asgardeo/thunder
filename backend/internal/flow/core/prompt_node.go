@@ -19,6 +19,7 @@
 package core
 
 import (
+	"encoding/json"
 	"slices"
 	"strings"
 
@@ -26,8 +27,6 @@ import (
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
 )
-
-const failureReasonInvalidAction = "Invalid action selected"
 
 // PromptNodeInterface extends NodeInterface for nodes that require user interaction.
 type PromptNodeInterface interface {
@@ -89,9 +88,13 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 
 	// Check if this prompt is handling a failure
 	if ctx.RuntimeData != nil {
-		if failureReason, exists := ctx.RuntimeData["failureReason"]; exists && failureReason != "" {
-			logger.Debug("Prompt node is handling a failure", log.String("failureReason", failureReason))
-			nodeResp.FailureReason = failureReason
+		if jsonStr, exists := ctx.RuntimeData["failureReasonJSON"]; exists && jsonStr != "" {
+			var errResp serviceerror.ServiceError
+			if err := json.Unmarshal([]byte(jsonStr), &errResp); err == nil {
+				nodeResp.Error = &errResp
+				logger.Debug("Prompt node is handling a failure", log.String("errorCode", errResp.Code))
+			}
+			delete(ctx.RuntimeData, "failureReasonJSON")
 			delete(ctx.RuntimeData, "failureReason")
 			// Clear this prompt's inputs and current action
 			for _, input := range n.getAllInputs() {
@@ -132,9 +135,9 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 			if nextNode := n.getNextNodeForActionRef(ctx.CurrentAction); nextNode != "" {
 				nodeResp.NextNodeID = nextNode
 			} else {
-				logger.Debug(failureReasonInvalidAction, log.String("actionRef", ctx.CurrentAction))
+				logger.Debug(ErrInvalidActionProvided.Error.DefaultValue, log.String("actionRef", ctx.CurrentAction))
 				nodeResp.Status = common.NodeStatusFailure
-				nodeResp.FailureReason = failureReasonInvalidAction
+				nodeResp.Error = &ErrInvalidActionProvided
 				return nodeResp, nil
 			}
 		}
@@ -179,7 +182,7 @@ func (n *promptNode) executeLoginOptions(ctx *NodeContext,
 				logger.Debug("Selected action is not in allowed login options",
 					log.String("actionRef", ctx.CurrentAction))
 				nodeResp.Status = common.NodeStatusFailure
-				nodeResp.FailureReason = failureReasonInvalidAction
+				nodeResp.Error = &ErrInvalidActionProvided
 				return nodeResp, nil
 			}
 		}
@@ -229,9 +232,9 @@ func (n *promptNode) finalizeLoginOptionsAction(ctx *NodeContext, nodeResp *comm
 	logger := n.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 	nextNode := n.getNextNodeForActionRef(ctx.CurrentAction)
 	if nextNode == "" {
-		logger.Debug(failureReasonInvalidAction, log.String("actionRef", ctx.CurrentAction))
+		logger.Debug(ErrInvalidActionProvided.Error.DefaultValue, log.String("actionRef", ctx.CurrentAction))
 		nodeResp.Status = common.NodeStatusFailure
-		nodeResp.FailureReason = failureReasonInvalidAction
+		nodeResp.Error = &ErrInvalidActionProvided
 		return nodeResp, nil
 	}
 	nodeResp.NextNodeID = nextNode

@@ -222,7 +222,7 @@ func TestAuthorizationExecutor_Execute_NotAuthenticated(t *testing.T) {
 	// Assert - should FAIL (changed behavior from original design)
 	assert.NoError(t, err)
 	assert.Equal(t, common.ExecFailure, resp.Status)
-	assert.Equal(t, failureReasonUserNotAuthenticated, resp.FailureReason)
+	assert.Equal(t, ErrUserNotAuthenticated.Code, resp.Error.Code)
 
 	// Service should NOT be called
 	mockAuthzService.AssertNotCalled(t, "GetAuthorizedPermissions")
@@ -710,7 +710,7 @@ func TestAuthorizationExecutor_Execute_NonRegistrationFlow_UnauthenticatedShould
 			// Assert - should fail
 			assert.NoError(t, err)
 			assert.Equal(t, common.ExecFailure, resp.Status)
-			assert.Equal(t, failureReasonUserNotAuthenticated, resp.FailureReason)
+			assert.Equal(t, ErrUserNotAuthenticated.Code, resp.Error.Code)
 
 			// Service should NOT be called
 			mockAuthzService.AssertNotCalled(t, "GetAuthorizedPermissions")

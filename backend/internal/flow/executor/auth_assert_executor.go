@@ -115,7 +115,7 @@ func (a *authAssertExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 		execResp.Assertion = token
 	} else {
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = failureReasonUserNotAuthenticated
+		execResp.Error = &ErrUserNotAuthenticated
 	}
 
 	logger.Debug("Authentication assertion executor execution completed",

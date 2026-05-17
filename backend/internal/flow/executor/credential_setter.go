@@ -93,7 +93,7 @@ func (e *credentialSetter) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 	if userID == "" {
 		logger.Debug("User ID not found in flow context")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "User ID not found in flow context"
+		execResp.Error = &ErrUserIDMissingInContext
 		return execResp, nil
 	}
 
@@ -102,7 +102,7 @@ func (e *credentialSetter) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 	if len(requiredInputs) == 0 {
 		logger.Debug("No required inputs configured for credential setter")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "No credential input configured for credential setter"
+		execResp.Error = &ErrCredentialInputMissing
 		return execResp, nil
 	}
 
@@ -111,7 +111,7 @@ func (e *credentialSetter) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 	if credentialKey == "" {
 		logger.Debug("Required input has empty identifier in credential setter")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Invalid credential input configuration"
+		execResp.Error = &ErrCredentialInputInvalid
 		return execResp, nil
 	}
 	credentialValue = ctx.UserInputs[credentialKey]
@@ -119,7 +119,7 @@ func (e *credentialSetter) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 	if credentialValue == "" {
 		logger.Debug("Credential value is empty", log.String("credentialKey", credentialKey))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Credential value cannot be empty"
+		execResp.Error = &ErrCredentialValueEmpty
 		return execResp, nil
 	}
 
@@ -130,7 +130,7 @@ func (e *credentialSetter) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 	if err != nil {
 		logger.Debug("Failed to marshal credentials", log.Error(err))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Failed to process credentials"
+		execResp.Error = &ErrCredentialProcessingFailed
 		return execResp, nil
 	}
 
@@ -139,7 +139,7 @@ func (e *credentialSetter) Execute(ctx *core.NodeContext) (*common.ExecutorRespo
 	if svcErr != nil {
 		logger.Debug("Failed to update user credentials", log.MaskedString(log.LoggerKeyUserID, userID))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Failed to set credentials"
+		execResp.Error = &ErrCredentialSetFailed
 		return execResp, nil
 	}
 

@@ -670,7 +670,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowDuplicateUs
 	// Step 3: Verify registration failure due to duplicate user
 	ts.Require().Equal("ERROR", completeFlowStep2.FlowStatus, "Expected flow status to be ERROR for duplicate user")
 	ts.Require().Empty(completeFlowStep2.Assertion, "No JWT assertion should be returned for failed registration")
-	ts.Require().NotEmpty(completeFlowStep2.FailureReason, "Failure reason should be provided for duplicate user")
+	ts.Require().NotNil(completeFlowStep2.Error, "Error should be provided for duplicate user")
 }
 
 func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowWithExistingUserAllowed() {
@@ -742,7 +742,7 @@ func (ts *GoogleRegistrationFlowTestSuite) TestGoogleRegistrationFlowWithExistin
 	ts.Require().Equal("COMPLETE", completeFlowStep2.FlowStatus,
 		"Registration should complete successfully with existing user")
 	ts.Require().NotEmpty(completeFlowStep2.Assertion, "JWT assertion should be returned for existing user")
-	ts.Require().Empty(completeFlowStep2.FailureReason, "No failure reason should be present")
+	ts.Require().Nil(completeFlowStep2.Error, "No error should be present")
 
 	// Decode and validate JWT claims
 	jwtClaims, err := testutils.DecodeJWT(completeFlowStep2.Assertion)

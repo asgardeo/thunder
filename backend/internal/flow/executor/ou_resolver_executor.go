@@ -25,6 +25,7 @@ import (
 	"github.com/thunder-id/thunderid/internal/flow/core"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 	"github.com/thunder-id/thunderid/internal/system/log"
 	"github.com/thunder-id/thunderid/internal/system/security"
 )
@@ -105,7 +106,10 @@ func (e *ouResolverExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRes
 	default:
 		logger.Error("Unsupported resolveFrom value", log.String("resolveFrom", resolveFrom))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Unsupported OU resolution strategy: " + resolveFrom
+		execResp.Error = serviceerror.CustomServiceError(ErrOUResolutionFailed, i18ncore.I18nMessage{
+			Key:          ErrOUResolutionFailed.ErrorDescription.Key,
+			DefaultValue: "Unsupported OU resolution strategy: " + resolveFrom,
+		})
 		return execResp, nil
 	}
 }
@@ -117,7 +121,10 @@ func (e *ouResolverExecutor) resolveFromCaller(ctx *core.NodeContext,
 	if callerOUID == "" {
 		logger.Error("Caller OU not found in security context")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Unable to determine caller organization unit"
+		execResp.Error = serviceerror.CustomServiceError(ErrOUResolutionFailed, i18ncore.I18nMessage{
+			Key:          ErrOUResolutionFailed.ErrorDescription.Key,
+			DefaultValue: "Unable to resolve caller caller organization unit from  context",
+		})
 		return execResp, nil
 	}
 
@@ -154,7 +161,7 @@ func (e *ouResolverExecutor) resolveFromPrompt(ctx *core.NodeContext,
 			if svcErr.Type == serviceerror.ClientErrorType {
 				execResp.Status = common.ExecUserInputRequired
 				execResp.Inputs = e.GetDefaultInputs()
-				execResp.FailureReason = "The selected organization unit is not valid."
+				execResp.Error = &ErrInvalidOU
 				return execResp, nil
 			}
 
@@ -166,7 +173,7 @@ func (e *ouResolverExecutor) resolveFromPrompt(ctx *core.NodeContext,
 				log.String("parentOUID", parentOUID))
 			execResp.Status = common.ExecUserInputRequired
 			execResp.Inputs = e.GetDefaultInputs()
-			execResp.FailureReason = "The selected organization unit is not valid for the chosen user type."
+			execResp.Error = &ErrUserTypeNotValidForOU
 			return execResp, nil
 		}
 
@@ -226,7 +233,7 @@ func (e *ouResolverExecutor) resolveFromPromptAll(ctx *core.NodeContext,
 		if !exists {
 			execResp.Status = common.ExecUserInputRequired
 			execResp.Inputs = e.GetDefaultInputs()
-			execResp.FailureReason = "The selected organization unit does not exist."
+			execResp.Error = &ErrOUNotFound
 			return execResp, nil
 		}
 

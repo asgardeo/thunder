@@ -86,14 +86,14 @@ func (e *smsExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, 
 	if recipient == "" {
 		logger.Debug("SMS recipient not found in user inputs or runtime data")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "SMS recipient is required"
+		execResp.Error = &ErrSMSRecipientMissing
 		return execResp, nil
 	}
 
 	if !isValidPhoneNumber(recipient) {
 		logger.Debug("SMS recipient is not a valid phone number", log.String("phoneAttr", phoneAttr))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "SMS recipient is not a valid phone number"
+		execResp.Error = &ErrSMSInvalidPhone
 		return execResp, nil
 	}
 
@@ -105,7 +105,7 @@ func (e *smsExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, 
 	tmplProp, ok := ctx.NodeProperties[propertyKeySMSTemplate]
 	if !ok {
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "SMS template is required"
+		execResp.Error = &ErrSMSTemplateMissing
 		return execResp, nil
 	}
 	tmplStr, ok := tmplProp.(string)
@@ -115,7 +115,7 @@ func (e *smsExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, 
 	}
 	if tmplStr == "" {
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "SMS template is required"
+		execResp.Error = &ErrSMSTemplateMissing
 		return execResp, nil
 	}
 	scenario := template.ScenarioType(tmplStr)
@@ -135,7 +135,7 @@ func (e *smsExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResponse, 
 	if notifSvcErr != nil {
 		if ctx.FlowType == common.FlowTypeUserOnboarding && notifSvcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "Notification configuration is wrong or not set."
+			execResp.Error = &ErrSMSProviderNotConfigured
 			return execResp, nil
 		}
 		return nil, fmt.Errorf("SMS send failed: %s", notifSvcErr.ErrorDescription)

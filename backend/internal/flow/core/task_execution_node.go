@@ -19,6 +19,8 @@
 package core
 
 import (
+	"encoding/json"
+
 	"github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
@@ -115,7 +117,7 @@ func (n *taskExecutionNode) Execute(ctx *NodeContext) (*common.NodeResponse, *se
 		if n.onSuccess != "" {
 			nodeResp.NextNodeID = n.onSuccess
 		}
-	} else if nodeResp.FailureReason != "" && n.onFailure != "" {
+	} else if nodeResp.Error != nil && n.onFailure != "" {
 		// Change status to Forward so engine forwards execution to onFailure node
 		nodeResp.Status = common.NodeStatusForward
 		nodeResp.NextNodeID = n.onFailure
@@ -124,7 +126,10 @@ func (n *taskExecutionNode) Execute(ctx *NodeContext) (*common.NodeResponse, *se
 		if nodeResp.RuntimeData == nil {
 			nodeResp.RuntimeData = make(map[string]string)
 		}
-		nodeResp.RuntimeData["failureReason"] = nodeResp.FailureReason
+		nodeResp.RuntimeData["failureReason"] = nodeResp.Error.Error.DefaultValue
+		if jsonBytes, err := json.Marshal(nodeResp.Error); err == nil {
+			nodeResp.RuntimeData["failureReasonJSON"] = string(jsonBytes)
+		}
 
 		// Clear user inputs consumed by this executor
 		for _, input := range n.inputs {
@@ -137,11 +142,14 @@ func (n *taskExecutionNode) Execute(ctx *NodeContext) (*common.NodeResponse, *se
 		nodeResp.NextNodeID = n.onIncomplete
 
 		// Propagate failure reason if present
-		if nodeResp.FailureReason != "" {
+		if nodeResp.Error != nil {
 			if nodeResp.RuntimeData == nil {
 				nodeResp.RuntimeData = make(map[string]string)
 			}
-			nodeResp.RuntimeData["failureReason"] = nodeResp.FailureReason
+			nodeResp.RuntimeData["failureReason"] = nodeResp.Error.Error.DefaultValue
+			if jsonBytes, err := json.Marshal(nodeResp.Error); err == nil {
+				nodeResp.RuntimeData["failureReasonJSON"] = string(jsonBytes)
+			}
 
 			// Clear user inputs consumed by this executor
 			for _, input := range n.inputs {
@@ -198,7 +206,7 @@ func (n *taskExecutionNode) triggerExecutor(ctx *NodeContext, logger *log.Logger
 // buildNodeResponse constructs a NodeResponse from the ExecutorResponse.
 func (n *taskExecutionNode) buildNodeResponse(execResp *common.ExecutorResponse) *common.NodeResponse {
 	nodeResp := &common.NodeResponse{
-		FailureReason:     execResp.FailureReason,
+		Error:             execResp.Error,
 		Inputs:            execResp.Inputs,
 		AdditionalData:    execResp.AdditionalData,
 		RedirectURL:       execResp.RedirectURL,

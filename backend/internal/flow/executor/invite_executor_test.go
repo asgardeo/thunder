@@ -192,7 +192,7 @@ func (suite *InviteExecutorTestSuite) TestExecute_VerifyMode_ValidationFailure_M
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Equal(suite.T(), "Invalid invite token", resp.FailureReason)
+	assert.Equal(suite.T(), ErrInvalidInviteToken.Error.DefaultValue, resp.Error.Error.DefaultValue)
 }
 
 func (suite *InviteExecutorTestSuite) TestExecute_VerifyMode_ValidationFailure_NoStoredToken() {
@@ -212,7 +212,7 @@ func (suite *InviteExecutorTestSuite) TestExecute_VerifyMode_ValidationFailure_N
 
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Equal(suite.T(), "Invalid invite token", resp.FailureReason)
+	assert.Equal(suite.T(), ErrInvalidInviteToken.Error.DefaultValue, resp.Error.Error.DefaultValue)
 }
 
 func (suite *InviteExecutorTestSuite) TestExecute_InvalidMode() {

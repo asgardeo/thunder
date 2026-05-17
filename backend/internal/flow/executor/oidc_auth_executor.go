@@ -145,7 +145,7 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 		if returnedState != expectedState {
 			logger.Debug("OAuth state mismatch")
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "Invalid OAuth state parameter"
+			execResp.Error = &ErrInvalidOAuthState
 			return nil
 		}
 		delete(ctx.RuntimeData, common.RuntimeKeyOAuthState)
@@ -168,7 +168,7 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
+			execResp.Error = svcErr
 			return nil
 		}
 
@@ -187,14 +187,14 @@ func (o *oidcAuthExecutor) ProcessAuthFlowResponse(ctx *core.NodeContext,
 		claimNonce := basicResult.ExternalClaims[userInputNonce]
 		if claimNonce != nonce {
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "Nonce mismatch in ID token claims."
+			execResp.Error = &ErrNonceMismatch
 			return nil
 		}
 	}
 
 	if !validateFederatedIdentifierConsistency(ctx, basicResult) {
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Invalid federated user"
+		execResp.Error = &ErrInvalidFederatedUser
 		return nil
 	}
 

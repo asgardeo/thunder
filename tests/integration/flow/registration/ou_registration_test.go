@@ -707,7 +707,8 @@ func (ts *OURegistrationFlowTestSuite) TestBasicRegistrationFlowWithOUCreationDu
 			ts.Require().NoError(err)
 			ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus)
 			ts.Require().Empty(flowStep.Assertion)
-			ts.Require().Contains(flowStep.FailureReason, tc.expectedErrorSubstr)
+			ts.Require().NotNil(flowStep.Error)
+			ts.Require().Contains(flowStep.Error.Description.DefaultValue, tc.expectedErrorSubstr)
 		})
 	}
 }
@@ -935,7 +936,8 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreationDupl
 			ts.Require().NoError(err)
 			ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus)
 			ts.Require().Empty(flowStep.Assertion)
-			ts.Require().Contains(flowStep.FailureReason, tc.expectedErrorSubstr)
+			ts.Require().NotNil(flowStep.Error)
+			ts.Require().Contains(flowStep.Error.Description.DefaultValue, tc.expectedErrorSubstr)
 		})
 	}
 }

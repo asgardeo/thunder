@@ -100,7 +100,7 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 	if e.emailClient == nil {
 		execResp.AdditionalData[common.DataEmailSent] = dataValueFalse
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Email service is not configured"
+		execResp.Error = &ErrEmailServiceNotConfigured
 		logger.Debug("Email client not configured")
 		return execResp, nil
 	}
@@ -117,7 +117,7 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 	if recipient == "" {
 		logger.Debug("Email recipient not found in user inputs or runtime data")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Email recipient is required"
+		execResp.Error = &ErrEmailRecipientMissing
 		return execResp, nil
 	}
 
@@ -154,7 +154,7 @@ func (e *emailExecutor) executeSend(ctx *core.NodeContext) (*common.ExecutorResp
 		if isEmailError(err) {
 			logger.Error("Error sending mail : ", log.Error(err))
 			execResp.Status = common.ExecFailure
-			execResp.FailureReason = "Failed to send email"
+			execResp.Error = &ErrEmailSendFailed
 			return execResp, nil
 		}
 		return nil, fmt.Errorf("email send failed: %w", err)

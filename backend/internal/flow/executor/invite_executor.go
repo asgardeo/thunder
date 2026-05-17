@@ -97,6 +97,7 @@ func (e *inviteExecutor) executeGenerate(ctx *core.NodeContext) (*common.Executo
 	if err != nil {
 		logger.Debug("Failed to get or generate invite token", log.Error(err))
 		execResp.Status = common.ExecFailure
+		execResp.Error = &ErrInviteTokenGenerationFailed
 		return execResp, nil
 	}
 
@@ -141,14 +142,14 @@ func (e *inviteExecutor) executeVerify(ctx *core.NodeContext) (*common.ExecutorR
 	if !hasStoredToken {
 		logger.Debug("No invite token found in runtime data")
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Invalid invite token"
+		execResp.Error = &ErrInvalidInviteToken
 		return execResp, nil
 	}
 
 	if inviteTokenInput != storedToken {
 		logger.Debug("Invite token mismatch", log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Invalid invite token"
+		execResp.Error = &ErrInvalidInviteToken
 		return execResp, nil
 	}
 

@@ -121,7 +121,7 @@ func (b *basicAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResp
 	authenticatedUser, err := b.getAuthenticatedUser(ctx, execResp)
 	if err != nil {
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Failed to authenticate user: " + err.Error()
+		execResp.Error = &ErrUserAuthFailed
 		return execResp, nil
 	}
 	if execResp.Status == common.ExecFailure || execResp.Status == common.ExecUserInputRequired {
@@ -129,7 +129,7 @@ func (b *basicAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResp
 	}
 	if authenticatedUser == nil {
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "Authenticated user not found."
+		execResp.Error = &ErrUserAuthFailed
 		return execResp, nil
 	}
 	if !authenticatedUser.IsAuthenticated && ctx.FlowType != common.FlowTypeRegistration {
@@ -139,7 +139,7 @@ func (b *basicAuthExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorResp
 		} else {
 			execResp.Inputs = b.GetRequiredInputs(ctx)
 		}
-		execResp.FailureReason = "User authentication failed."
+		execResp.Error = &ErrInvalidCredentials
 		return execResp, nil
 	}
 
@@ -195,7 +195,7 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 			return nil, err
 		}
 		if execResp.Status == common.ExecFailure {
-			if execResp.FailureReason == failureReasonUserNotFound {
+			if execResp.Error != nil && execResp.Error.Code == ErrUserNotFound.Code {
 				logger.Debug("User not found for the provided attributes. Proceeding with registration flow.")
 				execResp.Status = common.ExecComplete
 				return &authncm.AuthenticatedUser{
@@ -207,7 +207,7 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 		}
 		// User found - fail registration.
 		execResp.Status = common.ExecFailure
-		execResp.FailureReason = "User already exists with the provided attributes."
+		execResp.Error = &ErrUserAlreadyExists
 		return nil, nil
 	}
 
@@ -222,11 +222,11 @@ func (b *basicAuthExecutor) getAuthenticatedUser(ctx *core.NodeContext,
 
 			switch svcErr.Code {
 			case authnprovidermgr.ErrorUserNotFound.Code:
-				execResp.FailureReason = failureReasonUserNotFound
+				execResp.Error = &ErrUserNotFound
 			case authnprovidermgr.ErrorAuthenticationFailed.Code:
-				execResp.FailureReason = failureReasonInvalidCredentials
+				execResp.Error = &ErrInvalidCredentials
 			default:
-				execResp.FailureReason = "Failed to authenticate user: " + svcErr.ErrorDescription.DefaultValue
+				execResp.Error = &ErrUserAuthFailed
 			}
 
 			return nil, nil

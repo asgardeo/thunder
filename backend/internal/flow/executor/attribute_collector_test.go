@@ -127,7 +127,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UserNotAuthenticated() {
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Equal(suite.T(), failureReasonUserNotAuthenticated, resp.FailureReason)
+	assert.Equal(suite.T(), ErrUserNotAuthenticated.Error.DefaultValue, resp.Error.Error.DefaultValue)
 }
 
 func (suite *AttributeCollectorTestSuite) TestExecute_PrerequisitesNotMet() {
@@ -230,7 +230,7 @@ func (suite *AttributeCollectorTestSuite) TestExecute_UpdateUserFails() {
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), resp)
 	assert.Equal(suite.T(), common.ExecFailure, resp.Status)
-	assert.Contains(suite.T(), resp.FailureReason, "Failed to update user attributes")
+	assert.Contains(suite.T(), resp.Error.Error.DefaultValue, "Failed to update user attributes")
 	suite.mockEntityProvider.AssertExpectations(suite.T())
 }
 

@@ -19,11 +19,14 @@
 package core
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 )
 
 const testEmailAttr = "email"
@@ -557,11 +560,13 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason() {
 	})
 
 	// Context with failure reason in runtime data
+	svcErr := serviceerror.ServiceError{Error: i18ncore.I18nMessage{DefaultValue: "Authentication failed"}}
+	svcErrJSON, _ := json.Marshal(svcErr)
 	ctx := &NodeContext{
 		ExecutionID: "test-flow",
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
-			"failureReason": "Authentication failed",
+			"failureReasonJSON": string(svcErrJSON),
 		},
 	}
 	resp, err := node.Execute(ctx)
@@ -569,8 +574,9 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason() {
 	s.Nil(err)
 	s.NotNil(resp)
 	s.Equal(common.NodeStatusIncomplete, resp.Status)
-	s.Equal("Authentication failed", resp.FailureReason, "Should include failure reason in response")
-	s.NotContains(ctx.RuntimeData, "failureReason", "Should delete failure reason from runtime data")
+	s.NotNil(resp.Error, "Should include failure error in response")
+	s.Equal("Authentication failed", resp.Error.Error.DefaultValue, "Should include failure reason in response")
+	s.NotContains(ctx.RuntimeData, "failureReasonJSON", "Should delete failureReasonJSON from runtime data")
 }
 
 func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason_ClearsUserInputs() {
@@ -586,7 +592,11 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason_ClearsUserInputs(
 		},
 	})
 
-	// User submitted inputs, but downstream task failed - routed back with failureReason
+	// User submitted inputs, but downstream task failed - routed back with failureReasonJSON
+	svcErr := serviceerror.ServiceError{
+		Error: i18ncore.I18nMessage{DefaultValue: "A user with this username already exists"},
+	}
+	svcErrJSON, _ := json.Marshal(svcErr)
 	ctx := &NodeContext{
 		ExecutionID: "test-flow",
 		UserInputs: map[string]string{
@@ -594,7 +604,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason_ClearsUserInputs(
 			"password": "secret",
 		},
 		RuntimeData: map[string]string{
-			"failureReason": "A user with this username already exists",
+			"failureReasonJSON": string(svcErrJSON),
 		},
 	}
 	resp, err := node.Execute(ctx)
@@ -602,7 +612,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason_ClearsUserInputs(
 	s.Nil(err)
 	s.NotNil(resp)
 	s.Equal(common.NodeStatusIncomplete, resp.Status)
-	s.Equal("A user with this username already exists", resp.FailureReason)
+	s.NotNil(resp.Error)
+	s.Equal("A user with this username already exists", resp.Error.Error.DefaultValue)
 	s.NotContains(ctx.UserInputs, "username", "Prompt inputs should be cleared to force re-prompt")
 	s.NotContains(ctx.UserInputs, "password", "Prompt inputs should be cleared to force re-prompt")
 }
@@ -619,6 +630,10 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason_ClearsCurrentActi
 		},
 	})
 
+	svcErr := serviceerror.ServiceError{
+		Error: i18ncore.I18nMessage{DefaultValue: "A user with this email already exists"},
+	}
+	svcErrJSON, _ := json.Marshal(svcErr)
 	ctx := &NodeContext{
 		ExecutionID:   "test-flow",
 		CurrentAction: "submit",
@@ -626,7 +641,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason_ClearsCurrentActi
 			testEmailAttr: "existing@example.com",
 		},
 		RuntimeData: map[string]string{
-			"failureReason": "A user with this email already exists",
+			"failureReasonJSON": string(svcErrJSON),
 		},
 	}
 	resp, err := node.Execute(ctx)
@@ -634,7 +649,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureReason_ClearsCurrentActi
 	s.Nil(err)
 	s.NotNil(resp)
 	s.Equal(common.NodeStatusIncomplete, resp.Status)
-	s.Equal("A user with this email already exists", resp.FailureReason)
+	s.NotNil(resp.Error)
+	s.Equal("A user with this email already exists", resp.Error.Error.DefaultValue)
 	s.Equal("", ctx.CurrentAction, "CurrentAction should be cleared to force re-prompt")
 }
 
@@ -650,7 +666,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithEmptyFailureReason() {
 		},
 	})
 
-	// Context with empty failure reason
+	// Context with empty failureReasonJSON (absent) — no failure path triggered
 	ctx := &NodeContext{
 		ExecutionID: "test-flow",
 		UserInputs:  map[string]string{},
@@ -663,8 +679,8 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithEmptyFailureReason() {
 	s.Nil(err)
 	s.NotNil(resp)
 	s.Equal(common.NodeStatusIncomplete, resp.Status)
-	s.Equal("", resp.FailureReason, "Should not set failure reason when empty")
-	s.Contains(ctx.RuntimeData, "failureReason", "Should not delete empty failure reason from runtime data")
+	s.Nil(resp.Error, "Should not set error when failureReasonJSON is absent")
+	s.Contains(ctx.RuntimeData, "failureReason", "Should not delete failureReason when failureReasonJSON is absent")
 }
 
 func (s *PromptOnlyNodeTestSuite) TestExecuteWithNilRuntimeData() {
@@ -690,7 +706,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithNilRuntimeData() {
 	s.Nil(err)
 	s.NotNil(resp)
 	s.Equal(common.NodeStatusIncomplete, resp.Status)
-	s.Equal("", resp.FailureReason, "Should handle nil runtime data gracefully")
+	s.Nil(resp.Error, "Should handle nil runtime data gracefully")
 }
 
 func (s *PromptOnlyNodeTestSuite) TestExecuteInvalidActionReturnsFailure() {
@@ -730,7 +746,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteInvalidActionReturnsFailure() {
 	s.Nil(err)
 	s.NotNil(resp)
 	s.Equal(common.NodeStatusFailure, resp.Status, "Should return failure status")
-	s.Equal("Invalid action selected", resp.FailureReason, "Should set failure reason")
+	s.NotNil(resp.Error, "Should set error on invalid action")
 
 	// Restore for other tests
 	prompts[0].Action.NextNode = originalNextNode
@@ -990,12 +1006,14 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureAndRecovery() {
 	})
 
 	// First execution with failure
+	svcErr := serviceerror.ServiceError{Error: i18ncore.I18nMessage{DefaultValue: "Invalid credentials"}}
+	svcErrJSON, _ := json.Marshal(svcErr)
 	ctx := &NodeContext{
 		ExecutionID: "test-flow",
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
-			"failureReason": "Invalid credentials",
-			"otherData":     "should remain",
+			"failureReasonJSON": string(svcErrJSON),
+			"otherData":         "should remain",
 		},
 	}
 	resp, err := node.Execute(ctx)
@@ -1003,8 +1021,9 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureAndRecovery() {
 	s.Nil(err)
 	s.NotNil(resp)
 	s.Equal(common.NodeStatusIncomplete, resp.Status)
-	s.Equal("Invalid credentials", resp.FailureReason)
-	s.NotContains(ctx.RuntimeData, "failureReason", "Failure reason should be removed")
+	s.NotNil(resp.Error)
+	s.Equal("Invalid credentials", resp.Error.Error.DefaultValue)
+	s.NotContains(ctx.RuntimeData, "failureReasonJSON", "Failure reason should be removed")
 	s.Contains(ctx.RuntimeData, "otherData", "Other runtime data should remain")
 
 	// Second execution with correct inputs (recovery)
@@ -1018,7 +1037,7 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithFailureAndRecovery() {
 	s.Nil(err)
 	s.NotNil(resp)
 	s.Equal(common.NodeStatusComplete, resp.Status)
-	s.Equal("", resp.FailureReason, "Should not have failure reason on success")
+	s.Nil(resp.Error, "Should not have failure error on success")
 	s.Equal("next", resp.NextNodeID)
 }
 
@@ -3100,7 +3119,7 @@ func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_DisallowedActionReject
 	s.Nil(err)
 	s.Equal(common.NodeStatusFailure, resp.Status,
 		"selecting an action outside allowed_login_options must fail")
-	s.Equal("Invalid action selected", resp.FailureReason)
+	s.NotNil(resp.Error, "Should set error when action is not in allowed_login_options")
 }
 
 func (s *PromptOnlyNodeTestSuite) TestLoginOptionsVariant_AllowedLoginOptionsCaptured() {

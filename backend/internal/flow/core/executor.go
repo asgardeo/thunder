@@ -141,7 +141,7 @@ func (e *executor) ValidatePrerequisites(ctx *NodeContext, execResp *common.Exec
 					logger.Debug("Prerequisite not met for the executor",
 						log.String("identifier", prerequisite.Identifier))
 					execResp.Status = common.ExecFailure
-					execResp.FailureReason = "Prerequisite not met: " + prerequisite.Identifier
+					execResp.Error = &ErrExecutorPrerequisiteNotMet
 					return false
 				} else {
 					// ForwardedData found but verify it's a string value
@@ -149,7 +149,7 @@ func (e *executor) ValidatePrerequisites(ctx *NodeContext, execResp *common.Exec
 						logger.Debug("Prerequisite not met for the executor (non-string in ForwardedData)",
 							log.String("identifier", prerequisite.Identifier))
 						execResp.Status = common.ExecFailure
-						execResp.FailureReason = "Prerequisite not met: " + prerequisite.Identifier
+						execResp.Error = &ErrExecutorPrerequisiteNotMet
 						return false
 					}
 				}
