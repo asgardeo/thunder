@@ -57,7 +57,7 @@
                       "label": "Sign In",
                       "action": {
                         "type": "NEXT",
-                        "onSuccess": "{{BASIC_AUTH_EXECUTION_STEP_ID}}"
+                        "onSuccess": "{{CREDENTIALS_AUTH_EXECUTION_STEP_ID}}"
                       }
                     }
                   ]
@@ -577,7 +577,7 @@
               "type": "ID"
             },
             {
-              "key": "BASIC_AUTH_FOR_REG_EXECUTOR_ID",
+              "key": "CREDENTIALS_AUTH_FOR_REG_EXECUTOR_ID",
               "type": "ID"
             },
             {
@@ -806,7 +806,7 @@
                       "label": "Verify & Register Passkey",
                       "action": {
                         "type": "NEXT",
-                        "onSuccess": "{{BASIC_AUTH_FOR_REG_EXECUTOR_ID}}"
+                        "onSuccess": "{{CREDENTIALS_AUTH_FOR_REG_EXECUTOR_ID}}"
                       }
                     }
                   ]
@@ -815,7 +815,7 @@
             }
           },
           {
-            "id": "{{BASIC_AUTH_FOR_REG_EXECUTOR_ID}}",
+            "id": "{{CREDENTIALS_AUTH_FOR_REG_EXECUTOR_ID}}",
             "type": "TASK_EXECUTION",
             "size": {
               "width": 200,
@@ -829,7 +829,7 @@
               "action": {
                 "type": "EXECUTOR",
                 "executor": {
-                  "name": "BasicAuthExecutor"
+                  "name": "CredentialsAuthExecutor"
                 },
                 "onSuccess": "{{PASSKEY_REGISTER_START_EXECUTOR_ID}}",
                 "onFailure": "{{PASSWORD_FOR_REG_VIEW_ID}}",

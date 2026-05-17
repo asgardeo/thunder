@@ -1360,7 +1360,7 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Pre
 // ----- BasicAuth + Consent integration-style test -----
 
 func (suite *ConsentExecutorTestSuite) TestExecute_BasicAuth_NilAvailableAttributes_PromptsConsent() {
-	// Simulates a BasicAuthExecutor-authenticated user where AuthUser has been populated by the
+	// Simulates a CredentialsAuthExecutor-authenticated user where AuthUser has been populated by the
 	// auth provider (non-zero userID makes IsAuthenticated() true) and GetUserAvailableAttributes
 	// returns the provider's attribute set. ResolveConsent must receive that non-nil map so
 	// profile-presence filtering works correctly.
