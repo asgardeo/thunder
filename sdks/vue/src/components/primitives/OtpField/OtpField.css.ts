@@ -19,7 +19,7 @@
 /**
  * Styles for the OtpField primitive component.
  *
- * BEM block: `.thunder-otp-field`
+ * BEM block: `.thunderid-otp-field`
  *
  * Elements:
  *   __label | __required | __inputs | __digit | __error
@@ -29,14 +29,14 @@ const OTP_FIELD_CSS = `
    OtpField
    ============================================================ */
 
-.thunder-otp-field {
+.thunderid-otp-field {
   display: flex;
   flex-direction: column;
   gap: calc(var(--thunder-spacing-unit) * 0.75);
   font-family: var(--thunder-typography-fontFamily);
 }
 
-.thunder-otp-field__label {
+.thunderid-otp-field__label {
   font-size: var(--thunder-typography-fontSize-sm);
   font-weight: var(--thunder-typography-fontWeight-medium);
   color: var(--thunder-color-text-primary);
@@ -44,17 +44,17 @@ const OTP_FIELD_CSS = `
   line-height: var(--thunder-typography-lineHeight-normal);
 }
 
-.thunder-otp-field__required {
+.thunderid-otp-field__required {
   color: var(--thunder-color-error-main);
   margin-left: 2px;
 }
 
-.thunder-otp-field__inputs {
+.thunderid-otp-field__inputs {
   display: flex;
   gap: calc(var(--thunder-spacing-unit) * 0.75);
 }
 
-.thunder-otp-field__digit {
+.thunderid-otp-field__digit {
   width: var(--thunder-input-height);
   height: var(--thunder-input-height);
   text-align: center;
@@ -71,17 +71,17 @@ const OTP_FIELD_CSS = `
     border-color var(--thunder-transition-fast),
     box-shadow var(--thunder-transition-fast);
 }
-.thunder-otp-field__digit:focus {
+.thunderid-otp-field__digit:focus {
   border-color: var(--thunder-input-focusBorderColor);
   box-shadow: var(--thunder-input-focusRing);
 }
-.thunder-otp-field__digit:disabled {
+.thunderid-otp-field__digit:disabled {
   background-color: var(--thunder-color-background-disabled);
   color: var(--thunder-color-action-disabled);
   cursor: not-allowed;
 }
 
-.thunder-otp-field__error {
+.thunderid-otp-field__error {
   font-size: var(--thunder-typography-fontSize-xs);
   color: var(--thunder-color-error-contrastText);
   line-height: var(--thunder-typography-lineHeight-normal);

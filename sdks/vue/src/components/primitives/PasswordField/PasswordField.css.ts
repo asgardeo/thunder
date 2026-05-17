@@ -19,7 +19,7 @@
 /**
  * Styles for the PasswordField primitive component.
  *
- * BEM block: `.thunder-password-field`
+ * BEM block: `.thunderid-password-field`
  *
  * Modifiers:
  *   --error  – shows validation error state
@@ -32,7 +32,7 @@ const PASSWORD_FIELD_CSS = `
    PasswordField
    ============================================================ */
 
-.thunder-password-field {
+.thunderid-password-field {
   display: flex;
   flex-direction: column;
   gap: calc(var(--thunder-spacing-unit) * 0.5);
@@ -41,7 +41,7 @@ const PASSWORD_FIELD_CSS = `
   box-sizing: border-box;
 }
 
-.thunder-password-field__label {
+.thunderid-password-field__label {
   font-size: var(--thunder-typography-fontSize-sm);
   font-weight: var(--thunder-typography-fontWeight-medium);
   color: var(--thunder-color-text-primary);
@@ -49,12 +49,12 @@ const PASSWORD_FIELD_CSS = `
   line-height: var(--thunder-typography-lineHeight-normal);
 }
 
-.thunder-password-field__required {
+.thunderid-password-field__required {
   color: var(--thunder-color-error-main);
   margin-left: 2px;
 }
 
-.thunder-password-field__wrapper {
+.thunderid-password-field__wrapper {
   display: flex;
   align-items: center;
   height: var(--thunder-input-height);
@@ -67,18 +67,18 @@ const PASSWORD_FIELD_CSS = `
   overflow: hidden;
   box-sizing: border-box;
 }
-.thunder-password-field__wrapper:focus-within {
+.thunderid-password-field__wrapper:focus-within {
   border-color: var(--thunder-input-focusBorderColor);
   box-shadow: var(--thunder-input-focusRing);
 }
-.thunder-password-field--error .thunder-password-field__wrapper {
+.thunderid-password-field--error .thunderid-password-field__wrapper {
   border-color: var(--thunder-color-error-main);
 }
-.thunder-password-field--error .thunder-password-field__wrapper:focus-within {
+.thunderid-password-field--error .thunderid-password-field__wrapper:focus-within {
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
 }
 
-.thunder-password-field__input {
+.thunderid-password-field__input {
   flex: 1;
   padding: 0 var(--thunder-input-paddingX);
   border: none;
@@ -92,14 +92,14 @@ const PASSWORD_FIELD_CSS = `
   box-sizing: border-box;
   min-width: 0;
 }
-.thunder-password-field__input::placeholder {
+.thunderid-password-field__input::placeholder {
   color: var(--thunder-color-text-secondary);
 }
-.thunder-password-field__input:disabled {
+.thunderid-password-field__input:disabled {
   cursor: not-allowed;
 }
 
-.thunder-password-field__toggle {
+.thunderid-password-field__toggle {
   background: none;
   border: none;
   cursor: pointer;
@@ -113,11 +113,11 @@ const PASSWORD_FIELD_CSS = `
   height: 100%;
   transition: color var(--thunder-transition-fast);
 }
-.thunder-password-field__toggle:hover {
+.thunderid-password-field__toggle:hover {
   color: var(--thunder-color-text-primary);
 }
 
-.thunder-password-field__error {
+.thunderid-password-field__error {
   font-size: var(--thunder-typography-fontSize-xs);
   color: var(--thunder-color-error-contrastText);
   line-height: var(--thunder-typography-lineHeight-normal);

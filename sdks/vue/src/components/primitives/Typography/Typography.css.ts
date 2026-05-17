@@ -19,7 +19,7 @@
 /**
  * Styles for the Typography primitive component.
  *
- * BEM block: `.thunder-typography`
+ * BEM block: `.thunderid-typography`
  *
  * Modifiers (variant):
  *   --h1 | --h2 | --h3 | --h4 | --h5 | --h6
@@ -32,7 +32,7 @@ const TYPOGRAPHY_CSS = `
    Typography
    ============================================================ */
 
-.thunder-typography {
+.thunderid-typography {
   font-family: var(--thunder-typography-fontFamily);
   color: var(--thunder-color-text-primary);
   margin: 0;
@@ -41,74 +41,74 @@ const TYPOGRAPHY_CSS = `
   -moz-osx-font-smoothing: grayscale;
 }
 
-.thunder-typography--h1 {
+.thunderid-typography--h1 {
   font-size: var(--thunder-typography-fontSize-3xl);
   font-weight: var(--thunder-typography-fontWeight-bold);
   line-height: var(--thunder-typography-lineHeight-tight);
   letter-spacing: var(--thunder-typography-letterSpacing-tight);
 }
 
-.thunder-typography--h2 {
+.thunderid-typography--h2 {
   font-size: var(--thunder-typography-fontSize-2xl);
   font-weight: var(--thunder-typography-fontWeight-bold);
   line-height: var(--thunder-typography-lineHeight-tight);
   letter-spacing: var(--thunder-typography-letterSpacing-tight);
 }
 
-.thunder-typography--h3 {
+.thunderid-typography--h3 {
   font-size: var(--thunder-typography-fontSize-xl);
   font-weight: var(--thunder-typography-fontWeight-semibold);
   line-height: var(--thunder-typography-lineHeight-tight);
 }
 
-.thunder-typography--h4 {
+.thunderid-typography--h4 {
   font-size: var(--thunder-typography-fontSize-lg);
   font-weight: var(--thunder-typography-fontWeight-semibold);
 }
 
-.thunder-typography--h5 {
+.thunderid-typography--h5 {
   font-size: var(--thunder-typography-fontSize-md);
   font-weight: var(--thunder-typography-fontWeight-semibold);
 }
 
-.thunder-typography--h6 {
+.thunderid-typography--h6 {
   font-size: var(--thunder-typography-fontSize-sm);
   font-weight: var(--thunder-typography-fontWeight-semibold);
   text-transform: uppercase;
   letter-spacing: var(--thunder-typography-letterSpacing-wide);
 }
 
-.thunder-typography--subtitle1 {
+.thunderid-typography--subtitle1 {
   font-size: var(--thunder-typography-fontSize-lg);
   font-weight: var(--thunder-typography-fontWeight-medium);
 }
 
-.thunder-typography--subtitle2 {
+.thunderid-typography--subtitle2 {
   font-size: var(--thunder-typography-fontSize-md);
   font-weight: var(--thunder-typography-fontWeight-medium);
   color: var(--thunder-color-text-secondary);
 }
 
-.thunder-typography--body1 {
+.thunderid-typography--body1 {
   font-size: var(--thunder-typography-fontSize-md);
   font-weight: var(--thunder-typography-fontWeight-normal);
   line-height: var(--thunder-typography-lineHeight-relaxed);
 }
 
-.thunder-typography--body2 {
+.thunderid-typography--body2 {
   font-size: var(--thunder-typography-fontSize-sm);
   font-weight: var(--thunder-typography-fontWeight-normal);
   line-height: var(--thunder-typography-lineHeight-relaxed);
   color: var(--thunder-color-text-secondary);
 }
 
-.thunder-typography--caption {
+.thunderid-typography--caption {
   font-size: var(--thunder-typography-fontSize-xs);
   font-weight: var(--thunder-typography-fontWeight-normal);
   color: var(--thunder-color-text-secondary);
 }
 
-.thunder-typography--overline {
+.thunderid-typography--overline {
   font-size: var(--thunder-typography-fontSize-xs);
   font-weight: var(--thunder-typography-fontWeight-medium);
   text-transform: uppercase;

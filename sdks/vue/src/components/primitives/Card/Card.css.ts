@@ -19,7 +19,7 @@
 /**
  * Styles for the Card primitive component.
  *
- * BEM block: `.thunder-card`
+ * BEM block: `.thunderid-card`
  *
  * Modifiers:
  *   --elevated  – medium drop shadow
@@ -31,7 +31,7 @@ const CARD_CSS = `
    Card
    ============================================================ */
 
-.thunder-card {
+.thunderid-card {
   background-color: var(--thunder-color-background-surface);
   border-radius: var(--thunder-card-borderRadius);
   padding: var(--thunder-card-padding);
@@ -39,15 +39,15 @@ const CARD_CSS = `
   transition: box-shadow var(--thunder-transition-normal);
 }
 
-.thunder-card--elevated {
+.thunderid-card--elevated {
   box-shadow: var(--thunder-card-shadow);
 }
 
-.thunder-card--outlined {
+.thunderid-card--outlined {
   border: 1px solid var(--thunder-card-borderColor);
 }
 
-/* .thunder-card--flat: no shadow or border */
+/* .thunderid-card--flat: no shadow or border */
 `;
 
 export default CARD_CSS;

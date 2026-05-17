@@ -19,7 +19,7 @@
 /**
  * Styles for the Checkbox primitive component.
  *
- * BEM block: `.thunder-checkbox`
+ * BEM block: `.thunderid-checkbox`
  *
  * Modifiers:
  *   --error  – shows validation error state
@@ -32,14 +32,14 @@ const CHECKBOX_CSS = `
    Checkbox
    ============================================================ */
 
-.thunder-checkbox {
+.thunderid-checkbox {
   display: flex;
   flex-direction: column;
   gap: calc(var(--thunder-spacing-unit) * 0.5);
   font-family: var(--thunder-typography-fontFamily);
 }
 
-.thunder-checkbox__wrapper {
+.thunderid-checkbox__wrapper {
   display: inline-flex;
   align-items: center;
   gap: calc(var(--thunder-spacing-unit) * 0.75);
@@ -47,7 +47,7 @@ const CHECKBOX_CSS = `
   user-select: none;
 }
 
-.thunder-checkbox__input {
+.thunderid-checkbox__input {
   width: var(--thunder-checkbox-size);
   height: var(--thunder-checkbox-size);
   cursor: pointer;
@@ -55,22 +55,22 @@ const CHECKBOX_CSS = `
   flex-shrink: 0;
   border-radius: var(--thunder-border-radius-xs);
 }
-.thunder-checkbox__input:focus-visible {
+.thunderid-checkbox__input:focus-visible {
   outline: none;
   box-shadow: 0 0 0 var(--thunder-focus-ring-width) var(--thunder-focus-ring-color);
 }
-.thunder-checkbox__input:disabled {
+.thunderid-checkbox__input:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
-.thunder-checkbox__label {
+.thunderid-checkbox__label {
   font-size: var(--thunder-typography-fontSize-md);
   color: var(--thunder-color-text-primary);
   line-height: var(--thunder-typography-lineHeight-normal);
 }
 
-.thunder-checkbox__error {
+.thunderid-checkbox__error {
   font-size: var(--thunder-typography-fontSize-xs);
   color: var(--thunder-color-error-contrastText);
   line-height: var(--thunder-typography-lineHeight-normal);

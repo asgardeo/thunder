@@ -19,7 +19,7 @@
 /**
  * Styles for the OrganizationList presentation component.
  *
- * BEM block: `.thunder-organization-list`
+ * BEM block: `.thunderid-organization-list`
  *
  * The root element is a plain `div`. There is no Card wrapper here,
  * so this file provides the full layout including border and spacing.
@@ -34,7 +34,7 @@ const ORGANIZATION_LIST_CSS = `
    OrganizationList
    ============================================================ */
 
-.thunder-organization-list {
+.thunderid-organization-list {
   display: flex;
   flex-direction: column;
   gap: calc(var(--thunder-spacing-unit) * 0.5);
@@ -43,8 +43,8 @@ const ORGANIZATION_LIST_CSS = `
 
 /* Loading / Empty ------------------------------------------- */
 
-.thunder-organization-list__loading,
-.thunder-organization-list__empty {
+.thunderid-organization-list__loading,
+.thunderid-organization-list__empty {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -54,7 +54,7 @@ const ORGANIZATION_LIST_CSS = `
 
 /* Items ----------------------------------------------------- */
 
-.thunder-organization-list__item {
+.thunderid-organization-list__item {
   display: flex;
   align-items: center;
   gap: calc(var(--thunder-spacing-unit) * 1.25);
@@ -75,12 +75,12 @@ const ORGANIZATION_LIST_CSS = `
   box-sizing: border-box;
 }
 
-.thunder-organization-list__item:hover {
+.thunderid-organization-list__item:hover {
   background-color: var(--thunder-color-primary-light);
   border-color: var(--thunder-color-primary-main);
 }
 
-.thunder-organization-list__item:focus-visible {
+.thunderid-organization-list__item:focus-visible {
   outline: none;
   box-shadow: 0 0 0 var(--thunder-focus-ring-width) var(--thunder-focus-ring-color);
 }
