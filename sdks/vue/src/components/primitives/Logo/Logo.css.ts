@@ -19,7 +19,7 @@
 /**
  * Styles for the Logo primitive component.
  *
- * BEM block: `.thunder-logo`
+ * BEM block: `.thunderid-logo`
  *
  * Elements:
  *   __image
@@ -29,18 +29,18 @@ const LOGO_CSS = `
    Logo
    ============================================================ */
 
-.thunder-logo {
+.thunderid-logo {
   display: inline-flex;
   align-items: center;
   text-decoration: none;
   transition: opacity var(--thunder-transition-fast);
 }
 
-.thunder-logo:hover {
+.thunderid-logo:hover {
   opacity: 0.85;
 }
 
-.thunder-logo__image {
+.thunderid-logo__image {
   display: block;
   max-height: 100%;
   width: auto;

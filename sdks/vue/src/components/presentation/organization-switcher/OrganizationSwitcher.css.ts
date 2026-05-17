@@ -19,9 +19,9 @@
 /**
  * Styles for the OrganizationSwitcher presentation component.
  *
- * BEM block: `.thunder-organization-switcher`
+ * BEM block: `.thunderid-organization-switcher`
  *
- * The root element is a Card (`.thunder-card`), so we override its
+ * The root element is a Card (`.thunderid-card`), so we override its
  * default padding to let the trigger button fill the surface edge-to-edge,
  * and apply `position: relative` to anchor the absolute dropdown.
  *
@@ -42,7 +42,7 @@ const ORGANIZATION_SWITCHER_CSS = `
    ============================================================ */
 
 /* Override Card's default padding so the trigger button fills the surface */
-.thunder-organization-switcher.thunder-card {
+.thunderid-organization-switcher.thunderid-card {
   padding: 0;
   position: relative;
   display: inline-block;
@@ -51,7 +51,7 @@ const ORGANIZATION_SWITCHER_CSS = `
 
 /* Trigger ---------------------------------------------------- */
 
-.thunder-organization-switcher__trigger {
+.thunderid-organization-switcher__trigger {
   display: flex;
   align-items: center;
   gap: calc(var(--thunder-spacing-unit) * 0.75);
@@ -69,17 +69,17 @@ const ORGANIZATION_SWITCHER_CSS = `
   box-sizing: border-box;
 }
 
-.thunder-organization-switcher__trigger:hover {
+.thunderid-organization-switcher__trigger:hover {
   background-color: var(--thunder-color-action-hover);
 }
 
-.thunder-organization-switcher__trigger:focus-visible {
+.thunderid-organization-switcher__trigger:focus-visible {
   outline: none;
   box-shadow: inset 0 0 0 var(--thunder-focus-ring-width) var(--thunder-focus-ring-color);
   border-radius: var(--thunder-dropdown-borderRadius);
 }
 
-.thunder-organization-switcher__trigger-label {
+.thunderid-organization-switcher__trigger-label {
   flex: 1;
   text-align: left;
   overflow: hidden;
@@ -89,7 +89,7 @@ const ORGANIZATION_SWITCHER_CSS = `
 
 /* Dropdown --------------------------------------------------- */
 
-.thunder-organization-switcher__dropdown {
+.thunderid-organization-switcher__dropdown {
   position: absolute;
   top: calc(100% + calc(var(--thunder-spacing-unit) * 0.5));
   left: 0;
@@ -108,8 +108,8 @@ const ORGANIZATION_SWITCHER_CSS = `
 
 /* Loading / Empty states ------------------------------------ */
 
-.thunder-organization-switcher__loading,
-.thunder-organization-switcher__empty {
+.thunderid-organization-switcher__loading,
+.thunderid-organization-switcher__empty {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -119,7 +119,7 @@ const ORGANIZATION_SWITCHER_CSS = `
 
 /* Items ----------------------------------------------------- */
 
-.thunder-organization-switcher__item {
+.thunderid-organization-switcher__item {
   display: flex;
   align-items: center;
   gap: calc(var(--thunder-spacing-unit) * 0.75);
@@ -136,17 +136,17 @@ const ORGANIZATION_SWITCHER_CSS = `
   box-sizing: border-box;
 }
 
-.thunder-organization-switcher__item:hover {
+.thunderid-organization-switcher__item:hover {
   background-color: var(--thunder-color-action-hover);
 }
 
-.thunder-organization-switcher__item--active {
+.thunderid-organization-switcher__item--active {
   background-color: var(--thunder-color-action-selected);
   color: var(--thunder-color-primary-main);
   font-weight: var(--thunder-typography-fontWeight-medium);
 }
 
-.thunder-organization-switcher__item--active:hover {
+.thunderid-organization-switcher__item--active:hover {
   background-color: var(--thunder-color-action-focus);
 }
 `;

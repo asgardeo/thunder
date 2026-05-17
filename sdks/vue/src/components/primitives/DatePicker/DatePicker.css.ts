@@ -19,7 +19,7 @@
 /**
  * Styles for the DatePicker primitive component.
  *
- * BEM block: `.thunder-date-picker`
+ * BEM block: `.thunderid-date-picker`
  *
  * Modifiers:
  *   --error  – shows validation error state
@@ -32,7 +32,7 @@ const DATE_PICKER_CSS = `
    DatePicker
    ============================================================ */
 
-.thunder-date-picker {
+.thunderid-date-picker {
   display: flex;
   flex-direction: column;
   gap: calc(var(--thunder-spacing-unit) * 0.5);
@@ -41,7 +41,7 @@ const DATE_PICKER_CSS = `
   box-sizing: border-box;
 }
 
-.thunder-date-picker__label {
+.thunderid-date-picker__label {
   font-size: var(--thunder-typography-fontSize-sm);
   font-weight: var(--thunder-typography-fontWeight-medium);
   color: var(--thunder-color-text-primary);
@@ -49,12 +49,12 @@ const DATE_PICKER_CSS = `
   line-height: var(--thunder-typography-lineHeight-normal);
 }
 
-.thunder-date-picker__required {
+.thunderid-date-picker__required {
   color: var(--thunder-color-error-main);
   margin-left: 2px;
 }
 
-.thunder-date-picker__input {
+.thunderid-date-picker__input {
   width: 100%;
   height: var(--thunder-input-height);
   padding: 0 var(--thunder-input-paddingX);
@@ -71,23 +71,23 @@ const DATE_PICKER_CSS = `
   outline: none;
   cursor: pointer;
 }
-.thunder-date-picker__input:focus {
+.thunderid-date-picker__input:focus {
   border-color: var(--thunder-input-focusBorderColor);
   box-shadow: var(--thunder-input-focusRing);
 }
-.thunder-date-picker--error .thunder-date-picker__input {
+.thunderid-date-picker--error .thunderid-date-picker__input {
   border-color: var(--thunder-color-error-main);
 }
-.thunder-date-picker--error .thunder-date-picker__input:focus {
+.thunderid-date-picker--error .thunderid-date-picker__input:focus {
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
 }
-.thunder-date-picker__input:disabled {
+.thunderid-date-picker__input:disabled {
   background-color: var(--thunder-color-background-disabled);
   color: var(--thunder-color-action-disabled);
   cursor: not-allowed;
 }
 
-.thunder-date-picker__error {
+.thunderid-date-picker__error {
   font-size: var(--thunder-typography-fontSize-xs);
   color: var(--thunder-color-error-contrastText);
   line-height: var(--thunder-typography-lineHeight-normal);

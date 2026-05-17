@@ -19,9 +19,9 @@
 /**
  * Styles for the LanguageSwitcher presentation component.
  *
- * BEM block: `.thunder-language-switcher`
+ * BEM block: `.thunderid-language-switcher`
  *
- * The root element is a Card (`.thunder-card`). We override its default
+ * The root element is a Card (`.thunderid-card`). We override its default
  * padding to 0 so the trigger button fills the surface edge-to-edge,
  * and apply `position: relative` to anchor the absolute dropdown.
  * The Card's border-radius and shadow are intentionally kept.
@@ -39,7 +39,7 @@ const LANGUAGE_SWITCHER_CSS = `
    ============================================================ */
 
 /* Override Card's default padding so the trigger fills the surface */
-.thunder-language-switcher.thunder-card {
+.thunderid-language-switcher.thunderid-card {
   padding: 0;
   position: relative;
   display: inline-block;
@@ -47,7 +47,7 @@ const LANGUAGE_SWITCHER_CSS = `
 
 /* Trigger ---------------------------------------------------- */
 
-.thunder-language-switcher__trigger {
+.thunderid-language-switcher__trigger {
   display: inline-flex;
   align-items: center;
   gap: calc(var(--thunder-spacing-unit) * 0.5);
@@ -64,23 +64,23 @@ const LANGUAGE_SWITCHER_CSS = `
   box-sizing: border-box;
 }
 
-.thunder-language-switcher__trigger:hover {
+.thunderid-language-switcher__trigger:hover {
   background-color: var(--thunder-color-action-hover);
 }
 
-.thunder-language-switcher__trigger:focus-visible {
+.thunderid-language-switcher__trigger:focus-visible {
   outline: none;
   box-shadow: inset 0 0 0 var(--thunder-focus-ring-width) var(--thunder-focus-ring-color);
   border-radius: var(--thunder-dropdown-borderRadius);
 }
 
-.thunder-language-switcher__trigger-label {
+.thunderid-language-switcher__trigger-label {
   flex: 0 0 auto;
 }
 
 /* Dropdown --------------------------------------------------- */
 
-.thunder-language-switcher__dropdown {
+.thunderid-language-switcher__dropdown {
   position: absolute;
   top: calc(100% + calc(var(--thunder-spacing-unit) * 0.5));
   right: 0;
@@ -98,7 +98,7 @@ const LANGUAGE_SWITCHER_CSS = `
 
 /* Items ----------------------------------------------------- */
 
-.thunder-language-switcher__item {
+.thunderid-language-switcher__item {
   display: flex;
   align-items: center;
   width: 100%;
@@ -114,17 +114,17 @@ const LANGUAGE_SWITCHER_CSS = `
   box-sizing: border-box;
 }
 
-.thunder-language-switcher__item:hover {
+.thunderid-language-switcher__item:hover {
   background-color: var(--thunder-color-action-hover);
 }
 
-.thunder-language-switcher__item--active {
+.thunderid-language-switcher__item--active {
   background-color: var(--thunder-color-action-selected);
   color: var(--thunder-color-primary-main);
   font-weight: var(--thunder-typography-fontWeight-medium);
 }
 
-.thunder-language-switcher__item--active:hover {
+.thunderid-language-switcher__item--active:hover {
   background-color: var(--thunder-color-action-focus);
 }
 `;

@@ -19,7 +19,7 @@
 /**
  * Styles for the UserDropdown presentation component.
  *
- * BEM block: `.thunder-user-dropdown`
+ * BEM block: `.thunderid-user-dropdown`
  *
  * Trigger modifiers:
  *   __trigger--open               – ring + border while menu is visible
@@ -47,7 +47,7 @@ const USER_DROPDOWN_CSS = `
    UserDropdown
    ============================================================ */
 
-.thunder-user-dropdown {
+.thunderid-user-dropdown {
   position: relative;
   display: inline-block;
   font-family: var(--thunder-typography-fontFamily);
@@ -55,7 +55,7 @@ const USER_DROPDOWN_CSS = `
 
 /* ── Trigger ─────────────────────────────────────────────────── */
 
-.thunder-user-dropdown__trigger {
+.thunderid-user-dropdown__trigger {
   display: inline-flex;
   align-items: center;
   gap: calc(var(--thunder-spacing-unit) * 0.5);
@@ -72,23 +72,23 @@ const USER_DROPDOWN_CSS = `
   outline: none;
 }
 
-.thunder-user-dropdown__trigger:hover {
+.thunderid-user-dropdown__trigger:hover {
   border-color: var(--thunder-color-primary-main);
 }
 
-.thunder-user-dropdown__trigger--open {
+.thunderid-user-dropdown__trigger--open {
   border-color: var(--thunder-color-primary-main);
   box-shadow: 0 0 0 3px var(--thunder-focus-ring-color);
 }
 
-.thunder-user-dropdown__trigger:focus-visible {
+.thunderid-user-dropdown__trigger:focus-visible {
   border-color: var(--thunder-color-primary-main);
   box-shadow: 0 0 0 var(--thunder-focus-ring-width) var(--thunder-focus-ring-color);
 }
 
 /* ── Trigger avatar ──────────────────────────────────────────── */
 
-.thunder-user-dropdown__avatar {
+.thunderid-user-dropdown__avatar {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -105,14 +105,14 @@ const USER_DROPDOWN_CSS = `
 }
 
 /* sm — 28 px */
-.thunder-user-dropdown__avatar--sm {
+.thunderid-user-dropdown__avatar--sm {
   width: 28px;
   height: 28px;
   font-size: var(--thunder-typography-fontSize-xs);
 }
 
 /* lg — 38 px */
-.thunder-user-dropdown__avatar--lg {
+.thunderid-user-dropdown__avatar--lg {
   width: 38px;
   height: 38px;
   font-size: var(--thunder-typography-fontSize-md);
@@ -120,7 +120,7 @@ const USER_DROPDOWN_CSS = `
 
 /* ── Chevron ─────────────────────────────────────────────────── */
 
-.thunder-user-dropdown__chevron {
+.thunderid-user-dropdown__chevron {
   display: inline-flex;
   align-items: center;
   color: var(--thunder-color-text-secondary);
@@ -128,13 +128,13 @@ const USER_DROPDOWN_CSS = `
   padding-right: calc(var(--thunder-spacing-unit) * 0.25);
 }
 
-.thunder-user-dropdown__trigger--open .thunder-user-dropdown__chevron {
+.thunderid-user-dropdown__trigger--open .thunderid-user-dropdown__chevron {
   transform: rotate(180deg);
 }
 
 /* ── Dropdown menu ───────────────────────────────────────────── */
 
-.thunder-user-dropdown__menu {
+.thunderid-user-dropdown__menu {
   position: absolute;
   top: calc(100% + calc(var(--thunder-spacing-unit) * 0.75));
   right: 0;
@@ -152,51 +152,51 @@ const USER_DROPDOWN_CSS = `
 
 /* Alignment */
 
-.thunder-user-dropdown__menu--align-left {
+.thunderid-user-dropdown__menu--align-left {
   right: auto;
   left: 0;
 }
 
 /* Size: sm */
 
-.thunder-user-dropdown__menu--size-sm {
+.thunderid-user-dropdown__menu--size-sm {
   min-width: 180px;
 }
 
-.thunder-user-dropdown__menu--size-sm .thunder-user-dropdown__menu-header {
+.thunderid-user-dropdown__menu--size-sm .thunderid-user-dropdown__menu-header {
   padding: calc(var(--thunder-spacing-unit) * 1.25) calc(var(--thunder-spacing-unit) * 1.5);
   gap: calc(var(--thunder-spacing-unit) * 1);
 }
 
-.thunder-user-dropdown__menu--size-sm .thunder-user-dropdown__menu-header-avatar {
+.thunderid-user-dropdown__menu--size-sm .thunderid-user-dropdown__menu-header-avatar {
   width: 30px;
   height: 30px;
   font-size: var(--thunder-typography-fontSize-sm);
 }
 
-.thunder-user-dropdown__menu--size-sm .thunder-user-dropdown__item {
+.thunderid-user-dropdown__menu--size-sm .thunderid-user-dropdown__item {
   padding: calc(var(--thunder-spacing-unit) * 0.75) calc(var(--thunder-spacing-unit) * 1.5);
   font-size: var(--thunder-typography-fontSize-xs);
 }
 
 /* Size: lg */
 
-.thunder-user-dropdown__menu--size-lg {
+.thunderid-user-dropdown__menu--size-lg {
   min-width: 280px;
 }
 
-.thunder-user-dropdown__menu--size-lg .thunder-user-dropdown__menu-header {
+.thunderid-user-dropdown__menu--size-lg .thunderid-user-dropdown__menu-header {
   padding: calc(var(--thunder-spacing-unit) * 2) calc(var(--thunder-spacing-unit) * 2);
   gap: calc(var(--thunder-spacing-unit) * 1.5);
 }
 
-.thunder-user-dropdown__menu--size-lg .thunder-user-dropdown__menu-header-avatar {
+.thunderid-user-dropdown__menu--size-lg .thunderid-user-dropdown__menu-header-avatar {
   width: 42px;
   height: 42px;
   font-size: var(--thunder-typography-fontSize-lg);
 }
 
-.thunder-user-dropdown__menu--size-lg .thunder-user-dropdown__item {
+.thunderid-user-dropdown__menu--size-lg .thunderid-user-dropdown__item {
   padding: calc(var(--thunder-spacing-unit) * 1.25) calc(var(--thunder-spacing-unit) * 2);
   font-size: var(--thunder-typography-fontSize-md);
 }
@@ -214,14 +214,14 @@ const USER_DROPDOWN_CSS = `
 
 /* ── Menu header (user identity) ─────────────────────────────── */
 
-.thunder-user-dropdown__menu-header {
+.thunderid-user-dropdown__menu-header {
   display: flex;
   align-items: center;
   gap: calc(var(--thunder-spacing-unit) * 1.25);
   padding: calc(var(--thunder-spacing-unit) * 1.5) calc(var(--thunder-spacing-unit) * 1.75);
 }
 
-.thunder-user-dropdown__menu-header-avatar {
+.thunderid-user-dropdown__menu-header-avatar {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -236,14 +236,14 @@ const USER_DROPDOWN_CSS = `
   user-select: none;
 }
 
-.thunder-user-dropdown__menu-header-info {
+.thunderid-user-dropdown__menu-header-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
 
-.thunder-user-dropdown__menu-header-name {
+.thunderid-user-dropdown__menu-header-name {
   font-size: var(--thunder-typography-fontSize-sm);
   font-weight: var(--thunder-typography-fontWeight-semibold);
   color: var(--thunder-color-text-primary);
@@ -253,7 +253,7 @@ const USER_DROPDOWN_CSS = `
   line-height: var(--thunder-typography-lineHeight-tight);
 }
 
-.thunder-user-dropdown__menu-header-subtitle {
+.thunderid-user-dropdown__menu-header-subtitle {
   font-size: var(--thunder-typography-fontSize-xs);
   color: var(--thunder-color-text-secondary);
   white-space: nowrap;
@@ -264,7 +264,7 @@ const USER_DROPDOWN_CSS = `
 
 /* ── Menu divider ────────────────────────────────────────────── */
 
-.thunder-user-dropdown__menu-divider {
+.thunderid-user-dropdown__menu-divider {
   height: 1px;
   background-color: var(--thunder-color-border);
   margin: calc(var(--thunder-spacing-unit) * 0.5) 0;
@@ -273,7 +273,7 @@ const USER_DROPDOWN_CSS = `
 
 /* ── Menu items ──────────────────────────────────────────────── */
 
-.thunder-user-dropdown__item {
+.thunderid-user-dropdown__item {
   display: flex;
   align-items: center;
   gap: calc(var(--thunder-spacing-unit) * 1);
@@ -290,28 +290,28 @@ const USER_DROPDOWN_CSS = `
   box-sizing: border-box;
 }
 
-.thunder-user-dropdown__item:hover {
+.thunderid-user-dropdown__item:hover {
   background-color: var(--thunder-color-action-hover);
 }
 
-.thunder-user-dropdown__item:focus-visible {
+.thunderid-user-dropdown__item:focus-visible {
   outline: none;
   background-color: var(--thunder-color-action-focus);
 }
 
 /* Danger variant (sign-out) */
 
-.thunder-user-dropdown__item--danger {
+.thunderid-user-dropdown__item--danger {
   color: var(--thunder-color-error-main);
 }
 
-.thunder-user-dropdown__item--danger:hover {
+.thunderid-user-dropdown__item--danger:hover {
   background-color: var(--thunder-color-error-light);
 }
 
 /* ── Modal overlay ───────────────────────────────────────────── */
 
-.thunder-user-dropdown__modal-overlay {
+.thunderid-user-dropdown__modal-overlay {
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.45);
@@ -330,7 +330,7 @@ const USER_DROPDOWN_CSS = `
 
 /* ── Modal content ───────────────────────────────────────────── */
 
-.thunder-user-dropdown__modal-content {
+.thunderid-user-dropdown__modal-content {
   background: var(--thunder-color-background-surface);
   border-radius: var(--thunder-border-radius-large);
   box-shadow: var(--thunder-shadow-large);
@@ -355,7 +355,7 @@ const USER_DROPDOWN_CSS = `
 
 /* ── Modal close button ──────────────────────────────────────── */
 
-.thunder-user-dropdown__modal-close {
+.thunderid-user-dropdown__modal-close {
   position: absolute;
   top: calc(var(--thunder-spacing-unit) * 1.25);
   right: calc(var(--thunder-spacing-unit) * 1.25);
@@ -375,12 +375,12 @@ const USER_DROPDOWN_CSS = `
   line-height: 0;
 }
 
-.thunder-user-dropdown__modal-close:hover {
+.thunderid-user-dropdown__modal-close:hover {
   color: var(--thunder-color-text-primary);
   background-color: var(--thunder-color-action-hover);
 }
 
-.thunder-user-dropdown__modal-close:focus-visible {
+.thunderid-user-dropdown__modal-close:focus-visible {
   outline: none;
   box-shadow: 0 0 0 var(--thunder-focus-ring-width) var(--thunder-focus-ring-color);
 }

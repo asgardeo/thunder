@@ -19,7 +19,7 @@
 /**
  * Styles for the Alert primitive component.
  *
- * BEM block: `.thunder-alert`
+ * BEM block: `.thunderid-alert`
  *
  * Modifiers:
  *   Severity: --info | --success | --warning | --error
@@ -32,7 +32,7 @@ const ALERT_CSS = `
    Alert
    ============================================================ */
 
-.thunder-alert {
+.thunderid-alert {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -47,35 +47,35 @@ const ALERT_CSS = `
   line-height: var(--thunder-typography-lineHeight-normal);
 }
 
-.thunder-alert__content {
+.thunderid-alert__content {
   flex: 1;
 }
 
-.thunder-alert--info {
+.thunderid-alert--info {
   background-color: var(--thunder-color-info-light);
   border-color: var(--thunder-color-info-main);
   color: var(--thunder-color-info-contrastText);
 }
 
-.thunder-alert--success {
+.thunderid-alert--success {
   background-color: var(--thunder-color-success-light);
   border-color: var(--thunder-color-success-main);
   color: var(--thunder-color-success-contrastText);
 }
 
-.thunder-alert--warning {
+.thunderid-alert--warning {
   background-color: var(--thunder-color-warning-light);
   border-color: var(--thunder-color-warning-main);
   color: var(--thunder-color-warning-contrastText);
 }
 
-.thunder-alert--error {
+.thunderid-alert--error {
   background-color: var(--thunder-color-error-light);
   border-color: var(--thunder-color-error-main);
   color: var(--thunder-color-error-contrastText);
 }
 
-.thunder-alert__dismiss {
+.thunderid-alert__dismiss {
   background: none;
   border: none;
   cursor: pointer;
@@ -88,7 +88,7 @@ const ALERT_CSS = `
   flex-shrink: 0;
   transition: opacity var(--thunder-transition-fast), background-color var(--thunder-transition-fast);
 }
-.thunder-alert__dismiss:hover {
+.thunderid-alert__dismiss:hover {
   opacity: 1;
   background-color: var(--thunder-color-action-hover);
 }

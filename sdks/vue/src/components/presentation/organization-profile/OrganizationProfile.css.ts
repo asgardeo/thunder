@@ -19,14 +19,14 @@
 /**
  * Styles for the OrganizationProfile presentation component.
  *
- * BEM block: `.thunder-organization-profile`
+ * BEM block: `.thunderid-organization-profile`
  */
 const ORGANIZATION_PROFILE_CSS = `
 /* ============================================================
    OrganizationProfile
    ============================================================ */
 
-.thunder-organization-profile {
+.thunderid-organization-profile {
   display: flex;
   flex-direction: column;
   min-width: 320px;
@@ -36,22 +36,22 @@ const ORGANIZATION_PROFILE_CSS = `
 
 /* Header: title + divider ------------------------------------ */
 
-.thunder-organization-profile__header {
+.thunderid-organization-profile__header {
   padding: calc(var(--thunder-spacing-unit) * 2) calc(var(--thunder-spacing-unit) * 2.5);
   padding-bottom: calc(var(--thunder-spacing-unit) * 1.5);
 }
 
-.thunder-organization-profile__title {
+.thunderid-organization-profile__title {
   margin: 0;
 }
 
-.thunder-organization-profile__header-divider {
+.thunderid-organization-profile__header-divider {
   margin: 0;
 }
 
 /* Identity: avatar + org name + handle ----------------------- */
 
-.thunder-organization-profile__identity {
+.thunderid-organization-profile__identity {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -59,7 +59,7 @@ const ORGANIZATION_PROFILE_CSS = `
   gap: calc(var(--thunder-spacing-unit) * 0.5);
 }
 
-.thunder-organization-profile__avatar {
+.thunderid-organization-profile__avatar {
   width: var(--thunder-avatar-size);
   height: var(--thunder-avatar-size);
   border-radius: 50%;
@@ -70,7 +70,7 @@ const ORGANIZATION_PROFILE_CSS = `
   margin-bottom: calc(var(--thunder-spacing-unit) * 0.375);
 }
 
-.thunder-organization-profile__avatar-initials {
+.thunderid-organization-profile__avatar-initials {
   color: #ffffff;
   font-size: var(--thunder-avatar-fontSize);
   font-weight: 600;
@@ -80,28 +80,28 @@ const ORGANIZATION_PROFILE_CSS = `
   user-select: none;
 }
 
-.thunder-organization-profile__org-name {
+.thunderid-organization-profile__org-name {
   margin: 0;
   text-align: center;
 }
 
-.thunder-organization-profile__org-handle {
+.thunderid-organization-profile__org-handle {
   color: var(--thunder-color-text-secondary);
   text-align: center;
 }
 
-.thunder-organization-profile__identity-divider {
+.thunderid-organization-profile__identity-divider {
   margin: 0;
 }
 
 /* Fields ---------------------------------------------------- */
 
-.thunder-organization-profile__fields {
+.thunderid-organization-profile__fields {
   display: flex;
   flex-direction: column;
 }
 
-.thunder-organization-profile__field {
+.thunderid-organization-profile__field {
   display: grid;
   grid-template-columns: 36% 64%;
   align-items: center;
@@ -111,28 +111,28 @@ const ORGANIZATION_PROFILE_CSS = `
   transition: background-color var(--thunder-transition-fast);
 }
 
-.thunder-organization-profile__field:hover {
+.thunderid-organization-profile__field:hover {
   background-color: var(--thunder-color-action-hover);
 }
 
-.thunder-organization-profile__field + .thunder-organization-profile__field {
+.thunderid-organization-profile__field + .thunderid-organization-profile__field {
   border-top: 1px solid var(--thunder-color-border);
 }
 
-.thunder-organization-profile__field-label-col {
+.thunderid-organization-profile__field-label-col {
   /* label column */
 }
 
-.thunder-organization-profile__field-label {
+.thunderid-organization-profile__field-label {
   color: var(--thunder-color-text-secondary);
   font-size: var(--thunder-typography-fontSize-sm);
 }
 
-.thunder-organization-profile__field-value-col {
+.thunderid-organization-profile__field-value-col {
   /* value column */
 }
 
-.thunder-organization-profile__field-display {
+.thunderid-organization-profile__field-display {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -140,21 +140,21 @@ const ORGANIZATION_PROFILE_CSS = `
   min-height: 1.5rem;
 }
 
-.thunder-organization-profile__field-value {
+.thunderid-organization-profile__field-value {
   color: var(--thunder-color-text-primary);
   word-break: break-word;
   flex: 1;
   font-size: var(--thunder-typography-fontSize-sm);
 }
 
-.thunder-organization-profile__field-value--id {
+.thunderid-organization-profile__field-value--id {
   font-size: calc(var(--thunder-typography-fontSize-sm) * 0.9);
   color: var(--thunder-color-text-secondary);
   font-family: monospace;
   word-break: break-all;
 }
 
-.thunder-organization-profile__field-placeholder {
+.thunderid-organization-profile__field-placeholder {
   color: var(--thunder-color-primary-main);
   font-style: italic;
   font-size: var(--thunder-typography-fontSize-sm);
@@ -167,7 +167,7 @@ const ORGANIZATION_PROFILE_CSS = `
 
 /* Edit button (pencil icon) --------------------------------- */
 
-.thunder-organization-profile__field-edit-btn {
+.thunderid-organization-profile__field-edit-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -186,16 +186,16 @@ const ORGANIZATION_PROFILE_CSS = `
   line-height: 0;
 }
 
-.thunder-organization-profile__field:hover .thunder-organization-profile__field-edit-btn {
+.thunderid-organization-profile__field:hover .thunderid-organization-profile__field-edit-btn {
   opacity: 1;
 }
 
-.thunder-organization-profile__field-edit-btn:hover {
+.thunderid-organization-profile__field-edit-btn:hover {
   color: var(--thunder-color-primary-main);
   background-color: var(--thunder-color-primary-light);
 }
 
-.thunder-organization-profile__field-edit-btn:focus-visible {
+.thunderid-organization-profile__field-edit-btn:focus-visible {
   opacity: 1;
   outline: none;
   box-shadow: 0 0 0 var(--thunder-focus-ring-width) var(--thunder-focus-ring-color);
@@ -203,13 +203,13 @@ const ORGANIZATION_PROFILE_CSS = `
 
 /* Edit mode ------------------------------------------------- */
 
-.thunder-organization-profile__field-edit {
+.thunderid-organization-profile__field-edit {
   display: flex;
   flex-direction: column;
   gap: calc(var(--thunder-spacing-unit) * 0.75);
 }
 
-.thunder-organization-profile__field-edit-actions {
+.thunderid-organization-profile__field-edit-actions {
   display: flex;
   align-items: center;
   gap: calc(var(--thunder-spacing-unit) * 0.75);

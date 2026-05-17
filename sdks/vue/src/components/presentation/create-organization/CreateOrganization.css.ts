@@ -19,7 +19,7 @@
 /**
  * Styles for the CreateOrganization presentation component.
  *
- * BEM block: `.thunder-create-organization`
+ * BEM block: `.thunderid-create-organization`
  *
  * The root element is a Card, whose padding is intentionally kept
  * as this is a full form panel.
@@ -36,7 +36,7 @@ const CREATE_ORGANIZATION_CSS = `
    CreateOrganization
    ============================================================ */
 
-.thunder-create-organization {
+.thunderid-create-organization {
   display: flex;
   flex-direction: column;
   gap: calc(var(--thunder-spacing-unit) * 1.75);
@@ -46,20 +46,20 @@ const CREATE_ORGANIZATION_CSS = `
 
 /* Title & description --------------------------------------- */
 
-.thunder-create-organization__description {
+.thunderid-create-organization__description {
   margin-top: calc(var(--thunder-spacing-unit) * -0.75);
   color: var(--thunder-color-text-secondary);
 }
 
 /* Input ----------------------------------------------------- */
 
-.thunder-create-organization__input {
+.thunderid-create-organization__input {
   width: 100%;
 }
 
 /* Submit ---------------------------------------------------- */
 
-.thunder-create-organization__submit {
+.thunderid-create-organization__submit {
   align-self: flex-start;
 }
 `;

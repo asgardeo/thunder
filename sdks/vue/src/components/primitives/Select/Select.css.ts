@@ -19,7 +19,7 @@
 /**
  * Styles for the Select primitive component.
  *
- * BEM block: `.thunder-select`
+ * BEM block: `.thunderid-select`
  *
  * Modifiers:
  *   --error  – shows validation error state
@@ -32,7 +32,7 @@ const SELECT_CSS = `
    Select
    ============================================================ */
 
-.thunder-select {
+.thunderid-select {
   display: flex;
   flex-direction: column;
   gap: calc(var(--thunder-spacing-unit) * 0.5);
@@ -41,7 +41,7 @@ const SELECT_CSS = `
   box-sizing: border-box;
 }
 
-.thunder-select__label {
+.thunderid-select__label {
   font-size: var(--thunder-typography-fontSize-sm);
   font-weight: var(--thunder-typography-fontWeight-medium);
   color: var(--thunder-color-text-primary);
@@ -49,12 +49,12 @@ const SELECT_CSS = `
   line-height: var(--thunder-typography-lineHeight-normal);
 }
 
-.thunder-select__required {
+.thunderid-select__required {
   color: var(--thunder-color-error-main);
   margin-left: 2px;
 }
 
-.thunder-select__input {
+.thunderid-select__input {
   width: 100%;
   height: var(--thunder-input-height);
   padding: 0 calc(var(--thunder-spacing-unit) * 4) 0 var(--thunder-input-paddingX);
@@ -77,30 +77,30 @@ const SELECT_CSS = `
   outline: none;
   line-height: var(--thunder-typography-lineHeight-normal);
 }
-.thunder-select__input:focus {
+.thunderid-select__input:focus {
   border-color: var(--thunder-input-focusBorderColor);
   box-shadow: var(--thunder-input-focusRing);
 }
-.thunder-select__input:disabled {
+.thunderid-select__input:disabled {
   background-color: var(--thunder-color-background-disabled);
   color: var(--thunder-color-action-disabled);
   cursor: not-allowed;
 }
 
-.thunder-select--error .thunder-select__input {
+.thunderid-select--error .thunderid-select__input {
   border-color: var(--thunder-color-error-main);
 }
-.thunder-select--error .thunder-select__input:focus {
+.thunderid-select--error .thunderid-select__input:focus {
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
 }
 
-.thunder-select__error {
+.thunderid-select__error {
   font-size: var(--thunder-typography-fontSize-xs);
   color: var(--thunder-color-error-contrastText);
   line-height: var(--thunder-typography-lineHeight-normal);
 }
 
-.thunder-select__helper {
+.thunderid-select__helper {
   font-size: var(--thunder-typography-fontSize-xs);
   color: var(--thunder-color-text-secondary);
   line-height: var(--thunder-typography-lineHeight-normal);

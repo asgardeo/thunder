@@ -19,7 +19,7 @@
 /**
  * Styles for the Divider primitive component.
  *
- * BEM block: `.thunder-divider`
+ * BEM block: `.thunderid-divider`
  *
  * Modifiers:
  *   --horizontal   – full-width horizontal rule
@@ -34,18 +34,18 @@ const DIVIDER_CSS = `
    Divider
    ============================================================ */
 
-.thunder-divider {
+.thunderid-divider {
   box-sizing: border-box;
 }
 
-.thunder-divider--horizontal {
+.thunderid-divider--horizontal {
   width: 100%;
   border: none;
   border-top: 1px solid var(--thunder-color-border);
   margin: calc(var(--thunder-spacing-unit) * 1) 0;
 }
 
-.thunder-divider--vertical {
+.thunderid-divider--vertical {
   display: inline-block;
   width: 1px;
   height: 100%;
@@ -56,7 +56,7 @@ const DIVIDER_CSS = `
   align-self: stretch;
 }
 
-.thunder-divider--with-content {
+.thunderid-divider--with-content {
   display: flex;
   align-items: center;
   gap: calc(var(--thunder-spacing-unit) * 1);
@@ -64,13 +64,13 @@ const DIVIDER_CSS = `
   margin: calc(var(--thunder-spacing-unit) * 1) 0;
 }
 
-.thunder-divider__line {
+.thunderid-divider__line {
   flex: 1;
   height: 1px;
   background-color: var(--thunder-color-border);
 }
 
-.thunder-divider__content {
+.thunderid-divider__content {
   flex-shrink: 0;
   font-size: var(--thunder-typography-fontSize-xs);
   color: var(--thunder-color-text-secondary);

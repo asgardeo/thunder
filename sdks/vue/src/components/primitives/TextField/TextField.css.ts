@@ -19,7 +19,7 @@
 /**
  * Styles for the TextField primitive component.
  *
- * BEM block: `.thunder-text-field`
+ * BEM block: `.thunderid-text-field`
  *
  * Modifiers:
  *   --error  – shows validation error state
@@ -32,7 +32,7 @@ const TEXT_FIELD_CSS = `
    TextField
    ============================================================ */
 
-.thunder-text-field {
+.thunderid-text-field {
   display: flex;
   flex-direction: column;
   gap: calc(var(--thunder-spacing-unit) * 0.5);
@@ -41,7 +41,7 @@ const TEXT_FIELD_CSS = `
   box-sizing: border-box;
 }
 
-.thunder-text-field__label {
+.thunderid-text-field__label {
   font-size: var(--thunder-typography-fontSize-sm);
   font-weight: var(--thunder-typography-fontWeight-medium);
   color: var(--thunder-color-text-primary);
@@ -49,12 +49,12 @@ const TEXT_FIELD_CSS = `
   line-height: var(--thunder-typography-lineHeight-normal);
 }
 
-.thunder-text-field__required {
+.thunderid-text-field__required {
   color: var(--thunder-color-error-main);
   margin-left: 2px;
 }
 
-.thunder-text-field__input {
+.thunderid-text-field__input {
   width: 100%;
   height: var(--thunder-input-height);
   padding: 0 var(--thunder-input-paddingX);
@@ -70,33 +70,33 @@ const TEXT_FIELD_CSS = `
     box-shadow var(--thunder-transition-fast);
   outline: none;
 }
-.thunder-text-field__input:focus {
+.thunderid-text-field__input:focus {
   border-color: var(--thunder-input-focusBorderColor);
   box-shadow: var(--thunder-input-focusRing);
 }
-.thunder-text-field__input::placeholder {
+.thunderid-text-field__input::placeholder {
   color: var(--thunder-color-text-secondary);
 }
-.thunder-text-field__input:disabled {
+.thunderid-text-field__input:disabled {
   background-color: var(--thunder-color-background-disabled);
   color: var(--thunder-color-action-disabled);
   cursor: not-allowed;
 }
 
-.thunder-text-field--error .thunder-text-field__input {
+.thunderid-text-field--error .thunderid-text-field__input {
   border-color: var(--thunder-color-error-main);
 }
-.thunder-text-field--error .thunder-text-field__input:focus {
+.thunderid-text-field--error .thunderid-text-field__input:focus {
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
 }
 
-.thunder-text-field__error {
+.thunderid-text-field__error {
   font-size: var(--thunder-typography-fontSize-xs);
   color: var(--thunder-color-error-contrastText);
   line-height: var(--thunder-typography-lineHeight-normal);
 }
 
-.thunder-text-field__helper {
+.thunderid-text-field__helper {
   font-size: var(--thunder-typography-fontSize-xs);
   color: var(--thunder-color-text-secondary);
   line-height: var(--thunder-typography-lineHeight-normal);

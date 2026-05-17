@@ -19,7 +19,7 @@
 /**
  * Styles for the Spinner primitive component.
  *
- * BEM block: `.thunder-spinner`
+ * BEM block: `.thunderid-spinner`
  *
  * Modifiers:
  *   Size: --small | --medium | --large
@@ -35,35 +35,35 @@ const SPINNER_CSS = `
    Spinner
    ============================================================ */
 
-.thunder-spinner {
+.thunderid-spinner {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--thunder-color-primary-main);
 }
 
-.thunder-spinner--small {
+.thunderid-spinner--small {
   width: calc(var(--thunder-spacing-unit) * 2);
   height: calc(var(--thunder-spacing-unit) * 2);
 }
 
-.thunder-spinner--medium {
+.thunderid-spinner--medium {
   width: calc(var(--thunder-spacing-unit) * 2.5);
   height: calc(var(--thunder-spacing-unit) * 2.5);
 }
 
-.thunder-spinner--large {
+.thunderid-spinner--large {
   width: calc(var(--thunder-spacing-unit) * 3.5);
   height: calc(var(--thunder-spacing-unit) * 3.5);
 }
 
-.thunder-spinner__svg {
+.thunderid-spinner__svg {
   width: 100%;
   height: 100%;
   animation: thunder-spin 1.4s linear infinite;
 }
 
-.thunder-spinner__circle {
+.thunderid-spinner__circle {
   stroke-dasharray: 80, 200;
   stroke-dashoffset: 0;
   animation: thunder-spinner-dash 1.4s ease-in-out infinite;
