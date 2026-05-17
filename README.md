@@ -117,7 +117,7 @@ Follow these steps to run ThunderID using Docker Compose.
     Download the `docker-compose.yml` file using the following command:
 
     ```bash
-    curl -o docker-compose.yml https://raw.githubusercontent.com/thunder-id/thunderid/v0.38.0/install/quick-start/docker-compose.yml
+    curl -o docker-compose.yml https://raw.githubusercontent.com/thunder-id/thunderid/v0.39.0/install/quick-start/docker-compose.yml
     ```
 
 2. **Start ThunderID**
