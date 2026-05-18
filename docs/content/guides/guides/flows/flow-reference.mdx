@@ -91,6 +91,67 @@ Components are the individual UI elements inside a View node. Add them to a Blan
 | **Icon** | A small icon element. |
 | **Timer** | A countdown timer, typically used on OTP screens. |
 
+### Input Validation Rules
+
+Input components can declare a `validation` array that the server enforces when the user submits the form. The server evaluates these rules after the required-input presence check and before the View advances to the next node.
+
+The `validation` array attaches to two places in the flow definition:
+
+- `meta.components[].validation` - returned to the Login Gate and the Asgardeo JavaScript SDK so that clients can optionally pre-validate values before submission.
+- `prompts[].inputs[].validation` - the authoritative copy that the server evaluates on each submission and that API-only clients receive in the prompt response.
+
+Each rule is a single-constraint object with a discriminated `type` field:
+
+| `type` | `value` Type | Behavior |
+|---|---|---|
+| `regex` | `string` | The submitted value must match the pattern. The server compiles the pattern with Go's RE2 engine, which guarantees linear-time matching and rejects Perl-only constructs such as lookarounds. |
+| `minLength` | `integer` | The submitted value must contain at least `value` Unicode code points. The server counts code points rather than bytes so multibyte characters count as one. |
+| `maxLength` | `integer` | The submitted value must contain at most `value` Unicode code points. |
+
+Each rule may set a `message` field that the server returns as is in `data.fieldErrors` when the rule fails. The `message` field accepts a literal string or an i18n key such as `{{i18n(validation:email.invalid)}}`. The server does not resolve i18n keys; the client renders them. When `message` is absent, the server returns a default key for the rule type: `validation.pattern.invalid`, `validation.minLength.invalid`, or `validation.maxLength.invalid`.
+
+```json title="Example: Phone Input with validation rules"
+{
+  "id": "input_phone",
+  "type": "PHONE_INPUT",
+  "category": "FIELD",
+  "required": true,
+  "validation": [
+    {
+      "type": "regex",
+      "value": "^[0-9]{10}$",
+      "message": "{{i18n(validation:phone.pattern.invalid)}}"
+    },
+    {
+      "type": "maxLength",
+      "value": 10,
+      "message": "{{i18n(validation:phone.maxLength.invalid)}}"
+    }
+  ],
+  "resourceType": "ELEMENT"
+}
+```
+
+When one or more rules fail on a submission, the server returns `flowStatus: INCOMPLETE` with a `data.fieldErrors` array. Each failing rule produces a separate entry that pairs the input `identifier` with the rule's `message`. The server clears the failing inputs from the submission and re-presents the same step. The response returns the full `inputs` and `actions` arrays so the client can re-render the original form alongside the errors. The user then resubmits corrected values.
+
+```json title="Example: Validation failure response (abbreviated)"
+{
+  "flowStatus": "INCOMPLETE",
+  "type": "VIEW",
+  "data": {
+    "inputs": [
+      { "ref": "input_username", "identifier": "username", "type": "TEXT_INPUT", "required": true, "validation": [ /* ... */ ] },
+      { "ref": "input_password", "identifier": "password", "type": "PASSWORD_INPUT", "required": true, "validation": [ /* ... */ ] }
+    ],
+    "actions": [ { "ref": "action_submit", "nextNode": "node_bs12" } ],
+    "fieldErrors": [
+      { "identifier": "username", "message": "{{i18n(validation:email.invalid)}}" },
+      { "identifier": "password", "message": "{{i18n(validation:password.minLength.invalid)}}" }
+    ]
+  }
+}
+```
+
 ## Executors
 
 Executors are backend operation nodes. Each Executor performs one specific operation and exposes up to three outcome paths: success (green dot), failure (red dot), and incomplete (yellow dot).

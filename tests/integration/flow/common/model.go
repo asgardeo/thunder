@@ -51,14 +51,27 @@ type FlowData struct {
 	RedirectURL    string            `json:"redirectURL,omitempty"`
 	AdditionalData map[string]string `json:"additionalData,omitempty"`
 	Meta           interface{}       `json:"meta,omitempty"`
+	FieldErrors    []FieldError      `json:"fieldErrors,omitempty"`
 }
 
 type Inputs struct {
-	Ref        string   `json:"ref,omitempty"`
-	Identifier string   `json:"identifier"`
-	Type       string   `json:"type"`
-	Required   bool     `json:"required"`
-	Options    []string `json:"options,omitempty"`
+	Ref        string           `json:"ref,omitempty"`
+	Identifier string           `json:"identifier"`
+	Type       string           `json:"type"`
+	Required   bool             `json:"required"`
+	Options    []string         `json:"options,omitempty"`
+	Validation []ValidationRule `json:"validation,omitempty"`
+}
+
+type ValidationRule struct {
+	Type    string      `json:"type"`
+	Value   interface{} `json:"value"`
+	Message string      `json:"message,omitempty"`
+}
+
+type FieldError struct {
+	Identifier string `json:"identifier"`
+	Message    string `json:"message"`
 }
 
 type Action struct {

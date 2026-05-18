@@ -27,12 +27,26 @@ import (
 
 // Input represents the inputs required for a node
 type Input struct {
-	Ref         string   `json:"ref,omitempty"`
-	Identifier  string   `json:"identifier"`
-	Type        string   `json:"type"`
-	Required    bool     `json:"required"`
-	Options     []string `json:"options,omitempty"`
-	DisplayName string   `json:"-"`
+	Ref         string           `json:"ref,omitempty"`
+	Identifier  string           `json:"identifier"`
+	Type        string           `json:"type"`
+	Required    bool             `json:"required"`
+	Options     []string         `json:"options,omitempty"`
+	DisplayName string           `json:"-"`
+	Validation  []ValidationRule `json:"validation,omitempty"`
+}
+
+// ValidationRule defines a single constraint on a flow input.
+type ValidationRule struct {
+	Type    string      `json:"type"`
+	Value   interface{} `json:"value"`
+	Message string      `json:"message,omitempty"`
+}
+
+// FieldError represents a single validation rule failure for a specific input field.
+type FieldError struct {
+	Identifier string `json:"identifier"`
+	Message    string `json:"message"`
 }
 
 // IsSensitive checks whether this input's type is considered sensitive.
@@ -68,6 +82,7 @@ type NodeResponse struct {
 	ForwardedData     map[string]interface{}    `json:"forwardedData,omitempty"`
 	AuthenticatedUser authncm.AuthenticatedUser `json:"authenticatedUser,omitempty"`
 	Assertion         string                    `json:"assertion,omitempty"`
+	FieldErrors       []FieldError              `json:"fieldErrors,omitempty"`
 	AuthUser          authnprovidermgr.AuthUser `json:"-"`
 }
 

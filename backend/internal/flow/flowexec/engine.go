@@ -764,6 +764,10 @@ func (fe *flowEngine) resolveStepDetailsForPrompt(ctx *EngineContext, nodeResp *
 		flowStep.FailureReason = nodeResp.FailureReason
 	}
 
+	if len(nodeResp.FieldErrors) > 0 {
+		flowStep.Data.FieldErrors = nodeResp.FieldErrors
+	}
+
 	flowStep.Status = common.FlowStatusIncomplete
 	flowStep.Type = common.StepTypeView
 	return nil

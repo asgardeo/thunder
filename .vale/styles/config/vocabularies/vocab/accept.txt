@@ -70,3 +70,5 @@ BCP
 Memorystore
 [Uu]pdatedAt
 [Cc]reatedAt
+[Ll]ookaround[s]?
+[Mm]ultibyte

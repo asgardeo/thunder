@@ -126,7 +126,9 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 	}
 
 	if n.resolvePromptInputs(ctx, nodeResp) {
-		logger.Debug("All required inputs and action are available, returning complete status")
+		if n.applyValidationFailureReprompt(ctx, nodeResp) {
+			return nodeResp, nil
+		}
 
 		if ctx.CurrentAction != "" {
 			if nextNode := n.getNextNodeForActionRef(ctx.CurrentAction); nextNode != "" {
@@ -167,6 +169,33 @@ func (n *promptNode) Execute(ctx *NodeContext) (*common.NodeResponse, *serviceer
 	return nodeResp, nil
 }
 
+// applyValidationFailureReprompt validates the currently-selected action's inputs
+// and, on failure, mutates ctx and nodeResp to re-prompt the whole node with
+// FieldErrors so the client can re-render the same form. Returns true when the
+// caller should return nodeResp; false when validation passed.
+func (n *promptNode) applyValidationFailureReprompt(ctx *NodeContext, nodeResp *common.NodeResponse) bool {
+	fieldErrors := validateInputValues(n.getInputsForCurrentAction(ctx.CurrentAction), ctx.UserInputs)
+	if len(fieldErrors) == 0 {
+		return false
+	}
+	n.logger.With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID)).
+		Debug("Input validation failed", log.Int("errorCount", len(fieldErrors)))
+	for _, fe := range fieldErrors {
+		delete(ctx.UserInputs, fe.Identifier)
+	}
+	ctx.CurrentAction = ""
+	nodeResp.Inputs = n.getAllInputs()
+	nodeResp.Actions = n.getAllActions()
+	nodeResp.FieldErrors = fieldErrors
+	nodeResp.Status = common.NodeStatusIncomplete
+	nodeResp.Type = common.NodeResponseTypeView
+	if ctx.Verbose && n.GetMeta() != nil {
+		trimmed := n.trimMetaToRequestedInputs(n.meta, nodeResp.Inputs, nodeResp.Actions)
+		nodeResp.Meta = n.appendSyntheticMetaComponents(trimmed, nodeResp.Inputs)
+	}
+	return true
+}
+
 // executeLoginOptions handles the LOGIN_OPTIONS variant.
 func (n *promptNode) executeLoginOptions(ctx *NodeContext,
 	nodeResp *common.NodeResponse) (*common.NodeResponse, *serviceerror.ServiceError) {
@@ -184,6 +213,9 @@ func (n *promptNode) executeLoginOptions(ctx *NodeContext,
 			}
 		}
 		if n.resolvePromptInputs(ctx, nodeResp) {
+			if n.applyValidationFailureReprompt(ctx, nodeResp) {
+				return nodeResp, nil
+			}
 			return n.finalizeLoginOptionsAction(ctx, nodeResp, authClassToAction)
 		}
 		n.applyMetaForLoginOptions(ctx, nodeResp, nil)
@@ -206,6 +238,9 @@ func (n *promptNode) executeLoginOptions(ctx *NodeContext,
 		ctx.CurrentAction = actions[0].Ref
 		logger.Debug("Auto-selected single login option", log.String("actionRef", ctx.CurrentAction))
 		if n.resolvePromptInputs(ctx, nodeResp) {
+			if n.applyValidationFailureReprompt(ctx, nodeResp) {
+				return nodeResp, nil
+			}
 			return n.finalizeLoginOptionsAction(ctx, nodeResp, authClassToAction)
 		}
 		nodeResp.RuntimeData[common.RuntimeKeyAllowedLoginOptions] = ctx.CurrentAction
@@ -523,6 +558,22 @@ func (n *promptNode) tryAutoSelectSingleAction(ctx *NodeContext) bool {
 		return true
 	}
 	return false
+}
+
+// getInputsForCurrentAction returns the inputs of the prompt whose action matches
+// the given actionRef. When no action is selected, or no prompt matches the given
+// ref, it falls back to getAllInputs() — preserving the historical behavior for
+// single-prompt nodes and the no-action-selected path.
+func (n *promptNode) getInputsForCurrentAction(actionRef string) []common.Input {
+	if actionRef == "" {
+		return n.getAllInputs()
+	}
+	for _, prompt := range n.prompts {
+		if prompt.Action != nil && prompt.Action.Ref == actionRef {
+			return prompt.Inputs
+		}
+	}
+	return n.getAllInputs()
 }
 
 // getAllInputs returns all unique inputs from prompts, deduplicated by Identifier.

@@ -3988,13 +3988,61 @@ paths:
                           identifier: username
                           type: TEXT_INPUT
                           required: true
+                          validation:
+                            - type: regex
+                              value: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
+                              message: "{{i18n(validation:email.invalid)}}"
                         - ref: input_password
                           identifier: password
                           type: PASSWORD_INPUT
                           required: true
+                          validation:
+                            - type: minLength
+                              value: 8
+                              message: "{{i18n(validation:password.minLength.invalid)}}"
+                            - type: maxLength
+                              value: 128
+                              message: "{{i18n(validation:password.maxLength.invalid)}}"
                       actions:
                         - ref: action_submit
                           nextNode: node_bs12
+                validationFailedFlow:
+                  summary: Incomplete flow (input validation failed)
+                  value:
+                    executionId: 2c6d4c45-3de9-4a70-ae6b-ba1d034af6bc
+                    flowStatus: INCOMPLETE
+                    stepId: 3071b6c6-0119-465c-b00b-3a0e6f88a730
+                    challengeToken: b4f3e2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0a9b8c7d6e5f4a3
+                    type: VIEW
+                    data:
+                      inputs:
+                        - ref: input_username
+                          identifier: username
+                          type: TEXT_INPUT
+                          required: true
+                          validation:
+                            - type: regex
+                              value: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
+                              message: "{{i18n(validation:email.invalid)}}"
+                        - ref: input_password
+                          identifier: password
+                          type: PASSWORD_INPUT
+                          required: true
+                          validation:
+                            - type: minLength
+                              value: 8
+                              message: "{{i18n(validation:password.minLength.invalid)}}"
+                            - type: maxLength
+                              value: 128
+                              message: "{{i18n(validation:password.maxLength.invalid)}}"
+                      actions:
+                        - ref: action_submit
+                          nextNode: node_bs12
+                      fieldErrors:
+                        - identifier: username
+                          message: "{{i18n(validation:email.invalid)}}"
+                        - identifier: password
+                          message: "{{i18n(validation:password.minLength.invalid)}}"
                 displayOnlyFlow:
                   summary: Incomplete flow (display-only prompt)
                   value:
@@ -15469,7 +15517,7 @@ components:
           type: object
           description: >
             UI rendering metadata for display-only PROMPT nodes, returned when
-            executing in verbose mode. 
+            executing in verbose mode.
 
             Contains a `components` array describing the elements to render
             (headings, body text, images, etc.).
@@ -15485,6 +15533,21 @@ components:
                 category: DISPLAY
                 variant: BODY_1
                 label: You have successfully completed the registration.
+        fieldErrors:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldError"
+          description: Per-field validation failures returned when one or more submitted
+            values violate the rules declared on `data.inputs[].validation`. Each failing
+            rule produces a separate entry. The server discards the submitted values for
+            the failing fields and re-presents the same step (`inputs` and `actions`
+            arrays remain populated) so the client can re-render the form and the user can
+            resubmit corrected values.
+          example:
+            - identifier: username
+              message: "{{i18n(validation:email.invalid)}}"
+            - identifier: password
+              message: "{{i18n(validation:password.minLength.invalid)}}"
     Action:
       type: object
       required:
@@ -15531,6 +15594,62 @@ components:
           type: boolean
           description: Whether the input is required
           example: true
+        validation:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationRule"
+          description: >-
+            Server-enforced validation rules applied to the submitted value
+            after the required-input presence check. When any rule fails, the response
+            returns `flowStatus: INCOMPLETE` with the failing rules listed under
+            `data.fieldErrors`.
+    ValidationRule:
+      type: object
+      required:
+        - type
+        - value
+      properties:
+        type:
+          type: string
+          description: Constraint type. Each rule object carries exactly one constraint.
+          enum:
+            - regex
+            - minLength
+            - maxLength
+          example: regex
+        value:
+          description: Constraint parameter. `regex` takes a pattern string compiled with
+            Go's RE2 engine. `minLength` and `maxLength` take a non-negative integer
+            applied to the Unicode code point count of the submitted value.
+          oneOf:
+            - type: string
+            - type: integer
+              minimum: 0
+          example: ^[0-9]{10}$
+        message:
+          type: string
+          description: Message returned in `data.fieldErrors` when the rule fails. Accepts
+            a literal string or an i18n key (for example,
+            `{{i18n(validation:phone.pattern.invalid)}}`). The server returns the value as
+            is. When omitted, the server returns a default key for the rule type
+            (`validation.pattern.invalid`, `validation.minLength.invalid`, or
+            `validation.maxLength.invalid`).
+          example: "{{i18n(validation:phone.pattern.invalid)}}"
+    FieldError:
+      type: object
+      required:
+        - identifier
+        - message
+      properties:
+        identifier:
+          type: string
+          description: Identifier of the input field whose validation rule failed
+          example: username
+        message:
+          type: string
+          description: Message from the failing validation rule, returned as is from the
+            rule's `message` field or the default i18n key for the rule type
+          example: "{{i18n(validation:email.invalid)}}"
     FlowListResponse:
       type: object
       properties:

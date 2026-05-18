@@ -280,9 +280,27 @@ func (b *graphBuilder) configureNodeInputs(nodeDef *NodeDefinition, node core.No
 			Identifier: input.Identifier,
 			Type:       input.Type,
 			Required:   input.Required,
+			Validation: toValidationRules(input.Validation),
 		}
 	}
 	executorNode.SetInputs(inputs)
+}
+
+// toValidationRules converts the mgt-layer rule definitions to runtime ValidationRule values.
+// Returns nil for an empty input so the resulting Input retains a nil Validation slice.
+func toValidationRules(defs []ValidationRuleDefinition) []common.ValidationRule {
+	if len(defs) == 0 {
+		return nil
+	}
+	rules := make([]common.ValidationRule, len(defs))
+	for i, d := range defs {
+		rules[i] = common.ValidationRule{
+			Type:    d.Type,
+			Value:   d.Value,
+			Message: d.Message,
+		}
+	}
+	return rules
 }
 
 // configureNodeVariant sets the prompt node's variant from the node definition.
@@ -344,6 +362,7 @@ func (b *graphBuilder) configureNodePrompts(nodeDef *NodeDefinition, node core.N
 				Identifier: inputDef.Identifier,
 				Type:       inputDef.Type,
 				Required:   inputDef.Required,
+				Validation: toValidationRules(inputDef.Validation),
 			}
 		}
 		prompts[i].Inputs = inputs
