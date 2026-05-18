@@ -23,6 +23,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	oupkg "github.com/thunder-id/thunderid/internal/ou"
@@ -519,15 +520,26 @@ func (rs *resourceService) collectPermissionData(
 	return pd, nil
 }
 
+func sortResourcesByHierarchy(resources []Resource) {
+	sort.SliceStable(resources, func(i, j int) bool {
+		if resources[i].Parent == nil && resources[j].Parent != nil {
+			return true
+		}
+		return false
+	})
+}
+
 // recomputePermissions updates the stored permission strings for all resources and actions
 // under a resource server whose handle has changed. Must be called inside a transaction.
 func (rs *resourceService) recomputePermissions(
 	ctx context.Context, rsID string, resourceServer ResourceServer, pd *permissionData,
 ) error {
+	sortResourcesByHierarchy(pd.resources)
 	permByID := make(map[string]string, len(pd.resources))
 
 	for i := range pd.resources {
 		res := &pd.resources[i]
+		oldPerm := res.Permission
 		var parentRes *Resource
 		if res.Parent != nil {
 			if parentPerm, ok := permByID[*res.Parent]; ok {
@@ -540,14 +552,23 @@ func (rs *resourceService) recomputePermissions(
 			rs.logger.Error("Failed to update resource permission", log.Error(err))
 			return err
 		}
+		if err := rs.resourceStore.UpdateRolePermission(ctx, rsID, oldPerm, newPerm); err != nil {
+			rs.logger.Error("Failed to update role permission for resource", log.Error(err))
+			return err
+		}
 	}
 
 	for i := range pd.rsLevelActions {
+		oldPerm := pd.rsLevelActions[i].Permission
 		newPerm := derivePermission(resourceServer, nil, pd.rsLevelActions[i].Handle)
 		if err := rs.resourceStore.UpdateActionPermission(
 			ctx, pd.rsLevelActions[i].ID, rsID, nil, newPerm,
 		); err != nil {
 			rs.logger.Error("Failed to update RS-level action permission", log.Error(err))
+			return err
+		}
+		if err := rs.resourceStore.UpdateRolePermission(ctx, rsID, oldPerm, newPerm); err != nil {
+			rs.logger.Error("Failed to update role permission for RS-level action", log.Error(err))
 			return err
 		}
 	}
@@ -556,12 +577,17 @@ func (rs *resourceService) recomputePermissions(
 		parentPerm := permByID[ra.resourceID]
 		parentRes := &Resource{Permission: parentPerm}
 		for i := range ra.actions {
+			oldPerm := ra.actions[i].Permission
 			newPerm := derivePermission(resourceServer, parentRes, ra.actions[i].Handle)
 			resID := ra.resourceID
 			if err := rs.resourceStore.UpdateActionPermission(
 				ctx, ra.actions[i].ID, rsID, &resID, newPerm,
 			); err != nil {
 				rs.logger.Error("Failed to update resource action permission", log.Error(err))
+				return err
+			}
+			if err := rs.resourceStore.UpdateRolePermission(ctx, rsID, oldPerm, newPerm); err != nil {
+				rs.logger.Error("Failed to update role permission for resource action", log.Error(err))
 				return err
 			}
 		}

@@ -351,6 +351,13 @@ var (
 		          AND a.DEPLOYMENT_ID = $4`,
 	}
 
+	// queryUpdateRolePermission updates role permissions when a resource server handle changes.
+	queryUpdateRolePermission = dbmodel.DBQuery{
+		ID: "RSQ-RES_MGT-38",
+		Query: `UPDATE "ROLE_PERMISSION" SET PERMISSION = $1
+			WHERE RESOURCE_SERVER_ID = $2 AND PERMISSION = $3 AND DEPLOYMENT_ID = $4`,
+	}
+
 	// queryCheckActionHandleExists checks if action handle exists.
 	queryCheckActionHandleExists = dbmodel.DBQuery{
 		ID: "RSQ-RES_MGT-31",

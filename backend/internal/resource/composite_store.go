@@ -312,6 +312,11 @@ func (c *compositeResourceStore) UpdateResourcePermission(
 	return c.dbStore.UpdateResourcePermission(ctx, id, resServerID, permission)
 }
 
+func (c *compositeResourceStore) UpdateRolePermission(
+	ctx context.Context, rsID string, oldPermission string, newPermission string) error {
+	return c.dbStore.UpdateRolePermission(ctx, rsID, oldPermission, newPermission)
+}
+
 func (c *compositeResourceStore) DeleteResource(
 	ctx context.Context, id string, resServerID string) error {
 	return c.dbStore.DeleteResource(ctx, id, resServerID)

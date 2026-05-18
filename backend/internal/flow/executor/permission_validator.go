@@ -29,10 +29,7 @@ import (
 )
 
 func getDefaultRequiredScope() string {
-	if p := security.GetSystemPermissions(); p != nil {
-		return p.Root
-	}
-	return security.UninitializedPermissionSentinel
+	return security.GetSystemRootPermission()
 }
 
 // permissionValidator validates that the request has the required permission/scope to access the next node.

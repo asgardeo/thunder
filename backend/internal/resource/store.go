@@ -69,6 +69,7 @@ type resourceStoreInterface interface {
 	GetActionListCount(ctx context.Context, resServerID string, resID *string) (int, error)
 	UpdateAction(ctx context.Context, id string, resServerID string, resID *string, action Action) error
 	UpdateActionPermission(ctx context.Context, id string, resServerID string, resID *string, permission string) error
+	UpdateRolePermission(ctx context.Context, rsID string, oldPermission string, newPermission string) error
 	DeleteAction(ctx context.Context, id string, resServerID string, resID *string) error
 	IsActionExist(ctx context.Context, id string, resServerID string, resID *string) (bool, error)
 	CheckActionHandleExists(
@@ -742,6 +743,26 @@ func (s *resourceStore) UpdateActionPermission(
 		)
 		if err != nil {
 			return fmt.Errorf("failed to update action permission: %w", err)
+		}
+		return nil
+	})
+}
+
+// UpdateRolePermission updates role permissions when a resource server handle changes.
+func (s *resourceStore) UpdateRolePermission(
+	ctx context.Context, rsID string, oldPermission string, newPermission string,
+) error {
+	return s.withDBClient(func(dbClient provider.DBClientInterface) error {
+		_, err := dbClient.ExecuteContext(
+			ctx,
+			queryUpdateRolePermission,
+			newPermission,
+			rsID,
+			oldPermission,
+			s.deploymentID,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to update role permission: %w", err)
 		}
 		return nil
 	})

@@ -409,66 +409,6 @@ Authorization resource settings.
 |---------|---------|-------------|
 | `resource.default_delimiter` | `:` | Default delimiter for resource hierarchies |
 
-### System Resource Server
-
-The system resource server controls administrative permissions for <ProductName /> Console operations such as managing users, groups, organization units, and user types. You can customize the handle and identifier to fit your deployment requirements.
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `resource.system_resource_server.handle` | `""` (empty) | Prefix added before all system permission strings. When empty, permissions use their base names (for example, `system`, `system:ou`). When set, the handle is added before every permission (for example, `mgmt:system`, `mgmt:system:ou`) |
-| `resource.system_resource_server.identifier` | `system` | Identifier for the system resource server. Can be set to a URI for [RFC 8707](https://datatracker.ietf.org/doc/html/rfc8707) resource indicator flows (for example, `https://api.example.com`) |
-
-**Example:**
-```yaml
-resource:
-  system_resource_server:
-    handle: "mgmt"
-    identifier: "https://api.example.com"
-```
-
-With the handle set to `mgmt`, all system permissions change as follows:
-
-| Default Permission | Custom Permission |
-|-------------------|-------------------|
-| `system` | `mgmt:system` |
-| `system:ou` | `mgmt:system:ou` |
-| `system:ou:view` | `mgmt:system:ou:view` |
-| `system:user` | `mgmt:system:user` |
-| `system:user:view` | `mgmt:system:user:view` |
-| `system:group` | `mgmt:system:group` |
-| `system:group:view` | `mgmt:system:group:view` |
-| `system:usertype` | `mgmt:system:usertype` |
-| `system:usertype:view` | `mgmt:system:usertype:view` |
-
-#### Update Console Scopes
-
-When you change the system resource server handle, you must also update the <ProductName /> Console scopes to match the new permission strings. The scopes tell the Console which permissions to request during sign-in.
-
-Update the `scopes` array in the Console configuration file for your deployment mode:
-
-- **Local development** (`pnpm dev`): Update `frontend/apps/console/public/config.js`.
-- **Packaged build** (`build.sh` / `setup.sh` / `setup.ps1`): The setup scripts read the handle from `deployment.yaml` and pass the value to the bootstrap process automatically. Update `frontend/apps/console/public/config.js` for the Console scopes.
-- **Helm deployment**: Update `configuration.consoleClient.scopes` in your Helm values file (`install/helm/values.yaml`).
-
-For example, with the handle set to `mgmt`, update the Console `scopes` array to:
-
-```javascript
-scopes: [
-  'openid',
-  'profile',
-  'email',
-  'ou',
-  'mgmt:system',
-  'mgmt:system:user',
-  'mgmt:system:group',
-  'mgmt:system:ou:view',
-  'mgmt:system:usertype:view',
-],
-```
-
-:::warning
-If the Console scopes do not match the configured handle, the admin user token will lack the required `authorized_permissions` claim. All administrative API calls from the Console will then return `403 Forbidden`.
-:::
 
 ## Observability Configuration
 
@@ -615,6 +555,11 @@ Controls server-wide security behavior that is not specific to any single authen
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `server.security.jwks_cache_ttl` | `300` | JWKS cache TTL in seconds. Applies to every JWKS consumer in the server (trusted issuer validation, federated OIDC authenticators such as Google, and so on). Fetched signing keys are reused from the in-process cache for this duration before being re-fetched. Plan external-server key rotations with at least this much overlap. Set to `0` to disable caching |
+| `server.security.system_permission_prefix` | `""` (empty) | Prefix for system permission strings used in API authorization. When empty, permissions use their base names (for example, `system`, `system:ou`). When set, the prefix is prepended to every system permission (for example, `mgmt:system`, `mgmt:system:ou`). This value must match the system resource server's current handle. Changes require a server restart |
+
+:::tip
+The system resource server is a normal resource server that can be updated via the resource server APIs. When you update its handle, the permission strings in roles are cascaded automatically. After updating the handle, set `server.security.system_permission_prefix` to the new handle value and restart the server. You must also update the Console scopes to match the new permission strings.
+:::
 
 ## Trusted Issuer Configuration
 

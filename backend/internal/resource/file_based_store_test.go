@@ -218,6 +218,12 @@ func (s *FileBasedResourceStoreTestSuite) TestDeleteResource_ReturnsImmutableErr
 	assert.Equal(s.T(), errImmutableStore, err)
 }
 
+func (s *FileBasedResourceStoreTestSuite) TestUpdateRolePermission_ReturnsImmutableError() {
+	err := s.store.UpdateRolePermission(s.ctx, "rs1", "old:perm", "new:perm")
+	assert.Error(s.T(), err)
+	assert.Equal(s.T(), errImmutableStore, err)
+}
+
 func (s *FileBasedResourceStoreTestSuite) TestCheckCircularDependency_AlwaysFalse() {
 	hasCircular, err := s.store.CheckCircularDependency(s.ctx, "res1", "res2")
 

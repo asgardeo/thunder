@@ -3709,3 +3709,84 @@ func (suite *ResourceStoreTestSuite) TestBuildPropertiesJSONFunction() {
 		})
 	}
 }
+
+func (suite *ResourceStoreTestSuite) TestUpdateRolePermission() {
+	testCases := []struct {
+		name          string
+		rsID          string
+		oldPermission string
+		newPermission string
+		setupMocks    func()
+		shouldErr     bool
+		checkError    func(error) bool
+	}{
+		{
+			name:          "Success",
+			rsID:          "rs1",
+			oldPermission: "old-handle:res",
+			newPermission: "new-handle:res",
+			setupMocks: func() {
+				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryUpdateRolePermission, "new-handle:res", "rs1",
+					"old-handle:res", "test-deployment").
+					Return(int64(1), nil)
+			},
+			shouldErr: false,
+		},
+		{
+			name:          "ExecuteError",
+			rsID:          "rs1",
+			oldPermission: "old-handle:res",
+			newPermission: "new-handle:res",
+			setupMocks: func() {
+				suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil)
+				suite.mockDBClient.On("ExecuteContext", context.Background(),
+					queryUpdateRolePermission, "new-handle:res", "rs1",
+					"old-handle:res", "test-deployment").
+					Return(int64(0), errors.New("update failed"))
+			},
+			shouldErr: true,
+			checkError: func(err error) bool {
+				suite.Contains(err.Error(), "failed to update role permission")
+				return true
+			},
+		},
+		{
+			name:          "DBClientError",
+			rsID:          "rs1",
+			oldPermission: "old-handle:res",
+			newPermission: "new-handle:res",
+			setupMocks: func() {
+				suite.mockDBProvider.On("GetConfigDBClient").
+					Return((*provider.DBClient)(nil), errors.New("db error"))
+			},
+			shouldErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			suite.mockDBProvider = providermock.NewDBProviderInterfaceMock(suite.T())
+			suite.mockDBClient = providermock.NewDBClientInterfaceMock(suite.T())
+			suite.store = &resourceStore{
+				dbProvider:   suite.mockDBProvider,
+				deploymentID: "test-deployment",
+			}
+
+			tc.setupMocks()
+
+			err := suite.store.UpdateRolePermission(context.Background(),
+				tc.rsID, tc.oldPermission, tc.newPermission)
+
+			if tc.shouldErr {
+				suite.Error(err)
+				if tc.checkError != nil {
+					tc.checkError(err)
+				}
+			} else {
+				suite.NoError(err)
+			}
+		})
+	}
+}

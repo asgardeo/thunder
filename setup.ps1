@@ -296,8 +296,6 @@ function Read-Config {
         $script:PORT = & yq eval '.server.port // 8090' $configFile 2>$null
         $script:HTTP_ONLY = & yq eval '.server.http_only // false' $configFile 2>$null
         $script:PUBLIC_URL = & yq eval '.server.public_url // ""' $configFile 2>$null
-        $script:SYSTEM_RS_HANDLE = & yq eval '.resource.system_resource_server.handle // ""' $configFile 2>$null
-        $script:SYSTEM_RS_IDENTIFIER = & yq eval '.resource.system_resource_server.identifier // ""' $configFile 2>$null
     }
     else {
         # Fallback: basic parsing with Select-String
@@ -338,27 +336,6 @@ function Read-Config {
             $script:PUBLIC_URL = ""
         }
 
-        # Parse system resource server handle (under resource.system_resource_server)
-        if ($content -match '(?ms)system_resource_server:.*?handle:\s*[''"]([^''"]*)[''"]') {
-            $script:SYSTEM_RS_HANDLE = $matches[1]
-        }
-        elseif ($content -match '(?ms)system_resource_server:.*?handle:\s*([^\s#]+)') {
-            $script:SYSTEM_RS_HANDLE = $matches[1]
-        }
-        else {
-            $script:SYSTEM_RS_HANDLE = ""
-        }
-
-        # Parse system resource server identifier (under resource.system_resource_server)
-        if ($content -match '(?ms)system_resource_server:.*?identifier:\s*[''"]([^''"]*)[''"]') {
-            $script:SYSTEM_RS_IDENTIFIER = $matches[1]
-        }
-        elseif ($content -match '(?ms)system_resource_server:.*?identifier:\s*([^\s#]+)') {
-            $script:SYSTEM_RS_IDENTIFIER = $matches[1]
-        }
-        else {
-            $script:SYSTEM_RS_IDENTIFIER = ""
-        }
     }
 
     # Determine protocol
@@ -385,8 +362,6 @@ $PUBLIC_URL = if ($script:PUBLIC_URL) { $script:PUBLIC_URL.TrimEnd('/') } else {
 # Export environment variables for bootstrap scripts
 $env:API_BASE = $BASE_URL
 $env:PUBLIC_URL = $PUBLIC_URL
-$env:SYSTEM_RS_HANDLE = if ($script:SYSTEM_RS_HANDLE) { $script:SYSTEM_RS_HANDLE } else { "" }
-$env:SYSTEM_RS_IDENTIFIER = if ($script:SYSTEM_RS_IDENTIFIER) { $script:SYSTEM_RS_IDENTIFIER } else { "" }
 
 Write-Host ""
 Write-Host "========================================="

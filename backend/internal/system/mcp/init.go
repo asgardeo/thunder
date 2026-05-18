@@ -47,11 +47,10 @@ func Initialize(
 	// Create MCP server and register standalone tools
 	mcpServer := newServer()
 
-	sysPerm := security.GetSystemPermissions()
-	if sysPerm == nil {
+	rootPerm := security.GetSystemRootPermission()
+	if rootPerm == security.UninitializedPermissionSentinel {
 		log.GetLogger().Fatal("System permissions not initialized before MCP initialization")
 	}
-	rootPerm := sysPerm.Root
 
 	tokenVerifier := mcpauth.NewTokenVerifier(jwtService, cfg.JWT.Issuer, mcpURL)
 	httpHandler := mcpsdk.NewStreamableHTTPHandler(func(*http.Request) *mcpsdk.Server {

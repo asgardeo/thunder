@@ -290,6 +290,15 @@ func GetSystemPermissions() *SystemPermissions {
 	return sysPerms
 }
 
+// GetSystemRootPermission returns the root system permission string.
+// Returns UninitializedPermissionSentinel if InitSystemPermissions has not been called.
+func GetSystemRootPermission() string {
+	if sysPerms != nil {
+		return sysPerms.Root
+	}
+	return UninitializedPermissionSentinel
+}
+
 // ---- Action → Permission map ----
 
 // actionPermissionMap maps each system action to the minimum permission required to perform it.
@@ -359,8 +368,5 @@ func ResolveActionPermission(action Action) string {
 	if perm, ok := actionPermissionMap[action]; ok {
 		return perm
 	}
-	if sysPerms != nil {
-		return sysPerms.Root
-	}
-	return UninitializedPermissionSentinel
+	return GetSystemRootPermission()
 }
