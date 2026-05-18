@@ -329,3 +329,109 @@ func (s *CacheBackedIDPStoreTestSuite) TestGetIdentityProvidersByProperty_InnerS
 	s.NotErrorIs(err, ErrIDPNotFound)
 	s.propertyCache.AssertNotCalled(s.T(), "Set")
 }
+
+// --- cacheIDP edge cases ---
+
+func (s *CacheBackedIDPStoreTestSuite) TestCacheIDP_NilIDP() {
+	s.cachedStore.cacheIDP(context.Background(), nil)
+	s.idCache.AssertNotCalled(s.T(), "Set")
+}
+
+func (s *CacheBackedIDPStoreTestSuite) TestCacheIDP_EmptyID() {
+	idp := &IDPDTO{ID: "", Name: "No ID", Type: IDPTypeOIDC}
+	s.cachedStore.cacheIDP(context.Background(), idp)
+	s.idCache.AssertNotCalled(s.T(), "Set")
+}
+
+// --- invalidateIDP edge cases ---
+
+func (s *CacheBackedIDPStoreTestSuite) TestInvalidateIDP_NilIDP() {
+	s.cachedStore.invalidateIDP(context.Background(), nil)
+	s.idCache.AssertNotCalled(s.T(), "Delete")
+	s.propertyCache.AssertNotCalled(s.T(), "Delete")
+}
+
+func (s *CacheBackedIDPStoreTestSuite) TestInvalidateIDP_PropertyWithEmptyValue() {
+	prop, _ := cmodels.NewProperty("empty_prop", "", false)
+	idp := &IDPDTO{
+		ID:         "idp-empty-prop",
+		Name:       "IDP Empty Prop",
+		Type:       IDPTypeOIDC,
+		Properties: []cmodels.Property{*prop},
+	}
+
+	s.idCache.On("Delete", mock.Anything, cache.CacheKey{Key: "idp-empty-prop"}).Return(nil)
+
+	s.cachedStore.invalidateIDP(context.Background(), idp)
+
+	s.idCache.AssertCalled(s.T(), "Delete", mock.Anything, cache.CacheKey{Key: "idp-empty-prop"})
+	s.propertyCache.AssertNotCalled(s.T(), "Delete")
+}
+
+// --- CreateIdentityProvider error branch ---
+
+func (s *CacheBackedIDPStoreTestSuite) TestCreateIdentityProvider_InnerStoreError() {
+	idp := IDPDTO{ID: "idp-fail", Name: "Fail IDP", Type: IDPTypeOIDC}
+	s.mockInner.On("CreateIdentityProvider", mock.Anything, idp).Return(errors.New("create failed"))
+
+	err := s.cachedStore.CreateIdentityProvider(context.Background(), idp)
+
+	s.Error(err)
+	s.idCache.AssertNotCalled(s.T(), "Set")
+}
+
+// --- UpdateIdentityProvider error branches ---
+
+func (s *CacheBackedIDPStoreTestSuite) TestUpdateIdentityProvider_InnerGetError() {
+	idp := &IDPDTO{ID: "idp-1", Name: "Updated", Type: IDPTypeOIDC}
+	s.mockInner.On("GetIdentityProvider", mock.Anything, "idp-1").
+		Return((*IDPDTO)(nil), errors.New("get failed"))
+
+	err := s.cachedStore.UpdateIdentityProvider(context.Background(), idp)
+
+	s.Error(err)
+	s.mockInner.AssertNotCalled(s.T(), "UpdateIdentityProvider")
+	s.idCache.AssertNotCalled(s.T(), "Set")
+	s.idCache.AssertNotCalled(s.T(), "Delete")
+}
+
+func (s *CacheBackedIDPStoreTestSuite) TestUpdateIdentityProvider_InnerUpdateError() {
+	oldProp, _ := cmodels.NewProperty(PropIssuer, "https://old.example.com", false)
+	oldIDP := &IDPDTO{ID: "idp-1", Name: "Old", Type: IDPTypeOIDC,
+		Properties: []cmodels.Property{*oldProp}}
+
+	newIDP := &IDPDTO{ID: "idp-1", Name: "New", Type: IDPTypeOIDC}
+
+	s.mockInner.On("GetIdentityProvider", mock.Anything, "idp-1").Return(oldIDP, nil)
+	s.mockInner.On("UpdateIdentityProvider", mock.Anything, newIDP).Return(errors.New("update failed"))
+
+	err := s.cachedStore.UpdateIdentityProvider(context.Background(), newIDP)
+
+	s.Error(err)
+	s.idCache.AssertNotCalled(s.T(), "Delete")
+	s.idCache.AssertNotCalled(s.T(), "Set")
+}
+
+// --- DeleteIdentityProvider error branches ---
+
+func (s *CacheBackedIDPStoreTestSuite) TestDeleteIdentityProvider_InnerGetGenericError() {
+	s.mockInner.On("GetIdentityProvider", mock.Anything, "idp-1").
+		Return((*IDPDTO)(nil), errors.New("connection refused"))
+
+	err := s.cachedStore.DeleteIdentityProvider(context.Background(), "idp-1")
+
+	s.Error(err)
+	s.mockInner.AssertNotCalled(s.T(), "DeleteIdentityProvider")
+}
+
+func (s *CacheBackedIDPStoreTestSuite) TestDeleteIdentityProvider_InnerDeleteError() {
+	idp := makeIDPWithIssuer("idp-1", "IDP 1", "https://idp.example.com")
+	s.mockInner.On("GetIdentityProvider", mock.Anything, "idp-1").Return(idp, nil)
+	s.mockInner.On("DeleteIdentityProvider", mock.Anything, "idp-1").Return(errors.New("delete failed"))
+
+	err := s.cachedStore.DeleteIdentityProvider(context.Background(), "idp-1")
+
+	s.Error(err)
+	s.idCache.AssertNotCalled(s.T(), "Delete")
+	s.propertyCache.AssertNotCalled(s.T(), "Delete")
+}
