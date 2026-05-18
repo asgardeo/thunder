@@ -67,12 +67,17 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 pre {
-  background: #313131;
-  color: #fefefe;
+  background: rgba(0, 0, 0, 0.04);
+  color: inherit;
   padding: 20px;
-  border-radius: 20px;
+  border-radius: 12px;
   text-align: left;
   font-size: 12px;
+  border: 1px solid var(--md-palette-border-color-paper);
+}
+
+html[data-color-scheme='dark'] pre {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 code {
