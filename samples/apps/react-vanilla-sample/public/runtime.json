@@ -1,5 +1,4 @@
 {
     "flowEndpoint": "https://localhost:8090/flow",
-    "redirectBasedLogin": false,
     "applicationID": "{your-application-id}"
 }
