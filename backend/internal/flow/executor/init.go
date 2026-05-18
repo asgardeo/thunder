@@ -74,7 +74,7 @@ func Initialize(
 	googleSvc google.GoogleOIDCAuthnServiceInterface,
 ) ExecutorRegistryInterface {
 	reg := newExecutorRegistry()
-	reg.RegisterExecutor(ExecutorNameBasicAuth, newBasicAuthExecutor(
+	reg.RegisterExecutor(ExecutorNameCredentialsAuth, newCredentialsAuthExecutor(
 		flowFactory, entityProvider, authnProvider))
 	reg.RegisterExecutor(ExecutorNameSMSAuth, newSMSOTPAuthExecutor(
 		flowFactory, otpService, authnProvider, entityProvider))

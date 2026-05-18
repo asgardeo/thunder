@@ -54,7 +54,7 @@ func (s *FlowInferenceServiceTestSuite) TestInferRegistrationFlow_Success() {
 				ID:   "auth",
 				Type: "TASK_EXECUTION",
 				Executor: &ExecutorDefinition{
-					Name: executor.ExecutorNameBasicAuth,
+					Name: executor.ExecutorNameCredentialsAuth,
 				},
 				OnSuccess: "end",
 			},
@@ -173,7 +173,7 @@ func (s *FlowInferenceServiceTestSuite) TestInferRegistrationFlow_WithAuthAssert
 				ID:   "auth1",
 				Type: "TASK_EXECUTION",
 				Executor: &ExecutorDefinition{
-					Name: executor.ExecutorNameBasicAuth,
+					Name: executor.ExecutorNameCredentialsAuth,
 				},
 				OnSuccess: "auth_assert",
 			},
@@ -422,7 +422,7 @@ func (s *FlowInferenceServiceTestSuite) TestInferRegistrationFlow_WithLayout() {
 					Position: &NodePosition{X: 700, Y: 50},
 				},
 				Executor: &ExecutorDefinition{
-					Name: executor.ExecutorNameBasicAuth,
+					Name: executor.ExecutorNameCredentialsAuth,
 				},
 				OnSuccess: "end",
 			},
@@ -481,7 +481,7 @@ func (s *FlowInferenceServiceTestSuite) TestInsertPhoneInputPromptIfNeeded_NoSMS
 			ID:   "task",
 			Type: "TASK_EXECUTION",
 			Executor: &ExecutorDefinition{
-				Name: executor.ExecutorNameBasicAuth,
+				Name: executor.ExecutorNameCredentialsAuth,
 			},
 			OnSuccess: "end",
 		},
@@ -1317,7 +1317,7 @@ func (s *FlowInferenceServiceTestSuite) TestInferRegistrationFlow_InsertProvisio
 				ID:   "auth",
 				Type: "TASK_EXECUTION",
 				Executor: &ExecutorDefinition{
-					Name: executor.ExecutorNameBasicAuth,
+					Name: executor.ExecutorNameCredentialsAuth,
 				},
 				OnSuccess: "orphan", // Points to non-existent node
 			},
