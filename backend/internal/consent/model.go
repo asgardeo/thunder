@@ -25,6 +25,21 @@ const (
 	// NamespaceAttribute represents the attribute consent namespace.
 	// Used for managing consent over user attributes (e.g. email, mobile).
 	NamespaceAttribute Namespace = "attribute"
+	// NamespacePermission represents the permission consent namespace.
+	// Used for managing consent over resource action permissions (e.g. booking:reservations:read).
+	NamespacePermission Namespace = "permission"
+)
+
+// PurposeType represents the type discriminator of a consent purpose.
+// It distinguishes attribute consent purposes from permission consent purposes
+// so callers can filter the list of purposes by the kind of consent they manage.
+type PurposeType string
+
+const (
+	// PurposeTypeAttributes is the default purpose type, used for attribute consent.
+	PurposeTypeAttributes PurposeType = "attributes"
+	// PurposeTypePermissions is used for permission consent (resource action permissions).
+	PurposeTypePermissions PurposeType = "permissions"
 )
 
 // ConsentStatus defines the possible statuses for a consent record.
@@ -118,6 +133,8 @@ type PurposeElement struct {
 
 // ConsentPurposeInput represents the input struct for creating or updating a consent purpose.
 // A consent purpose groups consent elements under a single objective for a specific resource.
+// The purpose's type (attribute vs permission) is encoded in the Name via the helpers
+// AttributesPurposeName / PermissionsPurposeName and recovered from the prefix on reads.
 type ConsentPurposeInput struct {
 	// Name is the unique name of the purpose
 	Name string
@@ -140,6 +157,9 @@ type ConsentPurpose struct {
 	Description string
 	// GroupID is the group ID that owns this purpose (e.g. app id)
 	GroupID string
+	// Type discriminates between attribute and permission consent purposes, recovered from the
+	// Name prefix on reads (see inferPurposeTypeFromName)
+	Type PurposeType
 	// Elements is the list of consent elements belonging to this purpose
 	Elements []PurposeElement
 	// CreatedTime is the Unix timestamp when the purpose was created

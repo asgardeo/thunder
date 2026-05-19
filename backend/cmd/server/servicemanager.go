@@ -186,7 +186,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	ouService.SetOUUserResolver(ouUserResolver)
 	ouService.SetOUGroupResolver(ouGroupResolver)
 
-	resourceService, resourceExporter, err := resource.Initialize(mux, ouService)
+	resourceService, resourceExporter, err := resource.Initialize(mux, ouService, consentService)
 	if err != nil {
 		logger.Fatal("Failed to initialize Resource Service", log.Error(err))
 	}

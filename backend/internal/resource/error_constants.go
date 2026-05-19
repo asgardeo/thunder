@@ -327,6 +327,19 @@ var (
 			DefaultValue: "Resource server handle cannot contain the delimiter character",
 		},
 	}
+	// ErrorConsentSyncFailed is returned when resource permission changes fail to sync with the consent service.
+	ErrorConsentSyncFailed = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "RES-1024",
+		Error: core.I18nMessage{
+			Key:          "error.resourceservice.consent_sync_failed",
+			DefaultValue: "Consent sync failed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.resourceservice.consent_sync_failed_description",
+			DefaultValue: "Failed to sync resource permission changes with the consent service",
+		},
+	}
 )
 
 // Internal error constants.
@@ -343,3 +356,22 @@ var (
 	// errResultLimitExceededInCompositeMode is the internal sentinel error for composite mode limit exceeded.
 	errResultLimitExceededInCompositeMode = errors.New("result limit exceeded in composite mode")
 )
+
+// ConsentSyncError wraps an underlying ServiceError from the consent service, allowing callers
+// to translate consent-service failures encountered during resource CRUD into their own error vocabulary.
+type ConsentSyncError struct {
+	Underlying *serviceerror.ServiceError
+}
+
+// Error implements the error interface.
+func (e *ConsentSyncError) Error() string {
+	if e.Underlying != nil {
+		return e.Underlying.ErrorDescription.DefaultValue
+	}
+	return "consent sync failed"
+}
+
+// IsClientError reports whether the underlying error is a client error.
+func (e *ConsentSyncError) IsClientError() bool {
+	return e.Underlying != nil && e.Underlying.Type == serviceerror.ClientErrorType
+}

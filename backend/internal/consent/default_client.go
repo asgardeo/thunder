@@ -887,10 +887,61 @@ func (c *defaultClient) dtoToConsentPurpose(dto *purposeResponseDTO) ConsentPurp
 		Name:        dto.Name,
 		Description: dto.Description,
 		GroupID:     dto.ClientID,
+		Type:        PurposeTypeFromName(dto.Name),
 		Elements:    elements,
 		CreatedTime: dto.CreatedTime,
 		UpdatedTime: dto.UpdatedTime,
 	}
+}
+
+// Consent-purpose name prefixes. Each Thunder-owned purpose is named `<prefix><appID>`; the prefix
+// doubles as the type discriminator on reads since the upstream consent service has no `type` field.
+const (
+	attributesPurposeNamePrefix  = "attributes:"
+	permissionsPurposeNamePrefix = "permissions:"
+)
+
+// AttributesPurposeName returns the canonical name of the attribute consent purpose for an app.
+func AttributesPurposeName(appID string) string {
+	return attributesPurposeNamePrefix + appID
+}
+
+// PermissionsPurposeName returns the canonical name of the permission consent purpose for an app.
+func PermissionsPurposeName(appID string) string {
+	return permissionsPurposeNamePrefix + appID
+}
+
+// PurposeTypeFromName derives the purpose type from the name prefix. Returns empty for names
+// without a recognized prefix (non-Thunder-owned purposes); callers filter such purposes out.
+func PurposeTypeFromName(name string) PurposeType {
+	switch {
+	case strings.HasPrefix(name, permissionsPurposeNamePrefix):
+		return PurposeTypePermissions
+	case strings.HasPrefix(name, attributesPurposeNamePrefix):
+		return PurposeTypeAttributes
+	default:
+		return ""
+	}
+}
+
+// FilterAttributePurposes returns only the attribute-type consent purposes (Thunder-owned).
+func FilterAttributePurposes(purposes []ConsentPurpose) []ConsentPurpose {
+	return filterPurposesByType(purposes, PurposeTypeAttributes)
+}
+
+// FilterPermissionPurposes returns only the permission-type consent purposes (Thunder-owned).
+func FilterPermissionPurposes(purposes []ConsentPurpose) []ConsentPurpose {
+	return filterPurposesByType(purposes, PurposeTypePermissions)
+}
+
+func filterPurposesByType(purposes []ConsentPurpose, t PurposeType) []ConsentPurpose {
+	out := make([]ConsentPurpose, 0, len(purposes))
+	for _, p := range purposes {
+		if p.Type == t {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // consentAuthorizationRequestToDTO converts a ConsentAuthorizationRequest to authorizationRequestDTO for API requests.

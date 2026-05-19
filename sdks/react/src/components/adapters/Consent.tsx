@@ -130,7 +130,7 @@ const Consent: FC<ConsentProps> = ({consentData, formValues, onInputChange, chil
           {purpose.optional && purpose.optional.length > 0 && (
             <div style={{marginTop: '0.5rem'}}>
               <Typography variant="subtitle2" fontWeight="bold">
-                Optional Attributes
+                {purpose.type === 'permissions' ? 'Permissions' : 'Optional Attributes'}
               </Typography>
               <ConsentCheckboxList
                 variant="OPTIONAL"

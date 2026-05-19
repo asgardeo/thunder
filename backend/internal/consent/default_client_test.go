@@ -1718,3 +1718,32 @@ func (s *DefaultClientTestSuite) TestListConsentPurposes_WithGroupID_UsesClientI
 	s.Len(result, 1)
 	s.Equal("app-99", result[0].GroupID)
 }
+
+// ----- purpose name + type helpers -----
+
+func (s *DefaultClientTestSuite) TestPurposeTypeFromName() {
+	s.Equal(PurposeTypeAttributes, PurposeTypeFromName("attributes:app1"))
+	s.Equal(PurposeTypeAttributes, PurposeTypeFromName(AttributesPurposeName("app1")))
+	s.Equal(PurposeTypePermissions, PurposeTypeFromName("permissions:app1"))
+	s.Equal(PurposeTypePermissions, PurposeTypeFromName(PermissionsPurposeName("app1")))
+	s.Equal(PurposeType(""), PurposeTypeFromName("custom-purpose"), "non-Thunder-owned names return empty")
+	s.Equal(PurposeType(""), PurposeTypeFromName(""))
+}
+
+func (s *DefaultClientTestSuite) TestAttributesPurposeName() {
+	s.Equal("attributes:app1", AttributesPurposeName("app1"))
+	s.Equal("attributes:", AttributesPurposeName(""))
+}
+
+func (s *DefaultClientTestSuite) TestFilterAttributePurposes() {
+	input := []ConsentPurpose{
+		{ID: "1", Type: PurposeTypeAttributes},
+		{ID: "2", Type: PurposeTypePermissions},
+		{ID: "3", Type: ""},
+		{ID: "4", Type: PurposeTypeAttributes},
+	}
+	got := FilterAttributePurposes(input)
+	s.Len(got, 2)
+	s.Equal("1", got[0].ID)
+	s.Equal("4", got[1].ID)
+}

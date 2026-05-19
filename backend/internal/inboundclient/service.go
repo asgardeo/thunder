@@ -316,7 +316,7 @@ func (s *inboundClientService) DeleteInboundClient(ctx context.Context, entityID
 	oauthClientID := s.resolveClientID(entityID)
 	return s.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		if s.consentService != nil && s.consentService.IsEnabled() {
-			if err := s.syncDeleteConsent(txCtx, entityID); err != nil {
+			if err := s.syncConsentOnDelete(txCtx, entityID); err != nil {
 				return err
 			}
 		}
@@ -1262,7 +1262,7 @@ func resolveScopeClaims(in map[string][]string) map[string][]string {
 	return in
 }
 
-// syncConsentOnCreate creates consent purpose elements for a newly registered application.
+// syncConsentOnCreate creates the attribute consent purpose for a newly registered application.
 func (s *inboundClientService) syncConsentOnCreate(ctx context.Context,
 	entityID, entityName string, client *inboundmodel.InboundClient, profile *inboundmodel.OAuthProfile) error {
 	// TODO: Replace with the entity's actual OU when multi-OU consent is supported.
@@ -1279,7 +1279,7 @@ func (s *inboundClientService) syncConsentOnCreate(ctx context.Context,
 		return err
 	}
 	purpose := consent.ConsentPurposeInput{
-		Name:        entityName,
+		Name:        consent.AttributesPurposeName(entityID),
 		Description: "Consent purpose for application " + entityName,
 		GroupID:     entityID,
 		Elements:    attributesToPurposeElements(attrMap),
@@ -1290,7 +1290,7 @@ func (s *inboundClientService) syncConsentOnCreate(ctx context.Context,
 	return nil
 }
 
-// syncConsentOnUpdate updates or creates the consent purpose for an existing application.
+// syncConsentOnUpdate updates or creates the attribute consent purpose for an existing application.
 func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 	entityID, entityName string, client *inboundmodel.InboundClient, profile *inboundmodel.OAuthProfile) error {
 	// TODO: Replace with the entity's actual OU when multi-OU consent is supported.
@@ -1305,14 +1305,15 @@ func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 			return err
 		}
 	}
-	existing, err := s.consentService.ListConsentPurposes(ctx, ouID, entityID)
+	allPurposes, err := s.consentService.ListConsentPurposes(ctx, ouID, entityID)
 	if err != nil {
 		return s.wrapConsentServiceError(err)
 	}
+	existing := consent.FilterAttributePurposes(allPurposes)
 	if len(existing) == 0 {
 		if len(newAttrs) > 0 {
 			purpose := consent.ConsentPurposeInput{
-				Name:        entityName,
+				Name:        consent.AttributesPurposeName(entityID),
 				Description: "Consent purpose for application " + entityName,
 				GroupID:     entityID,
 				Elements:    attributesToPurposeElements(newAttrs),
@@ -1324,10 +1325,20 @@ func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 		return nil
 	}
 	if len(newAttrs) == 0 {
-		return s.syncDeleteConsent(ctx, entityID)
+		// No attributes requested; remove only the attribute purpose. The permission purpose, if any,
+		// is left alone — it has an independent lifecycle bound to the resource service.
+		if delErr := s.consentService.DeleteConsentPurpose(ctx, ouID, existing[0].ID); delErr != nil {
+			if delErr.Code == consent.ErrorDeletingConsentPurposeWithAssociatedRecords.Code {
+				s.logger.Warn("Cannot delete attribute consent purpose due to existing consents",
+					log.String("entityID", entityID))
+				return nil
+			}
+			return s.wrapConsentServiceError(delErr)
+		}
+		return nil
 	}
 	updated := consent.ConsentPurposeInput{
-		Name:        entityName,
+		Name:        consent.AttributesPurposeName(entityID),
 		Description: "Consent purpose for application " + entityName,
 		GroupID:     entityID,
 		Elements:    attributesToPurposeElements(newAttrs),
@@ -1338,24 +1349,26 @@ func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
 	return nil
 }
 
-// syncDeleteConsent removes the consent purpose for the given entity if it exists.
-func (s *inboundClientService) syncDeleteConsent(ctx context.Context, entityID string) error {
+// syncConsentOnDelete removes every consent purpose (attribute and permission) owned by the application.
+// Purposes that cannot be deleted because they are referenced by active consent records are skipped
+// with a warning, matching the behavior applied to attribute purposes today.
+func (s *inboundClientService) syncConsentOnDelete(ctx context.Context, entityID string) error {
 	// TODO: Replace with the entity's actual OU when multi-OU consent is supported.
 	const ouID = "default"
 	purposes, err := s.consentService.ListConsentPurposes(ctx, ouID, entityID)
 	if err != nil {
 		return s.wrapConsentServiceError(err)
 	}
-	if len(purposes) == 0 {
-		return nil
-	}
-	if delErr := s.consentService.DeleteConsentPurpose(ctx, ouID, purposes[0].ID); delErr != nil {
-		if delErr.Code == consent.ErrorDeletingConsentPurposeWithAssociatedRecords.Code {
-			s.logger.Warn("Cannot delete consent purpose due to existing consents",
-				log.String("entityID", entityID))
-			return nil
+	for _, p := range purposes {
+		if delErr := s.consentService.DeleteConsentPurpose(ctx, ouID, p.ID); delErr != nil {
+			if delErr.Code == consent.ErrorDeletingConsentPurposeWithAssociatedRecords.Code {
+				s.logger.Warn("Cannot delete consent purpose due to existing consents",
+					log.String("entityID", entityID), log.String("purposeID", p.ID),
+					log.String("purposeType", string(p.Type)))
+				continue
+			}
+			return s.wrapConsentServiceError(delErr)
 		}
-		return s.wrapConsentServiceError(delErr)
 	}
 	return nil
 }
