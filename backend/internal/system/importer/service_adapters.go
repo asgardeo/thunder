@@ -23,19 +23,20 @@ import (
 	"encoding/json"
 	"fmt"
 
+	appmodel "github.com/thunder-id/thunderid/internal/application/model"
+	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
+	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
 	"github.com/thunder-id/thunderid/internal/entitytype"
+	flowcommon "github.com/thunder-id/thunderid/internal/flow/common"
 	"github.com/thunder-id/thunderid/internal/group"
 	"github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/resource"
 	"github.com/thunder-id/thunderid/internal/role"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
 	"github.com/thunder-id/thunderid/internal/user"
-
-	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
-	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
-	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
 )
 
 type roleDeclarativeYAML struct {
@@ -59,7 +60,8 @@ type entityTypeDeclarativeYAML struct {
 	ID                    string                       `yaml:"id"`
 	Category              entitytype.TypeCategory      `yaml:"category,omitempty"`
 	Name                  string                       `yaml:"name"`
-	OUID                  string                       `yaml:"organization_unit_id"`
+	OUID                  string                       `yaml:"organization_unit_id,omitempty"`
+	OUHandle              string                       `yaml:"ou_handle,omitempty"`
 	AllowSelfRegistration bool                         `yaml:"allow_self_registration,omitempty"`
 	SystemAttributes      *entitytype.SystemAttributes `yaml:"system_attributes,omitempty"`
 	Schema                interface{}                  `yaml:"schema"`
@@ -149,6 +151,101 @@ func (s *importService) importOrganizationUnit(
 	return successOutcome(resourceTypeOrganizationUnit, created.ID, created.Name, operationCreate)
 }
 
+// resolveOUHandle resolves an ou_handle value to its UUID.
+// Returns the UUID, or an error outcome if resolution fails.
+func (s *importService) resolveOUHandle(
+	ctx context.Context, handle, resourceType, resourceID, resourceName string,
+) (string, *ImportItemOutcome) {
+	if s.ouService == nil {
+		outcome := ImportItemOutcome{
+			ResourceType: resourceType,
+			ResourceID:   resourceID,
+			ResourceName: resourceName,
+			Operation:    operationCreate,
+			Status:       statusFailed,
+			Code:         ErrorAdapterNotConfigured.Code,
+			Message:      fmt.Sprintf("organization unit adapter not configured for handle %q", handle),
+		}
+		return "", &outcome
+	}
+	resolved, svcErr := s.ouService.GetOrganizationUnitByPath(ctx, handle)
+	if svcErr != nil {
+		outcome := serviceErrorOutcome(resourceType, resourceID, resourceName, operationCreate, svcErr)
+		outcome.Message = fmt.Sprintf("organization unit with handle %q not found", handle)
+		return "", &outcome
+	}
+	return resolved.ID, nil
+}
+
+// resolveFlowHandle resolves a flow handle to its ID using the given flow type.
+// Returns the flow ID, or an error outcome if resolution fails.
+func (s *importService) resolveFlowHandle(
+	ctx context.Context, handle string, flowType flowcommon.FlowType,
+	resourceType, resourceID, resourceName string,
+) (string, *ImportItemOutcome) {
+	if s.flowService == nil {
+		outcome := ImportItemOutcome{
+			ResourceType: resourceType,
+			ResourceID:   resourceID,
+			ResourceName: resourceName,
+			Operation:    operationCreate,
+			Status:       statusFailed,
+			Code:         ErrorAdapterNotConfigured.Code,
+			Message:      fmt.Sprintf("flow adapter not configured for handle %q", handle),
+		}
+		return "", &outcome
+	}
+	resolved, svcErr := s.flowService.GetFlowByHandle(ctx, handle, flowType)
+	if svcErr != nil {
+		outcome := serviceErrorOutcome(resourceType, resourceID, resourceName, operationCreate, svcErr)
+		outcome.Message = fmt.Sprintf("flow with handle %q not found", handle)
+		return "", &outcome
+	}
+	return resolved.ID, nil
+}
+
+// resolveApplicationHandles resolves ou_handle and flow handle fields on an application request.
+// Only fields that are unset (empty ID) but have a handle are resolved.
+func (s *importService) resolveApplicationHandles(
+	ctx context.Context, req *appmodel.ApplicationRequestWithID,
+) *ImportItemOutcome {
+	if req.OUID == "" && req.OUHandle != "" {
+		id, errOutcome := s.resolveOUHandle(ctx, req.OUHandle, resourceTypeApplication, req.ID, req.Name)
+		if errOutcome != nil {
+			return errOutcome
+		}
+		req.OUID = id
+	}
+	if req.AuthFlowID == "" && req.AuthFlowHandle != "" {
+		id, errOutcome := s.resolveFlowHandle(
+			ctx, req.AuthFlowHandle, flowcommon.FlowTypeAuthentication,
+			resourceTypeApplication, req.ID, req.Name)
+		if errOutcome != nil {
+			return errOutcome
+		}
+		req.AuthFlowID = id
+	}
+	if req.RegistrationFlowID == "" && req.RegistrationFlowHandle != "" {
+		id, errOutcome := s.resolveFlowHandle(
+			ctx, req.RegistrationFlowHandle, flowcommon.FlowTypeRegistration,
+			resourceTypeApplication, req.ID, req.Name)
+		if errOutcome != nil {
+			return errOutcome
+		}
+		req.RegistrationFlowID = id
+	}
+	if req.RecoveryFlowID == "" && req.RecoveryFlowHandle != "" {
+		id, errOutcome := s.resolveFlowHandle(
+			ctx, req.RecoveryFlowHandle, flowcommon.FlowTypeRecovery,
+			resourceTypeApplication, req.ID, req.Name)
+		if errOutcome != nil {
+			return errOutcome
+		}
+		req.RecoveryFlowID = id
+	}
+	return nil
+}
+
 func (s *importService) importEntityType(
 	ctx context.Context, doc parsedDocument, options *ImportOptions, dryRun bool,
 ) ImportItemOutcome {
@@ -159,6 +256,14 @@ func (s *importService) importEntityType(
 	var req entityTypeDeclarativeYAML
 	if err := doc.Node.Decode(&req); err != nil {
 		return decodeErrorOutcome(resourceTypeEntityType, req.ID, req.Name, err)
+	}
+
+	if !dryRun && req.OUID == "" && req.OUHandle != "" {
+		id, errOutcome := s.resolveOUHandle(ctx, req.OUHandle, resourceTypeEntityType, req.ID, req.Name)
+		if errOutcome != nil {
+			return *errOutcome
+		}
+		req.OUID = id
 	}
 
 	var (

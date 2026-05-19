@@ -249,7 +249,7 @@ inbound_auth_config:
 `
 
 	// Execute
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	// Assert
 	assert.NoError(suite.T(), err)
@@ -306,7 +306,7 @@ is_registration_flow_enabled: false
 `
 
 	// Execute
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	// Assert
 	assert.NoError(suite.T(), err)
@@ -340,7 +340,7 @@ inbound_auth_config:
 `
 
 	// Execute
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	// Assert
 	assert.NoError(suite.T(), err)
@@ -362,7 +362,7 @@ inbound_auth_config:
 `
 
 	// Execute
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	// Assert
 	assert.NoError(suite.T(), err)
@@ -380,7 +380,7 @@ invalid_yaml_structure: [
 `
 
 	// Execute
-	appDTO, err := parseToApplicationDTO([]byte(invalidYaml))
+	appDTO, err := parseToApplicationDTO([]byte(invalidYaml), nil)
 
 	// Assert
 	assert.Error(suite.T(), err)
@@ -397,7 +397,7 @@ inbound_auth_config: []
 `
 
 	// Execute
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	// Assert
 	assert.NoError(suite.T(), err)
@@ -431,7 +431,7 @@ inbound_auth_config:
 `
 
 	// Execute
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	// Assert
 	assert.NoError(suite.T(), err)
@@ -475,7 +475,7 @@ inbound_auth_config:
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := parseToApplicationDTO([]byte(yamlData))
+		_, err := parseToApplicationDTO([]byte(yamlData), nil)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -493,7 +493,7 @@ is_registration_flow_enabled: true
 `
 
 	// Execute
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	// Assert
 	assert.NoError(suite.T(), err)
@@ -526,7 +526,7 @@ inbound_auth_config:
 `
 
 	// Execute
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	// Assert
 	assert.NoError(t, err)
@@ -548,7 +548,7 @@ invalid_yaml_structure: [
 `
 
 	// Execute
-	appDTO, err := parseToApplicationDTO([]byte(invalidYaml))
+	appDTO, err := parseToApplicationDTO([]byte(invalidYaml), nil)
 
 	// Assert
 	assert.Error(t, err)
@@ -675,7 +675,7 @@ inbound_auth_config:
 `
 
 	// Execute
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	// Assert
 	assert.NoError(suite.T(), err)
@@ -708,7 +708,7 @@ inbound_auth_config:
 `
 
 	// Execute
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	// Assert
 	assert.NoError(suite.T(), err)
@@ -740,7 +740,7 @@ inbound_auth_config:
 `
 
 	// Execute
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	// Assert
 	assert.NoError(suite.T(), err)
@@ -790,7 +790,7 @@ inbound_auth_config:
 `
 
 	// Execute
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	// Assert
 	assert.NoError(suite.T(), err)
@@ -838,7 +838,7 @@ inbound_auth_config:
 `
 
 	// Execute
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	// Assert
 	require.NoError(suite.T(), err, "parseToApplicationDTO should not return error")

@@ -207,6 +207,7 @@ func parseToEntityTypeDTO(data []byte) (*EntityType, error) {
 		Category:              category,
 		Name:                  schemaRequest.Name,
 		OUID:                  schemaRequest.OUID,
+		OUHandle:              schemaRequest.OUHandle,
 		AllowSelfRegistration: schemaRequest.AllowSelfRegistration,
 		SystemAttributes:      schemaRequest.SystemAttributes,
 		Schema:                schemaBytes,
@@ -236,15 +237,24 @@ func validateEntityType(schemaDTO *EntityType, ouService oupkg.OrganizationUnitS
 	}
 
 	if strings.TrimSpace(schemaDTO.OUID) == "" {
-		return fmt.Errorf("organization unit ID is required for entity type '%s'", schemaDTO.Name)
-	}
-
-	// Validate organization unit exists
-	_, err := ouService.GetOrganizationUnit(
-		security.WithRuntimeContext(context.Background()), schemaDTO.OUID)
-	if err != nil {
-		return fmt.Errorf("organization unit '%s' not found for entity type '%s'",
-			schemaDTO.OUID, schemaDTO.Name)
+		if strings.TrimSpace(schemaDTO.OUHandle) == "" {
+			return fmt.Errorf("organization_unit_id or ou_handle is required for entity type '%s'", schemaDTO.Name)
+		}
+		ou, err := ouService.GetOrganizationUnitByPath(
+			security.WithRuntimeContext(context.Background()), schemaDTO.OUHandle)
+		if err != nil {
+			return fmt.Errorf("organization unit with handle %q not found for entity type '%s'",
+				schemaDTO.OUHandle, schemaDTO.Name)
+		}
+		schemaDTO.OUID = ou.ID
+	} else {
+		// Validate organization unit exists when ID is provided directly
+		_, err := ouService.GetOrganizationUnit(
+			security.WithRuntimeContext(context.Background()), schemaDTO.OUID)
+		if err != nil {
+			return fmt.Errorf("organization unit '%s' not found for entity type '%s'",
+				schemaDTO.OUID, schemaDTO.Name)
+		}
 	}
 
 	// Validate schema definition is present and valid.
