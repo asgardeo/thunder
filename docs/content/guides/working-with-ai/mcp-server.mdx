@@ -2,7 +2,7 @@
 title: MCP Server
 sidebar_position: 3
 persona: iam
-hide_table_of_contents: true
+hide_table_of_contents: false
 ---
 
 # <ProductName /> MCP Server
@@ -15,7 +15,7 @@ The MCP server is available at the `/mcp` endpoint on your <ProductName /> insta
 
 ### Authentication
 
-The MCP endpoint is secured with OAuth 2.0 Bearer Token authentication following the [MCP Authorization Specification](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization). Clients must present a valid JWT access token with the `system` scope. <ProductName /> validates the token signature, issuer, audience (set to the MCP server URL), and expiry. See [Step 3](#step-3-add-mcp-server-to-vs-code) for setup instructions.
+The MCP endpoint is secured with OAuth 2.0 Bearer Token authentication following the [MCP Authorization Specification](https://modelcontextprotocol.io/specification/2025-06-18/basic/authorization). Clients must present a valid JWT access token with the `system` scope. <ProductName /> validates the token signature, issuer, audience (set to the MCP server URL), and expiry. See [Add MCP Server to VS Code](#add-mcp-server-to-vs-code) for setup instructions.
 
 ## Available Tools
 
@@ -50,19 +50,21 @@ The MCP endpoint is secured with OAuth 2.0 Bearer Token authentication following
 
 - <ProductName /> server running (default: `https://localhost:8090`)
 - VS Code with MCP support (or another MCP-compatible client)
-- Choose an authentication approach — see [Step 3](#step-3-add-mcp-server-to-vs-code) for detailed setup:
+- Choose an authentication approach — see [Add MCP Server to VS Code](#add-mcp-server-to-vs-code) for detailed setup:
   - **Option A**: Standard MCP authorization flow using DCR (recommended)
   - **Option B**: Client credentials with a pre-registered application
 
-## Step 1: Add Certificate to System Certificates
+<Stepper>
+
+## Add Certificate to System Certificates
 
 <ProductName /> uses HTTPS with a self-signed certificate by default. Add the <ProductName /> certificate (`backend/cmd/server/repository/resources/security/server.cert`) to your system's trusted certificates (Keychain on macOS, certificate store on Linux/Windows).
 
-## Step 2: Configure MCP Client to Trust System Certificates
+## Configure MCP Client to Trust System Certificates
 
 The MCP client (VS Code) needs to be configured to trust system certificates and should be restarted.
 
-## Step 3: Add MCP Server to VS Code
+## Add MCP Server to VS Code
 
 Two approaches are available to authenticate with the <ProductName /> MCP server: the standard MCP authorization flow using DCR (recommended), or client credentials with a pre-registered application.
 
@@ -153,11 +155,15 @@ If you prefer not to enable open DCR, you can pre-register an application and us
 
 Check the MCP server status in VS Code's MCP panel or output logs.
 
+</Stepper>
+
 ## Sample Use Case: Integrating Login via React SDK
 
 Here's a complete example of using the <ProductName /> MCP server to set up React SDK authentication:
 
-### Step 1: Create an Application
+<Stepper stepNode="h3" as="h3">
+
+### Create an Application
 
 Ask your AI assistant:
 > "Create a new SPA application in <ProductName /> for React SDK integration"
@@ -168,7 +174,7 @@ The assistant will:
 2. Use `{{productSlug}}_create_application` to create the application with appropriate OAuth settings
 3. Return the `clientId` for use in your React app
 
-### Step 2: Get React SDK Integration Instructions
+### Get React SDK Integration Instructions
 
 Ask your AI assistant:
 > "Provide React SDK integration instructions for the application I just created"
@@ -182,7 +188,7 @@ The assistant will:
    - Authentication flow setup
    - Code snippets
 
-### Step 3: Customize the Login Flow (Optional)
+### Customize the Login Flow (Optional)
 
 Ask your AI assistant:
 > "Show me the current authentication flow for my application and suggest modifications"
@@ -193,7 +199,7 @@ The assistant will:
 2. Use `{{productSlug}}_get_flow_by_id` to retrieve the current authentication flow
 3. Suggest modifications or use `{{productSlug}}_update_flow` to customize the flow
 
-### Step 4: Update Application Flow
+### Update Application Flow
 
 Ask your AI assistant:
 > "Change the login flow of my application to use a custom flow with email OTP"
@@ -203,6 +209,8 @@ The assistant will:
 1. Check if a custom flow exists using `{{productSlug}}_list_flows`
 2. Create a new flow with email OTP using `{{productSlug}}_create_flow` if needed
 3. Update your application using `{{productSlug}}_update_application` to use the new flow
+
+</Stepper>
 
 ## Troubleshooting
 
@@ -229,7 +237,7 @@ If you encounter certificate/TLS errors:
 
 2. **Check VS Code certificate settings**: Ensure trusting of system certificates is enabled
 
-3. **Re-add certificate**: Follow Step 1 again to ensure the certificate is properly installed
+3. **Re-add certificate**: Follow [Add Certificate to System Certificates](#add-certificate-to-system-certificates) again to ensure the certificate is properly installed
 
 ### Connection Issues
 

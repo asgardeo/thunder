@@ -25,21 +25,26 @@ interface NextStepsCardProps {
   title: string;
   description?: string;
   href: string;
+  step?: number;
+  cta?: string;
 }
 
-export function NextStepsCard({title, description, href}: NextStepsCardProps) {
+export function NextStepsCard({title, description, href, step, cta}: NextStepsCardProps) {
   const isExternal = href.startsWith('http');
+  const ctaLabel = cta ?? `Go to ${title}`;
 
   return (
     <Link
       to={href}
       {...(isExternal ? {target: '_blank', rel: 'noopener noreferrer'} : {})}
-      style={{textDecoration: 'none', display: 'block', height: '100%'}}
+      style={{textDecoration: 'none', display: 'block'}}
     >
-      <div className="next-steps-card" style={{height: '100%'}}>
-        <span className="next-steps-card__title">{title}</span>
+      <div className="next-steps-card">
+        <span className="next-steps-card__title">
+          {step != null ? `Step ${step} → ${title}` : title}
+        </span>
         {description && <span className="next-steps-card__desc">{description}</span>}
-        <span className="next-steps-card__arrow" aria-hidden>→</span>
+        <span className="next-steps-card__cta">{ctaLabel} →</span>
       </div>
     </Link>
   );

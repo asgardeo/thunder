@@ -5,6 +5,7 @@ hide_table_of_contents: true
 ---
 
 import GettingStartedJourney from '../../../src/components/GettingStartedJourney';
+import {NextSteps, NextStepsCard} from '../../../src/components/NextSteps';
 
 # What is <ProductName /> ⚡
 
@@ -233,3 +234,13 @@ Let's explore some of the standout features that make <ProductName /> the ideal 
     </CardContent>
   </Card>
 </div>
+
+<NextSteps>
+  <NextStepsCard
+    step={1}
+    title="Get ThunderID"
+    description="Download and run ThunderID locally using a release artifact or Docker."
+    href="./get-thunderid"
+    cta="Get started"
+  />
+</NextSteps>

@@ -70,7 +70,7 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'doc',
-          id: 'guides/quick-start/quickstart',
+          id: 'guides/quick-start/register-an-application',
           label: 'Register an Application',
         },
         {
@@ -81,7 +81,11 @@ const sidebars: SidebarsConfig = {
         {
           type: 'category',
           label: 'Connect Your Application',
-          collapsed: false,
+          link: {
+            type: 'doc',
+            id: 'guides/quick-start/connect-your-application/index',
+          },
+          collapsed: true,
           collapsible: true,
           items: [
             {
@@ -207,11 +211,6 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'doc',
-          id: 'guides/guides/integrations',
-          label: 'Integrations',
-        },
-        {
-          type: 'doc',
           id: 'guides/guides/organization-units',
           label: 'Organization Units',
         },
@@ -270,7 +269,7 @@ const sidebars: SidebarsConfig = {
       collapsible: false,
       className: 'sidebar-section',
       items: [
-        {type: 'doc', id: 'use-cases/overview', label: 'Overview'},
+        {type: 'doc', id: 'use-cases/overview', label: 'Choose your usecase'},
         {
           type: 'category',
           label: 'Consumer Applications (B2C)',
@@ -377,28 +376,41 @@ const sidebars: SidebarsConfig = {
       items: [
         {
           type: 'doc',
-          id: 'guides/getting-started/configuration',
-          label: 'Configuration',
-        },
-        {
-          type: 'doc',
           id: 'guides/deployment-patterns/index',
           label: 'Choose Your Deployment',
         },
         {
-          type: 'doc',
-          id: 'guides/deployment-patterns/docker',
-          label: 'Docker',
+          type: 'category',
+          label: 'Deployment Paths',
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'guides/deployment-patterns/docker',
+              label: 'Docker',
+            },
+            {
+              type: 'doc',
+              id: 'guides/deployment-patterns/kubernetes',
+              label: 'Kubernetes',
+            },
+            {
+              type: 'doc',
+              id: 'guides/deployment-patterns/openchoreo',
+              label: 'OpenChoreo',
+            },
+          ],
         },
         {
           type: 'doc',
-          id: 'guides/deployment-patterns/kubernetes',
-          label: 'Kubernetes',
+          id: 'guides/getting-started/configuration',
+          label: 'Configure your Instance',
         },
         {
           type: 'doc',
-          id: 'guides/deployment-patterns/openchoreo',
-          label: 'OpenChoreo',
+          id: 'guides/deployment-patterns/production-guidelines',
+          label: 'Production Guidelines',
         },
       ],
     },

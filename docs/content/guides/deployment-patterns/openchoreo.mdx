@@ -5,6 +5,8 @@ persona: iam
 description: Deploy on the OpenChoreo platform using Helm, with PostgreSQL as the backing database.
 ---
 
+import {NextSteps, NextStepsCard} from '../../../src/components/NextSteps';
+
 # Deploy <ProductName /> on OpenChoreo
 
 This guide walks you through deploying <ProductName /> on OpenChoreo using Helm. It covers prerequisites, installation, database configuration, and the built-in environment management that OpenChoreo provides.
@@ -281,5 +283,11 @@ OpenChoreo provides built-in environment management with promotion workflows. Th
 
 ## Next Steps
 
-- [Deploy <ProductName /> on Kubernetes](./kubernetes) — Deploy <ProductName /> to Kubernetes without OpenChoreo.
-- [Deploy <ProductName /> with Docker](./docker) — Run <ProductName /> locally using Docker.
+<NextSteps>
+  <NextStepsCard
+    title="Production Deployment Guidelines"
+    description="Apply security hardening for production: replace TLS certificates, generate a unique encryption key, configure a CORS allowlist, and set up Redis caching for multi-pod deployments."
+    href="./production-guidelines"
+    cta="Go to production guidelines"
+  />
+</NextSteps>

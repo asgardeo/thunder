@@ -77,6 +77,7 @@ const config: Config = {
 
   url: siteUrl,
   baseUrl,
+  trailingSlash: true,
 
   // GitHub pages deployment config.
   organizationName: productConfig.project.source.github.owner.name, // Usually your GitHub org/user name.

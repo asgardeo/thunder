@@ -5,6 +5,8 @@ persona: iam
 description: Deploy using Docker or Docker Compose, from a quick single-container run to a production setup with an external PostgreSQL database.
 ---
 
+import {NextSteps, NextStepsCard} from '../../../src/components/NextSteps';
+
 # Deploy <ProductName /> with Docker
 
 This guide walks you through deploying <ProductName /> using Docker. You can run <ProductName /> as a single container for development or pair it with an external PostgreSQL database for production use.
@@ -132,5 +134,17 @@ For production deployments, use an external PostgreSQL database. <ProductName />
 
 ## Next Steps
 
-- [Deploy <ProductName /> on Kubernetes](./kubernetes) — Deploy <ProductName /> to a Kubernetes cluster using Helm.
-- [Deploy <ProductName /> on OpenChoreo](./openchoreo) — Deploy <ProductName /> on the OpenChoreo platform.
+<NextSteps>
+  <NextStepsCard
+    title="Deploy on Kubernetes"
+    description="Run ThunderID on your own cluster with full control over infrastructure, scaling, and configuration."
+    href="./kubernetes"
+    cta="Go to Kubernetes guide"
+  />
+  <NextStepsCard
+    title="Deploy on OpenChoreo"
+    description="Use a platform-managed deployment model with environment separation and promotion workflows."
+    href="./openchoreo"
+    cta="Go to OpenChoreo guide"
+  />
+</NextSteps>
