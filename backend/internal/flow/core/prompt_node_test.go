@@ -23,7 +23,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/internal/flow/common"
+	"github.com/thunder-id/thunderid/internal/flow/common"
 )
 
 const testEmailAttr = "email"
@@ -124,6 +124,38 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithOptionalData() {
 		ExecutionID:   "test-flow",
 		CurrentAction: "submit",
 		UserInputs:    map[string]string{"username": "testuser"},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.Equal(common.NodeStatusIncomplete, resp.Status)
+	s.Equal(common.NodeResponseTypeView, resp.Type)
+	s.Len(resp.Inputs, 1)
+	s.Equal("nickname", resp.Inputs[0].Identifier)
+	s.False(resp.Inputs[0].Required)
+}
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithAlreadyPromptedOptionalData() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "username", Required: true},
+				{Identifier: "nickname", Required: false},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	ctx := &NodeContext{
+		ExecutionID:   "test-flow",
+		CurrentAction: "submit",
+		UserInputs:    map[string]string{"username": "testuser"},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyPresentedOptionalInputs: "nickname",
+		},
 	}
 	resp, err := node.Execute(ctx)
 
@@ -2388,6 +2420,112 @@ func (s *PromptOnlyNodeTestSuite) TestSyntheticMeta_NotAddedWhenMetaComponentExi
 		}
 	}
 	s.Equal(1, emailCount, "email component must not be duplicated when meta component ref matches identifier")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestSyntheticMeta_ExistingComponentPromotedToPasswordType() {
+	meta := map[string]interface{}{
+		"components": []interface{}{
+			map[string]interface{}{
+				"id":       "input_pin",
+				"ref":      "pin",
+				"type":     "TEXT_INPUT",
+				"label":    "PIN",
+				"required": false,
+			},
+		},
+	}
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	pn := node.(PromptNodeInterface)
+	pn.SetMeta(meta)
+	pn.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{{Ref: "pin", Identifier: "pin", Required: true}},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	ctx := &NodeContext{
+		ExecutionID:   "test-flow",
+		CurrentAction: "submit",
+		UserInputs:    map[string]string{},
+		Verbose:       true,
+		ForwardedData: map[string]interface{}{
+			common.ForwardedDataKeyInputs: []common.Input{
+				{Identifier: "pin", Type: common.InputTypePassword, Required: true, DisplayName: "PIN"},
+			},
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
+	s.NotNil(resp.Meta)
+	s.Require().Len(resp.Inputs, 1)
+	s.Equal(common.InputTypePassword, resp.Inputs[0].Type)
+
+	metaMap, ok := resp.Meta.(map[string]interface{})
+	s.Require().True(ok)
+	comps, ok := metaMap["components"].([]interface{})
+	s.Require().True(ok)
+	s.Require().Len(comps, 1)
+
+	comp, ok := comps[0].(map[string]interface{})
+	s.Require().True(ok)
+	s.Equal(common.InputTypePassword, comp["type"], "existing meta component must be promoted to password type")
+	s.Equal(true, comp["required"], "existing meta component must reflect promoted required flag")
+}
+
+func (s *PromptOnlyNodeTestSuite) TestSyntheticMeta_PromotionDoesNotMutateSharedMeta() {
+	original := map[string]interface{}{
+		"components": []interface{}{
+			map[string]interface{}{
+				"id":       "input_pin",
+				"ref":      "pin",
+				"type":     "TEXT_INPUT",
+				"required": false,
+			},
+		},
+	}
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	pn := node.(PromptNodeInterface)
+	pn.SetMeta(original)
+	pn.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{{Ref: "pin", Identifier: "pin", Required: true}},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	ctx := &NodeContext{
+		ExecutionID:   "test-flow",
+		CurrentAction: "submit",
+		UserInputs:    map[string]string{},
+		Verbose:       true,
+		ForwardedData: map[string]interface{}{
+			common.ForwardedDataKeyInputs: []common.Input{
+				{Identifier: "pin", Type: common.InputTypePassword, Required: true},
+			},
+		},
+	}
+
+	_, err := node.Execute(ctx)
+	s.Require().Nil(err)
+
+	// The original meta map must be untouched after the first execution.
+	origComps, _ := original["components"].([]interface{})
+	origComp, _ := origComps[0].(map[string]interface{})
+	s.Equal("TEXT_INPUT", origComp["type"], "original meta component type must not be mutated by promotion")
+	s.Equal(false, origComp["required"], "original meta component required must not be mutated by promotion")
+
+	// A second execution must still see the correct (unpromoted) original.
+	resp2, err := node.Execute(ctx)
+	s.Require().Nil(err)
+	metaMap, _ := resp2.Meta.(map[string]interface{})
+	comps, _ := metaMap["components"].([]interface{})
+	s.Require().Len(comps, 1)
+	comp, _ := comps[0].(map[string]interface{})
+	s.Equal(common.InputTypePassword, comp["type"], "second execution must still promote the type correctly")
+	s.Equal(true, comp["required"], "second execution must still promote required correctly")
 }
 
 func (s *PromptOnlyNodeTestSuite) TestSyntheticMeta_InsertedInsideBlockBeforeAction() {

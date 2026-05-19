@@ -22,11 +22,11 @@ import (
 	"fmt"
 	"net/http"
 
-	oupkg "github.com/asgardeo/thunder/internal/ou"
-	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
-	"github.com/asgardeo/thunder/internal/system/middleware"
-	"github.com/asgardeo/thunder/internal/system/transaction"
+	oupkg "github.com/thunder-id/thunderid/internal/ou"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
+	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
+	"github.com/thunder-id/thunderid/internal/system/middleware"
+	"github.com/thunder-id/thunderid/internal/system/transaction"
 )
 
 // Initialize initializes the resource service and registers its routes.

@@ -19,7 +19,7 @@
 package consent
 
 import (
-	"github.com/asgardeo/thunder/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 
 	"context"
 	"encoding/base64"
@@ -29,13 +29,13 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
-	"github.com/asgardeo/thunder/internal/consent"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/tests/mocks/consentmock"
-	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
+	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
+	"github.com/thunder-id/thunderid/internal/consent"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/tests/mocks/consentmock"
+	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 )
 
 type ConsentEnforcerServiceTestSuite struct {

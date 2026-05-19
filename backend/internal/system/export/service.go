@@ -25,10 +25,10 @@ import (
 	"strings"
 	"time"
 
-	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/i18n/core"
-	"github.com/asgardeo/thunder/internal/system/log"
+	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
 // templateVariablePattern matches only uppercase-only parameter names in the exact forms
@@ -48,6 +48,7 @@ const (
 	resourceTypeUserType           = "user_type"
 	resourceTypeOU                 = "organization_unit"
 	resourceTypeUser               = "user"
+	resourceTypeGroup              = "group"
 	resourceTypeResourceServer     = "resource_server"
 	resourceTypeRole               = "role"
 	resourceTypeFlow               = "flow"
@@ -125,6 +126,7 @@ func (es *exportService) ExportResources(
 		resourceTypeUserType:           request.UserTypes,
 		resourceTypeOU:                 request.OrganizationUnits,
 		resourceTypeUser:               request.Users,
+		resourceTypeGroup:              request.Groups,
 		resourceTypeResourceServer:     request.ResourceServers,
 		resourceTypeRole:               request.Roles,
 		resourceTypeFlow:               request.Flows,
@@ -134,7 +136,14 @@ func (es *exportService) ExportResources(
 	}
 
 	// Export resources using the registry
-	for resourceType, resourceIDs := range resourceMap {
+	resourceTypes := make([]string, 0, len(resourceMap))
+	for k := range resourceMap {
+		resourceTypes = append(resourceTypes, k)
+	}
+	sort.Strings(resourceTypes)
+
+	for _, resourceType := range resourceTypes {
+		resourceIDs := resourceMap[resourceType]
 		if len(resourceIDs) == 0 {
 			continue
 		}

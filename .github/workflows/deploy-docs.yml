@@ -13,6 +13,16 @@ on:
         required: false
         type: string
         default: ''
+      site-url:
+        description: 'Override the site URL (e.g. https://thunderid.dev). Leave empty to use the default from build config.'
+        required: false
+        type: string
+        default: ''
+      site-base-url:
+        description: 'Override the base URL (e.g. /). Leave empty to use the default from build config.'
+        required: false
+        type: string
+        default: ''
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -42,6 +52,8 @@ jobs:
           docs-artifact-name: ${{ inputs.use-artifact }}
           build-docs: ${{ inputs.use-artifact == '' && 'true' || 'false' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          site-url: ${{ inputs.site-url }}
+          site-base-url: ${{ inputs.site-base-url }}
 
       - name: 🎉 Deployment Complete
         run: |

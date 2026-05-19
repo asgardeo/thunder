@@ -19,7 +19,8 @@
 package resolve
 
 import (
-	"github.com/asgardeo/thunder/internal/system/i18n/core"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 
 	"context"
 	"encoding/json"
@@ -29,15 +30,15 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/internal/application"
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
-	"github.com/asgardeo/thunder/internal/design/common"
-	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
-	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
-	"github.com/asgardeo/thunder/tests/mocks/design/layoutmock"
-	"github.com/asgardeo/thunder/tests/mocks/design/thememock"
+	"github.com/thunder-id/thunderid/internal/application"
+	appmodel "github.com/thunder-id/thunderid/internal/application/model"
+	"github.com/thunder-id/thunderid/internal/design/common"
+	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
+	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/tests/mocks/applicationmock"
+	"github.com/thunder-id/thunderid/tests/mocks/design/layoutmock"
+	"github.com/thunder-id/thunderid/tests/mocks/design/thememock"
 )
 
 // Test Suite
@@ -144,10 +145,12 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_ApplicationServiceError(
 // Test ResolveDesign - Application has no design
 func (suite *ResolveServiceTestSuite) TestResolveDesign_ApplicationHasNoDesign() {
 	app := &appmodel.Application{
-		ID:       "00000000-0000-0000-0000-000000000001",
-		Name:     "Test App",
-		ThemeID:  "",
-		LayoutID: "",
+		ID:   "00000000-0000-0000-0000-000000000001",
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			ThemeID:  "",
+			LayoutID: "",
+		},
 	}
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000001").Return(app, nil)
 
@@ -162,10 +165,12 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_ApplicationHasNoDesign()
 // Test ResolveDesign - Success with theme only
 func (suite *ResolveServiceTestSuite) TestResolveDesign_SuccessWithThemeOnly() {
 	app := &appmodel.Application{
-		ID:       "00000000-0000-0000-0000-000000000001",
-		Name:     "Test App",
-		ThemeID:  "theme-123",
-		LayoutID: "",
+		ID:   "00000000-0000-0000-0000-000000000001",
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			ThemeID:  "theme-123",
+			LayoutID: "",
+		},
 	}
 	themeConfig := &thememgt.Theme{
 		ID:          "theme-123",
@@ -188,10 +193,12 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_SuccessWithThemeOnly() {
 // Test ResolveDesign - Success with layout only
 func (suite *ResolveServiceTestSuite) TestResolveDesign_SuccessWithLayoutOnly() {
 	app := &appmodel.Application{
-		ID:       "00000000-0000-0000-0000-000000000001",
-		Name:     "Test App",
-		ThemeID:  "",
-		LayoutID: "layout-123",
+		ID:   "00000000-0000-0000-0000-000000000001",
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			ThemeID:  "",
+			LayoutID: "layout-123",
+		},
 	}
 	layoutConfig := &layoutmgt.Layout{
 		ID:          "layout-123",
@@ -214,10 +221,12 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_SuccessWithLayoutOnly() 
 // Test ResolveDesign - Success with both theme and layout
 func (suite *ResolveServiceTestSuite) TestResolveDesign_SuccessWithBoth() {
 	app := &appmodel.Application{
-		ID:       "00000000-0000-0000-0000-000000000001",
-		Name:     "Test App",
-		ThemeID:  "theme-123",
-		LayoutID: "layout-123",
+		ID:   "00000000-0000-0000-0000-000000000001",
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			ThemeID:  "theme-123",
+			LayoutID: "layout-123",
+		},
 	}
 	themeConfig := &thememgt.Theme{
 		ID:          "theme-123",
@@ -246,10 +255,12 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_SuccessWithBoth() {
 // Test ResolveDesign - Theme not found (data integrity issue)
 func (suite *ResolveServiceTestSuite) TestResolveDesign_ThemeNotFound() {
 	app := &appmodel.Application{
-		ID:       "00000000-0000-0000-0000-000000000001",
-		Name:     "Test App",
-		ThemeID:  "theme-missing",
-		LayoutID: "",
+		ID:   "00000000-0000-0000-0000-000000000001",
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			ThemeID:  "theme-missing",
+			LayoutID: "",
+		},
 	}
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000001").Return(app, nil)
 	suite.mockThemeService.On("GetTheme", "theme-missing").
@@ -266,10 +277,12 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_ThemeNotFound() {
 // Test ResolveDesign - Theme service error propagation
 func (suite *ResolveServiceTestSuite) TestResolveDesign_ThemeServiceError() {
 	app := &appmodel.Application{
-		ID:       "00000000-0000-0000-0000-000000000001",
-		Name:     "Test App",
-		ThemeID:  "theme-123",
-		LayoutID: "",
+		ID:   "00000000-0000-0000-0000-000000000001",
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			ThemeID:  "theme-123",
+			LayoutID: "",
+		},
 	}
 	svcErr := &serviceerror.ServiceError{
 		Code:  "THM-9999",
@@ -290,10 +303,12 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_ThemeServiceError() {
 func (suite *ResolveServiceTestSuite) TestResolveDesign_NilThemeService() {
 	service := newDesignResolveService(nil, suite.mockLayoutService, suite.mockAppService)
 	app := &appmodel.Application{
-		ID:       "00000000-0000-0000-0000-000000000001",
-		Name:     "Test App",
-		ThemeID:  "theme-123",
-		LayoutID: "",
+		ID:   "00000000-0000-0000-0000-000000000001",
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			ThemeID:  "theme-123",
+			LayoutID: "",
+		},
 	}
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000001").Return(app, nil)
 
@@ -308,10 +323,12 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_NilThemeService() {
 // Test ResolveDesign - Layout not found (data integrity issue)
 func (suite *ResolveServiceTestSuite) TestResolveDesign_LayoutNotFound() {
 	app := &appmodel.Application{
-		ID:       "00000000-0000-0000-0000-000000000001",
-		Name:     "Test App",
-		ThemeID:  "",
-		LayoutID: "layout-missing",
+		ID:   "00000000-0000-0000-0000-000000000001",
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			ThemeID:  "",
+			LayoutID: "layout-missing",
+		},
 	}
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000001").Return(app, nil)
 	suite.mockLayoutService.On("GetLayout", "layout-missing").
@@ -328,10 +345,12 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_LayoutNotFound() {
 // Test ResolveDesign - Layout service error propagation
 func (suite *ResolveServiceTestSuite) TestResolveDesign_LayoutServiceError() {
 	app := &appmodel.Application{
-		ID:       "00000000-0000-0000-0000-000000000001",
-		Name:     "Test App",
-		ThemeID:  "",
-		LayoutID: "layout-123",
+		ID:   "00000000-0000-0000-0000-000000000001",
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			ThemeID:  "",
+			LayoutID: "layout-123",
+		},
 	}
 	svcErr := &serviceerror.ServiceError{
 		Code:  "LAY-9999",
@@ -352,10 +371,12 @@ func (suite *ResolveServiceTestSuite) TestResolveDesign_LayoutServiceError() {
 func (suite *ResolveServiceTestSuite) TestResolveDesign_NilLayoutService() {
 	service := newDesignResolveService(suite.mockThemeService, nil, suite.mockAppService)
 	app := &appmodel.Application{
-		ID:       "00000000-0000-0000-0000-000000000001",
-		Name:     "Test App",
-		ThemeID:  "",
-		LayoutID: "layout-123",
+		ID:   "00000000-0000-0000-0000-000000000001",
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			ThemeID:  "",
+			LayoutID: "layout-123",
+		},
 	}
 	suite.mockAppService.On("GetApplication", mock.Anything, "00000000-0000-0000-0000-000000000001").Return(app, nil)
 

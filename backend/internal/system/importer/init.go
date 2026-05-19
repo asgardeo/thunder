@@ -21,18 +21,19 @@ package importer
 import (
 	"net/http"
 
-	"github.com/asgardeo/thunder/internal/application"
-	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
-	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
-	"github.com/asgardeo/thunder/internal/entitytype"
-	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
-	"github.com/asgardeo/thunder/internal/idp"
-	"github.com/asgardeo/thunder/internal/ou"
-	"github.com/asgardeo/thunder/internal/resource"
-	"github.com/asgardeo/thunder/internal/role"
-	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
-	"github.com/asgardeo/thunder/internal/system/middleware"
-	"github.com/asgardeo/thunder/internal/user"
+	"github.com/thunder-id/thunderid/internal/application"
+	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
+	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
+	"github.com/thunder-id/thunderid/internal/entitytype"
+	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
+	"github.com/thunder-id/thunderid/internal/group"
+	"github.com/thunder-id/thunderid/internal/idp"
+	"github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/resource"
+	"github.com/thunder-id/thunderid/internal/role"
+	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
+	"github.com/thunder-id/thunderid/internal/system/middleware"
+	"github.com/thunder-id/thunderid/internal/user"
 )
 
 // Initialize wires the importer service and registers its HTTP routes.
@@ -44,6 +45,8 @@ func Initialize(
 	ouService ou.OrganizationUnitServiceInterface,
 	entityTypeService entitytype.EntityTypeServiceInterface,
 	roleService role.RoleServiceInterface,
+	roleAssignmentService role.RoleAssignmentServiceInterface,
+	groupService group.GroupServiceInterface,
 	resourceService resource.ResourceServiceInterface,
 	themeService thememgt.ThemeMgtServiceInterface,
 	layoutService layoutmgt.LayoutMgtServiceInterface,
@@ -57,6 +60,8 @@ func Initialize(
 		ouService,
 		entityTypeService,
 		roleService,
+		roleAssignmentService,
+		groupService,
 		resourceService,
 		themeService,
 		layoutService,

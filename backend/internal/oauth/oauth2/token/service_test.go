@@ -27,13 +27,13 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
-	"github.com/asgardeo/thunder/internal/oauth/scope"
-	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/granthandlersmock"
-	"github.com/asgardeo/thunder/tests/mocks/oauth/scopemock"
-	"github.com/asgardeo/thunder/tests/mocks/observability/observabilitymock"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
+	"github.com/thunder-id/thunderid/internal/oauth/scope"
+	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/granthandlersmock"
+	"github.com/thunder-id/thunderid/tests/mocks/oauth/scopemock"
+	"github.com/thunder-id/thunderid/tests/mocks/observability/observabilitymock"
 )
 
 type TokenServiceTestSuite struct {
@@ -78,7 +78,7 @@ func (suite *TokenServiceTestSuite) newService() TokenServiceInterface {
 	return newTokenService(suite.mockGrantProvider, suite.mockScopeValidator, suite.mockObsSvc, suite.mockTransactioner)
 }
 
-// defaultApp returns an OAuthAppConfigProcessedDTO that allows the authorization_code grant.
+// defaultApp returns an OAuthClient that allows the authorization_code grant.
 func (suite *TokenServiceTestSuite) defaultApp() *inboundmodel.OAuthClient {
 	return &inboundmodel.OAuthClient{
 		ClientID:   "test-client-id",

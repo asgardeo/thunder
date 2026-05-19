@@ -71,6 +71,10 @@ export interface ExportRequest {
    */
   roles?: string[];
   /**
+   * List of group IDs to export. Use `["*"]` to export all.
+   */
+  groups?: string[];
+  /**
    * Optional configuration for export behavior
    */
   options?: ExportOptions;

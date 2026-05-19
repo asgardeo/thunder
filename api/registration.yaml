@@ -16,6 +16,12 @@ servers:
       port:
         default: "8090"
 
+tags:
+  - name: Passkey / WebAuthn / FIDO2 Registration
+    description: Passkey registration start and finish operations.
+
+security: []
+
 paths:
   /register/passkey/start:
     post:
@@ -42,7 +48,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-1011"
                 message:
@@ -56,7 +62,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-1008"
                 message:
@@ -70,7 +76,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "SSE-5000"
                 message:
@@ -105,7 +111,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               examples:
                 emptyCredentialId:
                   value:
@@ -148,7 +154,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "PASS-1009"
                 message:
@@ -162,7 +168,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-1008"
                 message:
@@ -176,7 +182,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "SSE-5000"
                 message:
@@ -473,34 +479,17 @@ components:
       required:
         - credentialId
 
-    ErrorResponse:
+    Error:
       type: object
       properties:
         code:
           type: string
-          description: Error code
+          description: "Error code. Codes follow the AUTHN-XXXX or PASS-XXXX convention."
+          example: "AUTHN-1004"
         message:
           $ref: '#/components/schemas/I18nMessage'
         description:
           $ref: '#/components/schemas/I18nMessage'
-
-    ClientErrorResponse:
-      allOf:
-        - $ref: '#/components/schemas/ErrorResponse'
-        - type: object
-
-    ServerErrorResponse:
-      allOf:
-        - $ref: '#/components/schemas/ErrorResponse'
-        - type: object
-      example:
-        code: "SSE-5000"
-        message:
-          key: "error.internal_server_error"
-          defaultValue: "Internal server error"
-        description:
-          key: "error.internal_server_error_description"
-          defaultValue: "An unexpected error occurred while processing the request"
 
     I18nMessage:
       type: object

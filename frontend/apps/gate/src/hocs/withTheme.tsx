@@ -16,18 +16,20 @@
  * under the License.
  */
 
-import {LanguageSwitcher} from '@asgardeo/react';
-import {useDesign, GoogleFontLoader, StylesheetInjector, type Theme} from '@thunderid/design';
+import {LanguageSwitcher} from '@thunderid/react';
+import {useConfig} from '@thunderid/contexts';
+import {useDesign, GoogleFontLoader, StylesheetInjector, DefaultTheme, type Theme} from '@thunderid/design';
 import {
   OxygenUIThemeProvider,
   ColorSchemeToggle,
   CircularProgress,
   Box,
-  AcrylicOrangeTheme,
+  HighContrastTheme,
   Button,
   Menu,
   MenuItem,
   Typography,
+  createOxygenTheme,
 } from '@wso2/oxygen-ui';
 import {ChevronDown} from '@wso2/oxygen-ui-icons-react';
 import {useState, type JSX, type ComponentType, type MouseEvent} from 'react';
@@ -35,11 +37,23 @@ import Head from '../components/Head';
 
 export default function withTheme<P extends object>(WrappedComponent: ComponentType<P>) {
   return function WithTheme(props: P): JSX.Element {
-    const {theme, isLoading} = useDesign(AcrylicOrangeTheme as Theme);
+    const {config} = useConfig();
+    const {theme, isLoading} = useDesign(DefaultTheme as Theme);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
     return (
-      <OxygenUIThemeProvider theme={theme}>
+      <OxygenUIThemeProvider
+        themes={[
+          {key: 'highContrast', label: 'High Contrast Theme', theme: HighContrastTheme},
+          {key: 'default', label: 'Default Theme', theme: theme ?? DefaultTheme},
+          ...(config?.brand?.design?.themes?.map((theme) => ({
+            key: theme.key,
+            label: theme.label,
+            theme: typeof theme.theme === 'string' ? theme.theme : createOxygenTheme(theme.theme),
+          })) ?? []),
+        ]}
+        initialTheme={config?.brand?.design?.initialTheme ?? 'default'}
+      >
         <Head />
         <StylesheetInjector />
         <GoogleFontLoader />

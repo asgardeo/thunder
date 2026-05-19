@@ -25,14 +25,14 @@ import (
 	"fmt"
 	"strings"
 
-	oupkg "github.com/asgardeo/thunder/internal/ou"
-	"github.com/asgardeo/thunder/internal/system/config"
-	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/i18n/core"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/transaction"
-	"github.com/asgardeo/thunder/internal/system/utils"
+	oupkg "github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/transaction"
+	"github.com/thunder-id/thunderid/internal/system/utils"
 )
 
 const (
@@ -210,10 +210,23 @@ func (rs *resourceService) CreateResourceServer(
 		}
 	}
 
-	id, err := utils.GenerateUUIDv7()
-	if err != nil {
-		rs.logger.Error("Failed to generate UUID", log.Error(err))
-		return nil, &serviceerror.InternalServerError
+	id := resourceServer.ID
+	if id == "" {
+		var err error
+		id, err = utils.GenerateUUIDv7()
+		if err != nil {
+			rs.logger.Error("Failed to generate UUID", log.Error(err))
+			return nil, &serviceerror.InternalServerError
+		}
+	} else {
+		_, svcErr := rs.GetResourceServer(ctx, id)
+		if svcErr != nil && svcErr.Code != ErrorResourceServerNotFound.Code {
+			return nil, svcErr
+		}
+		if svcErr == nil {
+			rs.logger.Debug("Resource server ID already exists", log.String("id", id))
+			return nil, &ErrorResourceServerIDConflict
+		}
 	}
 
 	// Use transaction for write operation

@@ -191,16 +191,6 @@ paths:
                     description:
                       key: "error.userservice.invalid_request_format_description"
                       defaultValue: "The request body is malformed or contains invalid data"
-                invalid-group-id:
-                  summary: Invalid group ID
-                  value:
-                    code: "USR-1007"
-                    message:
-                      key: "error.userservice.invalid_group_id"
-                      defaultValue: "Invalid group ID"
-                    description:
-                      key: "error.userservice.invalid_group_id_description"
-                      defaultValue: "One or more group IDs in the request do not exist"
                 ou-not-found:
                   summary: Organization unit not found
                   value:
@@ -221,16 +211,6 @@ paths:
                     description:
                       key: "error.userservice.schema_validation_failed_description"
                       defaultValue: "User attributes do not conform to the required schema"
-                user-type-not-found:
-                  summary: user type not found
-                  value:
-                    code: "USR-1021"
-                    message:
-                      key: "error.userservice.user_type_not_found"
-                      defaultValue: "user type not found"
-                    description:
-                      key: "error.userservice.user_type_not_found_description"
-                      defaultValue: "The specified user type does not exist"
         "409":
           description: Conflict
           content:
@@ -359,16 +339,6 @@ paths:
                     description:
                       key: "error.userservice.invalid_request_format_description"
                       defaultValue: "The request body is malformed or contains invalid data"
-                invalid-group-id:
-                  summary: Invalid group ID
-                  value:
-                    code: "USR-1007"
-                    message:
-                      key: "error.userservice.invalid_group_id"
-                      defaultValue: "Invalid group ID"
-                    description:
-                      key: "error.userservice.invalid_group_id_description"
-                      defaultValue: "One or more group IDs in the request do not exist"
                 ou-not-found:
                   summary: Organization unit not found
                   value:
@@ -389,16 +359,6 @@ paths:
                     description:
                       key: "error.userservice.schema_validation_failed_description"
                       defaultValue: "User attributes do not conform to the required schema"
-                user-type-not-found:
-                  summary: user type not found
-                  value:
-                    code: "USR-1021"
-                    message:
-                      key: "error.userservice.user_type_not_found"
-                      defaultValue: "user type not found"
-                    description:
-                      key: "error.userservice.user_type_not_found_description"
-                      defaultValue: "The specified user type does not exist"
         "409":
           description: Conflict
           content:
@@ -757,16 +717,6 @@ paths:
                     description:
                       key: "error.userservice.schema_validation_failed_description"
                       defaultValue: "User attributes do not conform to the required schema"
-                user-type-not-found:
-                  summary: user type not found
-                  value:
-                    code: "USR-1021"
-                    message:
-                      key: "error.userservice.user_type_not_found"
-                      defaultValue: "user type not found"
-                    description:
-                      key: "error.userservice.user_type_not_found_description"
-                      defaultValue: "The specified user type does not exist"
         "404":
           description: Organization unit not found
           content:
@@ -853,19 +803,19 @@ paths:
                   lastname: "Wu"
                   email: "alice.wu@company.inc"
         "401":
-          description: Unauthorized - missing or invalid token
+          description: Unauthorized - missing or invalid authentication token
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                code: "USR-1018"
+                code: "AUTH-4010"
                 message:
-                  key: "error.userservice.authentication_failed"
-                  defaultValue: "Authentication failed"
+                  key: "error.unauthorized"
+                  defaultValue: "Unauthorized"
                 description:
-                  key: "error.userservice.authentication_failed_description"
-                  defaultValue: "Invalid credentials provided"
+                  key: "error.unauthorized_description"
+                  defaultValue: "Authentication is required to access this resource"
         "404":
           description: Authenticated user not found
           content:
@@ -956,29 +906,29 @@ paths:
                       key: "error.userservice.schema_validation_failed_description"
                       defaultValue: "User attributes do not conform to the required schema"
                 user-type-not-found:
-                  summary: user type not found
+                  summary: User type not found
                   value:
                     code: "USR-1021"
                     message:
                       key: "error.userservice.user_type_not_found"
-                      defaultValue: "user type not found"
+                      defaultValue: "User type not found"
                     description:
                       key: "error.userservice.user_type_not_found_description"
                       defaultValue: "The specified user type does not exist"
         "401":
-          description: Unauthorized - missing or invalid token
+          description: Unauthorized - missing or invalid authentication token
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                code: "USR-1018"
+                code: "AUTH-4010"
                 message:
-                  key: "error.userservice.authentication_failed"
-                  defaultValue: "Authentication failed"
+                  key: "error.unauthorized"
+                  defaultValue: "Unauthorized"
                 description:
-                  key: "error.userservice.authentication_failed_description"
-                  defaultValue: "Invalid credentials provided"
+                  key: "error.unauthorized_description"
+                  defaultValue: "Authentication is required to access this resource"
         "404":
           description: Authenticated user not found
           content:
@@ -1059,19 +1009,19 @@ paths:
                       key: "error.userservice.missing_credentials_description"
                       defaultValue: "At least one credential field must be provided"
         "401":
-          description: Unauthorized - missing or invalid token
+          description: Unauthorized - missing or invalid authentication token
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                code: "USR-1018"
+                code: "AUTH-4010"
                 message:
-                  key: "error.userservice.authentication_failed"
-                  defaultValue: "Authentication failed"
+                  key: "error.unauthorized"
+                  defaultValue: "Unauthorized"
                 description:
-                  key: "error.userservice.authentication_failed_description"
-                  defaultValue: "Invalid credentials provided"
+                  key: "error.unauthorized_description"
+                  defaultValue: "Authentication is required to access this resource"
         "404":
           description: Authenticated user not found
           content:
@@ -1124,7 +1074,7 @@ paths:
                 totalResults: 3
                 startIndex: 1
                 count: 3
-                schemas:
+                types:
                   - id: "660e8400-e29b-41d4-a716-446655440001"
                     name: "employee"
                     ouId: "a839f4bd-39dc-4eaa-b5cc-210d8ecaee87"
@@ -1217,7 +1167,7 @@ paths:
                   type: "string"
       responses:
         "201":
-          description: user type created
+          description: User type created
           content:
             application/json:
               schema:
@@ -1289,7 +1239,7 @@ paths:
                 code: "USRS-1003"
                 message:
                   key: "error.entitytypeservice.user_type_name_conflict"
-                  defaultValue: "user type name conflict"
+                  defaultValue: "User type name conflict"
                 description:
                   key: "error.entitytypeservice.user_type_name_conflict_description"
                   defaultValue: "A user type with the same name already exists"
@@ -1314,7 +1264,7 @@ paths:
         - $ref: '#/components/parameters/includeQueryParam'
       responses:
         "200":
-          description: user type details
+          description: User type details
           content:
             application/json:
               schema:
@@ -1390,7 +1340,7 @@ paths:
                           type: "string"
                           enum: ["email", "sms", "phone", "mail"]
         "404":
-          description: user type not found
+          description: User type not found
           content:
             application/json:
               schema:
@@ -1399,7 +1349,7 @@ paths:
                 code: "USRS-1002"
                 message:
                   key: "error.entitytypeservice.user_type_not_found"
-                  defaultValue: "user type not found"
+                  defaultValue: "User type not found"
                 description:
                   key: "error.entitytypeservice.user_type_not_found_description"
                   defaultValue: "The user type with the specified id does not exist"
@@ -1454,7 +1404,7 @@ paths:
                   enum: ["bronze", "silver", "gold", "platinum"]
       responses:
         "200":
-          description: user type updated
+          description: User type updated
           content:
             application/json:
               schema:
@@ -1513,7 +1463,7 @@ paths:
                       key: "error.entitytypeservice.invalid_user_type_request_description"
                       defaultValue: "One or more attribute definitions are invalid"
         "404":
-          description: user type not found
+          description: User type not found
           content:
             application/json:
               schema:
@@ -1522,12 +1472,12 @@ paths:
                 code: "USRS-1002"
                 message:
                   key: "error.entitytypeservice.user_type_not_found"
-                  defaultValue: "user type not found"
+                  defaultValue: "User type not found"
                 description:
                   key: "error.entitytypeservice.user_type_not_found_description"
                   defaultValue: "The user type with the specified id does not exist"
         "409":
-          description: user type name already exists
+          description: User type name already exists
           content:
             application/json:
               schema:
@@ -1536,7 +1486,7 @@ paths:
                 code: "USRS-1003"
                 message:
                   key: "error.entitytypeservice.user_type_name_conflict"
-                  defaultValue: "user type name conflict"
+                  defaultValue: "User type name conflict"
                 description:
                   key: "error.entitytypeservice.user_type_name_conflict_description"
                   defaultValue: "A user type with the same name already exists"
@@ -1560,7 +1510,7 @@ paths:
           example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         "204":
-          description: user type deleted
+          description: User type deleted
         "400":
           description: Bad request
           content:
@@ -2021,7 +1971,7 @@ components:
           type: integer
           description: "Number of elements in the returned page."
           example: 3
-        schemas:
+        types:
           type: array
           items:
             type: object
@@ -2111,6 +2061,8 @@ components:
       properties:
         code:
           type: string
+          description: "Error code. Codes follow the USR-XXXX convention."
+          example: "USR-1001"
         message:
           $ref: '#/components/schemas/I18nMessage'
         description:

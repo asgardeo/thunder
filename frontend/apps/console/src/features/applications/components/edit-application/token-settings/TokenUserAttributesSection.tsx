@@ -101,6 +101,10 @@ interface TokenUserAttributesSectionProps {
    * Shared token user attributes (native mode)
    */
   sharedAttributes?: string[];
+  /**
+   * Singular noun used to refer to the entity in user-visible copy (default: 'application').
+   */
+  entityLabel?: string;
 }
 
 /**
@@ -133,6 +137,7 @@ export default function TokenUserAttributesSection({
   isUserInfoCustomAttributes = false,
   onToggleUserInfo = undefined,
   sharedAttributes = undefined,
+  entityLabel = 'application',
 }: TokenUserAttributesSectionProps) {
   const {t} = useTranslation();
 
@@ -252,7 +257,8 @@ export default function TokenUserAttributesSection({
                     <Alert severity="info">
                       {t(
                         'applications:edit.token.no_user_attributes',
-                        'No user attributes available. Configure allowed user types for this application.',
+                        'No user attributes available. Configure allowed user types for this {{entity}}.',
+                        {entity: entityLabel},
                       )}
                     </Alert>
                   )}

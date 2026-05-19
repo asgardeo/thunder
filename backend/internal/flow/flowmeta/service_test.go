@@ -27,16 +27,18 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/internal/application"
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
-	"github.com/asgardeo/thunder/internal/design/common"
-	"github.com/asgardeo/thunder/internal/ou"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
-	"github.com/asgardeo/thunder/tests/mocks/applicationmock"
-	"github.com/asgardeo/thunder/tests/mocks/design/resolvemock"
-	"github.com/asgardeo/thunder/tests/mocks/i18n/mgtmock"
-	"github.com/asgardeo/thunder/tests/mocks/oumock"
+	"github.com/thunder-id/thunderid/internal/design/common"
+	"github.com/thunder-id/thunderid/internal/entityprovider"
+	"github.com/thunder-id/thunderid/internal/inboundclient"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
+	"github.com/thunder-id/thunderid/tests/mocks/design/resolvemock"
+	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
+	"github.com/thunder-id/thunderid/tests/mocks/i18n/mgtmock"
+	"github.com/thunder-id/thunderid/tests/mocks/inboundclientmock"
+	"github.com/thunder-id/thunderid/tests/mocks/oumock"
 )
 
 const (
@@ -48,12 +50,13 @@ const (
 
 type FlowMetaServiceTestSuite struct {
 	suite.Suite
-	mockAppService    *applicationmock.ApplicationServiceInterfaceMock
-	mockOUService     *oumock.OrganizationUnitServiceInterfaceMock
-	mockDesignResolve *resolvemock.DesignResolveServiceInterfaceMock
-	mockI18nService   *mgtmock.I18nServiceInterfaceMock
-	service           FlowMetaServiceInterface
-	ctx               context.Context
+	mockInboundClient  *inboundclientmock.InboundClientServiceInterfaceMock
+	mockEntityProvider *entityprovidermock.EntityProviderInterfaceMock
+	mockOUService      *oumock.OrganizationUnitServiceInterfaceMock
+	mockDesignResolve  *resolvemock.DesignResolveServiceInterfaceMock
+	mockI18nService    *mgtmock.I18nServiceInterfaceMock
+	service            FlowMetaServiceInterface
+	ctx                context.Context
 }
 
 func TestFlowMetaServiceTestSuite(t *testing.T) {
@@ -61,12 +64,14 @@ func TestFlowMetaServiceTestSuite(t *testing.T) {
 }
 
 func (suite *FlowMetaServiceTestSuite) SetupTest() {
-	suite.mockAppService = applicationmock.NewApplicationServiceInterfaceMock(suite.T())
+	suite.mockInboundClient = inboundclientmock.NewInboundClientServiceInterfaceMock(suite.T())
+	suite.mockEntityProvider = entityprovidermock.NewEntityProviderInterfaceMock(suite.T())
 	suite.mockOUService = oumock.NewOrganizationUnitServiceInterfaceMock(suite.T())
 	suite.mockDesignResolve = resolvemock.NewDesignResolveServiceInterfaceMock(suite.T())
 	suite.mockI18nService = mgtmock.NewI18nServiceInterfaceMock(suite.T())
 	suite.service = newFlowMetaService(
-		suite.mockAppService,
+		suite.mockInboundClient,
+		suite.mockEntityProvider,
 		suite.mockOUService,
 		suite.mockDesignResolve,
 		suite.mockI18nService,
@@ -78,6 +83,27 @@ func (suite *FlowMetaServiceTestSuite) TearDownTest() {
 	// Mockery-generated mocks automatically assert expectations
 }
 
+// expectInboundLookup wires the inbound + entity mocks for an APP-type lookup. The synthesized
+// inbound client carries the fields populateTypeMetadata reads onto ApplicationMetadata.
+func (suite *FlowMetaServiceTestSuite) expectInboundLookup(
+	appID string, name string, isRegEnabled bool, props map[string]interface{},
+) {
+	client := &inboundmodel.InboundClient{
+		ID:                        appID,
+		IsRegistrationFlowEnabled: isRegEnabled,
+		Properties:                props,
+	}
+	sysAttrs, _ := json.Marshal(map[string]interface{}{"name": name})
+	entity := &entityprovider.Entity{
+		ID:               appID,
+		Category:         entityprovider.EntityCategoryApp,
+		SystemAttributes: sysAttrs,
+	}
+	suite.mockInboundClient.On("GetInboundClientByEntityID", mock.Anything, appID).Return(client, nil)
+	suite.mockEntityProvider.On("GetEntity", appID).
+		Return(entity, (*entityprovider.EntityProviderError)(nil))
+}
+
 func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_APP_Success() {
 	// Arrange
 	appID := testAppID
@@ -86,15 +112,12 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_APP_Success() {
 	language := "en"
 	namespace := "auth"
 
-	mockApp := &appmodel.Application{
-		ID:                        appID,
-		Name:                      "Test App",
-		LogoURL:                   "https://example.com/logo.png",
-		URL:                       "https://example.com",
-		TosURI:                    "https://example.com/tos",
-		PolicyURI:                 "https://example.com/policy",
-		IsRegistrationFlowEnabled: true,
-	}
+	suite.expectInboundLookup(appID, "Test App", true, map[string]interface{}{
+		"logo_url":   "https://example.com/logo.png",
+		"url":        "https://example.com",
+		"tos_uri":    "https://example.com/tos",
+		"policy_uri": "https://example.com/policy",
+	})
 
 	mockOUList := &ou.OrganizationUnitListResponse{
 		TotalResults: 1,
@@ -127,8 +150,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_APP_Success() {
 		},
 	}
 
-	suite.mockAppService.On("GetApplication", mock.Anything, appID).Return(mockApp, nil)
-	suite.mockOUService.On("GetOrganizationUnitList", mock.Anything, 1, 0).Return(mockOUList, nil)
+	suite.mockOUService.On("GetOrganizationUnitList", mock.Anything, 1, 0, mock.Anything).Return(mockOUList, nil)
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, ouID).Return(mockOU, nil)
 	suite.mockDesignResolve.On("ResolveDesign", mock.Anything, common.DesignResolveTypeAPP, appID).
 		Return(mockDesign, nil)
@@ -145,6 +167,8 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_APP_Success() {
 	assert.NotNil(suite.T(), result.Application)
 	assert.Equal(suite.T(), appID, result.Application.ID)
 	assert.Equal(suite.T(), "Test App", result.Application.Name)
+	assert.Equal(suite.T(), "https://example.com/logo.png", result.Application.LogoURL)
+	assert.Equal(suite.T(), "https://example.com", result.Application.URL)
 	assert.NotNil(suite.T(), result.OU)
 	assert.Equal(suite.T(), ouID, result.OU.ID)
 	assert.NotNil(suite.T(), result.Design.Theme)
@@ -214,8 +238,8 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_ApplicationNotFound()
 	metaType := MetaTypeAPP
 	appID := "non-existent"
 
-	suite.mockAppService.On("GetApplication", mock.Anything, appID).
-		Return(nil, &application.ErrorApplicationNotFound)
+	suite.mockInboundClient.On("GetInboundClientByEntityID", mock.Anything, appID).
+		Return(nil, inboundclient.ErrInboundClientNotFound)
 
 	// Act
 	result, svcErr := suite.service.GetFlowMetadata(suite.ctx, metaType, appID, nil, nil)
@@ -249,10 +273,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_DesignResolveError_Co
 	ouID := testOUID
 	metaType := MetaTypeAPP
 
-	mockApp := &appmodel.Application{
-		ID:   appID,
-		Name: "Test App",
-	}
+	suite.expectInboundLookup(appID, "Test App", false, nil)
 
 	mockOUList := &ou.OrganizationUnitListResponse{
 		TotalResults: 1,
@@ -267,8 +288,7 @@ func (suite *FlowMetaServiceTestSuite) TestGetFlowMetadata_DesignResolveError_Co
 		Name:   "Default OU",
 	}
 
-	suite.mockAppService.On("GetApplication", mock.Anything, appID).Return(mockApp, nil)
-	suite.mockOUService.On("GetOrganizationUnitList", mock.Anything, 1, 0).Return(mockOUList, nil)
+	suite.mockOUService.On("GetOrganizationUnitList", mock.Anything, 1, 0, mock.Anything).Return(mockOUList, nil)
 	suite.mockOUService.On("GetOrganizationUnit", mock.Anything, ouID).Return(mockOU, nil)
 	suite.mockDesignResolve.On("ResolveDesign", mock.Anything, common.DesignResolveTypeAPP, appID).
 		Return(nil, &serviceerror.InternalServerError)

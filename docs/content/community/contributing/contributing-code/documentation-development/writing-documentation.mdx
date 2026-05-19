@@ -210,7 +210,7 @@ The `SDKCard` component displays SDK information in an attractive card format wi
   <SDKCard
     icon={<ReactLogo />}
     title="React SDK"
-    packageName="@asgardeo/auth-react"
+    packageName="@awesome/react"
     packageManager="npm"
     description="Authenticate your React applications with {{ProductName}}"
     href="/sdks/react"
@@ -219,7 +219,7 @@ The `SDKCard` component displays SDK information in an attractive card format wi
   <SDKCard
     icon={<NodeLogo />}
     title="Node.js SDK"
-    packageName="@asgardeo/auth-node"
+    packageName="@awesome/node"
     packageManager="npm"
     description="Server-side authentication for Node.js applications"
     href="/sdks/nodejs"
@@ -259,7 +259,7 @@ The `CodeBlock` component displays code with syntax highlighting. It's a wrapper
 
 ```jsx
 <CodeBlock lang="bash" title="Installation">
-  npm install @asgardeo/auth-react
+  npm install @awesome/react
 </CodeBlock>
 ```
 
@@ -267,7 +267,7 @@ The `CodeBlock` component displays code with syntax highlighting. It's a wrapper
 
 ```jsx
 <CodeBlock lang="typescript" showLineNumbers>
-{`import { AuthProvider } from '@asgardeo/auth-react';
+{`import { AuthProvider } from '@awesome/react';
 
 function App() {
   return (
@@ -302,13 +302,13 @@ The `CodeGroup` component displays multiple code blocks in tabs, perfect for sho
 ```jsx
 <CodeGroup>
   <CodeBlock lang="bash" label="npm">
-    npm install @asgardeo/auth-react
+    npm install @awesome/react
   </CodeBlock>
   <CodeBlock lang="bash" label="yarn">
-    yarn add @asgardeo/auth-react
+    yarn add @awesome/react
   </CodeBlock>
   <CodeBlock lang="bash" label="pnpm">
-    pnpm add @asgardeo/auth-react
+    pnpm add @awesome/react
   </CodeBlock>
 </CodeGroup>
 ```
@@ -348,6 +348,76 @@ resp, _ := client.Do(req)`}
 - deno
 
 **Source:** <RepoLink path="/blob/main/docs/src/components/CodeGroup.tsx">`docs/src/components/CodeGroup.tsx`</RepoLink>
+
+---
+
+### ProductName
+
+The `<ProductName />` component renders the current product name (e.g. *ThunderID*) from site config. Always use this component instead of hardcoding the product name — it ensures documentation stays correct if the product is ever renamed.
+
+**Usage:**
+
+```mdx
+<ProductName /> supports OAuth 2.0 and OpenID Connect out of the box.
+```
+
+**Result:** The product name is rendered inline with the surrounding text.
+
+**Source:** <RepoLink path="/blob/main/docs/src/components/ProductName.tsx">`docs/src/components/ProductName.tsx`</RepoLink>
+
+---
+
+### RepoLink
+
+The `<RepoLink />` component renders a link to a path within the project's GitHub repository. Always use this component instead of hardcoding the repository URL — it ensures links stay valid if the repository is moved or renamed.
+
+**Props:**
+- `path` (optional): Path to append to the base repository URL (e.g. `"/issues"`, `"/blob/main/README.md"`)
+- `children` (required): Link text or content
+
+**Usage:**
+
+```mdx
+Check the <RepoLink path="/issues">issue tracker</RepoLink> for known bugs.
+
+See the <RepoLink path="/blob/main/docs/sidebars.ts">`docs/sidebars.ts`</RepoLink> file for sidebar config.
+```
+
+**Source:** <RepoLink path="/blob/main/docs/src/components/RepoLink.tsx">`docs/src/components/RepoLink.tsx`</RepoLink>
+
+---
+
+### Product Name Placeholders
+
+In contexts where JSX components cannot be used — **frontmatter fields** and **fenced code blocks / inline code spans** — use the `{{ProductName}}` and `{{productSlug}}` string placeholders instead. They are replaced at build time.
+
+| Placeholder | Replaced with |
+|---|---|
+| `{{ProductName}}` | The product name (e.g. `ThunderID`) |
+| `{{productSlug}}` | The URL-safe product slug (e.g. `thunderid`) |
+
+**Frontmatter:**
+
+```mdx
+---
+title: Get {{ProductName}}
+description: Install and run {{ProductName}} locally
+---
+```
+
+**Code blocks and inline code:**
+
+````mdx
+Run the following to start {{ProductName}}:
+
+```bash
+./{{productSlug}} start
+```
+````
+
+:::warning Never hardcode the product name
+Do **not** write `Thunder`, `ThunderID`, or any other hardcoded product name string in documentation. Use `<ProductName />` in prose, `{{ProductName}}` in frontmatter and code blocks.
+:::
 
 ## Adding User Guides
 

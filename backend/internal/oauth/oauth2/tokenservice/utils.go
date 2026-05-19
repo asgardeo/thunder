@@ -24,12 +24,12 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/asgardeo/thunder/internal/attributecache"
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
-	"github.com/asgardeo/thunder/internal/ou"
-	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/attributecache"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
+	"github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/system/config"
 )
 
 // ParseScopes parses a space-separated scope string into a slice of scope strings.
@@ -243,24 +243,9 @@ func ExtractUserAttributes(claims map[string]interface{}) map[string]interface{}
 	return userAttributes
 }
 
-// getValidIssuers collects all valid/trusted issuers for the given OAuth application.
-func getValidIssuers(oauthApp *inboundmodel.OAuthClient) map[string]bool {
-	validIssuers := make(map[string]bool)
-
-	tokenConfig := ResolveTokenConfig(oauthApp, TokenTypeAccess)
-	validIssuers[tokenConfig.Issuer] = true
-
-	// TODO: Add support for external issuers
-	return validIssuers
-}
-
-// validateIssuer validates that a token issuer is trusted by checking against configured issuers.
-func validateIssuer(issuer string, oauthApp *inboundmodel.OAuthClient) error {
-	validIssuers := getValidIssuers(oauthApp)
-	if !validIssuers[issuer] {
-		return fmt.Errorf("token issuer '%s' is not supported", issuer)
-	}
-	return nil
+// isSelfIssuer reports whether the given issuer is the server's own configured issuer.
+func isSelfIssuer(issuer string) bool {
+	return issuer == config.GetServerRuntime().Config.JWT.Issuer
 }
 
 // FetchUserAttributes fetches user attributes and merges default claims and groups into the return map.
@@ -476,7 +461,7 @@ func resolveClientOUAttributes(
 	orgUnit, svcErr := ouService.GetOrganizationUnit(ctx, oauthApp.OUID)
 	if svcErr != nil {
 		return nil, fmt.Errorf("failed to fetch organization unit %s for app %s: %s",
-			oauthApp.OUID, oauthApp.AppID, svcErr.Error)
+			oauthApp.OUID, oauthApp.ID, svcErr.Error)
 	}
 
 	return map[string]interface{}{

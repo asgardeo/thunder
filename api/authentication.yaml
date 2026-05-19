@@ -16,6 +16,22 @@ servers:
       port:
         default: "8090"
 
+tags:
+  - name: Credentials
+    description: Username and password authentication operations.
+  - name: SMS OTP
+    description: One-time-password operations over SMS.
+  - name: Google
+    description: Authentication operations with Google identity provider.
+  - name: Github
+    description: Authentication operations with GitHub identity provider.
+  - name: Standard
+    description: Standard authentication flow operations.
+  - name: WebAuthn / Passkey
+    description: Passkey authentication operations based on WebAuthn.
+
+security: []
+
 paths:
   /auth/credentials/authenticate:
     post:
@@ -42,7 +58,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTH-CRED-1001"
                 message:
@@ -56,7 +72,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTH-CRED-1002"
                 message:
@@ -70,7 +86,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-1008"
                 message:
@@ -84,7 +100,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
   /auth/otp/sms/send:
     post:
@@ -111,7 +127,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-OTP-1002"
                 message:
@@ -125,7 +141,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
   /auth/otp/sms/verify:
     post:
@@ -152,7 +168,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-OTP-1005"
                 message:
@@ -166,7 +182,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-OTP-1006"
                 message:
@@ -180,7 +196,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-1008"
                 message:
@@ -194,7 +210,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
   /auth/oauth/google/start:
     post:
@@ -224,7 +240,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-1001"
                 message:
@@ -238,7 +254,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
   /auth/oauth/google/finish:
     post:
@@ -265,7 +281,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-1003"
                 message:
@@ -279,7 +295,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
   /auth/oauth/github/start:
     post:
@@ -309,7 +325,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-1001"
                 message:
@@ -323,7 +339,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
   /auth/oauth/github/finish:
     post:
@@ -350,7 +366,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-1003"
                 message:
@@ -364,7 +380,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
   /auth/oauth/standard/start:
     post:
@@ -394,7 +410,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-1001"
                 message:
@@ -408,7 +424,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
   /auth/oauth/standard/finish:
     post:
@@ -435,7 +451,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-1003"
                 message:
@@ -449,7 +465,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
   /auth/passkey/start:
     post:
@@ -476,7 +492,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-1011"
                 message:
@@ -490,7 +506,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-1008"
                 message:
@@ -504,7 +520,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
   /auth/passkey/finish:
     post:
@@ -531,7 +547,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               examples:
                 emptyCredentialId:
                   value:
@@ -574,7 +590,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "WEBAUTHN-1008"
                 message:
@@ -588,7 +604,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "AUTHN-1008"
                 message:
@@ -602,7 +618,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
 components:
   schemas:
@@ -912,34 +928,17 @@ components:
         - publicKeyCredential
         - sessionToken
 
-    ErrorResponse:
+    Error:
       type: object
       properties:
         code:
           type: string
-          description: Error code
+          description: "Error code. Codes follow the AUTHN-XXXX or WEBAUTHN-XXXX convention."
+          example: "AUTHN-1001"
         message:
           $ref: '#/components/schemas/I18nMessage'
         description:
           $ref: '#/components/schemas/I18nMessage'
-
-    ClientErrorResponse:
-      allOf:
-        - $ref: '#/components/schemas/ErrorResponse'
-        - type: object
-
-    ServerErrorResponse:
-      allOf:
-        - $ref: '#/components/schemas/ErrorResponse'
-        - type: object
-      example:
-        code: "AUTHN-5000"
-        message:
-          key: "error.internal_server_error"
-          defaultValue: "Internal server error"
-        description:
-          key: "error.internal_server_error_description"
-          defaultValue: "An unexpected error occurred while processing the request"
 
     I18nMessage:
       type: object

@@ -23,10 +23,10 @@ import (
 	"errors"
 	"strings"
 
-	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
-	"github.com/asgardeo/thunder/internal/system/declarative_resource/entity"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/transaction"
+	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
+	"github.com/thunder-id/thunderid/internal/system/declarative_resource/entity"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/transaction"
 )
 
 type fileBasedStore struct {
@@ -249,6 +249,11 @@ func (f *fileBasedStore) UpdateRole(ctx context.Context, id string, role RoleUpd
 // DeleteRole is not supported in file-based store.
 func (f *fileBasedStore) DeleteRole(ctx context.Context, id string) error {
 	return errors.New("DeleteRole is not supported in file-based store")
+}
+
+// DeleteAssignmentsByRoleID is not supported in file-based store.
+func (f *fileBasedStore) DeleteAssignmentsByRoleID(ctx context.Context, id string) error {
+	return errors.New("DeleteAssignmentsByRoleID is not supported in file-based store")
 }
 
 // AddAssignments is not supported in file-based store.

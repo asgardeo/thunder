@@ -19,9 +19,9 @@
 package application
 
 import (
-	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/i18n/core"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 )
 
 // Client errors for application operations.
@@ -459,6 +459,46 @@ var (
 		ErrorDescription: core.I18nMessage{
 			Key:          "error.applicationservice.invalid_acr_values_description",
 			DefaultValue: "One or more ACR values in acr_values are not recognized by the system",
+		},
+	}
+	// ErrorMultipleOAuthConfigs is returned when more than one OAuth inbound auth config is supplied.
+	ErrorMultipleOAuthConfigs = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "APP-1034",
+		Error: core.I18nMessage{
+			Key:          "error.applicationservice.multiple_oauth_configs",
+			DefaultValue: "Multiple OAuth inbound auth configs are not allowed",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.applicationservice.multiple_oauth_configs_description",
+			DefaultValue: "An application may have at most one inbound auth config per protocol",
+		},
+	}
+	// ErrorInvalidUserAttribute is the error returned when a user attribute is not valid for any
+	// of the application's allowed user types.
+	ErrorInvalidUserAttribute = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "APP-1035",
+		Error: core.I18nMessage{
+			Key:          "error.applicationservice.invalid_user_attribute",
+			DefaultValue: "Invalid user attribute",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.applicationservice.invalid_user_attribute_description",
+			DefaultValue: "One or more user attributes are not valid for the configured allowed user types",
+		},
+	}
+	// ErrorInvalidRecoveryFlowID is the error returned when an invalid recovery flow ID is provided.
+	ErrorInvalidRecoveryFlowID = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "APP-1036",
+		Error: core.I18nMessage{
+			Key:          "error.applicationservice.invalid_recovery_flow_id",
+			DefaultValue: "Invalid recovery flow ID",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.applicationservice.invalid_recovery_flow_id_description",
+			DefaultValue: "The provided recovery flow ID is invalid",
 		},
 	}
 )

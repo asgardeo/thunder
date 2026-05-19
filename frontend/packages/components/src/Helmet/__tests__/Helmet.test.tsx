@@ -61,7 +61,7 @@ describe('Helmet', () => {
       </Helmet>,
     );
     await waitFor(() => {
-      const link = document.querySelector('link[rel="icon"]');
+      const link = document.querySelector('link[data-helmet][rel="icon"]');
       expect(link).toBeTruthy();
       expect(link?.getAttribute('href')).toBe('/favicon.ico');
     });
@@ -109,7 +109,7 @@ describe('Helmet', () => {
       </Helmet>,
     );
     await waitFor(() => {
-      const style = document.querySelector('style');
+      const style = document.querySelector('style[data-helmet]');
       expect(style?.textContent).toBe('body { margin: 0; }');
     });
   });
@@ -152,7 +152,7 @@ describe('Helmet', () => {
     render(
       <Helmet>
         <title>Multi Test</title>
-        <meta name="author" content="Thunder" />
+        <meta name="author" content="Team" />
         <link rel="canonical" href="https://example.com" />
       </Helmet>,
     );

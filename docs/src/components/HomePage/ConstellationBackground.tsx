@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {useTheme} from '@wso2/oxygen-ui';
 import React, {JSX} from 'react';
 import useIsDarkMode from '../../hooks/useIsDarkMode';
 
@@ -62,6 +63,7 @@ function boltVertices(cx: number, cy: number, scale: number): {x: number; y: num
  */
 const ConstellationBackground = React.memo(function ConstellationBackground(): JSX.Element {
   const isDark = useIsDarkMode();
+  const theme = useTheme();
 
   // One large bolt positioned to the right side
   const shapeCx = 1050;
@@ -95,18 +97,39 @@ const ConstellationBackground = React.memo(function ConstellationBackground(): J
             to { stroke-dashoffset: -40; }
           }
         `}</style>
-        <radialGradient id="hero-orange-glow" cx="60%" cy="35%" r="45%">
-          <stop offset="0%" stopColor={isDark ? 'rgba(255, 107, 0, 0.18)' : 'rgba(255, 107, 0, 0.08)'} />
-          <stop offset="50%" stopColor={isDark ? 'rgba(255, 107, 0, 0.06)' : 'rgba(255, 107, 0, 0.03)'} />
+        <radialGradient id="hero-blue-glow" cx="60%" cy="35%" r="45%">
+          <stop
+            offset="0%"
+            stopColor={
+              isDark
+                ? `rgba(${theme.vars?.palette.primary.main} / 0.18)`
+                : `rgba(${theme.vars?.palette.primary.main} / 0.08)`
+            }
+          />
+          <stop
+            offset="50%"
+            stopColor={
+              isDark
+                ? `rgba(${theme.vars?.palette.primary.main} / 0.06)`
+                : `rgba(${theme.vars?.palette.primary.main} / 0.03)`
+            }
+          />
           <stop offset="100%" stopColor="transparent" />
         </radialGradient>
-        <radialGradient id="hero-orange-glow-2" cx="85%" cy="25%" r="30%">
-          <stop offset="0%" stopColor={isDark ? 'rgba(255, 107, 0, 0.12)' : 'rgba(255, 107, 0, 0.06)'} />
+        <radialGradient id="hero-blue-glow-2" cx="85%" cy="25%" r="30%">
+          <stop
+            offset="0%"
+            stopColor={
+              isDark
+                ? `rgba(${theme.vars?.palette.secondary.mainChannel} / 0.12)`
+                : `rgba(${theme.vars?.palette.secondary.mainChannel} / 0.06)`
+            }
+          />
           <stop offset="100%" stopColor="transparent" />
         </radialGradient>
       </defs>
-      <rect width="1440" height="900" fill="url(#hero-orange-glow)" />
-      <rect width="1440" height="900" fill="url(#hero-orange-glow-2)" />
+      <rect width="1440" height="900" fill="url(#hero-blue-glow)" />
+      <rect width="1440" height="900" fill="url(#hero-blue-glow-2)" />
 
       {/* Single large bolt outline — dashed stroke with slow float */}
       <g

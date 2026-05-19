@@ -19,7 +19,8 @@
 package executor
 
 import (
-	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 
 	"encoding/json"
 	"testing"
@@ -28,15 +29,15 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
-	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
-	"github.com/asgardeo/thunder/internal/entityprovider"
-	"github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/flow/core"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/authnprovider/managermock"
-	"github.com/asgardeo/thunder/tests/mocks/entityprovidermock"
-	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
+	appmodel "github.com/thunder-id/thunderid/internal/application/model"
+	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
+	"github.com/thunder-id/thunderid/internal/entityprovider"
+	"github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/internal/flow/core"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
+	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
+	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 )
 
 type BasicAuthExecutorTestSuite struct {
@@ -724,16 +725,16 @@ func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithAllFields() 
 				"tenant_id": "tenant-123",
 				"region":    "us-west",
 			},
-			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						ClientID: "oauth-client-1",
 					},
 				},
 				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						ClientID: "oauth-client-2",
 					},
 				},
@@ -789,10 +790,10 @@ func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithOnlyAppMetad
 func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithOnlyClientIDs() {
 	ctx := &core.NodeContext{
 		Application: appmodel.Application{
-			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						ClientID: "single-oauth-client",
 					},
 				},
@@ -812,10 +813,10 @@ func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithOnlyClientID
 func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithNilOAuthConfig() {
 	ctx := &core.NodeContext{
 		Application: appmodel.Application{
-			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 				{
-					Type:           appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: nil,
+					Type:        inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: nil,
 				},
 			},
 		},
@@ -831,10 +832,10 @@ func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithNilOAuthConf
 func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithEmptyClientID() {
 	ctx := &core.NodeContext{
 		Application: appmodel.Application{
-			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						ClientID: "",
 					},
 				},
@@ -852,26 +853,26 @@ func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithEmptyClientI
 func (suite *BasicAuthExecutorTestSuite) TestBuildAuthnMetadata_WithMixedInboundConfigs() {
 	ctx := &core.NodeContext{
 		Application: appmodel.Application{
-			InboundAuthConfig: []appmodel.InboundAuthConfigComplete{
+			InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						ClientID: "valid-client",
 					},
 				},
 				{
-					Type:           appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: nil,
+					Type:        inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: nil,
 				},
 				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						ClientID: "",
 					},
 				},
 				{
-					Type: appmodel.OAuthInboundAuthType,
-					OAuthAppConfig: &appmodel.OAuthAppConfigComplete{
+					Type: inboundmodel.OAuthInboundAuthType,
+					OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 						ClientID: "another-valid-client",
 					},
 				},

@@ -51,6 +51,10 @@ interface ScopeSectionProps {
    * Callback fired when the scope → attributes mapping changes.
    */
   onScopeClaimsChange: (scopeClaims: ScopeClaims) => void;
+  /**
+   * Singular noun used to refer to the entity in user-visible copy (default: 'application').
+   */
+  entityLabel?: string;
 }
 
 /**
@@ -71,6 +75,7 @@ export default function ScopeSection({
   isLoadingUserAttributes,
   onScopesChange,
   onScopeClaimsChange,
+  entityLabel = 'application',
 }: ScopeSectionProps) {
   const {t} = useTranslation();
 
@@ -95,7 +100,7 @@ export default function ScopeSection({
     >
       <Stack spacing={3}>
         {/* ── Scopes ─────────────────────────────────────────────────── */}
-        <ScopeSelector scopes={scopes} onScopesChange={handleScopesChange} />
+        <ScopeSelector scopes={scopes} onScopesChange={handleScopesChange} entityLabel={entityLabel} />
 
         <Divider />
 

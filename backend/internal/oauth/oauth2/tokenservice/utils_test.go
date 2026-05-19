@@ -26,15 +26,15 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/internal/attributecache"
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/ou"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/i18n/core"
-	"github.com/asgardeo/thunder/tests/mocks/attributecachemock"
-	"github.com/asgardeo/thunder/tests/mocks/oumock"
+	"github.com/thunder-id/thunderid/internal/attributecache"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/tests/mocks/attributecachemock"
+	"github.com/thunder-id/thunderid/tests/mocks/oumock"
 )
 
 type UtilsTestSuite struct {
@@ -57,209 +57,26 @@ func (suite *UtilsTestSuite) SetupTest() {
 	_ = config.InitializeServerRuntime("test", testConfig)
 }
 
-func (suite *UtilsTestSuite) TestGetValidIssuers_WithNilOAuthApp() {
-	// When oauthApp is nil, should return default issuer from config
-	validIssuers := getValidIssuers(nil)
-
-	assert.NotNil(suite.T(), validIssuers)
-	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
-}
-
-func (suite *UtilsTestSuite) TestGetValidIssuers_WithOnlyDefaultIssuer() {
-	oauthApp := &inboundmodel.OAuthClient{
-		ClientID: "test-client",
-	}
-
-	validIssuers := getValidIssuers(oauthApp)
-
-	assert.NotNil(suite.T(), validIssuers)
-	assert.Len(suite.T(), validIssuers, 1)
-	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
-}
-
-func (suite *UtilsTestSuite) TestGetValidIssuers_WithTokenConfig() {
-	// OAuthApp with a Token config should still use server-level issuer from config
-	oauthApp := &inboundmodel.OAuthClient{
-		ClientID: "test-client",
-		Token:    &inboundmodel.OAuthTokenConfig{},
-	}
-
-	validIssuers := getValidIssuers(oauthApp)
-
-	assert.NotNil(suite.T(), validIssuers)
-	assert.Len(suite.T(), validIssuers, 1)
-	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
-}
-
-func (suite *UtilsTestSuite) TestGetValidIssuers_WithAccessTokenConfig() {
-	// OAuthApp with Token and AccessToken config should still use server-level issuer from config
-	oauthApp := &inboundmodel.OAuthClient{
-		ClientID: "test-client",
-		Token: &inboundmodel.OAuthTokenConfig{
-			AccessToken: &inboundmodel.AccessTokenConfig{
-				ValidityPeriod: 7200,
-			},
-		},
-	}
-
-	validIssuers := getValidIssuers(oauthApp)
-
-	assert.NotNil(suite.T(), validIssuers)
-	assert.Len(suite.T(), validIssuers, 1)
-	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
-}
-
-func (suite *UtilsTestSuite) TestGetValidIssuers_WithIDTokenConfig() {
-	// OAuthApp with Token and IDToken config should still use server-level issuer from config
-	oauthApp := &inboundmodel.OAuthClient{
-		ClientID: "test-client",
-		Token: &inboundmodel.OAuthTokenConfig{
-			IDToken: &inboundmodel.IDTokenConfig{
-				ValidityPeriod: 3600,
-			},
-		},
-	}
-
-	validIssuers := getValidIssuers(oauthApp)
-
-	assert.NotNil(suite.T(), validIssuers)
-	assert.Len(suite.T(), validIssuers, 1)
-	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
-}
-
-func (suite *UtilsTestSuite) TestGetValidIssuers_AlwaysUsesServerIssuer() {
-	// Valid issuers always come from server config, never empty strings
-	oauthApp := &inboundmodel.OAuthClient{
-		ClientID: "test-client",
-		Token: &inboundmodel.OAuthTokenConfig{
-			AccessToken: &inboundmodel.AccessTokenConfig{},
-		},
-	}
-
-	validIssuers := getValidIssuers(oauthApp)
-
-	assert.NotNil(suite.T(), validIssuers)
-	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
-	assert.NotContains(suite.T(), validIssuers, "")
-}
-
 // ============================================================================
-// validateIssuer Tests
+// isSelfIssuer Tests
 // ============================================================================
 
-func (suite *UtilsTestSuite) TestvalidateIssuer_WithValidDefaultIssuer() {
-	oauthApp := &inboundmodel.OAuthClient{
-		ClientID: "test-client",
-	}
+func (suite *UtilsTestSuite) TestisSelfIssuer_WithValidDeploymentIssuer() {
+	result := isSelfIssuer("https://thunder.io")
 
-	err := validateIssuer("https://thunder.io", oauthApp)
-
-	assert.NoError(suite.T(), err)
+	assert.True(suite.T(), result)
 }
 
-func (suite *UtilsTestSuite) TestvalidateIssuer_WithServerIssuerAndTokenConfig() {
-	// Server-level issuer is always valid regardless of token config presence
-	oauthApp := &inboundmodel.OAuthClient{
-		ClientID: "test-client",
-		Token:    &inboundmodel.OAuthTokenConfig{},
-	}
+func (suite *UtilsTestSuite) TestisSelfIssuer_WithInvalidIssuer() {
+	result := isSelfIssuer("https://evil.example.com")
 
-	err := validateIssuer("https://thunder.io", oauthApp)
-
-	assert.NoError(suite.T(), err)
+	assert.False(suite.T(), result)
 }
 
-func (suite *UtilsTestSuite) TestvalidateIssuer_WithServerIssuerAndAccessTokenConfig() {
-	// Server-level issuer is always valid regardless of access token config presence
-	oauthApp := &inboundmodel.OAuthClient{
-		ClientID: "test-client",
-		Token: &inboundmodel.OAuthTokenConfig{
-			AccessToken: &inboundmodel.AccessTokenConfig{
-				ValidityPeriod: 3600,
-			},
-		},
-	}
+func (suite *UtilsTestSuite) TestisSelfIssuer_WithEmptyIssuer() {
+	result := isSelfIssuer("")
 
-	err := validateIssuer("https://thunder.io", oauthApp)
-
-	assert.NoError(suite.T(), err)
-}
-
-func (suite *UtilsTestSuite) TestvalidateIssuer_WithInvalidIssuer() {
-	oauthApp := &inboundmodel.OAuthClient{
-		ClientID: "test-client",
-	}
-
-	err := validateIssuer("https://evil.example.com", oauthApp)
-
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "not supported")
-	assert.Contains(suite.T(), err.Error(), "https://evil.example.com")
-}
-
-func (suite *UtilsTestSuite) TestvalidateIssuer_WithEmptyIssuer() {
-	oauthApp := &inboundmodel.OAuthClient{
-		ClientID: "test-client",
-	}
-
-	err := validateIssuer("", oauthApp)
-
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "not supported")
-}
-
-func (suite *UtilsTestSuite) TestvalidateIssuer_WithNilOAuthApp() {
-	// Should still validate against default issuer from config
-	err := validateIssuer("https://thunder.io", nil)
-
-	assert.NoError(suite.T(), err)
-}
-
-func (suite *UtilsTestSuite) TestvalidateIssuer_WithNilOAuthAppInvalidIssuer() {
-	err := validateIssuer("https://invalid.com", nil)
-
-	assert.Error(suite.T(), err)
-	assert.Contains(suite.T(), err.Error(), "not supported")
-}
-
-func (suite *UtilsTestSuite) TestFederationScenario_OnlyServerIssuerIsValid() {
-	// Only the server-level issuer from config is accepted; app-level issuers are no longer supported
-	oauthApp := &inboundmodel.OAuthClient{
-		ClientID: "test-client",
-		Token: &inboundmodel.OAuthTokenConfig{
-			AccessToken: &inboundmodel.AccessTokenConfig{},
-		},
-	}
-
-	validIssuers := getValidIssuers(oauthApp)
-
-	// Only the server-level issuer from config is returned
-	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
-
-	// Validate the server-level issuer passes
-	assert.NoError(suite.T(), validateIssuer("https://thunder.io", oauthApp))
-
-	// Should reject unknown issuers
-	assert.Error(suite.T(), validateIssuer("https://staging.company.com", oauthApp))
-	assert.Error(suite.T(), validateIssuer("https://unknown.company.com", oauthApp))
-}
-
-func (suite *UtilsTestSuite) TestFederationScenario_FutureExternalIssuerSupport() {
-	// This test documents the intended behavior for future external issuer support
-	// TODO: When external issuer support is added, update GetValidIssuers to include
-	// external federated issuers from configuration
-
-	oauthApp := &inboundmodel.OAuthClient{
-		ClientID: "test-client",
-	}
-
-	validIssuers := getValidIssuers(oauthApp)
-
-	// Currently only the server-level issuer from config is returned
-	assert.Contains(suite.T(), validIssuers, "https://thunder.io")
-
-	// In the future, external issuers should also be included
-	// assert.Contains(suite.T(), validIssuers, "https://external-idp.com")
+	assert.False(suite.T(), result)
 }
 
 func (suite *UtilsTestSuite) TestJoinScopes_WithMultipleScopes() {
@@ -1010,8 +827,8 @@ const (
 
 func newOAuthAppForClientAttributes(ouID string) *inboundmodel.OAuthClient {
 	return &inboundmodel.OAuthClient{
-		AppID: testBCCAppID,
-		OUID:  ouID,
+		ID:   testBCCAppID,
+		OUID: ouID,
 	}
 }
 

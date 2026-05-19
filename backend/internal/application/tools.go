@@ -22,12 +22,14 @@ import (
 	"context"
 	"fmt"
 
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+
 	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/asgardeo/thunder/internal/application/model"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/system/mcp/tool"
+	"github.com/thunder-id/thunderid/internal/application/model"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/system/mcp/tool"
 )
 
 // applicationTools provides MCP tools for managing  applications.
@@ -167,7 +169,7 @@ func (t *applicationTools) getApplicationByClientID(
 	}
 
 	// Get full application details
-	app, svcErr := t.appService.GetApplication(ctx, oauthApp.AppID)
+	app, svcErr := t.appService.GetApplication(ctx, oauthApp.ID)
 	if svcErr != nil {
 		return nil, nil, fmt.Errorf("failed to get application: %s", svcErr.ErrorDescription)
 	}
@@ -313,7 +315,7 @@ func getCommonSchemaModifiers() []func(*jsonschema.Schema) {
 		tool.WithEnum("inbound_auth_config.config", "response_types", oauth2const.GetSupportedResponseTypes()),
 		tool.WithEnum("inbound_auth_config.config", "token_endpoint_auth_method",
 			oauth2const.GetSupportedTokenEndpointAuthMethods()),
-		tool.WithEnum("inbound_auth_config", "type", []string{string(model.OAuthInboundAuthType)}),
+		tool.WithEnum("inbound_auth_config", "type", []string{string(inboundmodel.OAuthInboundAuthType)}),
 	}
 }
 

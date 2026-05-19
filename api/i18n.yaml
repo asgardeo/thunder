@@ -454,7 +454,8 @@ components:
           description: Default message in English (fallback).
           example: Missing language code
 
-    ErrorResponse:
+
+    Error:
       type: object
       required:
         - code
@@ -462,8 +463,8 @@ components:
       properties:
         code:
           type: string
-          description: Error code for programmatic handling.
-          example: I18N-1003
+          description: "Error code. Codes follow the I18N-XXXX convention."
+          example: "I18N-1003"
         message:
           $ref: '#/components/schemas/I18nMessage'
         description:
@@ -475,7 +476,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
           examples:
             invalid-language:
               summary: Invalid language tag format
@@ -509,41 +510,41 @@ components:
                   defaultValue: "The key can only contain alphanumeric characters, dots, underscores, and hyphens"
 
     Unauthorized:
-      description: Authentication required
+      description: Unauthorized - missing or invalid authentication token
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
           example:
-            code: AUTH-4001
+            code: "AUTH-4010"
             message:
-              key: error.auth.unauthorized
-              defaultValue: Unauthorized
+              key: "error.unauthorized"
+              defaultValue: "Unauthorized"
             description:
-              key: error.auth.unauthorized_description
-              defaultValue: Authentication is required to access this resource
+              key: "error.unauthorized_description"
+              defaultValue: "Authentication is required to access this resource"
 
     Forbidden:
-      description: Insufficient permissions
+      description: Forbidden - insufficient permissions to perform this operation
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
           example:
-            code: AUTH-4003
+            code: "AUTH-4030"
             message:
-              key: error.auth.forbidden
-              defaultValue: Forbidden
+              key: "error.forbidden"
+              defaultValue: "Forbidden"
             description:
-              key: error.auth.forbidden_description
-              defaultValue: You do not have permission to access this resource
+              key: "error.forbidden_description"
+              defaultValue: "You do not have sufficient permissions to access this resource"
 
     NotFound:
       description: Resource not found
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
           example:
             code: I18N-1006
             message:
@@ -558,7 +559,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/Error'
           example:
             code: I18N-5000
             message:

@@ -1,15 +1,15 @@
 ---
 name: db
-description: Database schema and query conventions for Thunder. Use when changing schema scripts, defining SQL queries, updating store constants, or reviewing deployment-scoped persistence rules.
+description: Database schema and query conventions for ThunderID. Use when changing schema scripts, defining SQL queries, updating store constants, or reviewing deployment-scoped persistence rules.
 ---
 
 # Database Schema Design Principles and Conventions
 
-This document explains the database schema design principles and conventions used in Thunder. AI agents and contributors should follow these conventions when generating or modifying database schemas and queries.
+This document explains the database schema design principles and conventions used in ThunderID. AI agents and contributors should follow these conventions when generating or modifying database schemas and queries.
 
 ## Logical Database Separation
 
-Thunder uses three logically separated databases. Each database owns a specific category of data.
+ThunderID uses three logically separated databases. Each database owns a specific category of data.
 
 | Database     | Responsibility                                                         |
 |--------------|------------------------------------------------------------------------|
@@ -89,7 +89,7 @@ The schema does not use auto-increment integer identifiers. UUID v7 identifiers 
 
 ### Overview
 
-Thunder supports multi-deployment scenarios where a single database instance may serve data from multiple independent deployments. The `DEPLOYMENT_ID` column enforces isolation between these deployments.
+ThunderID supports multi-deployment scenarios where a single database instance may serve data from multiple independent deployments. The `DEPLOYMENT_ID` column enforces isolation between these deployments.
 
 ### Column Requirement
 
@@ -173,7 +173,7 @@ WHERE f.ID = $1 AND f.DEPLOYMENT_ID = $2
 
 ## Indexing Philosophy
 
-Indexes in Thunder are designed to match real query patterns. The process for defining or revising indexes is:
+Indexes in ThunderID are designed to match real query patterns. The process for defining or revising indexes is:
 
 1. Review the queries associated with each table.
 2. Identify missing or inefficient indexes.

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {SignOutButton, User, useAsgardeo} from '@asgardeo/react';
+import {SignOutButton, User, useThunderID} from '@thunderid/react';
 import {useConfig} from '@thunderid/contexts';
 import {useLogger} from '@thunderid/logger/react';
 import {
@@ -33,6 +33,7 @@ import {
   UserMenu,
 } from '@wso2/oxygen-ui';
 import {
+  Bot,
   Building,
   FileDown,
   Group,
@@ -79,7 +80,7 @@ function ExportConfigButton(): ReactNode {
 }
 
 export default function DashboardLayout(): ReactNode {
-  const {signIn, clearSession, discovery} = useAsgardeo();
+  const {signIn, clearSession, discovery} = useThunderID();
   const {isTrustedIssuerGenericOidc, getTrustedIssuerClientId, getClientUrl} = useConfig();
   const {t} = useTranslation();
   const logger = useLogger();
@@ -148,6 +149,12 @@ export default function DashboardLayout(): ReactNode {
             text: t('navigation:pages.users'),
             icon: <UsersRound />,
             path: '/users',
+          },
+          {
+            id: 'agents',
+            text: t('navigation:pages.agents', 'Agents'),
+            icon: <Bot />,
+            path: '/agents',
           },
           {
             id: 'groups',

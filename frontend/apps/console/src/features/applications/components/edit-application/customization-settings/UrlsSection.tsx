@@ -42,6 +42,10 @@ interface UrlsSectionProps {
    * @param value - The new value for the field
    */
   onFieldChange: (field: keyof Application, value: unknown) => void;
+  /**
+   * Singular noun used to refer to the entity in user-visible copy (default: 'application').
+   */
+  entityLabel?: string;
 }
 
 /**
@@ -57,7 +61,12 @@ interface UrlsSectionProps {
  * @param props - Component props
  * @returns URLs configuration UI within a SettingsCard
  */
-export default function UrlsSection({application, editedApp, onFieldChange}: UrlsSectionProps) {
+export default function UrlsSection({
+  application,
+  editedApp,
+  onFieldChange,
+  entityLabel = 'application',
+}: UrlsSectionProps) {
   const {t} = useTranslation();
 
   const urlsSchema = z.object({
@@ -82,7 +91,11 @@ export default function UrlsSection({application, editedApp, onFieldChange}: Url
   return (
     <SettingsCard
       title={t('applications:edit.customization.sections.urls')}
-      description={t('applications:edit.customization.sections.urls.description')}
+      description={t(
+        'applications:edit.customization.sections.urls.description',
+        'Configure legal and policy URLs for your {{entity}}.',
+        {entity: entityLabel},
+      )}
     >
       <Stack spacing={3}>
         <Box>

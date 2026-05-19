@@ -16,6 +16,7 @@
  * under the License.
  */
 
+import {I18nTextInput} from '@thunderid/components';
 import {
   Box,
   Stack,
@@ -41,8 +42,8 @@ import {
 import {Trash2, Plus, Info} from '@wso2/oxygen-ui-icons-react';
 import {useState, type JSX} from 'react';
 import {useTranslation} from 'react-i18next';
+import {invalidateI18nCache} from '../../../../../i18n/invalidate-i18n-cache';
 import type {SchemaPropertyInput, PropertyType} from '../../../types/user-types';
-import I18nTextInput from '../../create-user-type/I18nTextInput';
 
 export interface EditSchemaSettingsProps {
   properties: SchemaPropertyInput[];
@@ -197,6 +198,28 @@ export default function EditSchemaSettings({
               value={property.displayName}
               onChange={(newValue: string) => handlePropertyChange(property.id, 'displayName', newValue)}
               placeholder={t('userTypes:displayNamePlaceholder', 'e.g., First Name')}
+              onTranslationCreated={invalidateI18nCache}
+              labels={{
+                triggerTooltip: t('userTypes:displayNameI18n.tooltip', 'Configure translation'),
+                popoverTitle: t('userTypes:displayNameI18n.title', 'Translation'),
+                createTitle: t('userTypes:displayNameI18n.createTitle', 'Create New Translation'),
+                createTooltip: t('userTypes:displayNameI18n.createTooltip', 'Create a new translation key'),
+                languageLabel: t('userTypes:displayNameI18n.language', 'Language'),
+                keyLabel: t('userTypes:displayNameI18n.i18nKey', 'Translation Key'),
+                selectKeyPlaceholder: t('userTypes:displayNameI18n.selectKey', 'Select a translation key'),
+                valueLabel: t('userTypes:displayNameI18n.translationValue', 'Translation Value'),
+                resolvedValueLabel: t('userTypes:displayNameI18n.resolvedValue', 'Resolved value'),
+                keyRequiredError: t('userTypes:displayNameI18n.keyRequired', 'Translation key is required'),
+                valueRequiredError: t('userTypes:displayNameI18n.valueRequired', 'Translation value is required'),
+                invalidKeyFormatError: t(
+                  'userTypes:displayNameI18n.invalidKeyFormat',
+                  'Key may only contain letters, numbers, dots, hyphens, and underscores',
+                ),
+                cancelLabel: t('common:cancel', 'Cancel'),
+                createLabel: t('common:create', 'Create'),
+                closeLabel: t('common:close', 'Close'),
+                unknownError: t('common:errors.unknown', 'An unknown error occurred'),
+              }}
               defaultNewKey={
                 userTypeName.trim() && property.name.trim()
                   ? `${userTypeName.trim()}.${property.name.trim()}`

@@ -16,6 +16,12 @@ servers:
       port:
         default: "8090"
 
+tags:
+  - name: Message Senders
+    description: Message notification sender management operations.
+  - name: One Time Password (OTP)
+    description: OTP sender and OTP dispatch operations.
+
 security:
   - OAuth2: [system]
 
@@ -38,7 +44,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
     post:
       summary: Create a new message notification sender
@@ -64,7 +70,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "MNS-1006"
                 message:
@@ -78,7 +84,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "MNS-1005"
                 message:
@@ -92,7 +98,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
   
   /notification-senders/message/{id}:
     get:
@@ -119,7 +125,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "MNS-1002"
                 message:
@@ -133,7 +139,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "MNS-1001"
                 message:
@@ -147,7 +153,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
     put:
       summary: Update a message notification sender
@@ -180,7 +186,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "MNS-1002"
                 message:
@@ -194,7 +200,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "MNS-1001"
                 message:
@@ -208,7 +214,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
     delete:
       summary: Delete a message notification sender
@@ -230,7 +236,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
               example:
                 code: "MNS-1002"
                 message:
@@ -244,7 +250,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
   /notification-senders/otp/send:
     post:
@@ -295,19 +301,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
         "404":
           description: 'Not Found: The specified message notification sender does not exist'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
   /notification-senders/otp/verify:
     post:
@@ -348,13 +354,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClientErrorResponse'
+                $ref: '#/components/schemas/Error'
         "500":
           description: 'Internal Server Error: An unexpected error occurred while processing the request'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServerErrorResponse'
+                $ref: '#/components/schemas/Error'
 
 components:
   securitySchemes:
@@ -458,25 +464,13 @@ components:
         - type
         - provider
 
-    ClientErrorResponse:
+    Error:
       type: object
       properties:
         code:
           type: string
-          description: Error code
+          description: "Error code. Codes follow the MNS-XXXX convention."
           example: "MNS-1006"
-        message:
-          $ref: '#/components/schemas/I18nMessage'
-        description:
-          $ref: '#/components/schemas/I18nMessage'
-
-    ServerErrorResponse:
-      type: object
-      properties:
-        code:
-          type: string
-          description: Error code
-          example: "MNS-5001"
         message:
           $ref: '#/components/schemas/I18nMessage'
         description:

@@ -1,0 +1,202 @@
+/**
+ * Copyright (c) 2026, WSO2 LLC. (https://www.wso2.com).
+ *
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import {SettingsCard} from '@thunderid/components';
+import {Alert, Box, Button, FormControl, IconButton, Stack, TextField, Tooltip} from '@wso2/oxygen-ui';
+import {Plus, Trash} from '@wso2/oxygen-ui-icons-react';
+import {useEffect, useRef, useState, type JSX} from 'react';
+import {useTranslation} from 'react-i18next';
+import type {OAuth2Config} from '../../../../applications/models/oauth';
+import type {OAuthAgentConfig} from '../../../models/agent';
+
+const REDIRECT_USING_GRANTS = ['authorization_code'];
+
+interface RedirectURIsSectionProps {
+  oauth2Config?: OAuthAgentConfig;
+  onOAuth2ConfigChange?: (updates: Partial<OAuth2Config>) => void;
+  /**
+   * Reports whether the current state has any blocking validation error. The agent edit page
+   * uses this to disable Save when the authorization-code grant is on but no valid redirect URI
+   * is configured.
+   */
+  onValidationChange?: (hasErrors: boolean) => void;
+}
+
+const isValidURL = (value: string): boolean => {
+  try {
+    return Boolean(new URL(value));
+  } catch {
+    return false;
+  }
+};
+
+export default function RedirectURIsSection({
+  oauth2Config = undefined,
+  onOAuth2ConfigChange = undefined,
+  onValidationChange = undefined,
+}: RedirectURIsSectionProps): JSX.Element | null {
+  const {t} = useTranslation();
+  const [errors, setErrors] = useState<Record<number, string>>({});
+
+  const grantTypes = oauth2Config?.grantTypes ?? [];
+  const usesRedirect = grantTypes.some((g) => REDIRECT_USING_GRANTS.includes(g));
+  const uris = oauth2Config?.redirectUris ?? [];
+
+  // The authorization-code grant cannot complete without at least one valid redirect URI.
+  const hasValidUri = uris.some((u) => {
+    if (!u.trim()) return false;
+    try {
+      return Boolean(new URL(u));
+    } catch {
+      return false;
+    }
+  });
+  const isMissingRequiredUri = usesRedirect && !hasValidUri;
+  const lastReportedRef = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    if (!onValidationChange) return;
+    if (lastReportedRef.current === isMissingRequiredUri) return;
+    lastReportedRef.current = isMissingRequiredUri;
+    onValidationChange(isMissingRequiredUri);
+  }, [isMissingRequiredUri, onValidationChange]);
+
+  // Always reset the reported error state when the section unmounts (e.g. user switches grants
+  // away from authorization_code, which hides the section below).
+  useEffect(
+    () => () => {
+      if (onValidationChange && lastReportedRef.current === true) {
+        onValidationChange(false);
+      }
+    },
+    [onValidationChange],
+  );
+
+  // Hide entirely when no redirect-using grant is selected — redirect URIs are meaningless then.
+  if (!oauth2Config || !usesRedirect) return null;
+
+  const isEditable = Boolean(onOAuth2ConfigChange);
+
+  const commit = (next: string[]): void => {
+    if (!isEditable) return;
+    onOAuth2ConfigChange?.({redirectUris: next});
+  };
+
+  const handleChange = (index: number, value: string): void => {
+    const next = [...uris];
+    next[index] = value;
+    if (value.trim()) {
+      setErrors((prev) => {
+        const copy = {...prev};
+        delete copy[index];
+        return copy;
+      });
+    }
+    commit(next);
+  };
+
+  const handleBlur = (index: number): void => {
+    const value = uris[index] ?? '';
+    if (!value.trim()) {
+      setErrors((prev) => ({
+        ...prev,
+        [index]: t('agents:edit.advanced.redirectUris.error.empty', 'URI cannot be empty'),
+      }));
+      return;
+    }
+    if (!isValidURL(value)) {
+      setErrors((prev) => ({
+        ...prev,
+        [index]: t('agents:edit.advanced.redirectUris.error.invalid', 'Enter a valid URL'),
+      }));
+    }
+  };
+
+  const handleAdd = (): void => {
+    commit([...uris, '']);
+  };
+
+  const handleRemove = (index: number): void => {
+    const next = uris.filter((_, i) => i !== index);
+    setErrors((prev) => {
+      const copy: Record<number, string> = {};
+      Object.entries(prev).forEach(([key, value]) => {
+        const i = parseInt(key, 10);
+        if (i < index) copy[i] = value;
+        else if (i > index) copy[i - 1] = value;
+      });
+      return copy;
+    });
+    commit(next);
+  };
+
+  return (
+    <SettingsCard
+      title={t('agents:edit.advanced.redirectUris.title', 'Redirect URIs')}
+      description={t(
+        'agents:edit.advanced.redirectUris.description',
+        'Allowed redirect destinations for the authorization code grant.',
+      )}
+    >
+      <FormControl fullWidth>
+        <Stack spacing={2}>
+          {isMissingRequiredUri && (
+            <Alert severity="error" data-testid="agent-redirect-uris-required">
+              {t(
+                'agents:edit.advanced.redirectUris.required',
+                'At least one valid redirect URI is required for the authorization code grant.',
+              )}
+            </Alert>
+          )}
+          {uris.map((uri, index) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <Stack key={index} direction="row" spacing={1} alignItems="flex-start">
+              <FormControl fullWidth required sx={{flex: 1}}>
+                <TextField
+                  fullWidth
+                  id={`agent-redirect-uri-${index}`}
+                  value={uri}
+                  onChange={(e) => handleChange(index, e.target.value)}
+                  onBlur={() => handleBlur(index)}
+                  error={!!errors[index]}
+                  helperText={errors[index]}
+                  placeholder="https://example.com/callback"
+                  disabled={!isEditable}
+                />
+              </FormControl>
+              {isEditable && (
+                <Tooltip title={t('common:actions.delete', 'Delete')}>
+                  <IconButton onClick={() => handleRemove(index)} color="error" sx={{mt: 1}}>
+                    <Trash size={20} />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Stack>
+          ))}
+          {isEditable && (
+            <Box>
+              <Button variant="outlined" startIcon={<Plus />} onClick={handleAdd} size="small">
+                {t('agents:edit.advanced.redirectUris.addUri', 'Add Redirect URI')}
+              </Button>
+            </Box>
+          )}
+        </Stack>
+      </FormControl>
+    </SettingsCard>
+  );
+}

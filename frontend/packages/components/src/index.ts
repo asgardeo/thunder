@@ -16,11 +16,14 @@
  * under the License.
  */
 
-/* -------------------------- LAB -------------------------- */
-
 // Components
 export {default as Helmet} from './Helmet/Helmet';
 export type {HelmetProps} from './Helmet/Helmet';
+export {default as I18nTextInput} from './I18nTextInput/I18nTextInput';
+export type {I18nTextInputLabels, I18nTextInputProps} from './I18nTextInput/I18nTextInput';
+
+/* -------------------------- LAB -------------------------- */
+
 export {default as BuilderFloatingPanel} from './lab/components/BuilderLayout/BuilderFloatingPanel';
 export {default as BuilderLayout} from './lab/components/BuilderLayout/BuilderLayout';
 export {default as BuilderPanelHeader} from './lab/components/BuilderLayout/BuilderPanelHeader';

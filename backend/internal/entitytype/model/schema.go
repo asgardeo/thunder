@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
 // JSON Schema type constants.
@@ -113,21 +113,27 @@ func (cs *Schema) ValidateAsDisplayAttribute(name string) DisplayAttributeStatus
 	return DisplayAttributeValid
 }
 
-// AttributeInfo holds an attribute name, its required status, and its human-readable display label.
-// DisplayName may be empty when the schema definition omits the `displayName` field;
+// AttributeInfo holds an attribute name, its required and credential status, and its human-readable
+// display label. DisplayName may be empty when the schema definition omits the `displayName` field;
 // callers should fall back to Attribute when rendering a label.
 type AttributeInfo struct {
 	Attribute   string
 	DisplayName string
 	Required    bool
+	Credential  bool
 }
 
-// GetNonCredentialAttributes returns top-level properties not marked as credentials.
-// When requiredOnly is true, only required properties are included.
-func (cs *Schema) GetNonCredentialAttributes(requiredOnly bool) []AttributeInfo {
+// GetAttributes returns top-level properties filtered by the provided flags.
+// allowCredential includes credential properties; allowNonCredential includes non-credential
+// properties. When requiredOnly is true, only required properties are included.
+func (cs *Schema) GetAttributes(allowCredential, allowNonCredential, requiredOnly bool) []AttributeInfo {
 	result := make([]AttributeInfo, 0, len(cs.properties))
 	for attr, prop := range cs.properties {
-		if prop.isCredential() {
+		isCredential := prop.isCredential()
+		if isCredential && !allowCredential {
+			continue
+		}
+		if !isCredential && !allowNonCredential {
 			continue
 		}
 		if requiredOnly && !prop.isRequired() {
@@ -137,21 +143,10 @@ func (cs *Schema) GetNonCredentialAttributes(requiredOnly bool) []AttributeInfo 
 			Attribute:   attr,
 			DisplayName: prop.getDisplayName(),
 			Required:    prop.isRequired(),
+			Credential:  isCredential,
 		})
 	}
 	return result
-}
-
-// GetCredentialAttributes returns the names of top-level properties marked as credentials.
-func (cs *Schema) GetCredentialAttributes() []string {
-	var fields []string
-	for name, prop := range cs.properties {
-		if prop.isCredential() {
-			fields = append(fields, name)
-		}
-	}
-
-	return fields
 }
 
 // GetUniqueAttributes returns the names of top-level properties marked as unique.

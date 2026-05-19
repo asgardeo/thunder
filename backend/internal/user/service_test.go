@@ -27,19 +27,19 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	entitypkg "github.com/asgardeo/thunder/internal/entity"
-	"github.com/asgardeo/thunder/internal/entitytype"
-	oupkg "github.com/asgardeo/thunder/internal/ou"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/security"
-	"github.com/asgardeo/thunder/internal/system/sysauthz"
-	"github.com/asgardeo/thunder/internal/system/utils"
-	"github.com/asgardeo/thunder/tests/mocks/entitymock"
-	"github.com/asgardeo/thunder/tests/mocks/entitytypemock"
-	"github.com/asgardeo/thunder/tests/mocks/oumock"
-	"github.com/asgardeo/thunder/tests/mocks/sysauthzmock"
+	entitypkg "github.com/thunder-id/thunderid/internal/entity"
+	"github.com/thunder-id/thunderid/internal/entitytype"
+	oupkg "github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/security"
+	"github.com/thunder-id/thunderid/internal/system/sysauthz"
+	"github.com/thunder-id/thunderid/internal/system/utils"
+	"github.com/thunder-id/thunderid/tests/mocks/entitymock"
+	"github.com/thunder-id/thunderid/tests/mocks/entitytypemock"
+	"github.com/thunder-id/thunderid/tests/mocks/oumock"
+	"github.com/thunder-id/thunderid/tests/mocks/sysauthzmock"
 )
 
 const (
@@ -699,8 +699,8 @@ func TestUserService_UpdateUserAttributes_SchemaValidationFails(t *testing.T) {
 		Once()
 
 	schemaMock := entitytypemock.NewEntityTypeServiceInterfaceMock(t)
-	schemaMock.On("GetCredentialAttributes", mock.Anything, mock.Anything, testUserType).
-		Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Once()
+	schemaMock.On("GetAttributes", mock.Anything, mock.Anything, testUserType, true, false, false).
+		Return([]entitytype.AttributeInfo{{Attribute: "password"}}, (*serviceerror.ServiceError)(nil)).Once()
 
 	service := &userService{
 		entityService:     storeMock,
@@ -728,8 +728,8 @@ func TestUserService_UpdateUserAttributes_Succeeds(t *testing.T) {
 		Once()
 
 	schemaMock := entitytypemock.NewEntityTypeServiceInterfaceMock(t)
-	schemaMock.On("GetCredentialAttributes", mock.Anything, mock.Anything, testUserType).
-		Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Once()
+	schemaMock.On("GetAttributes", mock.Anything, mock.Anything, testUserType, true, false, false).
+		Return([]entitytype.AttributeInfo{{Attribute: "password"}}, (*serviceerror.ServiceError)(nil)).Once()
 
 	service := &userService{
 		entityService:     storeMock,
@@ -754,8 +754,8 @@ func TestUserService_UpdateUserAttributes_RejectsCredentialAttributes(t *testing
 			Attributes: json.RawMessage(`{"email":"old@example.com"}`)}, nil).Once()
 
 	schemaMock := entitytypemock.NewEntityTypeServiceInterfaceMock(t)
-	schemaMock.On("GetCredentialAttributes", mock.Anything, mock.Anything, testUserType).
-		Return([]string{"password"}, (*serviceerror.ServiceError)(nil)).Once()
+	schemaMock.On("GetAttributes", mock.Anything, mock.Anything, testUserType, true, false, false).
+		Return([]entitytype.AttributeInfo{{Attribute: "password"}}, (*serviceerror.ServiceError)(nil)).Once()
 
 	service := &userService{
 		entityService:     storeMock,
@@ -1776,8 +1776,8 @@ func TestUserService_MoreErrorCases(t *testing.T) {
 			Return((*entitypkg.Entity)(nil), errors.New("db error")).Once()
 
 		// Mock all validation steps with broad matches to ensure they hit
-		entityTypeMock.On("GetCredentialAttributes", mock.Anything, mock.Anything).
-			Return([]string{}, (*serviceerror.ServiceError)(nil)).Maybe()
+		entityTypeMock.On("GetAttributes", mock.Anything, mock.Anything, mock.Anything, true, false, false).
+			Return([]entitytype.AttributeInfo{}, (*serviceerror.ServiceError)(nil)).Maybe()
 		ouServiceMock.On("IsOrganizationUnitExists", mock.Anything, mock.Anything).Return(true, nil).Maybe()
 		ouServiceMock.On("IsParent", mock.Anything, mock.Anything, mock.Anything).Return(true, nil).Maybe()
 		entityTypeMock.On("GetEntityTypeByName", mock.Anything, mock.Anything, mock.Anything).
@@ -2535,8 +2535,8 @@ func TestUserService_UpdateUserAttributes_PreFetchAndAuthzChecks(t *testing.T) {
 					}, nil).Once()
 
 				schemaMock := entitytypemock.NewEntityTypeServiceInterfaceMock(t)
-				schemaMock.On("GetCredentialAttributes", mock.Anything, mock.Anything, testUserType).
-					Return([]string{}, (*serviceerror.ServiceError)(nil)).Once()
+				schemaMock.On("GetAttributes", mock.Anything, mock.Anything, testUserType, true, false, false).
+					Return([]entitytype.AttributeInfo{}, (*serviceerror.ServiceError)(nil)).Once()
 
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 				authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
@@ -2563,8 +2563,8 @@ func TestUserService_UpdateUserAttributes_PreFetchAndAuthzChecks(t *testing.T) {
 					}, nil).Once()
 
 				schemaMock := entitytypemock.NewEntityTypeServiceInterfaceMock(t)
-				schemaMock.On("GetCredentialAttributes", mock.Anything, mock.Anything, testUserType).
-					Return([]string{}, (*serviceerror.ServiceError)(nil)).Once()
+				schemaMock.On("GetAttributes", mock.Anything, mock.Anything, testUserType, true, false, false).
+					Return([]entitytype.AttributeInfo{}, (*serviceerror.ServiceError)(nil)).Once()
 
 				authzMock := sysauthzmock.NewSystemAuthorizationServiceInterfaceMock(t)
 				authzMock.On("IsActionAllowed", mock.Anything, mock.Anything, mock.Anything).
@@ -2870,8 +2870,8 @@ func TestUpdateUserAttributes_DeclarativeResource(t *testing.T) {
 	storeMock.On("IsEntityDeclarative", mock.Anything, userID).Return(true, nil).Once()
 
 	schemaMock := entitytypemock.NewEntityTypeServiceInterfaceMock(t)
-	schemaMock.On("GetCredentialAttributes", mock.Anything, mock.Anything, "employee").
-		Return([]string{}, (*serviceerror.ServiceError)(nil)).Once()
+	schemaMock.On("GetAttributes", mock.Anything, mock.Anything, "employee", true, false, false).
+		Return([]entitytype.AttributeInfo{}, (*serviceerror.ServiceError)(nil)).Once()
 
 	service := &userService{
 		entityService:     storeMock,
@@ -2902,8 +2902,8 @@ func TestUpdateUserAttributes_DeclarativeCheckError(t *testing.T) {
 	storeMock.On("IsEntityDeclarative", mock.Anything, userID).Return(false, storeErr).Once()
 
 	schemaMock := entitytypemock.NewEntityTypeServiceInterfaceMock(t)
-	schemaMock.On("GetCredentialAttributes", mock.Anything, mock.Anything, "employee").
-		Return([]string{}, (*serviceerror.ServiceError)(nil)).Once()
+	schemaMock.On("GetAttributes", mock.Anything, mock.Anything, "employee", true, false, false).
+		Return([]entitytype.AttributeInfo{}, (*serviceerror.ServiceError)(nil)).Once()
 
 	service := &userService{
 		entityService:     storeMock,

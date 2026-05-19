@@ -32,7 +32,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/asgardeo/thunder/tests/integration/testutils"
+	"github.com/thunder-id/thunderid/tests/integration/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -276,7 +276,7 @@ func (ts *UserInfoTestSuite) createTestApplication(authFlowID string) string {
 					"scopes":                  []string{"openid", "profile", "email"},
 					"token": map[string]interface{}{
 						"idToken": map[string]interface{}{
-							"userAttributes": []string{"email", "given_name", "family_name", "name"},
+							"userAttributes": []string{"email", "given_name", "family_name"},
 						},
 					},
 					"scopeClaims": map[string][]string{

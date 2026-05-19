@@ -82,6 +82,7 @@ describe('ExportPage', () => {
           applications: ['*'],
           identityProviders: ['*'],
           flows: ['*'],
+          groups: ['*'],
         }),
       );
     });

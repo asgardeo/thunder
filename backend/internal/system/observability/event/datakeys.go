@@ -30,7 +30,7 @@ var DataKey = struct {
 	UserID   string
 	Username string
 	ClientID string
-	AppID    string
+	EntityID string
 
 	// Flow Execution Keys
 	ExecutionID   string
@@ -68,7 +68,7 @@ var DataKey = struct {
 	UserID:   "user_id",
 	Username: "username",
 	ClientID: "client_id",
-	AppID:    "app_id",
+	EntityID: "app_id",
 
 	// Flow Execution Keys
 	ExecutionID:   "execution_id",

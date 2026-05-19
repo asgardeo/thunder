@@ -26,7 +26,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/asgardeo/thunder/tests/integration/testutils"
+	"github.com/thunder-id/thunderid/tests/integration/testutils"
 )
 
 const testServerURL = "https://localhost:8095"
@@ -41,6 +41,12 @@ func InitiateAuthenticationFlow(appID string, verbose bool, inputs map[string]st
 func InitiateRegistrationFlow(appID string, verbose bool, inputs map[string]string, action string) (
 	*FlowStep, error) {
 	return initiateFlow(appID, "REGISTRATION", verbose, inputs, action)
+}
+
+// InitiateRecoveryFlow initiates the recovery flow
+func InitiateRecoveryFlow(appID string, verbose bool, inputs map[string]string, action string) (
+	*FlowStep, error) {
+	return initiateFlow(appID, "RECOVERY", verbose, inputs, action)
 }
 
 // initiateFlow is a generic helper to initiate a flow of a given type
@@ -506,6 +512,29 @@ func WaitAndValidateNotification(mockServer interface{}, expectedCount int, time
 	// This would need to be implemented based on the specific mock server interface
 	// For now, we'll return a placeholder
 	return fmt.Errorf("notification validation not implemented - should be customized per mock server type")
+}
+
+// RetryWithBackoff retries an operation with exponential backoff
+// This helps handle transient failures that may occur under resource constraints
+func RetryWithBackoff(operation func() error, maxRetries int, initialDelay time.Duration) error {
+	var lastErr error
+	delay := initialDelay
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		lastErr = operation()
+		if lastErr == nil {
+			return nil
+		}
+
+		// Don't sleep after the last attempt
+		if attempt < maxRetries-1 {
+			time.Sleep(delay)
+			// Exponential backoff: double the delay for next attempt
+			delay *= 2
+		}
+	}
+
+	return fmt.Errorf("operation failed after %d attempts: %w", maxRetries, lastErr)
 }
 
 // GenerateUniqueUsername generates a unique username using the given prefix

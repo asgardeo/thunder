@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025-2026, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,14 +16,29 @@
  * under the License.
  */
 
-import {AcrylicOrangeTheme, OxygenUIThemeProvider} from '@wso2/oxygen-ui';
+import {useConfig} from '@thunderid/contexts';
+import {DefaultTheme} from '@thunderid/design';
+import {createOxygenTheme, OxygenUIThemeProvider, HighContrastTheme} from '@wso2/oxygen-ui';
 import type {JSX, ComponentType} from 'react';
 import Head from '../components/Head';
 
 export default function withTheme<P extends object>(WrappedComponent: ComponentType<P>) {
   return function WithTheme(props: P): JSX.Element {
+    const {config} = useConfig();
+
     return (
-      <OxygenUIThemeProvider theme={AcrylicOrangeTheme}>
+      <OxygenUIThemeProvider
+        themes={[
+          {key: 'highContrast', label: 'High Contrast Theme', theme: HighContrastTheme},
+          {key: 'default', label: 'Default Theme', theme: DefaultTheme},
+          ...(config?.brand?.design?.themes?.map((theme) => ({
+            key: theme.key,
+            label: theme.label,
+            theme: typeof theme.theme === 'string' ? theme.theme : createOxygenTheme(theme.theme),
+          })) ?? []),
+        ]}
+        initialTheme={config?.brand?.design?.initialTheme ?? 'default'}
+      >
         <Head />
         <WrappedComponent {...props} />
       </OxygenUIThemeProvider>

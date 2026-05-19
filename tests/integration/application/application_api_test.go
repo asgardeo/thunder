@@ -29,7 +29,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/asgardeo/thunder/tests/integration/testutils"
+	"github.com/thunder-id/thunderid/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -4955,4 +4955,194 @@ func (ts *ApplicationAPITestSuite) TestApplicationUserInfoInvalidSigningAlgRejec
 	_, err := createApplication(app)
 	ts.Require().Error(err, "Creating an app with an unsupported signingAlg should fail")
 	ts.Assert().Contains(err.Error(), "400", "Expected HTTP 400 for unsupported signingAlg")
+}
+
+// ---------------------------------------------------------------------------
+// IDToken responseType validation tests
+// ---------------------------------------------------------------------------
+
+const testEncJWKS = `{"keys":[{"kty":"RSA","use":"enc","alg":"RSA-OAEP-256","n":"0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw","e":"AQAB"}]}`
+
+// TestIDTokenResponseType_JWE_ValidConfig creates an app with responseType=JWE and verifies the fields round-trip.
+func (ts *ApplicationAPITestSuite) TestIDTokenResponseType_JWE_ValidConfig() {
+	app := Application{
+		OUID:        testOUID,
+		Name:        "IDToken JWE Response Type Test",
+		Description: "Test responseType=JWE for ID token",
+		URL:         "https://idtoken-jwe.example.com",
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					RedirectURIs:            []string{"https://idtoken-jwe.example.com/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					Scopes:                  []string{"openid"},
+					Certificate:             &ApplicationCert{Type: "JWKS", Value: testEncJWKS},
+					Token: &OAuthTokenConfig{
+						IDToken: &IDTokenConfig{
+							ResponseType:  "JWE",
+							EncryptionAlg: "RSA-OAEP-256",
+							EncryptionEnc: "A256GCM",
+						},
+					},
+				},
+			},
+		},
+	}
+	app.AuthFlowID = defaultAuthFlowID
+	app.RegistrationFlowID = defaultRegistrationFlowID
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	retrieved, err := getApplicationByID(appID)
+	ts.Require().NoError(err)
+	idToken := retrieved.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken
+	ts.Assert().Equal("JWE", idToken.ResponseType)
+	ts.Assert().Equal("RSA-OAEP-256", idToken.EncryptionAlg)
+	ts.Assert().Equal("A256GCM", idToken.EncryptionEnc)
+}
+
+// TestIDTokenResponseType_NESTED_JWT_ValidConfig creates an app with responseType=NESTED_JWT.
+func (ts *ApplicationAPITestSuite) TestIDTokenResponseType_NESTED_JWT_ValidConfig() {
+	app := Application{
+		OUID:        testOUID,
+		Name:        "IDToken NESTED_JWT Response Type Test",
+		Description: "Test responseType=NESTED_JWT for ID token",
+		URL:         "https://idtoken-nested.example.com",
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					RedirectURIs:            []string{"https://idtoken-nested.example.com/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					Scopes:                  []string{"openid"},
+					Certificate:             &ApplicationCert{Type: "JWKS", Value: testEncJWKS},
+					Token: &OAuthTokenConfig{
+						IDToken: &IDTokenConfig{
+							ResponseType:  "NESTED_JWT",
+							EncryptionAlg: "RSA-OAEP-256",
+							EncryptionEnc: "A256GCM",
+						},
+					},
+				},
+			},
+		},
+	}
+	app.AuthFlowID = defaultAuthFlowID
+	app.RegistrationFlowID = defaultRegistrationFlowID
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	retrieved, err := getApplicationByID(appID)
+	ts.Require().NoError(err)
+	idToken := retrieved.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken
+	ts.Assert().Equal("NESTED_JWT", idToken.ResponseType)
+	ts.Assert().Equal("RSA-OAEP-256", idToken.EncryptionAlg)
+	ts.Assert().Equal("A256GCM", idToken.EncryptionEnc)
+}
+
+// TestIDTokenResponseType_JWT_WithEncryptionAlg is rejected — encryption fields not allowed for JWT.
+func (ts *ApplicationAPITestSuite) TestIDTokenResponseType_JWT_WithEncryptionAlg() {
+	app := Application{
+		OUID:        testOUID,
+		Name:        "IDToken JWT With EncryptionAlg",
+		Description: "Expect 400 when JWT responseType has encryptionAlg",
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					RedirectURIs:            []string{"https://idtoken-jwt.example.com/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					Token: &OAuthTokenConfig{
+						IDToken: &IDTokenConfig{
+							ResponseType:  "JWT",
+							EncryptionAlg: "RSA-OAEP-256",
+						},
+					},
+				},
+			},
+		},
+	}
+	app.AuthFlowID = defaultAuthFlowID
+	app.RegistrationFlowID = defaultRegistrationFlowID
+
+	_, err := createApplication(app)
+	ts.Require().Error(err)
+	ts.Assert().Contains(err.Error(), "400")
+}
+
+// TestIDTokenResponseType_JWE_MissingEncFields is rejected — JWE requires both alg and enc.
+func (ts *ApplicationAPITestSuite) TestIDTokenResponseType_JWE_MissingEncFields() {
+	app := Application{
+		OUID:        testOUID,
+		Name:        "IDToken JWE Missing Enc Fields",
+		Description: "Expect 400 when JWE responseType lacks encryptionAlg/Enc",
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					RedirectURIs:            []string{"https://idtoken-jwe.example.com/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					Token: &OAuthTokenConfig{
+						IDToken: &IDTokenConfig{
+							ResponseType: "JWE",
+						},
+					},
+				},
+			},
+		},
+	}
+	app.AuthFlowID = defaultAuthFlowID
+	app.RegistrationFlowID = defaultRegistrationFlowID
+
+	_, err := createApplication(app)
+	ts.Require().Error(err)
+	ts.Assert().Contains(err.Error(), "400")
+}
+
+// TestIDTokenResponseType_Empty_DefaultsToJWT verifies that omitting responseType defaults to JWT behaviour.
+func (ts *ApplicationAPITestSuite) TestIDTokenResponseType_Empty_DefaultsToJWT() {
+	app := Application{
+		OUID:        testOUID,
+		Name:        "IDToken Default ResponseType Test",
+		Description: "Omitting responseType should default to JWT with no error",
+		URL:         "https://idtoken-default.example.com",
+		InboundAuthConfig: []InboundAuthConfig{
+			{
+				Type: "oauth2",
+				OAuthAppConfig: &OAuthAppConfig{
+					RedirectURIs:            []string{"https://idtoken-default.example.com/callback"},
+					GrantTypes:              []string{"authorization_code"},
+					ResponseTypes:           []string{"code"},
+					TokenEndpointAuthMethod: "client_secret_basic",
+					Scopes:                  []string{"openid"},
+					Token: &OAuthTokenConfig{
+						IDToken: &IDTokenConfig{ValidityPeriod: 3600},
+					},
+				},
+			},
+		},
+	}
+	app.AuthFlowID = defaultAuthFlowID
+	app.RegistrationFlowID = defaultRegistrationFlowID
+
+	appID, err := createApplication(app)
+	ts.Require().NoError(err)
+	defer deleteApplication(appID)
+
+	retrieved, err := getApplicationByID(appID)
+	ts.Require().NoError(err)
+	ts.Assert().Equal(int64(3600), retrieved.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ValidityPeriod)
 }

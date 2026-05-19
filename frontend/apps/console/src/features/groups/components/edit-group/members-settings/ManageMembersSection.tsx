@@ -19,7 +19,7 @@
 import {SettingsCard, getInitials} from '@thunderid/components';
 import {useDataGridLocaleText} from '@thunderid/hooks';
 import {Box, Avatar, DataGrid, IconButton} from '@wso2/oxygen-ui';
-import {AppWindow, Trash2, User, Users} from '@wso2/oxygen-ui-icons-react';
+import {AppWindow, Bot, Trash2, User, Users} from '@wso2/oxygen-ui-icons-react';
 import {useState, useMemo, type JSX, type ReactNode} from 'react';
 import {useTranslation} from 'react-i18next';
 import useGetGroupMembers from '../../../api/useGetGroupMembers';
@@ -80,7 +80,9 @@ export default function ManageMembersSection({
               {params.row.type === 'user' && <User size={14} />}
               {params.row.type === 'group' && <Users size={14} />}
               {params.row.type === 'app' && <AppWindow size={14} />}
-              {!['user', 'group', 'app'].includes(params.row.type) && getInitials(params.row.display ?? params.row.id)}
+              {params.row.type === 'agent' && <Bot size={14} />}
+              {!['user', 'group', 'app', 'agent'].includes(params.row.type) &&
+                getInitials(params.row.display ?? params.row.id)}
             </Avatar>
           </Box>
         ),

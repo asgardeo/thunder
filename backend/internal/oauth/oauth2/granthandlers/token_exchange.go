@@ -21,13 +21,13 @@ package granthandlers
 import (
 	"context"
 
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/resourceindicators"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
-	"github.com/asgardeo/thunder/internal/resource"
-	"github.com/asgardeo/thunder/internal/system/log"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/resourceindicators"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
+	"github.com/thunder-id/thunderid/internal/resource"
+	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
 // tokenExchangeGrantHandler handles the token exchange grant type.
@@ -136,7 +136,7 @@ func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenReques
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "TokenExchangeGrantHandler"))
 
 	// Validate and extract subject token claims
-	subjectClaims, err := h.tokenValidator.ValidateSubjectToken(tokenRequest.SubjectToken, oauthApp)
+	subjectClaims, err := h.tokenValidator.ValidateSubjectToken(ctx, tokenRequest.SubjectToken, oauthApp)
 	if err != nil {
 		logger.Debug("Failed to validate subject token", log.Error(err))
 		return nil, &model.ErrorResponse{
@@ -148,7 +148,7 @@ func (h *tokenExchangeGrantHandler) HandleGrant(ctx context.Context, tokenReques
 	// Validate and extract actor token claims if present
 	var actorClaims *tokenservice.SubjectTokenClaims
 	if tokenRequest.ActorToken != "" {
-		actorClaims, err = h.tokenValidator.ValidateSubjectToken(tokenRequest.ActorToken, oauthApp)
+		actorClaims, err = h.tokenValidator.ValidateSubjectToken(ctx, tokenRequest.ActorToken, oauthApp)
 		if err != nil {
 			logger.Debug("Failed to validate actor token", log.Error(err))
 			return nil, &model.ErrorResponse{

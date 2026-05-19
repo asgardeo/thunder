@@ -22,8 +22,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/asgardeo/thunder/internal/system/config"
-	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"

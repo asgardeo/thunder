@@ -83,7 +83,7 @@ func (s *CredentialTestSuite) TestIsCredential_ArrayReturnsFalse() {
 	s.Require().False(schema.properties["tags"].isCredential())
 }
 
-func (s *CredentialTestSuite) TestGetCredentialAttributes_ReturnsOnlyCredentialProperties() {
+func (s *CredentialTestSuite) TestGetAttributes_CredentialOnly_ReturnsOnlyCredentialProperties() {
 	schema, err := CompileSchema(json.RawMessage(`{
 		"password": {"type": "string", "credential": true},
 		"apiKey": {"type": "string", "credential": true},
@@ -93,20 +93,25 @@ func (s *CredentialTestSuite) TestGetCredentialAttributes_ReturnsOnlyCredentialP
 	}`))
 	s.Require().NoError(err)
 
-	fields := schema.GetCredentialAttributes()
-	sort.Strings(fields)
-	s.Require().Equal([]string{"apiKey", "password"}, fields)
+	attrs := schema.GetAttributes(true, false, false)
+	names := make([]string, 0, len(attrs))
+	for _, a := range attrs {
+		names = append(names, a.Attribute)
+		s.True(a.Credential, "credential attribute must have Credential=true")
+	}
+	sort.Strings(names)
+	s.Require().Equal([]string{"apiKey", "password"}, names)
 }
 
-func (s *CredentialTestSuite) TestGetCredentialAttributes_EmptyWhenNoCredentials() {
+func (s *CredentialTestSuite) TestGetAttributes_CredentialOnly_EmptyWhenNoCredentials() {
 	schema, err := CompileSchema(json.RawMessage(`{
 		"email": {"type": "string"},
 		"age": {"type": "number"}
 	}`))
 	s.Require().NoError(err)
 
-	fields := schema.GetCredentialAttributes()
-	s.Require().Empty(fields)
+	attrs := schema.GetAttributes(true, false, false)
+	s.Require().Empty(attrs)
 }
 
 func (s *CredentialTestSuite) TestCredentialFieldDefaultsFalse() {

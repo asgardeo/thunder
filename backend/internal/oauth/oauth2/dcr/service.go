@@ -25,18 +25,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/asgardeo/thunder/internal/application"
-	"github.com/asgardeo/thunder/internal/application/model"
-	"github.com/asgardeo/thunder/internal/cert"
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	oauthutils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
-	"github.com/asgardeo/thunder/internal/ou"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/transaction"
-	sysutils "github.com/asgardeo/thunder/internal/system/utils"
+	"github.com/thunder-id/thunderid/internal/application"
+	"github.com/thunder-id/thunderid/internal/application/model"
+	"github.com/thunder-id/thunderid/internal/cert"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	oauthutils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
+	"github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/transaction"
+	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
 
 // DCRServiceInterface defines the interface for the DCR service.
@@ -84,7 +84,7 @@ func (ds *dcrService) RegisterClient(ctx context.Context, request *DCRRegistrati
 
 	// TODO: Revisit OU for DCR apps
 	if request.OUID == "" {
-		rootOUs, svcErr := ds.ouService.GetOrganizationUnitList(ctx, 1, 0)
+		rootOUs, svcErr := ds.ouService.GetOrganizationUnitList(ctx, 1, 0, nil)
 		if svcErr != nil {
 			logger.Error("Failed to retrieve root organization units for DCR",
 				log.String("error", svcErr.Error.DefaultValue))
@@ -233,7 +233,7 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 		appName = application.AppI18nRef(appID, "name")
 	}
 
-	oauthAppConfig := &model.OAuthAppConfigDTO{
+	oauthAppConfig := &inboundmodel.OAuthConfigWithSecret{
 		ClientID:                           clientID,
 		RedirectURIs:                       request.RedirectURIs,
 		GrantTypes:                         request.GrantTypes,
@@ -244,12 +244,13 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 		RequirePushedAuthorizationRequests: request.RequirePushedAuthorizationRequests,
 		Scopes:                             scopes,
 		UserInfo:                           buildUserInfoConfig(request),
+		Token:                              buildTokenConfig(request),
 	}
 
-	inboundAuthConfig := []model.InboundAuthConfigDTO{
+	inboundAuthConfig := []inboundmodel.InboundAuthConfigWithSecret{
 		{
-			Type:           model.OAuthInboundAuthType,
-			OAuthAppConfig: oauthAppConfig,
+			Type:        inboundmodel.OAuthInboundAuthType,
+			OAuthConfig: oauthAppConfig,
 		},
 	}
 
@@ -263,7 +264,9 @@ func (ds *dcrService) convertDCRToApplication(request *DCRRegistrationRequest) (
 		TosURI:            request.TosURI,
 		PolicyURI:         request.PolicyURI,
 		Contacts:          request.Contacts,
-		Certificate:       appCertificate,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			Certificate: appCertificate,
+		},
 	}
 
 	return appDTO, nil
@@ -297,14 +300,35 @@ func buildUserInfoConfig(request *DCRRegistrationRequest) *inboundmodel.UserInfo
 	}
 }
 
+// buildTokenConfig builds the OAuthTokenConfig from DCR request fields.
+func buildTokenConfig(request *DCRRegistrationRequest) *inboundmodel.OAuthTokenConfig {
+	idToken := buildIDTokenConfig(request)
+	if idToken == nil {
+		return nil
+	}
+	return &inboundmodel.OAuthTokenConfig{IDToken: idToken}
+}
+
+// buildIDTokenConfig maps ID token encryption fields from a DCR request to an IDTokenConfig.
+func buildIDTokenConfig(request *DCRRegistrationRequest) *inboundmodel.IDTokenConfig {
+	if request.IDTokenEncryptedResponseAlg == "" && request.IDTokenEncryptedResponseEnc == "" {
+		return nil
+	}
+	return &inboundmodel.IDTokenConfig{
+		ResponseType:  inboundmodel.IDTokenResponseTypeJWE,
+		EncryptionAlg: request.IDTokenEncryptedResponseAlg,
+		EncryptionEnc: request.IDTokenEncryptedResponseEnc,
+	}
+}
+
 // convertApplicationToDCRResponse converts Application DTO to DCR registration response.
 func (ds *dcrService) convertApplicationToDCRResponse(appDTO *model.ApplicationDTO, originalClientName string) (
 	*DCRRegistrationResponse, *serviceerror.ServiceError) {
-	if len(appDTO.InboundAuthConfig) == 0 || appDTO.InboundAuthConfig[0].OAuthAppConfig == nil {
-		return &DCRRegistrationResponse{}, nil
+	if len(appDTO.InboundAuthConfig) == 0 || appDTO.InboundAuthConfig[0].OAuthConfig == nil {
+		return nil, &ErrorServerError
 	}
 
-	oauthConfig := appDTO.InboundAuthConfig[0].OAuthAppConfig
+	oauthConfig := appDTO.InboundAuthConfig[0].OAuthConfig
 
 	clientName := originalClientName
 	if clientName == "" {
@@ -333,6 +357,12 @@ func (ds *dcrService) convertApplicationToDCRResponse(appDTO *model.ApplicationD
 		userInfoEncryptedEnc = oauthConfig.UserInfo.EncryptionEnc
 	}
 
+	var idTokenEncryptedAlg, idTokenEncryptedEnc string
+	if oauthConfig.Token != nil && oauthConfig.Token.IDToken != nil {
+		idTokenEncryptedAlg = oauthConfig.Token.IDToken.EncryptionAlg
+		idTokenEncryptedEnc = oauthConfig.Token.IDToken.EncryptionEnc
+	}
+
 	response := &DCRRegistrationResponse{
 		ClientID:                           oauthConfig.ClientID,
 		ClientSecret:                       oauthConfig.ClientSecret,
@@ -350,11 +380,13 @@ func (ds *dcrService) convertApplicationToDCRResponse(appDTO *model.ApplicationD
 		TosURI:                             appDTO.TosURI,
 		PolicyURI:                          appDTO.PolicyURI,
 		Contacts:                           appDTO.Contacts,
-		AppID:                              oauthConfig.AppID,
+		AppID:                              appDTO.ID,
 		RequirePushedAuthorizationRequests: oauthConfig.RequirePushedAuthorizationRequests,
 		UserInfoSignedResponseAlg:          userInfoSignedAlg,
 		UserInfoEncryptedResponseAlg:       userInfoEncryptedAlg,
 		UserInfoEncryptedResponseEnc:       userInfoEncryptedEnc,
+		IDTokenEncryptedResponseAlg:        idTokenEncryptedAlg,
+		IDTokenEncryptedResponseEnc:        idTokenEncryptedEnc,
 	}
 
 	return response, nil

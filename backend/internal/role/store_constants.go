@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"strings"
 
-	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
+	dbmodel "github.com/thunder-id/thunderid/internal/system/database/model"
 )
 
 var (
@@ -108,6 +108,12 @@ var (
 		ID: "RLQ-ROLE_MGT-13",
 		Query: `DELETE FROM "ROLE_ASSIGNMENT" ` +
 			`WHERE ROLE_ID = $1 AND ASSIGNEE_TYPE = $2 AND ASSIGNEE_ID = $3 AND DEPLOYMENT_ID = $4`,
+	}
+
+	// queryDeleteAllRoleAssignments deletes all assignments for a role (used for cascade delete).
+	queryDeleteAllRoleAssignments = dbmodel.DBQuery{
+		ID:    "RLQ-ROLE_MGT-19",
+		Query: `DELETE FROM "ROLE_ASSIGNMENT" WHERE ROLE_ID = $1 AND DEPLOYMENT_ID = $2`,
 	}
 
 	// queryCheckRoleNameExists checks if a role name already exists for a given organization unit.

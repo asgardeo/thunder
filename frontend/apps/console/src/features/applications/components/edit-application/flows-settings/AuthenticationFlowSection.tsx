@@ -42,6 +42,10 @@ interface AuthenticationFlowSectionProps {
    * @param value - The new value for the field
    */
   onFieldChange: (field: keyof Application, value: unknown) => void;
+  /**
+   * Singular noun used to refer to the entity in user-visible copy (default: 'application').
+   */
+  entityLabel?: string;
 }
 
 /**
@@ -60,6 +64,7 @@ export default function AuthenticationFlowSection({
   application,
   editedApp,
   onFieldChange,
+  entityLabel = 'application',
 }: AuthenticationFlowSectionProps) {
   const {t} = useTranslation();
   const {data: authFlowsData, isLoading: loadingAuthFlows} = useGetFlows({flowType: FlowType.AUTHENTICATION});
@@ -101,7 +106,11 @@ export default function AuthenticationFlowSection({
           <TextField
             {...params}
             placeholder={t('applications:edit.flows.authFlow.placeholder')}
-            helperText={t('applications:edit.flows.authFlow.hint')}
+            helperText={t(
+              'applications:edit.flows.authFlow.hint',
+              'Select the flow that handles user sign-in for this {{entity}}.',
+              {entity: entityLabel},
+            )}
             InputProps={{
               ...params.InputProps,
               endAdornment: (

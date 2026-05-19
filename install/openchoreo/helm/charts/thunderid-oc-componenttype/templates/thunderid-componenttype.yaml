@@ -23,6 +23,40 @@ metadata:
     openchoreo.dev/description: "ThunderID ComponentType"
     openchoreo.dev/display-name: "ThunderID"
 spec:
+  workloadType: deployment
+  parameters:
+    openAPIV3Schema:
+      type: object
+      properties:
+        image:
+          type: string
+          default: "ghcr.io/thunder-id/thunderid:latest"
+        runtime:
+          type: object
+          properties:
+            imagePullPolicy:
+              type: string
+              enum: [Always, IfNotPresent, Never]
+              default: "Always"
+            gate:
+              type: object
+              properties:
+                clientBase: { type: string, default: "/gate" }
+            console:
+              type: object
+              properties:
+                clientBase: { type: string, default: "/console" }
+                clientId: { type: string, default: "CONSOLE" }
+                scopes: { type: string, default: "[\"openid\", \"profile\", \"email\"]" }
+            dbType:
+              type: string
+              enum: [sqlite, postgres]
+              default: "sqlite"
+            dbStorageSize:
+              type: string
+              default: "1Gi"
+
+  # ─── EnvironmentConfigs (infra + per-environment config set via ReleaseBinding) ─
   environmentConfigs:
     openAPIV3Schema:
       properties:

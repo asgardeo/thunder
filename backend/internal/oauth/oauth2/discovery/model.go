@@ -46,6 +46,8 @@ type OIDCProviderMetadata struct {
 	UserInfoSigningAlgValuesSupported    []string `json:"userinfo_signing_alg_values_supported,omitempty"`
 	UserInfoEncryptionAlgValuesSupported []string `json:"userinfo_encryption_alg_values_supported,omitempty"`
 	UserInfoEncryptionEncValuesSupported []string `json:"userinfo_encryption_enc_values_supported,omitempty"`
+	IDTokenEncryptionAlgValuesSupported  []string `json:"id_token_encryption_alg_values_supported,omitempty"`
+	IDTokenEncryptionEncValuesSupported  []string `json:"id_token_encryption_enc_values_supported,omitempty"`
 	ClaimsSupported                      []string `json:"claims_supported"`
 	ClaimsParameterSupported             bool     `json:"claims_parameter_supported"`
 	EndSessionEndpoint                   string   `json:"end_session_endpoint,omitempty"`

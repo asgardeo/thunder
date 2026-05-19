@@ -31,6 +31,8 @@ const (
 	FlowTypeRegistration FlowType = "REGISTRATION"
 	// FlowTypeUserOnboarding represents an admin-initiated user onboarding flow.
 	FlowTypeUserOnboarding FlowType = "USER_ONBOARDING"
+	// FlowTypeRecovery represents a flow execution for account recovery (e.g., password reset).
+	FlowTypeRecovery FlowType = "RECOVERY"
 )
 
 // FlowStatus defines the status of a flow execution.
@@ -166,8 +168,6 @@ const (
 	// NodePropertyOUResolveFrom specifies the strategy for resolving the organization unit.
 	// Supported values: "caller" (use the caller's OU).
 	NodePropertyOUResolveFrom = "resolveFrom"
-	// NodePropertyRecipientAttribute specifies the destination parameter to use for verification (e.g., email, phone).
-	NodePropertyRecipientAttribute = "destinationAttribute"
 	// NodePropertyAuthMethodMapping maps authentication classes to action refs on login_options PROMPT nodes.
 	NodePropertyAuthMethodMapping = "authMethodMapping"
 )
@@ -215,12 +215,9 @@ const (
 	RuntimeKeySkipDelivery = "skipDelivery"
 	// RuntimeKeyCandidateUsers holds serialized candidate users during disambiguation in resolve mode.
 	RuntimeKeyCandidateUsers = "candidateUsers"
-	// RuntimeKeyPresentedOptionalAttrs holds a space-separated list of optional schema attribute
-	// identifiers that have already been prompted to the user. ProvisioningExecutor uses this to
-	// skip optional attrs the user has already been shown, even if they left the value empty.
-	// TODO: Revisit optional input tracking — if the flow engine gains a mechanism to detect whether
-	// an optional field was intentionally skipped, remove this key and its associated helper methods.
-	RuntimeKeyPresentedOptionalAttrs = "provisioningPresentedOptionalAttrs"
+	// RuntimeKeyPresentedOptionalInputs holds a space-separated list of optional input identifiers
+	// that have already been prompted to the user, even if the user left them empty.
+	RuntimeKeyPresentedOptionalInputs = "presentedOptionalInputs"
 	// RuntimeKeySMSOTPMobileNumber holds the resolved mobile number for SMS OTP verification.
 	// TODO: Revisit when the generic OTP executor is implemented.
 	RuntimeKeySMSOTPMobileNumber = "smsOTPMobileNumber"
@@ -229,8 +226,6 @@ const (
 	RuntimeKeySMSOTPPhoneAttr = "smsOTPPhoneAttr"
 	// RuntimeKeyMagicLinkUsedJti is the JWT ID claim value of a magic link token that has already been used.
 	RuntimeKeyMagicLinkUsedJti = "magicLinkUsedJti"
-	// InvalidMagicLinkToken is the error message for invalid magic link tokens.
-	InvalidMagicLinkToken = "Invalid magic link token"
 	// RuntimeKeyOAuthState holds the generated OAuth state parameter for CSRF validation.
 	RuntimeKeyOAuthState = "oauthState"
 	// RuntimeKeyRequestedAuthClasses holds the space-separated ACR values from acr_values.

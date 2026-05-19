@@ -22,8 +22,8 @@ import (
 	"context"
 	"errors"
 
-	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
+	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 )
 
 var (
@@ -118,6 +118,16 @@ func (c *compositeIDPStore) GetIdentityProviderByName(ctx context.Context, idpNa
 	return declarativeresource.CompositeGetHelper(
 		func() (*IDPDTO, error) { return c.dbStore.GetIdentityProviderByName(ctx, idpName) },
 		func() (*IDPDTO, error) { return c.fileStore.GetIdentityProviderByName(ctx, idpName) },
+		ErrIDPNotFound,
+	)
+}
+
+// GetIdentityProviderByIssuer retrieves an identity provider by its issuer property from either store.
+// Checks database store first, then falls back to file store.
+func (c *compositeIDPStore) GetIdentityProviderByIssuer(ctx context.Context, issuer string) (*IDPDTO, error) {
+	return declarativeresource.CompositeGetHelper(
+		func() (*IDPDTO, error) { return c.dbStore.GetIdentityProviderByIssuer(ctx, issuer) },
+		func() (*IDPDTO, error) { return c.fileStore.GetIdentityProviderByIssuer(ctx, issuer) },
 		ErrIDPNotFound,
 	)
 }

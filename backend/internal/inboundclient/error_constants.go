@@ -21,8 +21,8 @@ package inboundclient
 import (
 	"errors"
 
-	"github.com/asgardeo/thunder/internal/cert"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/cert"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 )
 
 var (
@@ -48,6 +48,8 @@ var (
 	ErrFKInvalidAuthFlow = errors.New("invalid auth flow ID")
 	// ErrFKInvalidRegistrationFlow is returned when the registration flow ID does not exist.
 	ErrFKInvalidRegistrationFlow = errors.New("invalid registration flow ID")
+	// ErrFKInvalidRecoveryFlow is returned when the recovery flow ID does not exist.
+	ErrFKInvalidRecoveryFlow = errors.New("invalid recovery flow ID")
 	// ErrFKFlowDefinitionRetrievalFailed is returned when a flow definition cannot be retrieved.
 	ErrFKFlowDefinitionRetrievalFailed = errors.New("error retrieving flow definition")
 	// ErrFKFlowServerError is returned when a server error occurs while resolving a flow.
@@ -58,6 +60,12 @@ var (
 	ErrFKLayoutNotFound = errors.New("layout not found")
 	// ErrFKInvalidUserType is returned when the specified user type is invalid.
 	ErrFKInvalidUserType = errors.New("invalid user type")
+	// ErrUserSchemaLookupFailed is returned when the user-schema service fails (e.g. DB outage)
+	// while validating allowed user types. Distinct from ErrFKInvalidUserType so the handler
+	// can map it to a server error instead of a client validation error.
+	ErrUserSchemaLookupFailed = errors.New("user schema lookup failed")
+	// ErrInvalidUserAttribute is returned when a user attribute is not valid for any of the allowed user types.
+	ErrInvalidUserAttribute = errors.New("invalid user attribute")
 
 	// ErrOAuthInvalidRedirectURI is returned when the redirect URI is invalid.
 	ErrOAuthInvalidRedirectURI = errors.New("invalid redirect URI")
@@ -136,6 +144,28 @@ var (
 	// are set without an explicit responseType.
 	ErrOAuthUserInfoAlgRequiresResponseType = errors.New(
 		"userinfo responseType is required when signingAlg or encryptionAlg is set")
+
+	// ErrOAuthIDTokenUnsupportedEncryptionAlg is returned when the ID token encryption algorithm is not supported.
+	ErrOAuthIDTokenUnsupportedEncryptionAlg = errors.New("unsupported ID token encryption algorithm")
+	// ErrOAuthIDTokenUnsupportedEncryptionEnc is returned when the ID token content-encryption
+	// algorithm is not supported.
+	ErrOAuthIDTokenUnsupportedEncryptionEnc = errors.New("unsupported ID token content-encryption algorithm")
+	// ErrOAuthIDTokenEncryptionAlgRequiresEnc is returned when encryptionAlg is set without encryptionEnc.
+	ErrOAuthIDTokenEncryptionAlgRequiresEnc = errors.New(
+		"idToken encryptionEnc is required when encryptionAlg is set")
+	// ErrOAuthIDTokenEncryptionEncRequiresAlg is returned when encryptionEnc is set without encryptionAlg.
+	ErrOAuthIDTokenEncryptionEncRequiresAlg = errors.New(
+		"idToken encryptionAlg is required when encryptionEnc is set")
+	// ErrOAuthIDTokenEncryptionRequiresCertificate is returned when ID token encryption has no certificate.
+	ErrOAuthIDTokenEncryptionRequiresCertificate = errors.New(
+		"idToken encryption requires a certificate (JWKS or JWKS_URI)")
+	// ErrOAuthIDTokenJWKSURINotSSRFSafe is returned when the JWKS URI fails SSRF safety checks.
+	ErrOAuthIDTokenJWKSURINotSSRFSafe = errors.New("idToken JWKS URI must be a publicly reachable HTTPS URL")
+	// ErrOAuthIDTokenUnsupportedResponseType is returned when an unsupported ID token response type is specified.
+	ErrOAuthIDTokenUnsupportedResponseType = errors.New("unsupported ID token response type")
+	// ErrOAuthIDTokenEncryptionFieldsNotAllowed is returned when encryption fields are set for JWT responseType.
+	ErrOAuthIDTokenEncryptionFieldsNotAllowed = errors.New(
+		"idToken encryptionAlg and encryptionEnc must not be set when responseType is JWT")
 )
 
 // Certificate operation labels used in CertOperationError.

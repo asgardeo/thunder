@@ -22,9 +22,9 @@ package inboundclient
 import (
 	"context"
 
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	"github.com/asgardeo/thunder/internal/system/cache"
-	"github.com/asgardeo/thunder/internal/system/log"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/system/cache"
+	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
 const (
@@ -61,7 +61,7 @@ func (c *cachedBackStore) CreateInboundClient(ctx context.Context, client inboun
 }
 
 func (c *cachedBackStore) CreateOAuthProfile(ctx context.Context, entityID string,
-	oauthProfile *inboundmodel.OAuthProfileData) error {
+	oauthProfile *inboundmodel.OAuthProfile) error {
 	return c.inner.CreateOAuthProfile(ctx, entityID, oauthProfile)
 }
 
@@ -91,7 +91,7 @@ func (c *cachedBackStore) GetOAuthProfileByEntityID(ctx context.Context, entityI
 	if err != nil || profile == nil {
 		return profile, err
 	}
-	c.cacheOAuthProfile(ctx, profile)
+	c.cacheOAuthProfile(ctx, entityID, profile)
 	return profile, nil
 }
 
@@ -113,7 +113,7 @@ func (c *cachedBackStore) UpdateInboundClient(ctx context.Context, client inboun
 }
 
 func (c *cachedBackStore) UpdateOAuthProfile(ctx context.Context, entityID string,
-	oauthProfile *inboundmodel.OAuthProfileData) error {
+	oauthProfile *inboundmodel.OAuthProfile) error {
 	if err := c.inner.UpdateOAuthProfile(ctx, entityID, oauthProfile); err != nil {
 		return err
 	}
@@ -158,13 +158,13 @@ func (c *cachedBackStore) cacheInboundClient(ctx context.Context, client *inboun
 	}
 }
 
-func (c *cachedBackStore) cacheOAuthProfile(ctx context.Context, profile *inboundmodel.OAuthProfile) {
-	if profile == nil || profile.AppID == "" {
+func (c *cachedBackStore) cacheOAuthProfile(ctx context.Context, entityID string, profile *inboundmodel.OAuthProfile) {
+	if profile == nil || entityID == "" {
 		return
 	}
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "InboundClientCachedBackStore"))
-	if err := c.oauthProfileCache.Set(ctx, cache.CacheKey{Key: profile.AppID}, profile); err != nil {
-		logger.Error("Failed to cache OAuth profile", log.String("entityID", profile.AppID), log.Error(err))
+	if err := c.oauthProfileCache.Set(ctx, cache.CacheKey{Key: entityID}, profile); err != nil {
+		logger.Error("Failed to cache OAuth profile", log.String("entityID", entityID), log.Error(err))
 	}
 }
 

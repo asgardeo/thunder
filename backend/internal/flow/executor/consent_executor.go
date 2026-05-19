@@ -27,14 +27,15 @@ import (
 	"strings"
 	"time"
 
-	consentauthn "github.com/asgardeo/thunder/internal/authn/consent"
-	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
-	"github.com/asgardeo/thunder/internal/consent"
-	"github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/flow/core"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/log"
+	consentauthn "github.com/thunder-id/thunderid/internal/authn/consent"
+	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
+	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
+	"github.com/thunder-id/thunderid/internal/consent"
+	"github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/internal/flow/core"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
 const (
@@ -48,6 +49,7 @@ const (
 type consentExecutor struct {
 	core.ExecutorInterface
 	consentEnforcer consentauthn.ConsentEnforcerServiceInterface
+	authnProvider   authnprovidermgr.AuthnProviderManagerInterface
 	logger          *log.Logger
 }
 
@@ -57,6 +59,7 @@ var _ core.ExecutorInterface = (*consentExecutor)(nil)
 func newConsentExecutor(
 	flowFactory core.FlowFactoryInterface,
 	consentEnforcer consentauthn.ConsentEnforcerServiceInterface,
+	authnProvider authnprovidermgr.AuthnProviderManagerInterface,
 ) *consentExecutor {
 	logger := log.GetLogger().With(
 		log.String(log.LoggerKeyComponentName, "ConsentExecutor"),
@@ -83,6 +86,7 @@ func newConsentExecutor(
 	return &consentExecutor{
 		ExecutorInterface: base,
 		consentEnforcer:   consentEnforcer,
+		authnProvider:     authnProvider,
 		logger:            logger,
 	}
 }
@@ -107,7 +111,7 @@ func (e *consentExecutor) Execute(ctx *core.NodeContext) (*common.ExecutorRespon
 
 	// TODO: Replace with application's actual OU when OU support is added
 	ouID := "default"
-	appID := ctx.AppID
+	appID := ctx.EntityID
 	userID := ctx.AuthenticatedUser.UserID
 
 	if !e.HasRequiredInputs(ctx, execResp) {
@@ -126,7 +130,7 @@ func (e *consentExecutor) checkConsent(ctx *core.NodeContext, execResp *common.E
 	logger.Debug("Checking if user consent is required")
 
 	essentialAttributes, optionalAttributes := e.getRequiredAttributes(ctx)
-	availableAttributes := buildAugmentedAvailableAttributes(ctx)
+	availableAttributes := e.buildAugmentedAvailableAttributes(ctx)
 
 	// Resolve consent to determine if any required consents are missing and need to be prompted
 	promptData, svcErr := e.consentEnforcer.ResolveConsent(
@@ -301,20 +305,45 @@ func (e *consentExecutor) getRequiredAttributes(ctx *core.NodeContext) (
 // special attribute keys (groups, userType, ouId, ouName, ouHandle) that are present by
 // construction in the authenticated user context but are never included in AttributesResponse
 // by authentication providers.
-func buildAugmentedAvailableAttributes(ctx *core.NodeContext) *authnprovidercm.AttributesResponse {
-	base := ctx.AuthenticatedUser.AvailableAttributes
+//
+// It uses AuthenticatedUser.AvailableAttributes (legacy) as the base and merges in any
+// attributes from AuthUser via the AuthnProviderManager (new pattern used by BasicAuth).
+// This temporary dual-source merge will be simplified once AuthenticatedUser is removed.
+// When both sources are empty, nil is returned so that the downstream consent enforcer
+// skips profile-presence filtering entirely.
+func (e *consentExecutor) buildAugmentedAvailableAttributes(ctx *core.NodeContext) *authnprovidercm.AttributesResponse {
+	augmented := make(map[string]*authnprovidercm.AttributeResponse)
+	baseVerifications := make(map[string]*authnprovidercm.VerificationResponse)
+	hasSource := false
 
-	var baseAttrs map[string]*authnprovidercm.AttributeResponse
-	var baseVerifications map[string]*authnprovidercm.VerificationResponse
-	if base != nil {
-		baseAttrs = base.Attributes
-		baseVerifications = base.Verifications
+	if base := ctx.AuthenticatedUser.AvailableAttributes; base != nil {
+		hasSource = true
+		for k, v := range base.Attributes {
+			augmented[k] = v
+		}
+		for k, v := range base.Verifications {
+			baseVerifications[k] = v
+		}
 	}
 
-	// Shallow-copy existing entries so we never mutate the original
-	augmented := make(map[string]*authnprovidercm.AttributeResponse, len(baseAttrs))
-	for k, v := range baseAttrs {
-		augmented[k] = v
+	if ctx.AuthUser.IsAuthenticated() {
+		attrs, svcErr := e.authnProvider.GetUserAvailableAttributes(ctx.Context, ctx.AuthUser)
+		if svcErr != nil {
+			e.logger.Debug("Failed to get available attributes from AuthUser; using AuthenticatedUser only",
+				log.Any("error", svcErr))
+		} else if attrs != nil {
+			hasSource = true
+			for k, v := range attrs.Attributes {
+				augmented[k] = v
+			}
+			for k, v := range attrs.Verifications {
+				baseVerifications[k] = v
+			}
+		}
+	}
+
+	if !hasSource {
+		return nil
 	}
 
 	// Inject special attribute keys.

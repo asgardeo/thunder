@@ -41,6 +41,10 @@ interface ContactsSectionProps {
    * @param value - The new value for the field
    */
   onFieldChange: (field: keyof Application, value: unknown) => void;
+  /**
+   * Singular noun used to refer to the entity in user-visible copy (default: 'application').
+   */
+  entityLabel?: string;
 }
 
 /**
@@ -54,7 +58,12 @@ interface ContactsSectionProps {
  * @param props - Component props
  * @returns Contact information input UI within a SettingsCard
  */
-export default function ContactsSection({application, editedApp, onFieldChange}: ContactsSectionProps) {
+export default function ContactsSection({
+  application,
+  editedApp,
+  onFieldChange,
+  entityLabel = 'application',
+}: ContactsSectionProps) {
   const {t} = useTranslation();
 
   const [inputError, setInputError] = useState('');
@@ -79,7 +88,11 @@ export default function ContactsSection({application, editedApp, onFieldChange}:
   return (
     <SettingsCard
       title={t('applications:edit.general.sections.contacts')}
-      description={t('applications:edit.general.sections.contacts.description')}
+      description={t(
+        'applications:edit.general.sections.contacts.description',
+        'Contact email addresses for {{entity}} administrators.',
+        {entity: entityLabel},
+      )}
     >
       <Autocomplete
         multiple

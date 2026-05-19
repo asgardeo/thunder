@@ -66,3 +66,7 @@ ACLs
 [Ss]andboxed
 DCR
 BCP
+[Aa]llowlist
+Memorystore
+[Uu]pdatedAt
+[Cc]reatedAt

@@ -40,6 +40,10 @@ interface EditCustomizationSettingsProps {
    * @param value - The new value for the field
    */
   onFieldChange: (field: keyof Application, value: unknown) => void;
+  /**
+   * Singular noun used to refer to the entity in user-visible copy (default: 'application').
+   */
+  entityLabel?: string;
 }
 
 /**
@@ -57,12 +61,28 @@ export default function EditCustomizationSettings({
   application,
   editedApp,
   onFieldChange,
+  entityLabel = 'application',
 }: EditCustomizationSettingsProps) {
   return (
     <Stack spacing={3}>
-      <AppearanceSection application={application} editedApp={editedApp} onFieldChange={onFieldChange} />
-      <UrlsSection application={application} editedApp={editedApp} onFieldChange={onFieldChange} />
-      <ContactsSection application={application} editedApp={editedApp} onFieldChange={onFieldChange} />
+      <AppearanceSection
+        application={application}
+        editedApp={editedApp}
+        onFieldChange={onFieldChange}
+        entityLabel={entityLabel}
+      />
+      <UrlsSection
+        application={application}
+        editedApp={editedApp}
+        onFieldChange={onFieldChange}
+        entityLabel={entityLabel}
+      />
+      <ContactsSection
+        application={application}
+        editedApp={editedApp}
+        onFieldChange={onFieldChange}
+        entityLabel={entityLabel}
+      />
     </Stack>
   );
 }

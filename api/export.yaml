@@ -88,6 +88,8 @@ paths:
                     description:
                       key: "error.exportservice.no_resources_found_description"
                       defaultValue: "No valid resources found for the provided identifiers"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
         "500":
           description: Internal server error
           content:
@@ -180,6 +182,8 @@ paths:
                     description:
                       key: "error.exportservice.no_resources_found_description"
                       defaultValue: "No valid resources found for the provided identifiers"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
         "500":
           description: Internal server error
           content:
@@ -204,6 +208,22 @@ components:
           tokenUrl: /oauth2/token
           scopes:
             system: Full system access
+
+  responses:
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "AUTH-4010"
+            message:
+              key: "error.unauthorized"
+              defaultValue: "Unauthorized"
+            description:
+              key: "error.unauthorized_description"
+              defaultValue: "Authentication is required to access this resource"
 
   schemas:
     ExportRequest:
@@ -547,7 +567,7 @@ components:
       properties:
         code:
           type: string
-          description: Machine-readable error code.
+          description: "Error code. Codes follow the EXP-XXXX convention."
           example: "EXP-1001"
         message:
           $ref: '#/components/schemas/I18nMessage'

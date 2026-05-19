@@ -31,16 +31,16 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
-	"github.com/asgardeo/thunder/internal/resource"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
-	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
-	"github.com/asgardeo/thunder/tests/mocks/resourcemock"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
+	"github.com/thunder-id/thunderid/internal/resource"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
+	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/tokenservicemock"
+	"github.com/thunder-id/thunderid/tests/mocks/resourcemock"
 )
 
 const (
@@ -99,7 +99,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) SetupTest() {
 	}
 
 	suite.oauthApp = &inboundmodel.OAuthClient{
-		AppID:                   "app123",
+		ID:                      "app123",
 		ClientID:                testClientID,
 		RedirectURIs:            []string{"https://example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeTokenExchange},
@@ -160,7 +160,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) setupSuccessfulJWTMock(
 	expectedAudience string,
 	now int64,
 ) {
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
@@ -195,7 +195,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) setupSuccessfulJWTMockWithScope
 	expectedScope string,
 	now int64,
 ) {
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
@@ -421,7 +421,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_Basic()
 		SubjectTokenType: string(constants.TokenTypeIdentifierAccessToken),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
@@ -505,14 +505,14 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithAct
 		ActorTokenType:   string(constants.TokenTypeIdentifierAccessToken),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
 			UserAttributes: map[string]interface{}{},
 			NestedAct:      nil,
 		}, nil)
-	suite.mockTokenValidator.On("ValidateSubjectToken", actorToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, actorToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            "service456",
 			Iss:            testCustomIssuer,
@@ -569,7 +569,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithAct
 		ActorTokenType:   string(constants.TokenTypeIdentifierAccessToken),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            "user123",
 			Iss:            testCustomIssuer,
@@ -579,7 +579,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithAct
 				"iss": "https://existing-actor.com",
 			},
 		}, nil)
-	suite.mockTokenValidator.On("ValidateSubjectToken", actorToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, actorToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            "service456",
 			Iss:            testCustomIssuer,
@@ -688,7 +688,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_Preserv
 		SubjectTokenType: string(constants.TokenTypeIdentifierAccessToken),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:    testUserID,
 			Iss:    testCustomIssuer,
@@ -748,7 +748,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectT
 	}
 
 	// Token will pass issuer validation but fail signature verification
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(nil, errors.New("invalid subject token signature: invalid signature"))
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
@@ -774,7 +774,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectT
 		SubjectTokenType: string(constants.TokenTypeIdentifierAccessToken),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(nil, errors.New("missing or invalid 'sub' claim"))
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
@@ -794,7 +794,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectT
 	}
 
 	// Mock token validator to return decode error
-	suite.mockTokenValidator.On("ValidateSubjectToken", "invalid.jwt.format", suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, "invalid.jwt.format", suite.oauthApp).
 		Return(nil, errors.New("invalid token format"))
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
@@ -815,7 +815,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectT
 	})
 
 	tokenRequest := suite.createBasicTokenRequest(subjectToken)
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(nil, errors.New("token has expired"))
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
@@ -836,7 +836,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidSubjectT
 	})
 
 	tokenRequest := suite.createBasicTokenRequest(subjectToken)
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(nil, errors.New("token not yet valid"))
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
@@ -873,14 +873,14 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidActorTok
 		ActorTokenType:   string(constants.TokenTypeIdentifierAccessToken),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
 			UserAttributes: map[string]interface{}{},
 			NestedAct:      nil,
 		}, nil)
-	suite.mockTokenValidator.On("ValidateSubjectToken", actorToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, actorToken, suite.oauthApp).
 		Return(nil, errors.New("invalid subject token signature: invalid signature"))
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
@@ -909,7 +909,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_InvalidScope() 
 		Scope:            "read write delete", // "delete" is not in subject token
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
@@ -957,7 +957,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ScopeEscalation
 		Scope:            "read write",
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
@@ -990,7 +990,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_JWTGenerationEr
 		SubjectTokenType: string(constants.TokenTypeIdentifierAccessToken),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
@@ -1031,7 +1031,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_UsesDefaultConf
 		GrantTypes: []constants.GrantType{constants.GrantTypeTokenExchange},
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, oauthAppNoConfig).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, oauthAppNoConfig).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
@@ -1072,7 +1072,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithJWT
 		RequestedTokenType: string(constants.TokenTypeIdentifierJWT),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
@@ -1155,7 +1155,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_CompleteTokenExchan
 		Scope:              "read",
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:    testUserID,
 			Iss:    testCustomIssuer,
@@ -1223,7 +1223,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_AudienceCombinedWit
 		Resources:        []string{"https://resource.example.com"},
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
@@ -1290,7 +1290,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_ActorDelegationChai
 		ActorTokenType:   string(constants.TokenTypeIdentifierAccessToken),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            "user123",
 			Iss:            testCustomIssuer,
@@ -1300,7 +1300,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_ActorDelegationChai
 				"iss": "https://previous-issuer.com",
 			},
 		}, nil)
-	suite.mockTokenValidator.On("ValidateSubjectToken", actorToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, actorToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            "current-actor",
 			Iss:            testCustomIssuer,
@@ -1372,14 +1372,14 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_Success_WithAct
 		ActorTokenType:   string(constants.TokenTypeIdentifierAccessToken),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
 			UserAttributes: map[string]interface{}{},
 			NestedAct:      nil,
 		}, nil)
-	suite.mockTokenValidator.On("ValidateSubjectToken", actorToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, actorToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            "current-actor",
 			Iss:            testCustomIssuer,
@@ -1446,7 +1446,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_ScopeDownscopingEnf
 		Scope:            "read",
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
@@ -1504,7 +1504,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_NoTokenLinkage() {
 		SubjectTokenType: string(constants.TokenTypeIdentifierAccessToken),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
@@ -1556,7 +1556,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestRFC8693_ClaimPreservation()
 		SubjectTokenType: string(constants.TokenTypeIdentifierAccessToken),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:    testUserID,
 			Iss:    testCustomIssuer,
@@ -1664,7 +1664,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ServerAuthAsser
 		SubjectTokenType: string(constants.TokenTypeIdentifierJWT),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
@@ -1717,7 +1717,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ServerAuthAsser
 		SubjectTokenType: string(constants.TokenTypeIdentifierJWT),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(nil, fmt.Errorf("auth assertion audience mismatch"))
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
@@ -1748,7 +1748,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ServerAuthAsser
 		SubjectTokenType: string(constants.TokenTypeIdentifierJWT),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(nil, fmt.Errorf("server auth assertion is missing 'aud' claim"))
 
 	result, errResp := suite.handler.HandleGrant(context.Background(), tokenRequest, suite.oauthApp)
@@ -1781,7 +1781,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ServerAuthAsser
 		SubjectTokenType: string(constants.TokenTypeIdentifierJWT),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
@@ -1813,7 +1813,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ServerAuthAsser
 	claims := map[string]interface{}{
 		"sub":                    testUserID,
 		"iss":                    testCustomIssuer,
-		"aud":                    suite.oauthApp.AppID, // Match client app_id
+		"aud":                    suite.oauthApp.ID, // Match client app_id
 		"exp":                    float64(now + 3600),
 		"nbf":                    float64(now - 60),
 		"assurance":              map[string]interface{}{"aal": "AAL1", "ial": "IAL1"}, // Make it an auth assertion
@@ -1829,11 +1829,11 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_ServerAuthAsser
 		SubjectTokenType: string(constants.TokenTypeIdentifierJWT),
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Iss:            testCustomIssuer,
-			Aud:            []string{suite.oauthApp.AppID},
+			Aud:            []string{suite.oauthApp.ID},
 			Scopes:         []string{"read:documents", "write:documents"},
 			UserAttributes: map[string]interface{}{"userType": "person"},
 			NestedAct:      nil,
@@ -1880,7 +1880,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_OnlyAudience_Au
 	tokenRequest := suite.createBasicTokenRequest(subjectToken)
 	tokenRequest.Audiences = []string{"logical://x"}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Scopes:         []string{},
@@ -1909,7 +1909,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_OnlyResource_Au
 	tokenRequest := suite.createBasicTokenRequest(subjectToken)
 	tokenRequest.Resources = []string{testRS01URI}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Scopes:         []string{},
@@ -1939,7 +1939,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_AudienceAndReso
 	tokenRequest.Audiences = []string{"logical://x"}
 	tokenRequest.Resources = []string{testRS01URI}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Scopes:         []string{},
@@ -1971,7 +1971,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_TwoAudiencesTwo
 	tokenRequest.Audiences = []string{"https://a1.example.com", "https://a2.example.com"}
 	tokenRequest.Resources = []string{testRS01URI, "https://rs02.example.com"}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Scopes:         []string{},
@@ -2005,7 +2005,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_AudienceIsClien
 	tokenRequest.Audiences = []string{testClientID}
 	tokenRequest.Resources = []string{testRS01URI}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Scopes:         []string{},
@@ -2036,7 +2036,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_AudienceOnly_Cl
 	tokenRequest := suite.createBasicTokenRequest(subjectToken)
 	tokenRequest.Audiences = []string{"https://other-service.example.com"}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Scopes:         []string{},
@@ -2064,7 +2064,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_NeitherAudience
 
 	tokenRequest := suite.createBasicTokenRequest(subjectToken)
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Scopes:         []string{},
@@ -2115,7 +2115,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_RFC8707_Resourc
 		resourceService: rsvc,
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Scopes:         []string{"read", "write", "admin"},
@@ -2171,7 +2171,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_RFC8707_ScopeNo
 		resourceService: rsvc,
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Scopes:         []string{"read", "write", "admin"},
@@ -2208,7 +2208,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_RFC8707_Resourc
 
 	tokenRequest := suite.createBasicTokenRequest(subjectToken)
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Scopes:         []string{"read", "write"},
@@ -2270,7 +2270,7 @@ func (suite *TokenExchangeGrantHandlerTestSuite) TestHandleGrant_RFC8707_Multipl
 		resourceService: rsvc,
 	}
 
-	suite.mockTokenValidator.On("ValidateSubjectToken", subjectToken, suite.oauthApp).
+	suite.mockTokenValidator.On("ValidateSubjectToken", mock.Anything, subjectToken, suite.oauthApp).
 		Return(&tokenservice.SubjectTokenClaims{
 			Sub:            testUserID,
 			Scopes:         []string{"read", "write", "admin"},

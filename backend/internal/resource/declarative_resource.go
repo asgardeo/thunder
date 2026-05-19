@@ -25,10 +25,10 @@ import (
 	"strings"
 	"testing"
 
-	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/log"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
+	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/log"
 
 	"gopkg.in/yaml.v3"
 )
@@ -279,7 +279,7 @@ func parseAndValidateResourceServerWrapper(resourceService ResourceServiceInterf
 		}
 
 		// Process and compute permissions in-place
-		if err := processResourceServer(rs); err != nil {
+		if err := ProcessResourceServer(rs); err != nil {
 			return nil, fmt.Errorf("error processing resource server '%s': %w", rs.Name, err)
 		}
 
@@ -307,8 +307,8 @@ func parseToResourceServer(data []byte) (*ResourceServer, error) {
 	return &rs, nil
 }
 
-// processResourceServer processes the resource server and computes permissions in-place.
-func processResourceServer(rs *ResourceServer) error {
+// ProcessResourceServer processes the resource server and computes permissions in-place.
+func ProcessResourceServer(rs *ResourceServer) error {
 	delimiter := rs.Delimiter
 	if delimiter == "" {
 		delimiter = ":" // Default delimiter

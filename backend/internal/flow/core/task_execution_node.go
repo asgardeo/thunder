@@ -19,9 +19,9 @@
 package core
 
 import (
-	"github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
 // ExecutorBackedNodeInterface extends NodeInterface for nodes backed by executors.
@@ -166,8 +166,8 @@ func (n *taskExecutionNode) enrichRuntimeData(ctx *NodeContext) {
 		ctx.RuntimeData = make(map[string]string)
 	}
 
-	if ctx.AppID != "" {
-		ctx.RuntimeData["applicationId"] = ctx.AppID
+	if ctx.EntityID != "" {
+		ctx.RuntimeData["applicationId"] = ctx.EntityID
 	}
 
 	if idpID, ok := ctx.NodeProperties["idpId"].(string); ok && idpID != "" {

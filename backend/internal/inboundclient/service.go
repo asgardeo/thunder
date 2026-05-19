@@ -26,44 +26,44 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/asgardeo/thunder/internal/cert"
-	"github.com/asgardeo/thunder/internal/consent"
-	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
-	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
-	"github.com/asgardeo/thunder/internal/entityprovider"
-	"github.com/asgardeo/thunder/internal/entitytype"
-	flowcommon "github.com/asgardeo/thunder/internal/flow/common"
-	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/system/config"
-	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	syshttp "github.com/asgardeo/thunder/internal/system/http"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/security"
-	"github.com/asgardeo/thunder/internal/system/transaction"
-	sysutils "github.com/asgardeo/thunder/internal/system/utils"
+	"github.com/thunder-id/thunderid/internal/cert"
+	"github.com/thunder-id/thunderid/internal/consent"
+	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
+	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
+	"github.com/thunder-id/thunderid/internal/entityprovider"
+	"github.com/thunder-id/thunderid/internal/entitytype"
+	flowcommon "github.com/thunder-id/thunderid/internal/flow/common"
+	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	syshttp "github.com/thunder-id/thunderid/internal/system/http"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/security"
+	"github.com/thunder-id/thunderid/internal/system/transaction"
+	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
 
 // InboundClientServiceInterface is the public API of the inbound client subsystem.
 type InboundClientServiceInterface interface {
 	// CreateInboundClient validates and persists a new inbound auth profile, certificates, and OAuth config.
 	CreateInboundClient(ctx context.Context, client *inboundmodel.InboundClient, appCert *inboundmodel.Certificate,
-		oauthProfile *inboundmodel.OAuthProfileData, hasClientSecret bool, entityName string) error
+		oauthProfile *inboundmodel.OAuthProfile, hasClientSecret bool, entityName string) error
 	// GetInboundClientByEntityID returns the inbound client for the given entity.
 	GetInboundClientByEntityID(ctx context.Context, entityID string) (*inboundmodel.InboundClient, error)
 	// GetInboundClientList returns all inbound clients.
 	GetInboundClientList(ctx context.Context) ([]inboundmodel.InboundClient, error)
 	// UpdateInboundClient validates and persists updates to an inbound client, certificates, and OAuth config.
 	UpdateInboundClient(ctx context.Context, client *inboundmodel.InboundClient,
-		appCert *inboundmodel.Certificate, oauthProfile *inboundmodel.OAuthProfileData,
+		appCert *inboundmodel.Certificate, oauthProfile *inboundmodel.OAuthProfile,
 		hasClientSecret bool, oauthClientID string, entityName string) error
 	// DeleteInboundClient removes the inbound client, OAuth profile, and certificates for the given entity.
 	DeleteInboundClient(ctx context.Context, entityID string) error
 	// Validate resolves flow defaults and validates FK constraints and OAuth profile without persisting.
 	Validate(ctx context.Context, client *inboundmodel.InboundClient,
-		oauthProfile *inboundmodel.OAuthProfileData, hasClientSecret bool) error
+		oauthProfile *inboundmodel.OAuthProfile, hasClientSecret bool) error
 
 	// GetOAuthProfileByEntityID returns the stored OAuth profile for the given entity.
 	GetOAuthProfileByEntityID(ctx context.Context, entityID string) (*inboundmodel.OAuthProfile, error)
@@ -119,7 +119,7 @@ func newInboundClientService(store inboundClientStoreInterface, transactioner tr
 
 // CreateInboundClient validates and persists a new inbound auth profile, certificates, and OAuth config.
 func (s *inboundClientService) CreateInboundClient(ctx context.Context, client *inboundmodel.InboundClient,
-	appCert *inboundmodel.Certificate, oauthProfile *inboundmodel.OAuthProfileData,
+	appCert *inboundmodel.Certificate, oauthProfile *inboundmodel.OAuthProfile,
 	hasClientSecret bool, entityName string) error {
 	if client == nil {
 		return fmt.Errorf("inbound client is required")
@@ -132,6 +132,10 @@ func (s *inboundClientService) CreateInboundClient(ctx context.Context, client *
 	}
 	if fkErr := s.validateFKs(ctx, client); fkErr != nil {
 		return fkErr
+	}
+	if err := s.validateUserAttributesAgainstAllowedTypes(
+		ctx, client.AllowedUserTypes, client.Assertion, oauthProfile); err != nil {
+		return err
 	}
 	if oauthProfile != nil {
 		if vErr := validateOAuthProfile(oauthProfile, hasClientSecret); vErr != nil {
@@ -188,7 +192,7 @@ func (s *inboundClientService) GetInboundClientList(ctx context.Context) ([]inbo
 
 // UpdateInboundClient validates and persists updates to an inbound client, certificates, and OAuth config.
 func (s *inboundClientService) UpdateInboundClient(ctx context.Context, client *inboundmodel.InboundClient,
-	appCert *inboundmodel.Certificate, oauthProfile *inboundmodel.OAuthProfileData,
+	appCert *inboundmodel.Certificate, oauthProfile *inboundmodel.OAuthProfile,
 	hasClientSecret bool, oauthClientID string, entityName string) error {
 	if client == nil {
 		return fmt.Errorf("inbound client is required")
@@ -201,6 +205,10 @@ func (s *inboundClientService) UpdateInboundClient(ctx context.Context, client *
 	}
 	if fkErr := s.validateFKs(ctx, client); fkErr != nil {
 		return fkErr
+	}
+	if err := s.validateUserAttributesAgainstAllowedTypes(
+		ctx, client.AllowedUserTypes, client.Assertion, oauthProfile); err != nil {
+		return err
 	}
 	if oauthProfile != nil {
 		if vErr := validateOAuthProfile(oauthProfile, hasClientSecret); vErr != nil {
@@ -255,7 +263,7 @@ func (s *inboundClientService) UpdateInboundClient(ctx context.Context, client *
 
 // Validate resolves flow defaults and validates FK constraints and OAuth profile without persisting.
 func (s *inboundClientService) Validate(ctx context.Context, client *inboundmodel.InboundClient,
-	oauthProfile *inboundmodel.OAuthProfileData, hasClientSecret bool) error {
+	oauthProfile *inboundmodel.OAuthProfile, hasClientSecret bool) error {
 	if client == nil {
 		return nil
 	}
@@ -264,6 +272,10 @@ func (s *inboundClientService) Validate(ctx context.Context, client *inboundmode
 	}
 	if fkErr := s.validateFKs(ctx, client); fkErr != nil {
 		return fkErr
+	}
+	if err := s.validateUserAttributesAgainstAllowedTypes(
+		ctx, client.AllowedUserTypes, client.Assertion, oauthProfile); err != nil {
+		return err
 	}
 	if oauthProfile != nil {
 		if vErr := validateOAuthProfile(oauthProfile, hasClientSecret); vErr != nil {
@@ -335,7 +347,7 @@ func (s *inboundClientService) GetOAuthProfileByEntityID(ctx context.Context, en
 
 // syncOAuthProfile creates, updates, or deletes the stored OAuth profile to match the desired state.
 func (s *inboundClientService) syncOAuthProfile(ctx context.Context, entityID string,
-	desired *inboundmodel.OAuthProfileData) error {
+	desired *inboundmodel.OAuthProfile) error {
 	return s.transactioner.Transact(ctx, func(txCtx context.Context) error {
 		existing, err := s.store.GetOAuthProfileByEntityID(txCtx, entityID)
 		if err != nil && !errors.Is(err, ErrInboundClientNotFound) {
@@ -384,15 +396,15 @@ func (s *inboundClientService) GetOAuthClientByClientID(ctx context.Context, cli
 	}
 	ouID := entity.OUID
 
-	oauthDAO, err := s.store.GetOAuthProfileByEntityID(ctx, entityID)
+	oauthProfile, err := s.store.GetOAuthProfileByEntityID(ctx, entityID)
 	if err != nil && !errors.Is(err, ErrInboundClientNotFound) {
 		return nil, err
 	}
-	if oauthDAO == nil || oauthDAO.OAuthProfile == nil {
+	if oauthProfile == nil {
 		return nil, nil
 	}
 
-	client := BuildOAuthClient(entityID, clientID, ouID, oauthDAO)
+	client := BuildOAuthClient(entityID, clientID, ouID, oauthProfile)
 
 	certificate, opErr := s.GetCertificate(ctx, cert.CertificateReferenceTypeOAuthApp, clientID)
 	if opErr != nil {
@@ -404,10 +416,9 @@ func (s *inboundClientService) GetOAuthClientByClientID(ctx context.Context, cli
 }
 
 // BuildOAuthClient assembles an OAuthClient from a stored OAuthProfile and entity context.
-func BuildOAuthClient(entityID, clientID, ouID string, oauthDAO *inboundmodel.OAuthProfile) *inboundmodel.OAuthClient {
-	p := oauthDAO.OAuthProfile
+func BuildOAuthClient(entityID, clientID, ouID string, p *inboundmodel.OAuthProfile) *inboundmodel.OAuthClient {
 	client := &inboundmodel.OAuthClient{
-		AppID:                              entityID,
+		ID:                                 entityID,
 		OUID:                               ouID,
 		ClientID:                           clientID,
 		RedirectURIs:                       p.RedirectURIs,
@@ -431,7 +442,8 @@ func BuildOAuthClient(entityID, clientID, ouID string, oauthDAO *inboundmodel.OA
 	return client
 }
 
-// resolveFlowDefaults fills AuthFlowID and RegistrationFlowID with system defaults when empty.
+// resolveFlowDefaults fills AuthFlowID, RegistrationFlowID, and RecoveryFlowID with system
+// defaults when empty, using the auth flow's handle to locate matching flows of each type.
 func (s *inboundClientService) resolveFlowDefaults(ctx context.Context, c *inboundmodel.InboundClient) error {
 	if s.flowMgt == nil || c == nil {
 		return nil
@@ -463,6 +475,10 @@ func (s *inboundClientService) resolveFlowDefaults(ctx context.Context, c *inbou
 			return ErrFKFlowDefinitionRetrievalFailed
 		}
 		c.RegistrationFlowID = regFlow.ID
+	}
+	if c.RecoveryFlowID == "" {
+		// If a recovery flow is not defined, disable recovery flow for the application.
+		c.IsRecoveryFlowEnabled = false
 	}
 	return nil
 }
@@ -589,7 +605,7 @@ func validateCertificateInput(refType cert.CertificateReferenceType,
 }
 
 // validateOAuthProfile validates all fields of an OAuth profile data object.
-func validateOAuthProfile(p *inboundmodel.OAuthProfileData, hasClientSecret bool) error {
+func validateOAuthProfile(p *inboundmodel.OAuthProfile, hasClientSecret bool) error {
 	if p == nil {
 		return nil
 	}
@@ -610,11 +626,14 @@ func validateOAuthProfile(p *inboundmodel.OAuthProfileData, hasClientSecret bool
 	if err := validateUserInfoConfig(p); err != nil {
 		return err
 	}
+	if err := validateIDTokenConfig(p); err != nil {
+		return err
+	}
 	return nil
 }
 
 // validateUserInfoConfig validates the UserInfo signing and encryption configuration.
-func validateUserInfoConfig(p *inboundmodel.OAuthProfileData) error {
+func validateUserInfoConfig(p *inboundmodel.OAuthProfile) error {
 	if p.UserInfo == nil {
 		return nil
 	}
@@ -676,8 +695,50 @@ func validateUserInfoConfig(p *inboundmodel.OAuthProfileData) error {
 	return nil
 }
 
+// validateIDTokenConfig validates the ID token configuration.
+// responseType is the authoritative field; empty defaults to JWT.
+func validateIDTokenConfig(p *inboundmodel.OAuthProfile) error {
+	if p.Token == nil || p.Token.IDToken == nil {
+		return nil
+	}
+	cfg := p.Token.IDToken
+
+	if cfg.ResponseType == "" {
+		cfg.ResponseType = inboundmodel.IDTokenResponseTypeJWT
+	}
+
+	switch cfg.ResponseType {
+	case inboundmodel.IDTokenResponseTypeJWT:
+		if cfg.EncryptionAlg != "" || cfg.EncryptionEnc != "" {
+			return ErrOAuthIDTokenEncryptionFieldsNotAllowed
+		}
+	case inboundmodel.IDTokenResponseTypeJWE, inboundmodel.IDTokenResponseTypeNESTEDJWT:
+		if cfg.EncryptionAlg == "" || cfg.EncryptionEnc == "" {
+			return ErrOAuthIDTokenEncryptionAlgRequiresEnc
+		}
+		if !slices.Contains(inboundmodel.SupportedIDTokenEncryptionAlgs, cfg.EncryptionAlg) {
+			return ErrOAuthIDTokenUnsupportedEncryptionAlg
+		}
+		if !slices.Contains(inboundmodel.SupportedIDTokenEncryptionEncs, cfg.EncryptionEnc) {
+			return ErrOAuthIDTokenUnsupportedEncryptionEnc
+		}
+		hasCert := p.Certificate != nil && p.Certificate.Type != ""
+		if !hasCert {
+			return ErrOAuthIDTokenEncryptionRequiresCertificate
+		}
+		if p.Certificate.Type == cert.CertificateTypeJWKSURI {
+			if err := syshttp.IsSSRFSafeURL(p.Certificate.Value); err != nil {
+				return ErrOAuthIDTokenJWKSURINotSSRFSafe
+			}
+		}
+	default:
+		return ErrOAuthIDTokenUnsupportedResponseType
+	}
+	return nil
+}
+
 // validateRedirectURIs validates redirect URIs and authorization_code grant requirements.
-func validateRedirectURIs(p *inboundmodel.OAuthProfileData) error {
+func validateRedirectURIs(p *inboundmodel.OAuthProfile) error {
 	for _, redirectURI := range p.RedirectURIs {
 		// Reject wildcards in the scheme before URL parsing — url.Parse may misinterpret them.
 		if idx := strings.Index(redirectURI, "://"); idx != -1 {
@@ -695,8 +756,14 @@ func validateRedirectURIs(p *inboundmodel.OAuthProfileData) error {
 		if parsedURI.Fragment != "" {
 			return ErrOAuthRedirectURIFragmentNotAllowed
 		}
+		wildcardEnabled := config.GetServerRuntime().Config.OAuth.AllowWildcardRedirectURI
 		if strings.ContainsRune(parsedURI.Host, '*') {
-			return ErrOAuthInvalidRedirectURI
+			if !wildcardEnabled {
+				return ErrOAuthInvalidRedirectURI
+			}
+			if err := validateHostWildcardPattern(parsedURI.Host); err != nil {
+				return err
+			}
 		}
 		if strings.ContainsRune(parsedURI.RawQuery, '*') {
 			return ErrOAuthInvalidRedirectURI
@@ -704,7 +771,6 @@ func validateRedirectURIs(p *inboundmodel.OAuthProfileData) error {
 		if containsInvalidWildcardSegment(parsedURI.Path) {
 			return ErrOAuthInvalidRedirectURI
 		}
-		wildcardEnabled := config.GetServerRuntime().Config.OAuth.AllowWildcardRedirectURI
 		if strings.ContainsRune(parsedURI.Path, '*') && !wildcardEnabled {
 			return ErrOAuthInvalidRedirectURI
 		}
@@ -712,6 +778,24 @@ func validateRedirectURIs(p *inboundmodel.OAuthProfileData) error {
 	if slices.Contains(p.GrantTypes, string(oauth2const.GrantTypeAuthorizationCode)) &&
 		len(p.RedirectURIs) == 0 {
 		return ErrOAuthAuthCodeRequiresRedirectURIs
+	}
+	return nil
+}
+
+// validateHostWildcardPattern enforces structural rules for wildcards in the host
+// component: no * in the port portion of host:port, and no whole-label *. * matches one
+// or more alphanumeric characters at match time, enforced by the matcher itself.
+func validateHostWildcardPattern(host string) error {
+	if i := strings.LastIndex(host, ":"); i != -1 {
+		if strings.ContainsRune(host[i+1:], '*') {
+			return ErrOAuthInvalidRedirectURI
+		}
+		host = host[:i]
+	}
+	for _, label := range strings.Split(host, ".") {
+		if label == "*" {
+			return ErrOAuthInvalidRedirectURI
+		}
 	}
 	return nil
 }
@@ -731,7 +815,7 @@ func containsInvalidWildcardSegment(p string) bool {
 }
 
 // validateGrantAndResponseTypes validates grant types, response types, and their combinations.
-func validateGrantAndResponseTypes(p *inboundmodel.OAuthProfileData) error {
+func validateGrantAndResponseTypes(p *inboundmodel.OAuthProfile) error {
 	for _, grantType := range p.GrantTypes {
 		if !oauth2const.GrantType(grantType).IsValid() {
 			return ErrOAuthInvalidGrantType
@@ -769,13 +853,17 @@ func validateGrantAndResponseTypes(p *inboundmodel.OAuthProfileData) error {
 }
 
 // validateTokenEndpointAuthMethod validates the token endpoint auth method against cert and secret state.
-func validateTokenEndpointAuthMethod(p *inboundmodel.OAuthProfileData, hasClientSecret bool) error {
+func validateTokenEndpointAuthMethod(p *inboundmodel.OAuthProfile, hasClientSecret bool) error {
 	method := oauth2const.TokenEndpointAuthMethod(p.TokenEndpointAuthMethod)
 	if !method.IsValid() {
 		return ErrOAuthInvalidTokenEndpointAuthMethod
 	}
 	hasCert := p.Certificate != nil && p.Certificate.Type != ""
 	userInfoNeedsCert := p.UserInfo != nil && p.UserInfo.EncryptionAlg != ""
+	idTokenNeedsCert := p.Token != nil && p.Token.IDToken != nil &&
+		(p.Token.IDToken.ResponseType == inboundmodel.IDTokenResponseTypeJWE ||
+			p.Token.IDToken.ResponseType == inboundmodel.IDTokenResponseTypeNESTEDJWT)
+	needsCert := userInfoNeedsCert || idTokenNeedsCert
 
 	switch method {
 	case oauth2const.TokenEndpointAuthMethodPrivateKeyJWT:
@@ -786,14 +874,14 @@ func validateTokenEndpointAuthMethod(p *inboundmodel.OAuthProfileData, hasClient
 			return ErrOAuthPrivateKeyJWTCannotHaveClientSecret
 		}
 	case oauth2const.TokenEndpointAuthMethodClientSecretBasic, oauth2const.TokenEndpointAuthMethodClientSecretPost:
-		if hasCert && !userInfoNeedsCert {
+		if hasCert && !needsCert {
 			return ErrOAuthClientSecretCannotHaveCertificate
 		}
 	case oauth2const.TokenEndpointAuthMethodNone:
 		if !p.PublicClient {
 			return ErrOAuthNoneAuthRequiresPublicClient
 		}
-		if (hasCert && !userInfoNeedsCert) || hasClientSecret {
+		if (hasCert && !needsCert) || hasClientSecret {
 			return ErrOAuthNoneAuthCannotHaveCertOrSecret
 		}
 		if slices.Contains(p.GrantTypes, string(oauth2const.GrantTypeClientCredentials)) {
@@ -804,7 +892,7 @@ func validateTokenEndpointAuthMethod(p *inboundmodel.OAuthProfileData, hasClient
 }
 
 // validatePublicClient validates constraints required for public clients.
-func validatePublicClient(p *inboundmodel.OAuthProfileData) error {
+func validatePublicClient(p *inboundmodel.OAuthProfile) error {
 	if oauth2const.TokenEndpointAuthMethod(p.TokenEndpointAuthMethod) != oauth2const.TokenEndpointAuthMethodNone {
 		return ErrOAuthPublicClientMustUseNoneAuth
 	}
@@ -825,13 +913,16 @@ func (s *inboundClientService) validateFKs(ctx context.Context, c *inboundmodel.
 	if err := s.validateRegistrationFlowID(ctx, c.RegistrationFlowID); err != nil {
 		return err
 	}
+	if err := s.validateRecoveryFlowID(ctx, c.RecoveryFlowID); err != nil {
+		return err
+	}
 	if err := s.validateThemeID(c.ThemeID); err != nil {
 		return err
 	}
 	if err := s.validateLayoutID(c.LayoutID); err != nil {
 		return err
 	}
-	if err := s.validateAllowedUserTypes(ctx, c.AllowedEntityTypes); err != nil {
+	if err := s.validateAllowedUserTypes(ctx, c.AllowedUserTypes); err != nil {
 		return err
 	}
 	return nil
@@ -863,6 +954,21 @@ func (s *inboundClientService) validateRegistrationFlowID(ctx context.Context, f
 	}
 	if !valid {
 		return ErrFKInvalidRegistrationFlow
+	}
+	return nil
+}
+
+// validateRecoveryFlowID validates that the recovery flow ID exists and is of the correct type.
+func (s *inboundClientService) validateRecoveryFlowID(ctx context.Context, flowID string) error {
+	if flowID == "" || s.flowMgt == nil {
+		return nil
+	}
+	valid, svcErr := s.flowMgt.IsValidFlow(ctx, flowID, flowcommon.FlowTypeRecovery)
+	if svcErr != nil {
+		return ErrFKFlowServerError
+	}
+	if !valid {
+		return ErrFKInvalidRecoveryFlow
 	}
 	return nil
 }
@@ -908,13 +1014,13 @@ func (s *inboundClientService) validateAllowedUserTypes(
 		if svcErr != nil {
 			s.logger.Error("Failed to retrieve user type list for validation",
 				log.String("error", svcErr.Error.DefaultValue), log.String("code", svcErr.Code))
-			return ErrFKInvalidUserType
+			return ErrUserSchemaLookupFailed
 		}
-		for _, schema := range entityTypeList.Schemas {
+		for _, schema := range entityTypeList.Types {
 			existingUserTypes[schema.Name] = true
 		}
-		if len(entityTypeList.Schemas) == 0 ||
-			offset+len(entityTypeList.Schemas) >= entityTypeList.TotalResults {
+		if len(entityTypeList.Types) == 0 ||
+			offset+len(entityTypeList.Types) >= entityTypeList.TotalResults {
 			break
 		}
 		offset += limit
@@ -927,8 +1033,102 @@ func (s *inboundClientService) validateAllowedUserTypes(
 	return nil
 }
 
+// validateUserAttributesAgainstAllowedTypes validates that every user attribute specified in the
+// assertion, token, and userinfo configs is a non-credential attribute defined in at least one
+// of the application's allowed entity types. Returns ErrInvalidUserAttribute when any attribute
+// fails the check.
+func (s *inboundClientService) validateUserAttributesAgainstAllowedTypes(
+	ctx context.Context,
+	allowedEntityTypes []string,
+	assertion *inboundmodel.AssertionConfig,
+	oauthProfile *inboundmodel.OAuthProfile,
+) error {
+	if len(allowedEntityTypes) == 0 || s.entityType == nil {
+		return nil
+	}
+
+	attrs := collectConfiguredUserAttributes(assertion, oauthProfile)
+	if len(attrs) == 0 {
+		return nil
+	}
+
+	validAttrs := make(map[string]bool)
+	for _, entityTypeName := range allowedEntityTypes {
+		attrInfos, svcErr := s.entityType.GetAttributes(
+			security.WithRuntimeContext(ctx), entitytype.TypeCategoryUser, entityTypeName, false, true, false)
+		if svcErr != nil {
+			if svcErr.Type == serviceerror.ServerErrorType {
+				return ErrUserSchemaLookupFailed
+			}
+			return ErrFKInvalidUserType
+		}
+		for _, info := range attrInfos {
+			validAttrs[info.Attribute] = true
+		}
+	}
+
+	for attr := range attrs {
+		if isComputedAttribute(attr) {
+			continue
+		}
+		if !validAttrs[attr] {
+			return ErrInvalidUserAttribute
+		}
+	}
+	return nil
+}
+
+// isComputedAttribute returns true for attributes that are derived at runtime (e.g. from group
+// memberships or OU associations) and are not defined in the entity type schema.
+func isComputedAttribute(attr string) bool {
+	switch attr {
+	case oauth2const.UserAttributeGroups,
+		oauth2const.UserAttributeRoles,
+		oauth2const.ClaimOUID,
+		oauth2const.ClaimOUName,
+		oauth2const.ClaimOUHandle,
+		oauth2const.ClaimUserType:
+		return true
+	}
+	return false
+}
+
+// collectConfiguredUserAttributes returns the distinct set of user attribute names explicitly
+// configured across assertion, access token, ID token, and userinfo configs.
+func collectConfiguredUserAttributes(
+	assertion *inboundmodel.AssertionConfig,
+	oauthProfile *inboundmodel.OAuthProfile,
+) map[string]bool {
+	attrs := make(map[string]bool)
+	if assertion != nil {
+		for _, a := range assertion.UserAttributes {
+			attrs[a] = true
+		}
+	}
+	if oauthProfile != nil {
+		if oauthProfile.Token != nil {
+			if oauthProfile.Token.AccessToken != nil {
+				for _, a := range oauthProfile.Token.AccessToken.UserAttributes {
+					attrs[a] = true
+				}
+			}
+			if oauthProfile.Token.IDToken != nil {
+				for _, a := range oauthProfile.Token.IDToken.UserAttributes {
+					attrs[a] = true
+				}
+			}
+		}
+		if oauthProfile.UserInfo != nil {
+			for _, a := range oauthProfile.UserInfo.UserAttributes {
+				attrs[a] = true
+			}
+		}
+	}
+	return attrs
+}
+
 // applyInboundDefaults fills default values for assertion, OAuth tokens, user info, and scope claims.
-func applyInboundDefaults(c *inboundmodel.InboundClient, oauthProfile *inboundmodel.OAuthProfileData) {
+func applyInboundDefaults(c *inboundmodel.InboundClient, oauthProfile *inboundmodel.OAuthProfile) {
 	if c != nil {
 		c.Assertion = resolveAssertion(c.Assertion, getDefaultAssertionFromDeployment())
 	}
@@ -1010,6 +1210,9 @@ func resolveOAuthTokens(in *inboundmodel.OAuthTokenConfig,
 		idToken = &inboundmodel.IDTokenConfig{
 			ValidityPeriod: in.IDToken.ValidityPeriod,
 			UserAttributes: in.IDToken.UserAttributes,
+			ResponseType:   in.IDToken.ResponseType,
+			EncryptionAlg:  in.IDToken.EncryptionAlg,
+			EncryptionEnc:  in.IDToken.EncryptionEnc,
 		}
 	}
 	if idToken != nil {
@@ -1061,7 +1264,7 @@ func resolveScopeClaims(in map[string][]string) map[string][]string {
 
 // syncConsentOnCreate creates consent purpose elements for a newly registered application.
 func (s *inboundClientService) syncConsentOnCreate(ctx context.Context,
-	entityID, entityName string, client *inboundmodel.InboundClient, profile *inboundmodel.OAuthProfileData) error {
+	entityID, entityName string, client *inboundmodel.InboundClient, profile *inboundmodel.OAuthProfile) error {
 	// TODO: Replace with the entity's actual OU when multi-OU consent is supported.
 	const ouID = "default"
 	attrMap := extractRequestedAttributesFromInbound(client, profile)
@@ -1089,7 +1292,7 @@ func (s *inboundClientService) syncConsentOnCreate(ctx context.Context,
 
 // syncConsentOnUpdate updates or creates the consent purpose for an existing application.
 func (s *inboundClientService) syncConsentOnUpdate(ctx context.Context,
-	entityID, entityName string, client *inboundmodel.InboundClient, profile *inboundmodel.OAuthProfileData) error {
+	entityID, entityName string, client *inboundmodel.InboundClient, profile *inboundmodel.OAuthProfile) error {
 	// TODO: Replace with the entity's actual OU when multi-OU consent is supported.
 	const ouID = "default"
 	newAttrs := extractRequestedAttributesFromInbound(client, profile)
@@ -1198,7 +1401,7 @@ func (s *inboundClientService) wrapConsentServiceError(err *serviceerror.Service
 
 // extractRequestedAttributesFromInbound collects user attributes referenced by the client and profile.
 func extractRequestedAttributesFromInbound(
-	client *inboundmodel.InboundClient, profile *inboundmodel.OAuthProfileData,
+	client *inboundmodel.InboundClient, profile *inboundmodel.OAuthProfile,
 ) map[string]bool {
 	attrMap := make(map[string]bool)
 	if client != nil && client.Assertion != nil {

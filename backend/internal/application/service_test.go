@@ -30,19 +30,19 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/internal/application/model"
-	"github.com/asgardeo/thunder/internal/cert"
-	"github.com/asgardeo/thunder/internal/entityprovider"
-	"github.com/asgardeo/thunder/internal/inboundclient"
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/tests/mocks/entityprovidermock"
-	"github.com/asgardeo/thunder/tests/mocks/inboundclientmock"
-	"github.com/asgardeo/thunder/tests/mocks/oumock"
+	"github.com/thunder-id/thunderid/internal/application/model"
+	"github.com/thunder-id/thunderid/internal/cert"
+	"github.com/thunder-id/thunderid/internal/entityprovider"
+	"github.com/thunder-id/thunderid/internal/inboundclient"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
+	"github.com/thunder-id/thunderid/tests/mocks/inboundclientmock"
+	"github.com/thunder-id/thunderid/tests/mocks/oumock"
 )
 
 const testServiceAppID = "app123"
@@ -195,17 +195,15 @@ func mockLoadFullApplication(
 	service *applicationService,
 	dto *model.ApplicationProcessedDTO,
 ) {
-	configDAO := toConfigDAO(dto)
-	mockStore.On("GetInboundClientByEntityID", mock.Anything, dto.ID).Return(&configDAO, nil)
+	inboundClient := toInboundClient(dto)
+	mockStore.On("GetInboundClientByEntityID", mock.Anything, dto.ID).Return(&inboundClient, nil)
 
-	var oauthDAO *inboundmodel.OAuthProfile
+	var oauthProfile *inboundmodel.OAuthProfile
 	if oauthProcessed := getOAuthInboundAuthConfigProcessedDTO(dto.InboundAuthConfig); oauthProcessed != nil {
-		if oauthData := buildOAuthConfigData(*oauthProcessed); oauthData != nil {
-			oauthDAO = &inboundmodel.OAuthProfile{AppID: dto.ID, OAuthProfile: oauthData}
-		}
+		oauthProfile = buildOAuthProfileFromProcessed(*oauthProcessed)
 	}
-	if oauthDAO != nil {
-		mockStore.On("GetOAuthProfileByEntityID", mock.Anything, dto.ID).Return(oauthDAO, nil)
+	if oauthProfile != nil {
+		mockStore.On("GetOAuthProfileByEntityID", mock.Anything, dto.ID).Return(oauthProfile, nil)
 	} else {
 		mockStore.On("GetOAuthProfileByEntityID", mock.Anything, dto.ID).
 			Return((*inboundmodel.OAuthProfile)(nil), inboundclient.ErrInboundClientNotFound)
@@ -219,13 +217,18 @@ func mockLoadFullApplication(
 		sysAttrs["description"] = dto.Description
 	}
 	if oauthProcessed := getOAuthInboundAuthConfigProcessedDTO(dto.InboundAuthConfig); oauthProcessed != nil &&
-		oauthProcessed.OAuthAppConfig != nil && oauthProcessed.OAuthAppConfig.ClientID != "" {
-		sysAttrs["clientId"] = oauthProcessed.OAuthAppConfig.ClientID
+		oauthProcessed.OAuthConfig != nil && oauthProcessed.OAuthConfig.ClientID != "" {
+		sysAttrs["clientId"] = oauthProcessed.OAuthConfig.ClientID
 	}
 	sysAttrsJSON, _ := json.Marshal(sysAttrs)
 	ep := resetEntityProviderMethod(service, "GetEntity")
 	ep.On("GetEntity", dto.ID).Return(
-		&entityprovider.Entity{ID: dto.ID, OUID: dto.OUID, SystemAttributes: sysAttrsJSON},
+		&entityprovider.Entity{
+			ID:               dto.ID,
+			Category:         entityprovider.EntityCategoryApp,
+			OUID:             dto.OUID,
+			SystemAttributes: sysAttrsJSON,
+		},
 		(*entityprovider.EntityProviderError)(nil),
 	)
 }
@@ -266,13 +269,71 @@ func (suite *ServiceTestSuite) TestGetOAuthApplication_Success() {
 	service, mockStore := suite.setupTestService()
 
 	mockStore.EXPECT().GetOAuthClientByClientID(mock.Anything, "client123").
-		Return(&inboundmodel.OAuthClient{ClientID: "client123"}, nil)
+		Return(&inboundmodel.OAuthClient{ClientID: "client123", ID: "app123"}, nil)
+	resetEntityProviderMethod(service, "GetEntity")
+	service.entityProvider.(*entityprovidermock.EntityProviderInterfaceMock).
+		On("GetEntity", "app123").Return(
+		&entityprovider.Entity{ID: "app123", Category: entityprovider.EntityCategoryApp},
+		(*entityprovider.EntityProviderError)(nil))
 
 	result, svcErr := service.GetOAuthApplication(context.Background(), "client123")
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
 	assert.Equal(suite.T(), "client123", result.ClientID)
+}
+
+// TestGetOAuthApplication_AgentEntity verifies GetOAuthApplication rejects an OAuth client
+// whose owning entity is an agent (the OAuth client_id namespace is shared with agents).
+func (suite *ServiceTestSuite) TestGetOAuthApplication_AgentEntity() {
+	service, mockStore := suite.setupTestService()
+
+	mockStore.EXPECT().GetOAuthClientByClientID(mock.Anything, "agent-client").
+		Return(&inboundmodel.OAuthClient{ClientID: "agent-client", ID: "agent-id"}, nil)
+	resetEntityProviderMethod(service, "GetEntity")
+	service.entityProvider.(*entityprovidermock.EntityProviderInterfaceMock).
+		On("GetEntity", "agent-id").Return(
+		&entityprovider.Entity{ID: "agent-id", Category: entityprovider.EntityCategoryAgent},
+		(*entityprovider.EntityProviderError)(nil))
+
+	result, svcErr := service.GetOAuthApplication(context.Background(), "agent-client")
+
+	assert.Nil(suite.T(), result)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorApplicationNotFound.Code, svcErr.Code)
+}
+
+// TestGetOAuthApplication_EntityNotFound covers the path where the OAuth client exists but the
+// owning entity has been deleted; GetOAuthApplication must surface ErrorApplicationNotFound.
+func (suite *ServiceTestSuite) TestGetOAuthApplication_EntityNotFound() {
+	service, mockStore := suite.setupTestService()
+
+	mockStore.EXPECT().GetOAuthClientByClientID(mock.Anything, "client-x").
+		Return(&inboundmodel.OAuthClient{ClientID: "client-x", ID: "missing-app"}, nil)
+
+	result, svcErr := service.GetOAuthApplication(context.Background(), "client-x")
+
+	assert.Nil(suite.T(), result)
+	suite.Require().NotNil(svcErr)
+	assert.Equal(suite.T(), ErrorApplicationNotFound.Code, svcErr.Code)
+}
+
+// TestGetOAuthApplication_EntityLoadError covers the non-NotFound entity-provider error branch.
+func (suite *ServiceTestSuite) TestGetOAuthApplication_EntityLoadError() {
+	service, mockStore := suite.setupTestService()
+
+	mockStore.EXPECT().GetOAuthClientByClientID(mock.Anything, "client-y").
+		Return(&inboundmodel.OAuthClient{ClientID: "client-y", ID: "app-y"}, nil)
+	ep := resetEntityProviderMethod(service, "GetEntity")
+	ep.On("GetEntity", "app-y").Return(
+		(*entityprovider.Entity)(nil),
+		entityprovider.NewEntityProviderError("INTERNAL_ERROR", "boom", ""))
+
+	result, svcErr := service.GetOAuthApplication(context.Background(), "client-y")
+
+	assert.Nil(suite.T(), result)
+	suite.Require().NotNil(svcErr)
+	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, svcErr.Code)
 }
 
 func (suite *ServiceTestSuite) TestGetApplication_EmptyAppID() {
@@ -328,6 +389,25 @@ func (suite *ServiceTestSuite) TestGetApplication_Success() {
 	assert.Equal(suite.T(), map[string]interface{}{"service_key": "service_val"}, result.Metadata)
 }
 
+// TestGetApplication_AgentEntity verifies getApplication rejects an entity that exists but is
+// in the agent category — the application API must not leak agent records.
+func (suite *ServiceTestSuite) TestGetApplication_AgentEntity() {
+	service, mockStore := suite.setupTestService()
+
+	mockStore.On("GetInboundClientByEntityID", mock.Anything, testServiceAppID).
+		Return(&inboundmodel.InboundClient{ID: testServiceAppID}, nil)
+	ep := resetEntityProviderMethod(service, "GetEntity")
+	ep.On("GetEntity", testServiceAppID).Return(
+		&entityprovider.Entity{ID: testServiceAppID, Category: entityprovider.EntityCategoryAgent},
+		(*entityprovider.EntityProviderError)(nil))
+
+	result, svcErr := service.GetApplication(context.Background(), testServiceAppID)
+
+	assert.Nil(suite.T(), result)
+	suite.Require().NotNil(svcErr)
+	assert.Equal(suite.T(), ErrorApplicationNotFound.Code, svcErr.Code)
+}
+
 func (suite *ServiceTestSuite) TestGetApplication_WithInboundAuthConfig_Success() {
 	service, mockStore := suite.setupTestService()
 
@@ -335,10 +415,10 @@ func (suite *ServiceTestSuite) TestGetApplication_WithInboundAuthConfig_Success(
 		ID:          testServiceAppID,
 		Name:        "OAuth Test App",
 		Description: "App with OAuth config",
-		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &inboundmodel.OAuthClient{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthClient{
 					ClientID:                "client-id-123",
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -367,20 +447,20 @@ func (suite *ServiceTestSuite) TestGetApplication_WithInboundAuthConfig_Success(
 
 	require.Len(suite.T(), result.InboundAuthConfig, 1)
 	inboundAuth := result.InboundAuthConfig[0]
-	assert.Equal(suite.T(), model.OAuthInboundAuthType, inboundAuth.Type)
-	require.NotNil(suite.T(), inboundAuth.OAuthAppConfig)
-	assert.Equal(suite.T(), "client-id-123", inboundAuth.OAuthAppConfig.ClientID)
-	assert.Equal(suite.T(), []string{"https://example.com/callback"}, inboundAuth.OAuthAppConfig.RedirectURIs)
+	assert.Equal(suite.T(), inboundmodel.OAuthInboundAuthType, inboundAuth.Type)
+	require.NotNil(suite.T(), inboundAuth.OAuthConfig)
+	assert.Equal(suite.T(), "client-id-123", inboundAuth.OAuthConfig.ClientID)
+	assert.Equal(suite.T(), []string{"https://example.com/callback"}, inboundAuth.OAuthConfig.RedirectURIs)
 	assert.Equal(suite.T(), []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-		inboundAuth.OAuthAppConfig.GrantTypes)
+		inboundAuth.OAuthConfig.GrantTypes)
 	assert.Equal(suite.T(), []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-		inboundAuth.OAuthAppConfig.ResponseTypes)
+		inboundAuth.OAuthConfig.ResponseTypes)
 	assert.Equal(suite.T(), oauth2const.TokenEndpointAuthMethodClientSecretBasic,
-		inboundAuth.OAuthAppConfig.TokenEndpointAuthMethod)
-	assert.True(suite.T(), inboundAuth.OAuthAppConfig.PKCERequired)
-	assert.False(suite.T(), inboundAuth.OAuthAppConfig.PublicClient)
-	assert.Equal(suite.T(), []string{"openid", "profile"}, inboundAuth.OAuthAppConfig.Scopes)
-	assert.Nil(suite.T(), inboundAuth.OAuthAppConfig.Certificate)
+		inboundAuth.OAuthConfig.TokenEndpointAuthMethod)
+	assert.True(suite.T(), inboundAuth.OAuthConfig.PKCERequired)
+	assert.False(suite.T(), inboundAuth.OAuthConfig.PublicClient)
+	assert.Equal(suite.T(), []string{"openid", "profile"}, inboundAuth.OAuthConfig.Scopes)
+	assert.Nil(suite.T(), inboundAuth.OAuthConfig.Certificate)
 }
 
 func (suite *ServiceTestSuite) TestGetApplicationList_Success() {
@@ -395,12 +475,16 @@ func (suite *ServiceTestSuite) TestGetApplicationList_Success() {
 	cfg1 := inboundmodel.InboundClient{ID: "app1"}
 	cfg2 := inboundmodel.InboundClient{ID: "app2"}
 
+	ep := resetEntityProviderMethod(service, "GetEntityList")
+	ep.On("GetEntityList", entityprovider.EntityCategoryApp,
+		mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.Anything).
+		Return(entities, (*entityprovider.EntityProviderError)(nil))
+	resetEntityProviderMethod(service, "GetEntityListCount").
+		On("GetEntityListCount", entityprovider.EntityCategoryApp, mock.Anything).
+		Return(2, (*entityprovider.EntityProviderError)(nil))
+
 	mockStore.On("GetInboundClientList", mock.Anything).
 		Return([]inboundmodel.InboundClient{cfg1, cfg2}, nil)
-
-	ep := resetEntityProviderMethod(service, "GetEntitiesByIDs")
-	ep.On("GetEntitiesByIDs", mock.Anything).
-		Return(entities, (*entityprovider.EntityProviderError)(nil))
 
 	result, svcErr := service.GetApplicationList(context.Background())
 
@@ -412,10 +496,16 @@ func (suite *ServiceTestSuite) TestGetApplicationList_Success() {
 }
 
 func (suite *ServiceTestSuite) TestGetApplicationList_ListError() {
-	service, mockStore := suite.setupTestService()
+	service, _ := suite.setupTestService()
 
-	mockStore.On("GetInboundClientList", mock.Anything).
-		Return(([]inboundmodel.InboundClient)(nil), errors.New("db error"))
+	resetEntityProviderMethod(service, "GetEntityListCount").
+		On("GetEntityListCount", entityprovider.EntityCategoryApp, mock.Anything).
+		Return(0, (*entityprovider.EntityProviderError)(nil))
+	ep := resetEntityProviderMethod(service, "GetEntityList")
+	epErr := &entityprovider.EntityProviderError{Code: "INTERNAL_ERROR"}
+	ep.On("GetEntityList", entityprovider.EntityCategoryApp,
+		mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.Anything).
+		Return(([]entityprovider.Entity)(nil), epErr)
 
 	result, svcErr := service.GetApplicationList(context.Background())
 
@@ -423,17 +513,22 @@ func (suite *ServiceTestSuite) TestGetApplicationList_ListError() {
 	assert.NotNil(suite.T(), svcErr)
 }
 
-func (suite *ServiceTestSuite) TestGetApplicationList_EntityFetchError() {
+func (suite *ServiceTestSuite) TestGetApplicationList_InboundFetchError() {
 	service, mockStore := suite.setupTestService()
 
-	cfg1 := inboundmodel.InboundClient{ID: "app1"}
-	mockStore.On("GetInboundClientList", mock.Anything).
-		Return([]inboundmodel.InboundClient{cfg1}, nil)
+	entities := []entityprovider.Entity{
+		{ID: "app1", Category: entityprovider.EntityCategoryApp},
+	}
+	resetEntityProviderMethod(service, "GetEntityListCount").
+		On("GetEntityListCount", entityprovider.EntityCategoryApp, mock.Anything).
+		Return(1, (*entityprovider.EntityProviderError)(nil))
+	ep := resetEntityProviderMethod(service, "GetEntityList")
+	ep.On("GetEntityList", entityprovider.EntityCategoryApp,
+		mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.Anything).
+		Return(entities, (*entityprovider.EntityProviderError)(nil))
 
-	ep := resetEntityProviderMethod(service, "GetEntitiesByIDs")
-	epErr := &entityprovider.EntityProviderError{Code: "INTERNAL_ERROR"}
-	ep.On("GetEntitiesByIDs", mock.Anything).
-		Return(([]entityprovider.Entity)(nil), epErr)
+	mockStore.On("GetInboundClientList", mock.Anything).
+		Return(([]inboundmodel.InboundClient)(nil), errors.New("db error"))
 
 	result, svcErr := service.GetApplicationList(context.Background())
 
@@ -649,7 +744,9 @@ func (suite *ServiceTestSuite) TestValidateApplicationForUpdate_NameConflict() {
 	mockEP.On("GetEntity", testServiceAppID).Unset()
 	mockEP.On("GetEntity", testServiceAppID).Return(
 		&entityprovider.Entity{
-			ID: testServiceAppID, SystemAttributes: sysAttrs,
+			ID:               testServiceAppID,
+			Category:         entityprovider.EntityCategoryApp,
+			SystemAttributes: sysAttrs,
 		}, (*entityprovider.EntityProviderError)(nil))
 	conflictingID := testConflictingAppID
 	mockEP.On("IdentifyEntity",
@@ -795,7 +892,8 @@ func (suite *ServiceTestSuite) TestDeleteApplication_StoreError() {
 
 	service, mockStore := suite.setupTestService()
 
-	mockStore.On("DeleteInboundClient", mock.Anything, testServiceAppID).Return(errors.New("store error"))
+	mockStore.On("DeleteInboundClient", mock.Anything, testServiceAppID).
+		Return(errors.New("internal server error"))
 
 	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
 
@@ -835,20 +933,26 @@ func (suite *ServiceTestSuite) TestDeleteApplication_CertError() {
 
 	service, mockStore := suite.setupTestService()
 
-	mockStore.On("DeleteInboundClient", mock.Anything, testServiceAppID).
-		Return(&inboundclient.CertOperationError{
-			Operation:  inboundclient.CertOpDelete,
-			RefType:    cert.CertificateReferenceTypeApplication,
-			Underlying: &serviceerror.ServiceError{Type: serviceerror.ClientErrorType},
-		})
+	certOpErr := &inboundclient.CertOperationError{
+		Operation: inboundclient.CertOpDelete,
+		RefType:   cert.CertificateReferenceTypeApplication,
+		Underlying: &serviceerror.ServiceError{
+			Type: serviceerror.ClientErrorType,
+			ErrorDescription: i18ncore.I18nMessage{
+				DefaultValue: "underlying",
+			},
+		},
+	}
+	mockStore.On("DeleteInboundClient", mock.Anything, testServiceAppID).Return(certOpErr)
 
 	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
 
 	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorCertificateClientError.Code, svcErr.Code)
 }
 
-// TestDeleteApplication_OAuthCertError verifies that when OAuth app certificate deletion fails,
-// the error is properly propagated from DeleteApplication (covers deleteOAuthAppCertificate).
+// TestDeleteApplication_OAuthCertError verifies that when the inbound-client layer reports an
+// internal error from a certificate operation, DeleteApplication surfaces an internal server error.
 func (suite *ServiceTestSuite) TestDeleteApplication_OAuthCertError() {
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
@@ -863,11 +967,7 @@ func (suite *ServiceTestSuite) TestDeleteApplication_OAuthCertError() {
 	service, mockStore := suite.setupTestService()
 
 	mockStore.On("DeleteInboundClient", mock.Anything, testServiceAppID).
-		Return(&inboundclient.CertOperationError{
-			Operation:  inboundclient.CertOpDelete,
-			RefType:    cert.CertificateReferenceTypeOAuthApp,
-			Underlying: &serviceerror.ServiceError{Type: serviceerror.ServerErrorType, Code: "CERT-5001"},
-		})
+		Return(errors.New("internal server error"))
 
 	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
 
@@ -875,8 +975,8 @@ func (suite *ServiceTestSuite) TestDeleteApplication_OAuthCertError() {
 	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
 }
 
-// TestDeleteApplication_OAuthCertError_ClientError verifies that when OAuth app certificate deletion fails
-// with a client error, the error is properly propagated from DeleteApplication.
+// TestDeleteApplication_OAuthCertError_ClientError verifies that when the inbound-client layer
+// surfaces a cert operation client error, DeleteApplication maps it to ErrorCertificateClientError.
 func (suite *ServiceTestSuite) TestDeleteApplication_OAuthCertError_ClientError() {
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
@@ -890,13 +990,18 @@ func (suite *ServiceTestSuite) TestDeleteApplication_OAuthCertError_ClientError(
 
 	service, mockStore := suite.setupTestService()
 
-	mockStore.On("DeleteInboundClient", mock.Anything, testServiceAppID).
-		Return(&inboundclient.CertOperationError{
-			Operation: inboundclient.CertOpDelete,
-			RefType:   cert.CertificateReferenceTypeOAuthApp,
-			Underlying: &serviceerror.ServiceError{Type: serviceerror.ClientErrorType,
-				Code: "CERT-1001", ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Invalid client ID"}},
-		})
+	certOpErr := &inboundclient.CertOperationError{
+		Operation: inboundclient.CertOpDelete,
+		RefType:   cert.CertificateReferenceTypeOAuthApp,
+		Underlying: &serviceerror.ServiceError{
+			Type: serviceerror.ClientErrorType,
+			ErrorDescription: i18ncore.I18nMessage{
+				Key:          "error.test.invalid_client_id",
+				DefaultValue: "Invalid client ID",
+			},
+		},
+	}
+	mockStore.On("DeleteInboundClient", mock.Anything, testServiceAppID).Return(certOpErr)
 
 	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
 
@@ -926,6 +1031,47 @@ func (suite *ServiceTestSuite) TestDeleteApplication_WithOAuthCert_Success() {
 
 	assert.Nil(suite.T(), svcErr)
 }
+
+// TestDeleteApplication_AgentEntity verifies DeleteApplication refuses to delete when the
+// targeted entity exists but is an agent — application delete must not affect agent records.
+func (suite *ServiceTestSuite) TestDeleteApplication_AgentEntity() {
+	testConfig := &config.Config{DeclarativeResources: config.DeclarativeResources{Enabled: false}}
+	config.ResetServerRuntime()
+	require.NoError(suite.T(), config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	service, _ := suite.setupTestService()
+	ep := resetEntityProviderMethod(service, "GetEntity")
+	ep.On("GetEntity", testServiceAppID).Return(
+		&entityprovider.Entity{ID: testServiceAppID, Category: entityprovider.EntityCategoryAgent},
+		(*entityprovider.EntityProviderError)(nil))
+
+	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
+
+	suite.Require().NotNil(svcErr)
+	assert.Equal(suite.T(), ErrorApplicationNotFound.Code, svcErr.Code)
+}
+
+// TestDeleteApplication_EntityLoadError covers the non-NotFound entity-provider error branch
+// in the pre-delete category check.
+func (suite *ServiceTestSuite) TestDeleteApplication_EntityLoadError() {
+	testConfig := &config.Config{DeclarativeResources: config.DeclarativeResources{Enabled: false}}
+	config.ResetServerRuntime()
+	require.NoError(suite.T(), config.InitializeServerRuntime("/tmp/test", testConfig))
+	defer config.ResetServerRuntime()
+
+	service, _ := suite.setupTestService()
+	ep := resetEntityProviderMethod(service, "GetEntity")
+	ep.On("GetEntity", testServiceAppID).Return(
+		(*entityprovider.Entity)(nil),
+		entityprovider.NewEntityProviderError("INTERNAL_ERROR", "boom", ""))
+
+	svcErr := service.DeleteApplication(context.Background(), testServiceAppID)
+
+	suite.Require().NotNil(svcErr)
+	assert.Equal(suite.T(), serviceerror.InternalServerError.Code, svcErr.Code)
+}
+
 func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_EmptyInboundAuth() {
 	app := &model.ApplicationDTO{
 		Name: "Test App",
@@ -942,7 +1088,7 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_Invalid
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
 				Type: "invalid_type",
 			},
@@ -959,10 +1105,10 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_NilOAut
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type:           model.OAuthInboundAuthType,
-				OAuthAppConfig: nil,
+				Type:        inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: nil,
 			},
 		},
 	}
@@ -977,10 +1123,10 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithDef
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{},
 					ResponseTypes:           []oauth2const.ResponseType{},
@@ -994,12 +1140,12 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithDef
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
-	assert.Len(suite.T(), result.OAuthAppConfig.GrantTypes, 1)
-	assert.Equal(suite.T(), oauth2const.GrantTypeAuthorizationCode, result.OAuthAppConfig.GrantTypes[0])
+	assert.Len(suite.T(), result.OAuthConfig.GrantTypes, 1)
+	assert.Equal(suite.T(), oauth2const.GrantTypeAuthorizationCode, result.OAuthConfig.GrantTypes[0])
 	assert.Equal(
 		suite.T(),
 		oauth2const.TokenEndpointAuthMethodClientSecretBasic,
-		result.OAuthAppConfig.TokenEndpointAuthMethod,
+		result.OAuthConfig.TokenEndpointAuthMethod,
 	)
 }
 
@@ -1007,10 +1153,10 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithRes
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
 					ResponseTypes:           []oauth2const.ResponseType{},
@@ -1024,18 +1170,18 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithRes
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
-	assert.Len(suite.T(), result.OAuthAppConfig.ResponseTypes, 1)
-	assert.Equal(suite.T(), oauth2const.ResponseTypeCode, result.OAuthAppConfig.ResponseTypes[0])
+	assert.Len(suite.T(), result.OAuthConfig.ResponseTypes, 1)
+	assert.Equal(suite.T(), oauth2const.ResponseTypeCode, result.OAuthConfig.ResponseTypes[0])
 }
 
 func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithGrantTypeButNoResponseType() {
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeClientCredentials},
 					ResponseTypes:           []oauth2const.ResponseType{},
@@ -1049,7 +1195,7 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_WithGra
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
-	assert.Len(suite.T(), result.OAuthAppConfig.ResponseTypes, 0)
+	assert.Len(suite.T(), result.OAuthConfig.ResponseTypes, 0)
 }
 
 func (suite *ServiceTestSuite) TestEnrichApplicationWithCertificate_Error() {
@@ -1105,10 +1251,10 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_PublicC
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
 					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
@@ -1124,7 +1270,7 @@ func (suite *ServiceTestSuite) TestValidateOAuthParamsForCreateAndUpdate_PublicC
 
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
-	assert.True(suite.T(), result.OAuthAppConfig.PublicClient)
+	assert.True(suite.T(), result.OAuthConfig.PublicClient)
 }
 
 func (suite *ServiceTestSuite) TestValidateApplication_StoreErrorNonNotFound() {
@@ -1162,10 +1308,12 @@ func (suite *ServiceTestSuite) TestValidateApplication_InvalidURL() {
 	service, _ := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		Name:       "Test App",
-		OUID:       testOUID,
-		URL:        "not-a-valid-uri",
-		AuthFlowID: "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		Name: "Test App",
+		OUID: testOUID,
+		URL:  "not-a-valid-uri",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID: "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		},
 	}
 
 	result, inboundAuth, svcErr := service.ValidateApplication(context.Background(), app)
@@ -1187,10 +1335,12 @@ func (suite *ServiceTestSuite) TestValidateApplication_InvalidLogoURL() {
 	service, _ := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		Name:       "Test App",
-		OUID:       testOUID,
-		LogoURL:    "://invalid",
-		AuthFlowID: "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		Name:    "Test App",
+		OUID:    testOUID,
+		LogoURL: "://invalid",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID: "edc013d0-e893-4dc0-990c-3e1d203e005b",
+		},
 	}
 
 	result, inboundAuth, svcErr := service.ValidateApplication(context.Background(), app)
@@ -1224,19 +1374,21 @@ func (suite *ServiceTestSuite) runCreateApplicationStoreErrorTest() {
 	service, mockStore := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		Name:               "Test App",
-		OUID:               testOUID,
-		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
-		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
-		Certificate: &inboundmodel.Certificate{
-			Type:  "JWKS",
-			Value: `{"keys":[]}`,
+		Name: "Test App",
+		OUID: testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+			RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+			Certificate: &inboundmodel.Certificate{
+				Type:  "JWKS",
+				Value: `{"keys":[]}`,
+			},
 		},
 	}
 
 	mockStore.On("CreateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything).Return(errors.New("store error"))
+		mock.Anything, mock.Anything, mock.Anything).Return(errors.New("internal server error"))
 
 	result, svcErr := service.CreateApplication(context.Background(), app)
 
@@ -1331,9 +1483,9 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingClien
 	existingApp := &model.ApplicationProcessedDTO{
 		ID:   testServiceAppID,
 		Name: "Test App",
-		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				OAuthAppConfig: &inboundmodel.OAuthClient{
+				OAuthConfig: &inboundmodel.OAuthClient{
 					ClientID: "old-client-id",
 				},
 			},
@@ -1343,10 +1495,10 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWhenCheckingClien
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                "new-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -1393,14 +1545,16 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
 	}
 
 	app := &model.ApplicationDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		OUID:               testOUID,
-		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
-		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
-		Certificate: &inboundmodel.Certificate{
-			Type:  "JWKS",
-			Value: `{"keys":[]}`,
+		ID:   testServiceAppID,
+		Name: "Test App",
+		OUID: testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+			RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+			Certificate: &inboundmodel.Certificate{
+				Type:  "JWKS",
+				Value: `{"keys":[]}`,
+			},
 		},
 	}
 
@@ -1409,7 +1563,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreErrorWithRollback() {
 	mockStore.On("UpdateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(errors.New("store error"))
+		Return(errors.New("internal server error"))
 
 	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, app)
 
@@ -1459,23 +1613,20 @@ func (suite *ServiceTestSuite) TestCreateApplication_CertificateCreationError() 
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		Certificate: &inboundmodel.Certificate{
-			Type:  "JWKS",
-			Value: `{"keys":[]}`,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			Certificate: &inboundmodel.Certificate{
+				Type:  "JWKS",
+				Value: `{"keys":[]}`,
+			},
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
 		},
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
 	}
 
-	svcErrExpected := &serviceerror.ServiceError{Type: serviceerror.ServerErrorType}
 	mockStore.On("CreateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything).
-		Return(&inboundclient.CertOperationError{
-			Operation:  inboundclient.CertOpCreate,
-			RefType:    cert.CertificateReferenceTypeApplication,
-			Underlying: svcErrExpected,
-		})
+		Return(errors.New("internal server error"))
 
 	result, svcErr := service.CreateApplication(context.Background(), app)
 
@@ -1498,14 +1649,16 @@ func (suite *ServiceTestSuite) TestCreateApplication_WithOAuthCertificate_Succes
 	service, mockStore := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		Name:               "Test OAuth Cert App",
-		OUID:               testOUID,
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		Name: "Test OAuth Cert App",
+		OUID: testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+		},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -1530,11 +1683,11 @@ func (suite *ServiceTestSuite) TestCreateApplication_WithOAuthCertificate_Succes
 	assert.Nil(suite.T(), svcErr)
 	assert.Equal(suite.T(), "Test OAuth Cert App", result.Name)
 	require.Len(suite.T(), result.InboundAuthConfig, 1)
-	assert.Equal(suite.T(), model.OAuthInboundAuthType, result.InboundAuthConfig[0].Type)
-	require.NotNil(suite.T(), result.InboundAuthConfig[0].OAuthAppConfig)
-	require.NotNil(suite.T(), result.InboundAuthConfig[0].OAuthAppConfig.Certificate)
-	assert.Equal(suite.T(), cert.CertificateType("JWKS"), result.InboundAuthConfig[0].OAuthAppConfig.Certificate.Type)
-	assert.Equal(suite.T(), `{"keys":[]}`, result.InboundAuthConfig[0].OAuthAppConfig.Certificate.Value)
+	assert.Equal(suite.T(), inboundmodel.OAuthInboundAuthType, result.InboundAuthConfig[0].Type)
+	require.NotNil(suite.T(), result.InboundAuthConfig[0].OAuthConfig)
+	require.NotNil(suite.T(), result.InboundAuthConfig[0].OAuthConfig.Certificate)
+	assert.Equal(suite.T(), cert.CertificateType("JWKS"), result.InboundAuthConfig[0].OAuthConfig.Certificate.Type)
+	assert.Equal(suite.T(), `{"keys":[]}`, result.InboundAuthConfig[0].OAuthConfig.Certificate.Value)
 }
 
 func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithOAuthCertRollback() {
@@ -1551,14 +1704,16 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithOAuthCertRoll
 	service, mockStore := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		Name:               "Test OAuth Cert App",
-		OUID:               testOUID,
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		Name: "Test OAuth Cert App",
+		OUID: testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+		},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -1576,7 +1731,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithOAuthCertRoll
 	// Store creation fails
 	mockStore.On("CreateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything).Return(errors.New("store error"))
+		mock.Anything, mock.Anything, mock.Anything).Return(errors.New("internal server error"))
 
 	result, svcErr := service.CreateApplication(context.Background(), app)
 
@@ -1599,18 +1754,20 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithBothAppAndOAu
 	service, mockStore := suite.setupTestService()
 
 	app := &model.ApplicationDTO{
-		Name:               "Test App With Both Certs",
-		OUID:               testOUID,
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		Certificate: &inboundmodel.Certificate{
-			Type:  "JWKS",
-			Value: `{"keys":[{"app":"cert"}]}`,
+		Name: "Test App With Both Certs",
+		OUID: testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+			Certificate: &inboundmodel.Certificate{
+				Type:  "JWKS",
+				Value: `{"keys":[{"app":"cert"}]}`,
+			},
 		},
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -1628,7 +1785,7 @@ func (suite *ServiceTestSuite) TestCreateApplication_StoreErrorWithBothAppAndOAu
 	// Store creation fails
 	mockStore.On("CreateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything).Return(errors.New("store error"))
+		mock.Anything, mock.Anything, mock.Anything).Return(errors.New("internal server error"))
 
 	result, svcErr := service.CreateApplication(context.Background(), app)
 
@@ -1719,20 +1876,24 @@ func (suite *ServiceTestSuite) TestUpdateApplication_MetadataUpdate() {
 	service, mockStore := suite.setupTestService()
 
 	existingApp := &model.ApplicationProcessedDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		AuthFlowID:         "default-auth-flow",
-		RegistrationFlowID: "default-reg-flow",
+		ID:   testServiceAppID,
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "default-auth-flow",
+			RegistrationFlowID: "default-reg-flow",
+		},
 		Metadata: map[string]interface{}{
 			"old_key": "old_value",
 		},
 	}
 
 	updatedApp := &model.ApplicationDTO{
-		Name:               "Test App",
-		OUID:               testOUID,
-		AuthFlowID:         "default-auth-flow",
-		RegistrationFlowID: "default-reg-flow",
+		Name: "Test App",
+		OUID: testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "default-auth-flow",
+			RegistrationFlowID: "default-reg-flow",
+		},
 		Metadata: map[string]interface{}{
 			"new_key":     "new_value",
 			"another_key": "another_value",
@@ -1773,17 +1934,12 @@ func (suite *ServiceTestSuite) TestUpdateApplication_AppCertificateUpdateError()
 		Name: "Test App",
 	}
 	app := &model.ApplicationDTO{
-		Name:               "Test App",
-		OUID:               testOUID,
-		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
-		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
-	}
-
-	certServerError := &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "CERT-5001",
-		Error:            i18ncore.I18nMessage{DefaultValue: "Database error"},
-		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Failed to retrieve certificate from database"},
+		Name: "Test App",
+		OUID: testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+			RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		},
 	}
 
 	mockStore.On("IsDeclarative", mock.Anything, testServiceAppID).Maybe().Return(false)
@@ -1791,11 +1947,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_AppCertificateUpdateError()
 	mockStore.On("UpdateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(&inboundclient.CertOperationError{
-			Operation:  inboundclient.CertOpRetrieve,
-			RefType:    cert.CertificateReferenceTypeApplication,
-			Underlying: certServerError,
-		})
+		Return(errors.New("internal server error"))
 
 	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, app)
 
@@ -1806,8 +1958,8 @@ func (suite *ServiceTestSuite) TestUpdateApplication_AppCertificateUpdateError()
 
 // TestResolveClientSecret_PublicClient tests that no secret is generated for public clients.
 func TestResolveClientSecret_PublicClient(t *testing.T) {
-	inboundAuthConfig := &model.InboundAuthConfigDTO{
-		OAuthAppConfig: &model.OAuthAppConfigDTO{
+	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
+		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
 			ClientSecret:            "",
 			PublicClient:            true,
@@ -1817,14 +1969,14 @@ func TestResolveClientSecret_PublicClient(t *testing.T) {
 	err := resolveClientSecret(inboundAuthConfig, nil)
 
 	assert.Nil(t, err)
-	assert.Equal(t, "", inboundAuthConfig.OAuthAppConfig.ClientSecret)
+	assert.Equal(t, "", inboundAuthConfig.OAuthConfig.ClientSecret)
 }
 
 // TestResolveClientSecret_SecretAlreadyProvided tests that existing secrets are not overwritten.
 func TestResolveClientSecret_SecretAlreadyProvided(t *testing.T) {
 	providedSecret := "user-provided-secret"
-	inboundAuthConfig := &model.InboundAuthConfigDTO{
-		OAuthAppConfig: &model.OAuthAppConfigDTO{
+	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
+		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
 			ClientSecret:            providedSecret,
 			PublicClient:            false,
@@ -1834,13 +1986,13 @@ func TestResolveClientSecret_SecretAlreadyProvided(t *testing.T) {
 	err := resolveClientSecret(inboundAuthConfig, nil)
 
 	assert.Nil(t, err)
-	assert.Equal(t, providedSecret, inboundAuthConfig.OAuthAppConfig.ClientSecret)
+	assert.Equal(t, providedSecret, inboundAuthConfig.OAuthConfig.ClientSecret)
 }
 
 // TestResolveClientSecret_GenerateForNewConfidentialClient tests secret generation for new clients.
 func TestResolveClientSecret_GenerateForNewConfidentialClient(t *testing.T) {
-	inboundAuthConfig := &model.InboundAuthConfigDTO{
-		OAuthAppConfig: &model.OAuthAppConfigDTO{
+	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
+		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
 			ClientSecret:            "",
 			PublicClient:            false,
@@ -1850,18 +2002,18 @@ func TestResolveClientSecret_GenerateForNewConfidentialClient(t *testing.T) {
 	err := resolveClientSecret(inboundAuthConfig, nil)
 
 	assert.Nil(t, err)
-	assert.NotEmpty(t, inboundAuthConfig.OAuthAppConfig.ClientSecret)
+	assert.NotEmpty(t, inboundAuthConfig.OAuthConfig.ClientSecret)
 	// Verify it's a valid OAuth2 secret (should be non-empty and have sufficient length)
-	assert.Greater(t, len(inboundAuthConfig.OAuthAppConfig.ClientSecret), 20)
+	assert.Greater(t, len(inboundAuthConfig.OAuthConfig.ClientSecret), 20)
 }
 
 // TestResolveClientSecret_PreserveExistingSecret tests that existing secrets are preserved during updates.
 func TestResolveClientSecret_PreserveExistingSecret(t *testing.T) {
 	existingApp := &model.ApplicationProcessedDTO{
-		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &inboundmodel.OAuthClient{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthClient{
 					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
 					PublicClient:            false,
 				},
@@ -1869,8 +2021,8 @@ func TestResolveClientSecret_PreserveExistingSecret(t *testing.T) {
 		},
 	}
 
-	inboundAuthConfig := &model.InboundAuthConfigDTO{
-		OAuthAppConfig: &model.OAuthAppConfigDTO{
+	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
+		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
 			ClientSecret:            "",
 			PublicClient:            false,
@@ -1881,13 +2033,13 @@ func TestResolveClientSecret_PreserveExistingSecret(t *testing.T) {
 
 	assert.Nil(t, err)
 	// Secret should remain empty (not generated) because existing app has a secret
-	assert.Equal(t, "", inboundAuthConfig.OAuthAppConfig.ClientSecret)
+	assert.Equal(t, "", inboundAuthConfig.OAuthConfig.ClientSecret)
 }
 
 // TestResolveClientSecret_NoExistingApp tests secret generation when no existing app.
 func TestResolveClientSecret_NoExistingApp(t *testing.T) {
-	inboundAuthConfig := &model.InboundAuthConfigDTO{
-		OAuthAppConfig: &model.OAuthAppConfigDTO{
+	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
+		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
 			ClientSecret:            "",
 			PublicClient:            false,
@@ -1897,15 +2049,16 @@ func TestResolveClientSecret_NoExistingApp(t *testing.T) {
 	err := resolveClientSecret(inboundAuthConfig, nil)
 
 	assert.Nil(t, err)
-	assert.NotEmpty(t, inboundAuthConfig.OAuthAppConfig.ClientSecret)
+	assert.NotEmpty(t, inboundAuthConfig.OAuthConfig.ClientSecret)
 }
 
 // TestResolveClientSecret_ExistingAppWithoutSecret tests secret generation when existing app has no secret.
 func TestResolveClientSecret_ExistingAppWithoutSecret(t *testing.T) {
 	existingApp := &model.ApplicationProcessedDTO{
-		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				OAuthAppConfig: &inboundmodel.OAuthClient{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthClient{
 					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodNone,
 					PublicClient:            false,
 				},
@@ -1913,8 +2066,8 @@ func TestResolveClientSecret_ExistingAppWithoutSecret(t *testing.T) {
 		},
 	}
 
-	inboundAuthConfig := &model.InboundAuthConfigDTO{
-		OAuthAppConfig: &model.OAuthAppConfigDTO{
+	inboundAuthConfig := &inboundmodel.InboundAuthConfigWithSecret{
+		OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 			TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodClientSecretBasic,
 			ClientSecret:            "",
 			PublicClient:            false,
@@ -1925,7 +2078,7 @@ func TestResolveClientSecret_ExistingAppWithoutSecret(t *testing.T) {
 
 	assert.Nil(t, err)
 	// Should generate a new secret since existing app doesn't have one
-	assert.NotEmpty(t, inboundAuthConfig.OAuthAppConfig.ClientSecret)
+	assert.NotEmpty(t, inboundAuthConfig.OAuthConfig.ClientSecret)
 }
 
 // TestUpdateApplication_StoreFails_RollbackCertFails verifies that when the store update fails
@@ -1946,11 +2099,13 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreFails_RollbackCertFail
 		Name: "Test App",
 	}
 	app := &model.ApplicationDTO{
-		ID:                 "app123",
-		Name:               "Test App",
-		OUID:               testOUID,
-		AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
-		RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		ID:   "app123",
+		Name: "Test App",
+		OUID: testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "edc013d0-e893-4dc0-990c-3e1d203e005b",
+			RegistrationFlowID: "80024fb3-29ed-4c33-aa48-8aee5e96d522",
+		},
 	}
 
 	mockStore.On("IsDeclarative", mock.Anything, "app123").Maybe().Return(false)
@@ -1958,7 +2113,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_StoreFails_RollbackCertFail
 	mockStore.On("UpdateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(errors.New("store error"))
+		Return(errors.New("internal server error"))
 
 	result, svcErr := service.UpdateApplication(context.Background(), "app123", app)
 
@@ -1985,14 +2140,16 @@ func (suite *ServiceTestSuite) TestUpdateApplication_WithOAuthConfig_Success() {
 	service, mockStore := suite.setupTestService()
 
 	existingApp := &model.ApplicationProcessedDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+		},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &inboundmodel.OAuthClient{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthClient{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -2004,15 +2161,17 @@ func (suite *ServiceTestSuite) TestUpdateApplication_WithOAuthConfig_Success() {
 	}
 
 	updatedApp := &model.ApplicationDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App Updated",
-		OUID:               testOUID,
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		ID:   testServiceAppID,
+		Name: "Test App Updated",
+		OUID: testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+		},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID: testClientID,
 					RedirectURIs: []string{"https://example.com/callback",
 						"https://example.com/callback2"},
@@ -2037,8 +2196,8 @@ func (suite *ServiceTestSuite) TestUpdateApplication_WithOAuthConfig_Success() {
 	assert.Nil(suite.T(), svcErr)
 	assert.Equal(suite.T(), "Test App Updated", result.Name)
 	require.Len(suite.T(), result.InboundAuthConfig, 1)
-	assert.Equal(suite.T(), testClientID, result.InboundAuthConfig[0].OAuthAppConfig.ClientID)
-	assert.Len(suite.T(), result.InboundAuthConfig[0].OAuthAppConfig.RedirectURIs, 2)
+	assert.Equal(suite.T(), testClientID, result.InboundAuthConfig[0].OAuthConfig.ClientID)
+	assert.Len(suite.T(), result.InboundAuthConfig[0].OAuthConfig.RedirectURIs, 2)
 	mockStore.AssertExpectations(suite.T())
 }
 
@@ -2060,23 +2219,27 @@ func (suite *ServiceTestSuite) TestUpdateApplication_AddOAuthConfig_Success() {
 	service, mockStore := suite.setupTestService()
 
 	existingApp := &model.ApplicationProcessedDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig:  []model.InboundAuthConfigProcessedDTO{}, // No OAuth config initially
+		ID:   testServiceAppID,
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+		},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{}, // No OAuth config initially
 	}
 
 	updatedApp := &model.ApplicationDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		OUID:               testOUID,
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+		OUID: testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+		},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                "new-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -2099,7 +2262,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_AddOAuthConfig_Success() {
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
 	require.Len(suite.T(), result.InboundAuthConfig, 1)
-	assert.Equal(suite.T(), "new-client-id", result.InboundAuthConfig[0].OAuthAppConfig.ClientID)
+	assert.Equal(suite.T(), "new-client-id", result.InboundAuthConfig[0].OAuthConfig.ClientID)
 	mockStore.AssertExpectations(suite.T())
 }
 
@@ -2121,14 +2284,16 @@ func (suite *ServiceTestSuite) TestUpdateApplication_UpdateOAuthClientID_Success
 	service, mockStore := suite.setupTestService()
 
 	existingApp := &model.ApplicationProcessedDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+		},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &inboundmodel.OAuthClient{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthClient{
 					ClientID:                "old-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -2140,15 +2305,17 @@ func (suite *ServiceTestSuite) TestUpdateApplication_UpdateOAuthClientID_Success
 	}
 
 	updatedApp := &model.ApplicationDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		OUID:               testOUID,
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+		OUID: testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+		},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                "new-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -2171,7 +2338,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_UpdateOAuthClientID_Success
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
 	require.Len(suite.T(), result.InboundAuthConfig, 1)
-	assert.Equal(suite.T(), "new-client-id", result.InboundAuthConfig[0].OAuthAppConfig.ClientID)
+	assert.Equal(suite.T(), "new-client-id", result.InboundAuthConfig[0].OAuthConfig.ClientID)
 	mockStore.AssertExpectations(suite.T())
 }
 
@@ -2192,14 +2359,16 @@ func (suite *ServiceTestSuite) runUpdateApplicationWithJWKSCert(jwksValue string
 	service, mockStore := suite.setupTestService()
 
 	existingApp := &model.ApplicationProcessedDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+		},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &inboundmodel.OAuthClient{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthClient{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -2211,15 +2380,17 @@ func (suite *ServiceTestSuite) runUpdateApplicationWithJWKSCert(jwksValue string
 	}
 
 	updatedApp := &model.ApplicationDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		OUID:               testOUID,
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+		OUID: testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+		},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -2246,8 +2417,8 @@ func (suite *ServiceTestSuite) runUpdateApplicationWithJWKSCert(jwksValue string
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
 	require.Len(suite.T(), result.InboundAuthConfig, 1)
-	assert.NotNil(suite.T(), result.InboundAuthConfig[0].OAuthAppConfig.Certificate)
-	assert.Equal(suite.T(), cert.CertificateTypeJWKS, result.InboundAuthConfig[0].OAuthAppConfig.Certificate.Type)
+	assert.NotNil(suite.T(), result.InboundAuthConfig[0].OAuthConfig.Certificate)
+	assert.Equal(suite.T(), cert.CertificateTypeJWKS, result.InboundAuthConfig[0].OAuthConfig.Certificate.Type)
 	mockStore.AssertExpectations(suite.T())
 }
 
@@ -2276,14 +2447,16 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthClientIDConflict() {
 	service, mockStore := suite.setupTestService()
 
 	existingApp := &model.ApplicationProcessedDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+		},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &inboundmodel.OAuthClient{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthClient{
 					ClientID:                "old-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -2295,15 +2468,17 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthClientIDConflict() {
 	}
 
 	updatedApp := &model.ApplicationDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		OUID:               testOUID,
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+		OUID: testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+		},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                "existing-client-id",
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -2334,92 +2509,8 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthClientIDConflict() {
 
 // TestUpdateApplication_OAuthInvalidRedirectURI tests updating with an invalid redirect URI.
 
-// TestUpdateApplication_OAuthCertUpdateError tests when certificate update fails.
-func (suite *ServiceTestSuite) TestUpdateApplication_OAuthCertUpdateError() {
-	testConfig := &config.Config{
-		DeclarativeResources: config.DeclarativeResources{
-			Enabled: false,
-		},
-		JWT: config.JWTConfig{
-			ValidityPeriod: 3600,
-		},
-	}
-	config.ResetServerRuntime()
-	err := config.InitializeServerRuntime("/tmp/test", testConfig)
-	require.NoError(suite.T(), err)
-	defer config.ResetServerRuntime()
-
-	service, mockStore := suite.setupTestService()
-
-	existingApp := &model.ApplicationProcessedDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
-			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &inboundmodel.OAuthClient{
-					ClientID:                testClientID,
-					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
-				},
-			},
-		},
-	}
-
-	updatedApp := &model.ApplicationDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		OUID:               testOUID,
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
-			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
-					ClientID:                testClientID,
-					RedirectURIs:            []string{"https://example.com/callback"},
-					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
-					ResponseTypes:           []oauth2const.ResponseType{oauth2const.ResponseTypeCode},
-					TokenEndpointAuthMethod: oauth2const.TokenEndpointAuthMethodPrivateKeyJWT,
-					Certificate: &inboundmodel.Certificate{
-						Type:  cert.CertificateTypeJWKS,
-						Value: `{"keys":[{"kty":"RSA"}]}`,
-					},
-				},
-			},
-		},
-	}
-
-	certError := &serviceerror.ServiceError{
-		Type:             serviceerror.ServerErrorType,
-		Code:             "CERT-500",
-		Error:            i18ncore.I18nMessage{DefaultValue: "Internal certificate error"},
-		ErrorDescription: i18ncore.I18nMessage{DefaultValue: "Failed to retrieve certificate"},
-	}
-
-	mockStore.On("IsDeclarative", mock.Anything, testServiceAppID).Maybe().Return(false)
-	mockLoadFullApplication(mockStore, service, existingApp)
-	mockStore.On("UpdateInboundClient",
-		mock.Anything, mock.Anything, mock.Anything,
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(&inboundclient.CertOperationError{
-			Operation:  inboundclient.CertOpRetrieve,
-			RefType:    cert.CertificateReferenceTypeOAuthApp,
-			Underlying: certError,
-		})
-
-	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
-
-	assert.Nil(suite.T(), result)
-	assert.NotNil(suite.T(), svcErr)
-	assert.Equal(suite.T(), &serviceerror.InternalServerError, svcErr)
-}
-
-// TestUpdateApplication_OAuthStoreErrorWithRollback tests when store update fails with OAuth cert rollback.
+// TestUpdateApplication_OAuthStoreErrorWithRollback tests when the inbound-client update fails for an
+// OAuth application and the service surfaces an internal-server error.
 func (suite *ServiceTestSuite) TestUpdateApplication_OAuthStoreErrorWithRollback() {
 	testConfig := &config.Config{
 		DeclarativeResources: config.DeclarativeResources{
@@ -2437,14 +2528,16 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthStoreErrorWithRollback
 	service, mockStore := suite.setupTestService()
 
 	existingApp := &model.ApplicationProcessedDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+		},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &inboundmodel.OAuthClient{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthClient{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -2456,15 +2549,17 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthStoreErrorWithRollback
 	}
 
 	updatedApp := &model.ApplicationDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		OUID:               testOUID,
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+		OUID: testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+		},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -2486,7 +2581,7 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthStoreErrorWithRollback
 	mockStore.On("UpdateInboundClient",
 		mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(errors.New("store error"))
+		Return(errors.New("internal server error"))
 
 	result, svcErr := service.UpdateApplication(context.Background(), testServiceAppID, updatedApp)
 
@@ -2513,14 +2608,16 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthTokenConfigUpdate() {
 	service, mockStore := suite.setupTestService()
 
 	existingApp := &model.ApplicationProcessedDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigProcessedDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+		},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigProcessed{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &inboundmodel.OAuthClient{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthClient{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -2532,15 +2629,17 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthTokenConfigUpdate() {
 	}
 
 	updatedApp := &model.ApplicationDTO{
-		ID:                 testServiceAppID,
-		Name:               "Test App",
-		OUID:               testOUID,
-		AuthFlowID:         "auth-flow-id",
-		RegistrationFlowID: "reg-flow-id",
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		ID:   testServiceAppID,
+		Name: "Test App",
+		OUID: testOUID,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:         "auth-flow-id",
+			RegistrationFlowID: "reg-flow-id",
+		},
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
-				Type: model.OAuthInboundAuthType,
-				OAuthAppConfig: &model.OAuthAppConfigDTO{
+				Type: inboundmodel.OAuthInboundAuthType,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
 					ClientID:                testClientID,
 					RedirectURIs:            []string{"https://example.com/callback"},
 					GrantTypes:              []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -2573,9 +2672,9 @@ func (suite *ServiceTestSuite) TestUpdateApplication_OAuthTokenConfigUpdate() {
 	assert.NotNil(suite.T(), result)
 	assert.Nil(suite.T(), svcErr)
 	require.Len(suite.T(), result.InboundAuthConfig, 1)
-	assert.NotNil(suite.T(), result.InboundAuthConfig[0].OAuthAppConfig.Token)
-	assert.Equal(suite.T(), int64(7200), result.InboundAuthConfig[0].OAuthAppConfig.Token.AccessToken.ValidityPeriod)
-	assert.Equal(suite.T(), int64(3600), result.InboundAuthConfig[0].OAuthAppConfig.Token.IDToken.ValidityPeriod)
+	assert.NotNil(suite.T(), result.InboundAuthConfig[0].OAuthConfig.Token)
+	assert.Equal(suite.T(), int64(7200), result.InboundAuthConfig[0].OAuthConfig.Token.AccessToken.ValidityPeriod)
+	assert.Equal(suite.T(), int64(3600), result.InboundAuthConfig[0].OAuthConfig.Token.IDToken.ValidityPeriod)
 	mockStore.AssertExpectations(suite.T())
 }
 
@@ -2632,7 +2731,7 @@ func (suite *ServiceTestSuite) TestValidateApplication_ErrorFromProcessInboundAu
 	app := &model.ApplicationDTO{
 		Name: "Test App",
 		OUID: testOUID,
-		InboundAuthConfig: []model.InboundAuthConfigDTO{
+		InboundAuthConfig: []inboundmodel.InboundAuthConfigWithSecret{
 			{
 				Type: "InvalidType", // Invalid type, not OAuth
 			},
@@ -2645,6 +2744,64 @@ func (suite *ServiceTestSuite) TestValidateApplication_ErrorFromProcessInboundAu
 	assert.Nil(suite.T(), inboundAuth)
 	assert.NotNil(suite.T(), svcErr)
 	assert.Equal(suite.T(), &ErrorInvalidInboundAuthConfig, svcErr)
+}
+
+// TestTranslateIDTokenValidationError_UnsupportedEncryptionAlg tests the translation of
+// ErrOAuthIDTokenUnsupportedEncryptionAlg to a ServiceError.
+func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_UnsupportedEncryptionAlg() {
+	svcErr := (&applicationService{}).
+		translateInboundClientError(inboundclient.ErrOAuthIDTokenUnsupportedEncryptionAlg)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorInvalidOAuthConfiguration.Code, svcErr.Code)
+}
+
+// TestTranslateIDTokenValidationError_UnsupportedEncryptionEnc tests the translation of
+// ErrOAuthIDTokenUnsupportedEncryptionEnc to a ServiceError.
+func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_UnsupportedEncryptionEnc() {
+	svcErr := (&applicationService{}).
+		translateInboundClientError(inboundclient.ErrOAuthIDTokenUnsupportedEncryptionEnc)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorInvalidOAuthConfiguration.Code, svcErr.Code)
+}
+
+// TestTranslateIDTokenValidationError_EncryptionAlgRequiresEnc tests the translation of
+// ErrOAuthIDTokenEncryptionAlgRequiresEnc to a ServiceError.
+func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_EncryptionAlgRequiresEnc() {
+	svcErr := (&applicationService{}).
+		translateInboundClientError(inboundclient.ErrOAuthIDTokenEncryptionAlgRequiresEnc)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorInvalidOAuthConfiguration.Code, svcErr.Code)
+}
+
+// TestTranslateIDTokenValidationError_EncryptionEncRequiresAlg tests the translation of
+// ErrOAuthIDTokenEncryptionEncRequiresAlg to a ServiceError.
+func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_EncryptionEncRequiresAlg() {
+	svcErr := (&applicationService{}).
+		translateInboundClientError(inboundclient.ErrOAuthIDTokenEncryptionEncRequiresAlg)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorInvalidOAuthConfiguration.Code, svcErr.Code)
+}
+
+// TestTranslateIDTokenValidationError_EncryptionRequiresCertificate tests the translation of
+// ErrOAuthIDTokenEncryptionRequiresCertificate to a ServiceError.
+func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_EncryptionRequiresCertificate() {
+	svcErr := (&applicationService{}).translateInboundClientError(
+		inboundclient.ErrOAuthIDTokenEncryptionRequiresCertificate)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorInvalidOAuthConfiguration.Code, svcErr.Code)
+}
+
+// TestTranslateIDTokenValidationError_JWKSURINotSSRFSafe tests the translation of
+// ErrOAuthIDTokenJWKSURINotSSRFSafe to a ServiceError.
+func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError_JWKSURINotSSRFSafe() {
+	svcErr := (&applicationService{}).
+		translateInboundClientError(inboundclient.ErrOAuthIDTokenJWKSURINotSSRFSafe)
+	assert.NotNil(suite.T(), svcErr)
+	assert.Equal(suite.T(), ErrorInvalidOAuthConfiguration.Code, svcErr.Code)
+	assert.Equal(suite.T(),
+		"error.applicationservice.idtoken_jwks_uri_not_ssrf_safe_description",
+		svcErr.ErrorDescription.Key,
+	)
 }
 
 var validAcrMapping = config.AuthClassConfig{
@@ -2757,4 +2914,381 @@ func (s *AcrValidationTestSuite) TestIsValidACR_EmptyMapping() {
 	s.initRegistry(config.AuthClassConfig{})
 
 	s.False(isValidACR("urn:thunder:acr:password"))
+}
+
+func (suite *ServiceTestSuite) TestTranslateOAuthValidationError() {
+	cases := []struct {
+		name        string
+		err         error
+		wantCode    string
+		wantDescKey string
+	}{
+		{
+			name:     "InvalidRedirectURI",
+			err:      inboundclient.ErrOAuthInvalidRedirectURI,
+			wantCode: ErrorInvalidRedirectURI.Code,
+		},
+		{
+			name:        "RedirectURIFragmentNotAllowed",
+			err:         inboundclient.ErrOAuthRedirectURIFragmentNotAllowed,
+			wantCode:    ErrorInvalidRedirectURI.Code,
+			wantDescKey: "error.applicationservice.redirect_uri_fragment_not_allowed_description",
+		},
+		{
+			name:        "AuthCodeRequiresRedirectURIs",
+			err:         inboundclient.ErrOAuthAuthCodeRequiresRedirectURIs,
+			wantCode:    ErrorInvalidOAuthConfiguration.Code,
+			wantDescKey: "error.applicationservice.auth_code_requires_redirect_uris_description",
+		},
+		{
+			name:     "InvalidGrantType",
+			err:      inboundclient.ErrOAuthInvalidGrantType,
+			wantCode: ErrorInvalidGrantType.Code,
+		},
+		{
+			name:     "InvalidResponseType",
+			err:      inboundclient.ErrOAuthInvalidResponseType,
+			wantCode: ErrorInvalidResponseType.Code,
+		},
+		{
+			name:        "ClientCredentialsCannotUseResponseTypes",
+			err:         inboundclient.ErrOAuthClientCredentialsCannotUseResponseTypes,
+			wantCode:    ErrorInvalidOAuthConfiguration.Code,
+			wantDescKey: "error.applicationservice.client_credentials_cannot_use_response_types_description",
+		},
+		{
+			name:        "AuthCodeRequiresCodeResponseType",
+			err:         inboundclient.ErrOAuthAuthCodeRequiresCodeResponseType,
+			wantCode:    ErrorInvalidOAuthConfiguration.Code,
+			wantDescKey: "error.applicationservice.auth_code_requires_code_response_type_description",
+		},
+		{
+			name:        "RefreshTokenCannotBeSoleGrant",
+			err:         inboundclient.ErrOAuthRefreshTokenCannotBeSoleGrant,
+			wantCode:    ErrorInvalidOAuthConfiguration.Code,
+			wantDescKey: "error.applicationservice.refresh_token_cannot_be_sole_grant_description",
+		},
+		{
+			name:        "PKCERequiresAuthCode",
+			err:         inboundclient.ErrOAuthPKCERequiresAuthCode,
+			wantCode:    ErrorInvalidOAuthConfiguration.Code,
+			wantDescKey: "error.applicationservice.pkce_requires_authorization_code_description",
+		},
+		{
+			name:        "ResponseTypesRequireAuthCode",
+			err:         inboundclient.ErrOAuthResponseTypesRequireAuthCode,
+			wantCode:    ErrorInvalidOAuthConfiguration.Code,
+			wantDescKey: "error.applicationservice.response_types_require_authorization_code_description",
+		},
+		{
+			name:     "InvalidTokenEndpointAuthMethod",
+			err:      inboundclient.ErrOAuthInvalidTokenEndpointAuthMethod,
+			wantCode: ErrorInvalidTokenEndpointAuthMethod.Code,
+		},
+		{
+			name:        "PrivateKeyJWTRequiresCertificate",
+			err:         inboundclient.ErrOAuthPrivateKeyJWTRequiresCertificate,
+			wantCode:    ErrorInvalidOAuthConfiguration.Code,
+			wantDescKey: "error.applicationservice.private_key_jwt_requires_certificate_description",
+		},
+		{
+			name:        "PrivateKeyJWTCannotHaveClientSecret",
+			err:         inboundclient.ErrOAuthPrivateKeyJWTCannotHaveClientSecret,
+			wantCode:    ErrorInvalidOAuthConfiguration.Code,
+			wantDescKey: "error.applicationservice.private_key_jwt_cannot_have_client_secret_description",
+		},
+		{
+			name:        "ClientSecretCannotHaveCertificate",
+			err:         inboundclient.ErrOAuthClientSecretCannotHaveCertificate,
+			wantCode:    ErrorInvalidOAuthConfiguration.Code,
+			wantDescKey: "error.applicationservice.client_secret_cannot_have_certificate_description",
+		},
+		{
+			name:        "NoneAuthRequiresPublicClient",
+			err:         inboundclient.ErrOAuthNoneAuthRequiresPublicClient,
+			wantCode:    ErrorInvalidOAuthConfiguration.Code,
+			wantDescKey: "error.applicationservice.none_auth_method_requires_public_client_description",
+		},
+		{
+			name:        "NoneAuthCannotHaveCertOrSecret",
+			err:         inboundclient.ErrOAuthNoneAuthCannotHaveCertOrSecret,
+			wantCode:    ErrorInvalidOAuthConfiguration.Code,
+			wantDescKey: "error.applicationservice.none_auth_method_cannot_have_cert_or_secret_description",
+		},
+		{
+			name:        "ClientCredentialsCannotUseNoneAuth",
+			err:         inboundclient.ErrOAuthClientCredentialsCannotUseNoneAuth,
+			wantCode:    ErrorInvalidOAuthConfiguration.Code,
+			wantDescKey: "error.applicationservice.client_credentials_cannot_use_none_auth_description",
+		},
+		{
+			name:        "PublicClientMustUseNoneAuth",
+			err:         inboundclient.ErrOAuthPublicClientMustUseNoneAuth,
+			wantCode:    ErrorInvalidPublicClientConfiguration.Code,
+			wantDescKey: "error.applicationservice.public_client_must_use_none_auth_description",
+		},
+		{
+			name:        "PublicClientMustHavePKCE",
+			err:         inboundclient.ErrOAuthPublicClientMustHavePKCE,
+			wantCode:    ErrorInvalidPublicClientConfiguration.Code,
+			wantDescKey: "error.applicationservice.public_client_must_have_pkce_description",
+		},
+	}
+	for _, tc := range cases {
+		suite.Run(tc.name, func() {
+			svcErr := translateOAuthValidationError(tc.err)
+			suite.Require().NotNil(svcErr)
+			suite.Equal(tc.wantCode, svcErr.Code)
+			if tc.wantDescKey != "" {
+				suite.Equal(tc.wantDescKey, svcErr.ErrorDescription.Key)
+			}
+		})
+	}
+	suite.Nil(translateOAuthValidationError(errors.New("unknown")))
+}
+
+func (suite *ServiceTestSuite) TestTranslateUserInfoValidationError() {
+	cases := []struct {
+		name        string
+		err         error
+		wantDescKey string
+	}{
+		{
+			name:        "UnsupportedSigningAlg",
+			err:         inboundclient.ErrOAuthUserInfoUnsupportedSigningAlg,
+			wantDescKey: "error.applicationservice.userinfo_unsupported_signing_alg_description",
+		},
+		{
+			name:        "UnsupportedEncryptionAlg",
+			err:         inboundclient.ErrOAuthUserInfoUnsupportedEncryptionAlg,
+			wantDescKey: "error.applicationservice.userinfo_unsupported_encryption_alg_description",
+		},
+		{
+			name:        "UnsupportedEncryptionEnc",
+			err:         inboundclient.ErrOAuthUserInfoUnsupportedEncryptionEnc,
+			wantDescKey: "error.applicationservice.userinfo_unsupported_encryption_enc_description",
+		},
+		{
+			name:        "EncryptionAlgRequiresEnc",
+			err:         inboundclient.ErrOAuthUserInfoEncryptionAlgRequiresEnc,
+			wantDescKey: "error.applicationservice.userinfo_encryption_alg_requires_enc_description",
+		},
+		{
+			name:        "EncryptionEncRequiresAlg",
+			err:         inboundclient.ErrOAuthUserInfoEncryptionEncRequiresAlg,
+			wantDescKey: "error.applicationservice.userinfo_encryption_enc_requires_alg_description",
+		},
+		{
+			name:        "EncryptionRequiresCertificate",
+			err:         inboundclient.ErrOAuthUserInfoEncryptionRequiresCertificate,
+			wantDescKey: "error.applicationservice.userinfo_encryption_requires_certificate_description",
+		},
+		{
+			name:        "JWKSURINotSSRFSafe",
+			err:         inboundclient.ErrOAuthUserInfoJWKSURINotSSRFSafe,
+			wantDescKey: "error.applicationservice.userinfo_jwks_uri_not_ssrf_safe_description",
+		},
+		{
+			name:        "UnsupportedResponseType",
+			err:         inboundclient.ErrOAuthUserInfoUnsupportedResponseType,
+			wantDescKey: "error.applicationservice.userinfo_unsupported_response_type_description",
+		},
+		{
+			name:        "JWSRequiresSigningAlg",
+			err:         inboundclient.ErrOAuthUserInfoJWSRequiresSigningAlg,
+			wantDescKey: "error.applicationservice.userinfo_jws_requires_signing_alg_description",
+		},
+		{
+			name:        "JWERequiresEncryption",
+			err:         inboundclient.ErrOAuthUserInfoJWERequiresEncryption,
+			wantDescKey: "error.applicationservice.userinfo_jwe_requires_encryption_description",
+		},
+		{
+			name:        "NestedJWTRequiresAll",
+			err:         inboundclient.ErrOAuthUserInfoNestedJWTRequiresAll,
+			wantDescKey: "error.applicationservice.userinfo_nested_jwt_requires_all_description",
+		},
+		{
+			name:        "AlgRequiresResponseType",
+			err:         inboundclient.ErrOAuthUserInfoAlgRequiresResponseType,
+			wantDescKey: "error.applicationservice.userinfo_alg_requires_response_type_description",
+		},
+	}
+	for _, tc := range cases {
+		suite.Run(tc.name, func() {
+			svcErr := translateUserInfoValidationError(tc.err)
+			suite.Require().NotNil(svcErr)
+			suite.Equal(ErrorInvalidOAuthConfiguration.Code, svcErr.Code)
+			suite.Equal(tc.wantDescKey, svcErr.ErrorDescription.Key)
+		})
+	}
+	suite.Nil(translateUserInfoValidationError(errors.New("unknown")))
+}
+
+func (suite *ServiceTestSuite) TestTranslateIDTokenValidationError() {
+	cases := []struct {
+		name        string
+		err         error
+		wantDescKey string
+	}{
+		{
+			name:        "EncryptionFieldsNotAllowed",
+			err:         inboundclient.ErrOAuthIDTokenEncryptionFieldsNotAllowed,
+			wantDescKey: "error.applicationservice.idtoken_encryption_fields_not_allowed_description",
+		},
+		{
+			name:        "UnsupportedResponseType",
+			err:         inboundclient.ErrOAuthIDTokenUnsupportedResponseType,
+			wantDescKey: "error.applicationservice.idtoken_unsupported_response_type_description",
+		},
+		{
+			name:        "UnsupportedEncryptionAlg",
+			err:         inboundclient.ErrOAuthIDTokenUnsupportedEncryptionAlg,
+			wantDescKey: "error.applicationservice.idtoken_unsupported_encryption_alg_description",
+		},
+		{
+			name:        "UnsupportedEncryptionEnc",
+			err:         inboundclient.ErrOAuthIDTokenUnsupportedEncryptionEnc,
+			wantDescKey: "error.applicationservice.idtoken_unsupported_encryption_enc_description",
+		},
+		{
+			name:        "EncryptionAlgRequiresEnc",
+			err:         inboundclient.ErrOAuthIDTokenEncryptionAlgRequiresEnc,
+			wantDescKey: "error.applicationservice.idtoken_encryption_alg_requires_enc_description",
+		},
+		{
+			name:        "EncryptionEncRequiresAlg",
+			err:         inboundclient.ErrOAuthIDTokenEncryptionEncRequiresAlg,
+			wantDescKey: "error.applicationservice.idtoken_encryption_enc_requires_alg_description",
+		},
+		{
+			name:        "EncryptionRequiresCertificate",
+			err:         inboundclient.ErrOAuthIDTokenEncryptionRequiresCertificate,
+			wantDescKey: "error.applicationservice.idtoken_encryption_requires_certificate_description",
+		},
+		{
+			name:        "JWKSURINotSSRFSafe",
+			err:         inboundclient.ErrOAuthIDTokenJWKSURINotSSRFSafe,
+			wantDescKey: "error.applicationservice.idtoken_jwks_uri_not_ssrf_safe_description",
+		},
+	}
+	for _, tc := range cases {
+		suite.Run(tc.name, func() {
+			svcErr := translateIDTokenValidationError(tc.err)
+			suite.Require().NotNil(svcErr)
+			suite.Equal(ErrorInvalidOAuthConfiguration.Code, svcErr.Code)
+			suite.Equal(tc.wantDescKey, svcErr.ErrorDescription.Key)
+		})
+	}
+	suite.Nil(translateIDTokenValidationError(errors.New("unknown")))
+}
+
+func (suite *ServiceTestSuite) TestTranslateInboundClientFKError() {
+	cases := []struct {
+		name     string
+		err      error
+		wantCode string
+	}{
+		{
+			name:     "InvalidAuthFlow",
+			err:      inboundclient.ErrFKInvalidAuthFlow,
+			wantCode: ErrorInvalidAuthFlowID.Code,
+		},
+		{
+			name:     "InvalidRegistrationFlow",
+			err:      inboundclient.ErrFKInvalidRegistrationFlow,
+			wantCode: ErrorInvalidRegistrationFlowID.Code,
+		},
+		{
+			name:     "FlowDefinitionRetrievalFailed",
+			err:      inboundclient.ErrFKFlowDefinitionRetrievalFailed,
+			wantCode: ErrorWhileRetrievingFlowDefinition.Code,
+		},
+		{
+			name:     "FlowServerError",
+			err:      inboundclient.ErrFKFlowServerError,
+			wantCode: serviceerror.InternalServerError.Code,
+		},
+		{
+			name:     "ThemeNotFound",
+			err:      inboundclient.ErrFKThemeNotFound,
+			wantCode: ErrorThemeNotFound.Code,
+		},
+		{
+			name:     "LayoutNotFound",
+			err:      inboundclient.ErrFKLayoutNotFound,
+			wantCode: ErrorLayoutNotFound.Code,
+		},
+		{
+			name:     "InvalidUserType",
+			err:      inboundclient.ErrFKInvalidUserType,
+			wantCode: ErrorInvalidUserType.Code,
+		},
+		{
+			name:     "UserSchemaLookupFailed",
+			err:      inboundclient.ErrUserSchemaLookupFailed,
+			wantCode: serviceerror.InternalServerError.Code,
+		},
+		{
+			name:     "InvalidUserAttribute",
+			err:      inboundclient.ErrInvalidUserAttribute,
+			wantCode: ErrorInvalidUserAttribute.Code,
+		},
+	}
+	for _, tc := range cases {
+		suite.Run(tc.name, func() {
+			svcErr := translateInboundClientFKError(tc.err)
+			suite.Require().NotNil(svcErr)
+			suite.Equal(tc.wantCode, svcErr.Code)
+		})
+	}
+	suite.Nil(translateInboundClientFKError(errors.New("unknown")))
+}
+
+func (suite *ServiceTestSuite) TestTranslateCertValidationError() {
+	cases := []struct {
+		name     string
+		err      error
+		wantCode string
+	}{
+		{
+			name:     "ValueRequired",
+			err:      inboundclient.ErrCertValueRequired,
+			wantCode: ErrorInvalidCertificateValue.Code,
+		},
+		{
+			name:     "InvalidJWKSURI",
+			err:      inboundclient.ErrCertInvalidJWKSURI,
+			wantCode: ErrorInvalidJWKSURI.Code,
+		},
+		{
+			name:     "InvalidType",
+			err:      inboundclient.ErrCertInvalidType,
+			wantCode: ErrorInvalidCertificateType.Code,
+		},
+	}
+	for _, tc := range cases {
+		suite.Run(tc.name, func() {
+			svcErr := translateCertValidationError(tc.err)
+			suite.Require().NotNil(svcErr)
+			suite.Equal(tc.wantCode, svcErr.Code)
+		})
+	}
+	suite.Nil(translateCertValidationError(errors.New("unknown")))
+}
+
+func (suite *ServiceTestSuite) TestTranslateConsentSyncError() {
+	clientErr := &inboundclient.ConsentSyncError{
+		Underlying: &serviceerror.ServiceError{Type: serviceerror.ClientErrorType, Code: "CONSENT-1234"},
+	}
+	svcErr := translateConsentSyncError(clientErr)
+	suite.Require().NotNil(svcErr)
+	suite.Equal(ErrorConsentSyncFailed.Code, svcErr.Code)
+	suite.Equal("error.applicationservice.consent_sync_failed_description", svcErr.ErrorDescription.Key)
+	suite.Contains(svcErr.ErrorDescription.DefaultValue, "CONSENT-1234")
+
+	serverErr := &inboundclient.ConsentSyncError{
+		Underlying: &serviceerror.ServiceError{Type: serviceerror.ServerErrorType, Code: "CONSENT-9000"},
+	}
+	suite.Equal(serviceerror.InternalServerError.Code, translateConsentSyncError(serverErr).Code)
 }

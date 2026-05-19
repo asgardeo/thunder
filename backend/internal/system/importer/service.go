@@ -25,22 +25,25 @@ import (
 	"sort"
 	"time"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
-	layoutmgt "github.com/asgardeo/thunder/internal/design/layout/mgt"
-	thememgt "github.com/asgardeo/thunder/internal/design/theme/mgt"
-	"github.com/asgardeo/thunder/internal/entitytype"
-	"github.com/asgardeo/thunder/internal/flow/common"
-	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
-	"github.com/asgardeo/thunder/internal/idp"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/ou"
-	"github.com/asgardeo/thunder/internal/resource"
-	"github.com/asgardeo/thunder/internal/role"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/i18n/core"
-	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/user"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+
+	appmodel "github.com/thunder-id/thunderid/internal/application/model"
+	layoutmgt "github.com/thunder-id/thunderid/internal/design/layout/mgt"
+	thememgt "github.com/thunder-id/thunderid/internal/design/theme/mgt"
+	"github.com/thunder-id/thunderid/internal/entitytype"
+	"github.com/thunder-id/thunderid/internal/flow/common"
+	flowmgt "github.com/thunder-id/thunderid/internal/flow/mgt"
+	"github.com/thunder-id/thunderid/internal/group"
+	"github.com/thunder-id/thunderid/internal/idp"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/resource"
+	"github.com/thunder-id/thunderid/internal/role"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
+	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/user"
 )
 
 type applicationAdapter interface {
@@ -111,12 +114,31 @@ type roleAdapter interface {
 		*serviceerror.ServiceError)
 }
 
+type roleAssignmentAdapter interface {
+	AddAssignments(ctx context.Context, id string, assignments []role.RoleAssignment) *serviceerror.ServiceError
+}
+
+type groupAdapter interface {
+	CreateGroup(ctx context.Context, request group.CreateGroupRequest) (*group.Group, *serviceerror.ServiceError)
+	GetGroup(ctx context.Context, groupID string, includeDisplay bool) (*group.Group, *serviceerror.ServiceError)
+	UpdateGroup(ctx context.Context, groupID string, request group.UpdateGroupRequest) (
+		*group.Group, *serviceerror.ServiceError)
+	AddGroupMembers(ctx context.Context, groupID string, members []group.Member) (
+		*group.Group, *serviceerror.ServiceError)
+}
+
 type resourceServerAdapter interface {
 	CreateResourceServer(ctx context.Context, rs resource.ResourceServer) (*resource.ResourceServer,
 		*serviceerror.ServiceError)
 	GetResourceServer(ctx context.Context, id string) (*resource.ResourceServer, *serviceerror.ServiceError)
 	UpdateResourceServer(ctx context.Context, id string, rs resource.ResourceServer) (*resource.ResourceServer,
 		*serviceerror.ServiceError)
+	CreateResource(ctx context.Context, resourceServerID string, res resource.Resource) (
+		*resource.Resource, *serviceerror.ServiceError)
+	GetResourceList(ctx context.Context, resourceServerID string, parentID *string, limit, offset int) (
+		*resource.ResourceList, *serviceerror.ServiceError)
+	CreateAction(ctx context.Context, resourceServerID string, resourceID *string, action resource.Action) (
+		*resource.Action, *serviceerror.ServiceError)
 }
 
 type themeAdapter interface {
@@ -161,17 +183,19 @@ const (
 )
 
 type importService struct {
-	applicationService applicationAdapter
-	idpService         idpAdapter
-	flowService        flowAdapter
-	ouService          ouAdapter
-	entityTypeService  entityTypeAdapter
-	roleService        roleAdapter
-	resourceService    resourceServerAdapter
-	themeService       themeAdapter
-	layoutService      layoutAdapter
-	userService        userAdapter
-	translationService translationAdapter
+	applicationService    applicationAdapter
+	idpService            idpAdapter
+	flowService           flowAdapter
+	ouService             ouAdapter
+	entityTypeService     entityTypeAdapter
+	roleService           roleAdapter
+	roleAssignmentService roleAssignmentAdapter
+	groupService          groupAdapter
+	resourceService       resourceServerAdapter
+	themeService          themeAdapter
+	layoutService         layoutAdapter
+	userService           userAdapter
+	translationService    translationAdapter
 }
 
 func newImportService(
@@ -181,6 +205,8 @@ func newImportService(
 	ouService ouAdapter,
 	entityTypeService entityTypeAdapter,
 	roleService roleAdapter,
+	roleAssignmentService roleAssignmentAdapter,
+	groupService groupAdapter,
 	resourceService resourceServerAdapter,
 	themeService themeAdapter,
 	layoutService layoutAdapter,
@@ -188,17 +214,19 @@ func newImportService(
 	translationService translationAdapter,
 ) ImportServiceInterface {
 	return &importService{
-		applicationService: applicationService,
-		idpService:         idpService,
-		flowService:        flowService,
-		ouService:          ouService,
-		entityTypeService:  entityTypeService,
-		roleService:        roleService,
-		resourceService:    resourceService,
-		themeService:       themeService,
-		layoutService:      layoutService,
-		userService:        userService,
-		translationService: translationService,
+		applicationService:    applicationService,
+		idpService:            idpService,
+		flowService:           flowService,
+		ouService:             ouService,
+		entityTypeService:     entityTypeService,
+		roleService:           roleService,
+		roleAssignmentService: roleAssignmentService,
+		groupService:          groupService,
+		resourceService:       resourceService,
+		themeService:          themeService,
+		layoutService:         layoutService,
+		userService:           userService,
+		translationService:    translationService,
 	}
 }
 
@@ -338,6 +366,8 @@ func (s *importService) importDocument(
 		return s.importEntityType(ctx, doc, options, dryRun)
 	case resourceTypeRole:
 		return s.importRole(ctx, doc, options, dryRun)
+	case resourceTypeGroup:
+		return s.importGroup(ctx, doc, options, dryRun)
 	case resourceTypeResourceServer:
 		return s.importResourceServer(ctx, doc, options, dryRun)
 	case resourceTypeTheme:
@@ -590,6 +620,7 @@ var resourceDependencyOrder = []string{
 	resourceTypeEntityType,
 	resourceTypeResourceServer,
 	resourceTypeRole,
+	resourceTypeGroup,
 	resourceTypeIdentityProvider,
 	resourceTypeNotificationSender,
 	resourceTypeFlow,
@@ -758,49 +789,55 @@ func (s *importService) importApplication(
 
 func applicationRequestToDTO(req *appmodel.ApplicationRequestWithID) *appmodel.ApplicationDTO {
 	appDTO := &appmodel.ApplicationDTO{
-		ID:                        req.ID,
-		OUID:                      req.OUID,
-		Name:                      req.Name,
-		Description:               req.Description,
-		AuthFlowID:                req.AuthFlowID,
-		RegistrationFlowID:        req.RegistrationFlowID,
-		IsRegistrationFlowEnabled: req.IsRegistrationFlowEnabled,
-		ThemeID:                   req.ThemeID,
-		LayoutID:                  req.LayoutID,
-		Template:                  req.Template,
-		URL:                       req.URL,
-		LogoURL:                   req.LogoURL,
-		Assertion:                 req.Assertion,
-		Certificate:               req.Certificate,
-		TosURI:                    req.TosURI,
-		PolicyURI:                 req.PolicyURI,
-		Contacts:                  req.Contacts,
-		AllowedUserTypes:          req.AllowedUserTypes,
-		Metadata:                  req.Metadata,
+		ID:          req.ID,
+		OUID:        req.OUID,
+		Name:        req.Name,
+		Description: req.Description,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:                req.AuthFlowID,
+			RegistrationFlowID:        req.RegistrationFlowID,
+			IsRegistrationFlowEnabled: req.IsRegistrationFlowEnabled,
+			ThemeID:                   req.ThemeID,
+			LayoutID:                  req.LayoutID,
+			Assertion:                 req.Assertion,
+			LoginConsent:              req.LoginConsent,
+			AllowedUserTypes:          req.AllowedUserTypes,
+			Certificate:               req.Certificate,
+		},
+		Template:  req.Template,
+		URL:       req.URL,
+		LogoURL:   req.LogoURL,
+		TosURI:    req.TosURI,
+		PolicyURI: req.PolicyURI,
+		Contacts:  req.Contacts,
+		Metadata:  req.Metadata,
 	}
 
 	if len(req.InboundAuthConfig) > 0 {
-		inboundAuthConfigDTOs := make([]appmodel.InboundAuthConfigDTO, 0, len(req.InboundAuthConfig))
+		inboundAuthConfigDTOs := make([]inboundmodel.InboundAuthConfigWithSecret, 0, len(req.InboundAuthConfig))
 		for _, config := range req.InboundAuthConfig {
-			if config.Type != appmodel.OAuthInboundAuthType || config.OAuthAppConfig == nil {
+			if config.Type != inboundmodel.OAuthInboundAuthType || config.OAuthConfig == nil {
 				continue
 			}
 
-			inboundAuthConfigDTOs = append(inboundAuthConfigDTOs, appmodel.InboundAuthConfigDTO{
+			inboundAuthConfigDTOs = append(inboundAuthConfigDTOs, inboundmodel.InboundAuthConfigWithSecret{
 				Type: config.Type,
-				OAuthAppConfig: &appmodel.OAuthAppConfigDTO{
-					ClientID:                config.OAuthAppConfig.ClientID,
-					ClientSecret:            config.OAuthAppConfig.ClientSecret,
-					RedirectURIs:            config.OAuthAppConfig.RedirectURIs,
-					GrantTypes:              config.OAuthAppConfig.GrantTypes,
-					ResponseTypes:           config.OAuthAppConfig.ResponseTypes,
-					TokenEndpointAuthMethod: config.OAuthAppConfig.TokenEndpointAuthMethod,
-					PKCERequired:            config.OAuthAppConfig.PKCERequired,
-					PublicClient:            config.OAuthAppConfig.PublicClient,
-					Token:                   config.OAuthAppConfig.Token,
-					Scopes:                  config.OAuthAppConfig.Scopes,
-					UserInfo:                config.OAuthAppConfig.UserInfo,
-					ScopeClaims:             config.OAuthAppConfig.ScopeClaims,
+				OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+					ClientID:                           config.OAuthConfig.ClientID,
+					ClientSecret:                       config.OAuthConfig.ClientSecret,
+					RedirectURIs:                       config.OAuthConfig.RedirectURIs,
+					GrantTypes:                         config.OAuthConfig.GrantTypes,
+					ResponseTypes:                      config.OAuthConfig.ResponseTypes,
+					TokenEndpointAuthMethod:            config.OAuthConfig.TokenEndpointAuthMethod,
+					PKCERequired:                       config.OAuthConfig.PKCERequired,
+					PublicClient:                       config.OAuthConfig.PublicClient,
+					RequirePushedAuthorizationRequests: config.OAuthConfig.RequirePushedAuthorizationRequests,
+					Token:                              config.OAuthConfig.Token,
+					Scopes:                             config.OAuthConfig.Scopes,
+					UserInfo:                           config.OAuthConfig.UserInfo,
+					ScopeClaims:                        config.OAuthConfig.ScopeClaims,
+					Certificate:                        config.OAuthConfig.Certificate,
+					AcrValues:                          config.OAuthConfig.AcrValues,
 				},
 			})
 		}
@@ -810,14 +847,14 @@ func applicationRequestToDTO(req *appmodel.ApplicationRequestWithID) *appmodel.A
 	return appDTO
 }
 
-func getOAuthConfigForImportLog(appDTO *appmodel.ApplicationDTO) *appmodel.OAuthAppConfigDTO {
+func getOAuthConfigForImportLog(appDTO *appmodel.ApplicationDTO) *inboundmodel.OAuthConfigWithSecret {
 	if appDTO == nil {
 		return nil
 	}
 
 	for _, inboundAuth := range appDTO.InboundAuthConfig {
-		if inboundAuth.Type == appmodel.OAuthInboundAuthType && inboundAuth.OAuthAppConfig != nil {
-			return inboundAuth.OAuthAppConfig
+		if inboundAuth.Type == inboundmodel.OAuthInboundAuthType && inboundAuth.OAuthConfig != nil {
+			return inboundAuth.OAuthConfig
 		}
 	}
 

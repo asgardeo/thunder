@@ -18,7 +18,6 @@
 
 import {render, screen} from '@testing-library/react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
-import withTheme from '../withTheme';
 
 const mockUseConfig = vi.hoisted(() => vi.fn());
 vi.mock('@thunderid/contexts', () => ({
@@ -29,35 +28,43 @@ vi.mock('../../components/Head', () => ({
   default: () => <div data-testid="head" />,
 }));
 
-let capturedTheme: unknown;
+let capturedThemes: unknown;
+let capturedInitialTheme: unknown;
 
 function MockChild() {
   return <div data-testid="mock-child">Child</div>;
 }
-const WithThemeComponent = withTheme(MockChild);
 
 vi.mock('@wso2/oxygen-ui', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@wso2/oxygen-ui')>();
   return {
     ...actual,
-    AcrylicOrangeTheme: {palette: {primary: {main: '#ff5700'}}},
+    createOxygenTheme: actual.createOxygenTheme ?? ((theme: unknown) => theme),
+    HighContrastTheme: actual.HighContrastTheme ?? {},
     OxygenUIThemeProvider: ({
       children,
-      theme = {palette: {primary: {main: '#ff5700'}}},
+      themes = undefined,
+      initialTheme = undefined,
     }: {
       children: React.ReactNode;
-      theme?: unknown;
+      themes?: unknown;
+      initialTheme?: unknown;
     }) => {
-      capturedTheme = theme;
+      capturedThemes = themes;
+      capturedInitialTheme = initialTheme;
       return <div data-testid="theme-provider">{children}</div>;
     },
   };
 });
 
+const {default: withTheme} = await import('../withTheme');
+const WithThemeComponent = withTheme(MockChild);
+
 describe('withTheme (console)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    capturedTheme = undefined;
+    capturedThemes = undefined;
+    capturedInitialTheme = undefined;
     mockUseConfig.mockReturnValue({
       config: {
         brand: {
@@ -83,9 +90,16 @@ describe('withTheme (console)', () => {
     expect(screen.getByTestId('theme-provider')).toBeInTheDocument();
   });
 
-  it('uses AcrylicOrangeTheme', () => {
+  it('provides the expected theme collection', () => {
     render(<WithThemeComponent />);
-    expect(capturedTheme).toEqual({palette: {primary: {main: '#ff5700'}}});
+    expect(Array.isArray(capturedThemes)).toBe(true);
+    expect(capturedThemes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({key: 'highContrast'}),
+        expect.objectContaining({key: 'default'}),
+      ]),
+    );
+    expect(capturedInitialTheme).toBe('default');
   });
 
   it('wraps different components correctly', () => {
@@ -112,5 +126,42 @@ describe('withTheme (console)', () => {
   it('renders Head', () => {
     render(<WithThemeComponent />);
     expect(screen.getByTestId('head')).toBeInTheDocument();
+  });
+
+  it('includes custom object themes from config in the theme list', () => {
+    const objectTheme = {palette: {primary: {main: '#aabbcc'}}};
+    mockUseConfig.mockReturnValue({
+      config: {
+        brand: {
+          design: {
+            themes: [{key: 'custom', label: 'Custom Theme', theme: objectTheme}],
+          },
+        },
+      },
+    });
+
+    render(<WithThemeComponent />);
+    expect(capturedThemes).toEqual(
+      expect.arrayContaining([expect.objectContaining({key: 'custom', label: 'Custom Theme'})]),
+    );
+  });
+
+  it('includes custom string themes from config in the theme list', () => {
+    mockUseConfig.mockReturnValue({
+      config: {
+        brand: {
+          design: {
+            themes: [{key: 'external', label: 'External Theme', theme: 'https://example.com/theme.json'}],
+          },
+        },
+      },
+    });
+
+    render(<WithThemeComponent />);
+    expect(capturedThemes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({key: 'external', label: 'External Theme', theme: 'https://example.com/theme.json'}),
+      ]),
+    );
   });
 });

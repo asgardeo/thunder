@@ -28,23 +28,23 @@ import (
 	"strings"
 	"time"
 
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/flow/flowexec"
-	"github.com/asgardeo/thunder/internal/inboundclient"
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/authz/requestvalidator"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/par"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/resourceindicators"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
-	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
-	"github.com/asgardeo/thunder/internal/resource"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/jose/jwt"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/transaction"
-	"github.com/asgardeo/thunder/internal/system/utils"
+	flowcm "github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/internal/flow/flowexec"
+	"github.com/thunder-id/thunderid/internal/inboundclient"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/authz/requestvalidator"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	oauth2model "github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/par"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/resourceindicators"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
+	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
+	"github.com/thunder-id/thunderid/internal/resource"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/transaction"
+	"github.com/thunder-id/thunderid/internal/system/utils"
 )
 
 // AuthorizeServiceInterface defines the interface for authorization services.
@@ -324,7 +324,7 @@ func (as *authorizeService) initiateFlowAndStoreRequest(
 		runtimeData[flowcm.RuntimeKeyRequestedAuthClasses] = effectiveAcrValues
 	}
 	flowInitCtx := &flowexec.FlowInitContext{
-		ApplicationID: app.AppID,
+		ApplicationID: app.ID,
 		FlowType:      string(flowcm.FlowTypeAuthentication),
 		RuntimeData:   runtimeData,
 	}
@@ -362,7 +362,7 @@ func (as *authorizeService) initiateFlowAndStoreRequest(
 	// Build query parameters for login page redirect.
 	queryParams := make(map[string]string)
 	queryParams[oauth2const.AuthID] = identifier
-	queryParams[oauth2const.AppID] = app.AppID
+	queryParams[oauth2const.AppID] = app.ID
 	queryParams[oauth2const.ExecutionID] = executionID
 
 	// Add insecure warning if the redirect URI is not using TLS.

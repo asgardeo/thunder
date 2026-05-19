@@ -26,18 +26,32 @@ tags:
     description: Operations related to agent management
   - name: applications
     description: Operations related to application management
+  - name: Credentials
+    description: Username and password authentication operations.
   - name: design-resolve
     description: Operations for resolving design configurations
   - name: export
     description: Operations related to resource export
+  - name: Flow Management
+    description: CRUD operations for flow definitions.
+  - name: Flow Versioning
+    description: Operations for listing and activating flow versions.
+  - name: flow-execution
+    description: Execute app native authentication and registration flow steps.
   - name: flow-meta
     description: Operations for retrieving flow metadata
+  - name: Github
+    description: Authentication operations with GitHub identity provider.
+  - name: Google
+    description: Authentication operations with Google identity provider.
   - name: groups
     description: Operations related to group management
   - name: groups-by-path
     description: Operations related to group management using hierarchical handle paths
   - name: health
     description: Health check operations
+  - name: Identity Providers
+    description: Identity provider management operations.
   - name: import
     description: Operations related to resource import and declarative resource deletion
   - name: languages
@@ -46,10 +60,16 @@ tags:
     description: Operations related to layout management
   - name: management
     description: Manage translations (admin)
+  - name: Message Senders
+    description: Message notification sender management operations.
+  - name: One Time Password (OTP)
+    description: OTP sender and OTP dispatch operations.
   - name: organization-units
     description: Operations related to organization unit management
   - name: organization-units-by-path
     description: Operations related to organization units using hierarchical handle paths
+  - name: Passkey / WebAuthn / FIDO2 Registration
+    description: Passkey registration start and finish operations.
   - name: permissions
     description: Operations to preview and retrieve derived permissions
   - name: resolve
@@ -62,6 +82,10 @@ tags:
     description: Operations related to role management
   - name: self
     description: Self service operations related to the user
+  - name: SMS OTP
+    description: One-time-password operations over SMS.
+  - name: Standard
+    description: Standard authentication flow operations.
   - name: themes
     description: Operations related to theme management
   - name: user-types
@@ -70,6 +94,8 @@ tags:
     description: Operations related to user management
   - name: users-by-path
     description: Operations related to user management using hierarchical handle paths
+  - name: WebAuthn / Passkey
+    description: Passkey authentication operations based on WebAuthn.
 paths:
   /agents:
     get:
@@ -128,20 +154,34 @@ paths:
                   summary: Invalid limit parameter
                   value:
                     code: AGT-1011
-                    message: Invalid pagination parameter
-                    description: The limit parameter must be between 1 and 100
+                    message:
+                      key: error.agentservice.invalid_limit
+                      defaultValue: Invalid pagination parameter
+                    description:
+                      key: error.agentservice.invalid_limit_description
+                      defaultValue: The limit parameter must be between 1 and 100
                 invalid-offset:
                   summary: Invalid offset parameter
                   value:
                     code: AGT-1012
-                    message: Invalid pagination parameter
-                    description: The offset parameter must be a non-negative integer
+                    message:
+                      key: error.agentservice.invalid_offset
+                      defaultValue: Invalid pagination parameter
+                    description:
+                      key: error.agentservice.invalid_offset_description
+                      defaultValue: The offset parameter must be a non-negative integer
                 invalid-filter:
                   summary: Invalid filter parameter
                   value:
                     code: AGT-1020
-                    message: Invalid filter parameter
-                    description: The filter format is invalid
+                    message:
+                      key: error.agentservice.invalid_filter
+                      defaultValue: Invalid filter parameter
+                    description:
+                      key: error.agentservice.invalid_filter_description
+                      defaultValue: The filter format is invalid
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           description: Internal server error
     post:
@@ -398,134 +438,222 @@ paths:
                   summary: Malformed request body
                   value:
                     code: AGT-1001
-                    message: Invalid request format
-                    description: The request body is malformed or contains invalid data
+                    message:
+                      key: error.agentservice.invalid_request_format
+                      defaultValue: Invalid request format
+                    description:
+                      key: error.agentservice.invalid_request_format_description
+                      defaultValue: The request body is malformed or contains invalid data
                 invalid-redirect-uri:
                   summary: Invalid redirect URI
                   value:
                     code: AGT-1002
-                    message: Invalid redirect URI
-                    description: One or more redirect URIs are not valid
+                    message:
+                      key: error.agentservice.invalid_redirect_uri
+                      defaultValue: Invalid redirect URI
+                    description:
+                      key: error.agentservice.invalid_redirect_uri_description
+                      defaultValue: One or more redirect URIs are not valid
                 invalid-grant-type:
                   summary: Invalid grant type
                   value:
                     code: AGT-1003
-                    message: Invalid grant type
-                    description: One or more grant types are not supported
+                    message:
+                      key: error.agentservice.invalid_grant_type
+                      defaultValue: Invalid grant type
+                    description:
+                      key: error.agentservice.invalid_grant_type_description
+                      defaultValue: One or more grant types are not supported
                 ou-not-found:
                   summary: Organization unit not found
                   value:
                     code: AGT-1005
-                    message: Organization unit not found
-                    description: The specified organization unit does not exist
+                    message:
+                      key: error.agentservice.organization_unit_not_found
+                      defaultValue: Organization unit not found
+                    description:
+                      key: error.agentservice.organization_unit_not_found_description
+                      defaultValue: The specified organization unit does not exist
                 invalid-agent-name:
                   summary: Missing or empty agent name
                   value:
                     code: AGT-1009
-                    message: Invalid agent name
-                    description: The agent name must be provided and non-empty
+                    message:
+                      key: error.agentservice.invalid_agent_name
+                      defaultValue: Invalid agent name
+                    description:
+                      key: error.agentservice.invalid_agent_name_description
+                      defaultValue: The agent name must be provided and non-empty
                 invalid-agent-type:
                   summary: Missing agent type
                   value:
                     code: AGT-1010
-                    message: Invalid agent type
-                    description: The agent type must be provided
+                    message:
+                      key: error.agentservice.invalid_agent_type
+                      defaultValue: Invalid agent type
+                    description:
+                      key: error.agentservice.invalid_agent_type_description
+                      defaultValue: The agent type must be provided
                 invalid-auth-flow-id:
                   summary: Referenced auth flow does not exist
                   value:
                     code: AGT-1028
-                    message: Invalid auth flow ID
-                    description: The provided authentication flow ID is invalid
+                    message:
+                      key: error.agentservice.invalid_auth_flow_id
+                      defaultValue: Invalid auth flow ID
+                    description:
+                      key: error.agentservice.invalid_auth_flow_id_description
+                      defaultValue: The provided authentication flow ID is invalid
                 invalid-oauth-configuration:
                   summary: OAuth config constraint violation
                   value:
                     code: AGT-1021
-                    message: Invalid OAuth configuration
-                    description: The provided OAuth configuration is invalid
+                    message:
+                      key: error.agentservice.invalid_oauth_configuration
+                      defaultValue: Invalid OAuth configuration
+                    description:
+                      key: error.agentservice.invalid_oauth_configuration_description
+                      defaultValue: The provided OAuth configuration is invalid
                 invalid-token-endpoint-auth-method:
                   summary: Unsupported token endpoint auth method
                   value:
                     code: AGT-1022
-                    message: Invalid token endpoint authentication method
-                    description: The provided token endpoint authentication method is not supported
+                    message:
+                      key: error.agentservice.invalid_token_endpoint_auth_method
+                      defaultValue: Invalid token endpoint authentication method
+                    description:
+                      key: error.agentservice.invalid_token_endpoint_auth_method_description
+                      defaultValue: The provided token endpoint authentication method is not supported
                 invalid-public-client:
                   summary: Public client misconfiguration
                   value:
                     code: AGT-1023
-                    message: Invalid public client configuration
-                    description: The public client configuration is invalid
+                    message:
+                      key: error.agentservice.invalid_public_client_configuration
+                      defaultValue: Invalid public client configuration
+                    description:
+                      key: error.agentservice.invalid_public_client_configuration_description
+                      defaultValue: The public client configuration is invalid
                 invalid-certificate-type:
                   summary: Unsupported certificate type
                   value:
                     code: AGT-1024
-                    message: Invalid certificate type
-                    description: The provided certificate type is not supported
+                    message:
+                      key: error.agentservice.invalid_certificate_type
+                      defaultValue: Invalid certificate type
+                    description:
+                      key: error.agentservice.invalid_certificate_type_description
+                      defaultValue: The provided certificate type is not supported
                 invalid-certificate-value:
                   summary: Missing or malformed certificate value
                   value:
                     code: AGT-1025
-                    message: Invalid certificate value
-                    description: The provided certificate value is invalid or missing
+                    message:
+                      key: error.agentservice.invalid_certificate_value
+                      defaultValue: Invalid certificate value
+                    description:
+                      key: error.agentservice.invalid_certificate_value_description
+                      defaultValue: The provided certificate value is invalid or missing
                 invalid-jwks-uri:
                   summary: JWKS URI is not SSRF-safe
                   value:
                     code: AGT-1026
-                    message: Invalid JWKS URI
-                    description: The JWKS URI must be a publicly reachable HTTPS URL
+                    message:
+                      key: error.agentservice.invalid_jwks_uri
+                      defaultValue: Invalid JWKS URI
+                    description:
+                      key: error.agentservice.invalid_jwks_uri_description
+                      defaultValue: The JWKS URI must be a publicly reachable HTTPS URL
                 schema-validation-failed:
                   summary: Attribute schema validation failed
                   value:
                     code: AGT-1015
-                    message: Schema validation failed
-                    description: The provided attributes failed schema validation
+                    message:
+                      key: error.agentservice.schema_validation_failed
+                      defaultValue: Schema validation failed
+                    description:
+                      key: error.agentservice.schema_validation_failed_description
+                      defaultValue: The provided attributes failed schema validation
                 invalid-credential:
                   summary: Invalid credential value
                   value:
                     code: AGT-1016
-                    message: Invalid credential
-                    description: The provided credential is invalid
+                    message:
+                      key: error.agentservice.invalid_credential
+                      defaultValue: Invalid credential
+                    description:
+                      key: error.agentservice.invalid_credential_description
+                      defaultValue: The provided credential is invalid
                 invalid-registration-flow-id:
                   summary: Referenced registration flow does not exist
                   value:
                     code: AGT-1029
-                    message: Invalid registration flow ID
-                    description: The provided registration flow ID is invalid
+                    message:
+                      key: error.agentservice.invalid_registration_flow_id
+                      defaultValue: Invalid registration flow ID
+                    description:
+                      key: error.agentservice.invalid_registration_flow_id_description
+                      defaultValue: The provided registration flow ID is invalid
                 error-retrieving-flow-definition:
                   summary: Flow definition could not be fetched
                   value:
                     code: AGT-1030
-                    message: Error retrieving flow definition
-                    description: An error occurred while retrieving the flow definition
+                    message:
+                      key: error.agentservice.error_retrieving_flow_definition
+                      defaultValue: Error retrieving flow definition
+                    description:
+                      key: error.agentservice.error_retrieving_flow_definition_description
+                      defaultValue: An error occurred while retrieving the flow definition
                 invalid-user-type:
                   summary: Allowed user type does not exist
                   value:
                     code: AGT-1031
-                    message: Invalid user type
-                    description: One or more specified allowed user types are invalid
+                    message:
+                      key: error.agentservice.invalid_user_type
+                      defaultValue: Invalid user type
+                    description:
+                      key: error.agentservice.invalid_user_type_description
+                      defaultValue: One or more specified allowed user types are invalid
                 theme-not-found:
                   summary: Referenced theme does not exist
                   value:
                     code: AGT-1032
-                    message: Theme not found
-                    description: The specified theme does not exist
+                    message:
+                      key: error.agentservice.theme_not_found
+                      defaultValue: Theme not found
+                    description:
+                      key: error.agentservice.theme_not_found_description
+                      defaultValue: The specified theme does not exist
                 layout-not-found:
                   summary: Referenced layout does not exist
                   value:
                     code: AGT-1033
-                    message: Layout not found
-                    description: The specified layout does not exist
+                    message:
+                      key: error.agentservice.layout_not_found
+                      defaultValue: Layout not found
+                    description:
+                      key: error.agentservice.layout_not_found_description
+                      defaultValue: The specified layout does not exist
                 invalid-response-type:
                   summary: Unsupported response type
                   value:
                     code: AGT-1034
-                    message: Invalid response type
-                    description: One or more provided response types are invalid
+                    message:
+                      key: error.agentservice.invalid_response_type
+                      defaultValue: Invalid response type
+                    description:
+                      key: error.agentservice.invalid_response_type_description
+                      defaultValue: One or more provided response types are invalid
                 consent-sync-failed:
                   summary: Consent service sync failure
                   value:
                     code: AGT-1035
-                    message: Consent sync failed
-                    description: Failed to sync agent attribute changes with the consent service
+                    message:
+                      key: error.agentservice.consent_sync_failed
+                      defaultValue: Consent sync failed
+                    description:
+                      key: error.agentservice.consent_sync_failed_description
+                      defaultValue: Failed to sync agent attribute changes with the consent service
                 certificate-client-error:
                   summary: Certificate operation failed due to invalid input
                   value:
@@ -540,8 +668,12 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 code: AGT-1027
-                message: Cannot modify declarative resource
-                description: Declaratively managed agents cannot be modified via the API
+                message:
+                  key: error.agentservice.cannot_modify_declarative_resource
+                  defaultValue: Cannot modify declarative resource
+                description:
+                  key: error.agentservice.cannot_modify_declarative_resource_description
+                  defaultValue: Declaratively managed agents cannot be modified via the API
         "409":
           description: Conflict
           content:
@@ -553,20 +685,32 @@ paths:
                   summary: Agent name already in use
                   value:
                     code: AGT-1013
-                    message: Agent already exists
-                    description: An agent with the same name already exists
+                    message:
+                      key: error.agentservice.agent_already_exists_with_name
+                      defaultValue: Agent already exists
+                    description:
+                      key: error.agentservice.agent_already_exists_with_name_description
+                      defaultValue: An agent with the same name already exists
                 attribute-conflict:
                   summary: Unique attribute value already in use
                   value:
                     code: AGT-1014
-                    message: Attribute conflict
-                    description: An agent with the same unique attribute value already exists
+                    message:
+                      key: error.agentservice.attribute_conflict
+                      defaultValue: Attribute conflict
+                    description:
+                      key: error.agentservice.attribute_conflict_description
+                      defaultValue: An agent with the same unique attribute value already exists
                 client-id-conflict:
                   summary: Client ID already in use by another entity
                   value:
                     code: AGT-1037
-                    message: Client ID already in use
-                    description: An entity with the same client ID already exists
+                    message:
+                      key: error.agentservice.agent_already_exists_with_client_id
+                      defaultValue: Client ID already in use
+                    description:
+                      key: error.agentservice.agent_already_exists_with_client_id_description
+                      defaultValue: An entity with the same client ID already exists
         "500":
           description: Internal server error
   /agents/{id}:
@@ -666,6 +810,8 @@ paths:
                           - name
                           - family_name
                           - given_name
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "404":
           description: Agent not found
           content:
@@ -674,8 +820,12 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 code: AGT-1004
-                message: Agent not found
-                description: The agent with the specified id does not exist
+                message:
+                  key: error.agentservice.agent_not_found
+                  defaultValue: Agent not found
+                description:
+                  key: error.agentservice.agent_not_found_description
+                  defaultValue: The agent with the specified id does not exist
         "500":
           description: Internal server error
     put:
@@ -888,122 +1038,204 @@ paths:
                   summary: Missing or empty agent name
                   value:
                     code: AGT-1009
-                    message: Invalid agent name
-                    description: The agent name must be provided and non-empty
+                    message:
+                      key: error.agentservice.invalid_agent_name
+                      defaultValue: Invalid agent name
+                    description:
+                      key: error.agentservice.invalid_agent_name_description
+                      defaultValue: The agent name must be provided and non-empty
                 invalid-redirect-uri:
                   summary: Invalid redirect URI
                   value:
                     code: AGT-1002
-                    message: Invalid redirect URI
-                    description: One or more redirect URIs are not valid
+                    message:
+                      key: error.agentservice.invalid_redirect_uri
+                      defaultValue: Invalid redirect URI
+                    description:
+                      key: error.agentservice.invalid_redirect_uri_description
+                      defaultValue: One or more redirect URIs are not valid
                 ou-not-found:
                   summary: New organization unit not found
                   value:
                     code: AGT-1005
-                    message: Organization unit not found
-                    description: The specified organization unit does not exist
+                    message:
+                      key: error.agentservice.organization_unit_not_found
+                      defaultValue: Organization unit not found
+                    description:
+                      key: error.agentservice.organization_unit_not_found_description
+                      defaultValue: The specified organization unit does not exist
                 invalid-oauth-configuration:
                   summary: OAuth config constraint violation
                   value:
                     code: AGT-1021
-                    message: Invalid OAuth configuration
-                    description: The provided OAuth configuration is invalid
+                    message:
+                      key: error.agentservice.invalid_oauth_configuration
+                      defaultValue: Invalid OAuth configuration
+                    description:
+                      key: error.agentservice.invalid_oauth_configuration_description
+                      defaultValue: The provided OAuth configuration is invalid
                 invalid-token-endpoint-auth-method:
                   summary: Unsupported token endpoint auth method
                   value:
                     code: AGT-1022
-                    message: Invalid token endpoint authentication method
-                    description: The provided token endpoint authentication method is not supported
+                    message:
+                      key: error.agentservice.invalid_token_endpoint_auth_method
+                      defaultValue: Invalid token endpoint authentication method
+                    description:
+                      key: error.agentservice.invalid_token_endpoint_auth_method_description
+                      defaultValue: The provided token endpoint authentication method is not supported
                 invalid-public-client:
                   summary: Public client misconfiguration
                   value:
                     code: AGT-1023
-                    message: Invalid public client configuration
-                    description: The public client configuration is invalid
+                    message:
+                      key: error.agentservice.invalid_public_client_configuration
+                      defaultValue: Invalid public client configuration
+                    description:
+                      key: error.agentservice.invalid_public_client_configuration_description
+                      defaultValue: The public client configuration is invalid
                 invalid-certificate-type:
                   summary: Unsupported certificate type
                   value:
                     code: AGT-1024
-                    message: Invalid certificate type
-                    description: The provided certificate type is not supported
+                    message:
+                      key: error.agentservice.invalid_certificate_type
+                      defaultValue: Invalid certificate type
+                    description:
+                      key: error.agentservice.invalid_certificate_type_description
+                      defaultValue: The provided certificate type is not supported
                 invalid-certificate-value:
                   summary: Missing or malformed certificate value
                   value:
                     code: AGT-1025
-                    message: Invalid certificate value
-                    description: The provided certificate value is invalid or missing
+                    message:
+                      key: error.agentservice.invalid_certificate_value
+                      defaultValue: Invalid certificate value
+                    description:
+                      key: error.agentservice.invalid_certificate_value_description
+                      defaultValue: The provided certificate value is invalid or missing
                 invalid-jwks-uri:
                   summary: JWKS URI is not SSRF-safe
                   value:
                     code: AGT-1026
-                    message: Invalid JWKS URI
-                    description: The JWKS URI must be a publicly reachable HTTPS URL
+                    message:
+                      key: error.agentservice.invalid_jwks_uri
+                      defaultValue: Invalid JWKS URI
+                    description:
+                      key: error.agentservice.invalid_jwks_uri_description
+                      defaultValue: The JWKS URI must be a publicly reachable HTTPS URL
                 invalid-auth-flow-id:
                   summary: Referenced auth flow does not exist
                   value:
                     code: AGT-1028
-                    message: Invalid auth flow ID
-                    description: The provided authentication flow ID is invalid
+                    message:
+                      key: error.agentservice.invalid_auth_flow_id
+                      defaultValue: Invalid auth flow ID
+                    description:
+                      key: error.agentservice.invalid_auth_flow_id_description
+                      defaultValue: The provided authentication flow ID is invalid
                 invalid-registration-flow-id:
                   summary: Referenced registration flow does not exist
                   value:
                     code: AGT-1029
-                    message: Invalid registration flow ID
-                    description: The provided registration flow ID is invalid
+                    message:
+                      key: error.agentservice.invalid_registration_flow_id
+                      defaultValue: Invalid registration flow ID
+                    description:
+                      key: error.agentservice.invalid_registration_flow_id_description
+                      defaultValue: The provided registration flow ID is invalid
                 error-retrieving-flow-definition:
                   summary: Flow definition could not be fetched
                   value:
                     code: AGT-1030
-                    message: Error retrieving flow definition
-                    description: An error occurred while retrieving the flow definition
+                    message:
+                      key: error.agentservice.error_retrieving_flow_definition
+                      defaultValue: Error retrieving flow definition
+                    description:
+                      key: error.agentservice.error_retrieving_flow_definition_description
+                      defaultValue: An error occurred while retrieving the flow definition
                 invalid-user-type:
                   summary: Allowed user type does not exist
                   value:
                     code: AGT-1031
-                    message: Invalid user type
-                    description: One or more specified allowed user types are invalid
+                    message:
+                      key: error.agentservice.invalid_user_type
+                      defaultValue: Invalid user type
+                    description:
+                      key: error.agentservice.invalid_user_type_description
+                      defaultValue: One or more specified allowed user types are invalid
                 theme-not-found:
                   summary: Referenced theme does not exist
                   value:
                     code: AGT-1032
-                    message: Theme not found
-                    description: The specified theme does not exist
+                    message:
+                      key: error.agentservice.theme_not_found
+                      defaultValue: Theme not found
+                    description:
+                      key: error.agentservice.theme_not_found_description
+                      defaultValue: The specified theme does not exist
                 layout-not-found:
                   summary: Referenced layout does not exist
                   value:
                     code: AGT-1033
-                    message: Layout not found
-                    description: The specified layout does not exist
+                    message:
+                      key: error.agentservice.layout_not_found
+                      defaultValue: Layout not found
+                    description:
+                      key: error.agentservice.layout_not_found_description
+                      defaultValue: The specified layout does not exist
                 invalid-response-type:
                   summary: Unsupported response type
                   value:
                     code: AGT-1034
-                    message: Invalid response type
-                    description: One or more provided response types are invalid
+                    message:
+                      key: error.agentservice.invalid_response_type
+                      defaultValue: Invalid response type
+                    description:
+                      key: error.agentservice.invalid_response_type_description
+                      defaultValue: One or more provided response types are invalid
                 consent-sync-failed:
                   summary: Consent service sync failure
                   value:
                     code: AGT-1035
-                    message: Consent sync failed
-                    description: Failed to sync agent attribute changes with the consent service
+                    message:
+                      key: error.agentservice.consent_sync_failed
+                      defaultValue: Consent sync failed
+                    description:
+                      key: error.agentservice.consent_sync_failed_description
+                      defaultValue: Failed to sync agent attribute changes with the consent service
                 certificate-client-error:
                   summary: Certificate operation failed due to invalid input
                   value:
                     code: AGT-1036
-                    message: Certificate operation failed
-                    description: A certificate operation failed due to invalid input
+                    message:
+                      key: error.agentservice.certificate_operation_failed
+                      defaultValue: Certificate operation failed
+                    description:
+                      key: error.agentservice.certificate_operation_failed_description
+                      defaultValue: A certificate operation failed due to invalid input
                 schema-validation-failed:
                   summary: Attribute schema validation failed
                   value:
                     code: AGT-1015
-                    message: Schema validation failed
-                    description: The provided attributes failed schema validation
+                    message:
+                      key: error.agentservice.schema_validation_failed
+                      defaultValue: Schema validation failed
+                    description:
+                      key: error.agentservice.schema_validation_failed_description
+                      defaultValue: The provided attributes failed schema validation
                 invalid-credential:
                   summary: Invalid credential value
                   value:
                     code: AGT-1016
-                    message: Invalid credential
-                    description: The provided credential is invalid
+                    message:
+                      key: error.agentservice.invalid_credential
+                      defaultValue: Invalid credential
+                    description:
+                      key: error.agentservice.invalid_credential_description
+                      defaultValue: The provided credential is invalid
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "403":
           description: Forbidden
           content:
@@ -1012,8 +1244,12 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 code: AGT-1027
-                message: Cannot modify declarative resource
-                description: Declaratively managed agents cannot be modified via the API
+                message:
+                  key: error.agentservice.cannot_modify_declarative_resource
+                  defaultValue: Cannot modify declarative resource
+                description:
+                  key: error.agentservice.cannot_modify_declarative_resource_description
+                  defaultValue: Declaratively managed agents cannot be modified via the API
         "404":
           description: Agent not found
           content:
@@ -1022,8 +1258,12 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 code: AGT-1004
-                message: Agent not found
-                description: The agent with the specified id does not exist
+                message:
+                  key: error.agentservice.agent_not_found
+                  defaultValue: Agent not found
+                description:
+                  key: error.agentservice.agent_not_found_description
+                  defaultValue: The agent with the specified id does not exist
         "409":
           description: Conflict
           content:
@@ -1035,14 +1275,22 @@ paths:
                   summary: Agent name already in use
                   value:
                     code: AGT-1013
-                    message: Agent already exists
-                    description: An agent with the same name already exists
+                    message:
+                      key: error.agentservice.agent_already_exists_with_name
+                      defaultValue: Agent already exists
+                    description:
+                      key: error.agentservice.agent_already_exists_with_name_description
+                      defaultValue: An agent with the same name already exists
                 client-id-conflict:
                   summary: Client ID already in use by another entity
                   value:
                     code: AGT-1037
-                    message: Client ID already in use
-                    description: An entity with the same client ID already exists
+                    message:
+                      key: error.agentservice.agent_already_exists_with_client_id
+                      defaultValue: Client ID already in use
+                    description:
+                      key: error.agentservice.agent_already_exists_with_client_id_description
+                      defaultValue: An entity with the same client ID already exists
         "500":
           description: Internal server error
     delete:
@@ -1065,6 +1313,8 @@ paths:
       responses:
         "204":
           description: Agent deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "403":
           description: Forbidden
           content:
@@ -1073,8 +1323,12 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 code: AGT-1027
-                message: Cannot modify declarative resource
-                description: Declaratively managed agents cannot be modified via the API
+                message:
+                  key: error.agentservice.cannot_modify_declarative_resource
+                  defaultValue: Cannot modify declarative resource
+                description:
+                  key: error.agentservice.cannot_modify_declarative_resource_description
+                  defaultValue: Declaratively managed agents cannot be modified via the API
         "404":
           description: Agent not found
           content:
@@ -1083,8 +1337,12 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 code: AGT-1004
-                message: Agent not found
-                description: The agent with the specified id does not exist
+                message:
+                  key: error.agentservice.agent_not_found
+                  defaultValue: Agent not found
+                description:
+                  key: error.agentservice.agent_not_found_description
+                  defaultValue: The agent with the specified id does not exist
         "500":
           description: Internal server error
   /agents/{id}/groups:
@@ -1138,8 +1396,14 @@ paths:
                   summary: Missing agent ID
                   value:
                     code: AGT-1008
-                    message: Missing agent ID
-                    description: The agent ID is required
+                    message:
+                      key: error.agentservice.missing_agent_id
+                      defaultValue: Missing agent ID
+                    description:
+                      key: error.agentservice.missing_agent_id_description
+                      defaultValue: The agent ID is required
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "404":
           description: Agent not found
           content:
@@ -1148,8 +1412,12 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 code: AGT-1004
-                message: Agent not found
-                description: The agent with the specified id does not exist
+                message:
+                  key: error.agentservice.agent_not_found
+                  defaultValue: Agent not found
+                description:
+                  key: error.agentservice.agent_not_found_description
+                  defaultValue: The agent with the specified id does not exist
         "500":
           description: Internal server error
   /agent-types:
@@ -1175,7 +1443,7 @@ paths:
                 totalResults: 2
                 startIndex: 1
                 count: 2
-                schemas:
+                types:
                   - id: 660e8400-e29b-41d4-a716-446655440001
                     name: service-agent
                     ouId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
@@ -1193,7 +1461,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EntityTypeError"
+                $ref: "#/components/schemas/Error"
               examples:
                 invalid-limit:
                   summary: Invalid limit parameter
@@ -1215,6 +1483,10 @@ paths:
                     description:
                       key: error.entitytypeservice.invalid_offset_parameter_description
                       defaultValue: The offset parameter must be a non-negative integer
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           description: Internal server error
     post:
@@ -1257,7 +1529,7 @@ paths:
                   type: boolean
       responses:
         "201":
-          description: agent type created
+          description: Agent type created
           content:
             application/json:
               schema:
@@ -1291,7 +1563,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EntityTypeError"
+                $ref: "#/components/schemas/Error"
               examples:
                 invalid-request-format:
                   summary: Invalid request format
@@ -1313,12 +1585,16 @@ paths:
                     description:
                       key: error.entitytypeservice.invalid_agent_type_request_description
                       defaultValue: The agent type request contains invalid or missing required fields
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "409":
           description: Conflict
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EntityTypeError"
+                $ref: "#/components/schemas/Error"
               example:
                 code: USRS-1003
                 message:
@@ -1347,7 +1623,7 @@ paths:
         - $ref: "#/components/parameters/includeQueryParam"
       responses:
         "200":
-          description: agent type details
+          description: Agent type details
           content:
             application/json:
               schema:
@@ -1385,12 +1661,16 @@ paths:
                         - code
                   isActive:
                     type: boolean
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
-          description: agent type not found
+          description: Agent type not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EntityTypeError"
+                $ref: "#/components/schemas/Error"
               example:
                 code: USRS-1002
                 message:
@@ -1440,7 +1720,7 @@ paths:
                   type: number
       responses:
         "200":
-          description: agent type updated
+          description: Agent type updated
           content:
             application/json:
               schema:
@@ -1450,7 +1730,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EntityTypeError"
+                $ref: "#/components/schemas/Error"
               examples:
                 invalid-request-format:
                   summary: Invalid request format
@@ -1472,12 +1752,16 @@ paths:
                     description:
                       key: error.entitytypeservice.invalid_agent_type_request_description
                       defaultValue: The agent type request contains invalid or missing required fields
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
-          description: agent type not found
+          description: Agent type not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EntityTypeError"
+                $ref: "#/components/schemas/Error"
               example:
                 code: USRS-1002
                 message:
@@ -1487,11 +1771,11 @@ paths:
                   key: error.entitytypeservice.agent_type_not_found_description
                   defaultValue: The agent type with the specified id does not exist
         "409":
-          description: agent type name already exists
+          description: Agent type name already exists
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EntityTypeError"
+                $ref: "#/components/schemas/Error"
               example:
                 code: USRS-1003
                 message:
@@ -1519,13 +1803,13 @@ paths:
           example: 550e8400-e29b-41d4-a716-446655440000
       responses:
         "204":
-          description: agent type deleted
+          description: Agent type deleted
         "400":
           description: Bad request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EntityTypeError"
+                $ref: "#/components/schemas/Error"
               example:
                 code: USRS-1004
                 message:
@@ -1534,6 +1818,10 @@ paths:
                 description:
                   key: error.entitytypeservice.invalid_agent_type_request_description
                   defaultValue: Cannot delete schema because agents of this type exist
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           description: Internal server error
   /applications:
@@ -1561,6 +1849,8 @@ paths:
                     authFlowId: edc013d0-e893-4dc0-990c-3e1d203e005b
                     registrationFlowId: 80024fb3-29ed-4c33-aa48-8aee5e96d522
                     isRegistrationFlowEnabled: true
+                    recoveryFlowId: f60d3e8a-8c9a-4b2f-9e1a-5b3c8d7e2f4a
+                    isRecoveryFlowEnabled: true
                   - id: 660e8400-e29b-41d4-a716-446655440001
                     name: Mobile App
                     description: Mobile application for customers
@@ -1569,6 +1859,8 @@ paths:
                     authFlowId: edc013d0-e893-4dc0-990c-3e1d203e005b
                     registrationFlowId: 80024fb3-29ed-4c33-aa48-8aee5e96d522
                     isRegistrationFlowEnabled: false
+                    recoveryFlowId: f60d3e8a-8c9a-4b2f-9e1a-5b3c8d7e2f4a
+                    isRecoveryFlowEnabled: false
         "400":
           description: Bad request
           content:
@@ -1618,6 +1910,8 @@ paths:
               authFlowId: edc013d0-e893-4dc0-990c-3e1d203e005b
               registrationFlowId: 80024fb3-29ed-4c33-aa48-8aee5e96d522
               isRegistrationFlowEnabled: true
+              recoveryFlowId: f60d3e8a-8c9a-4b2f-9e1a-5b3c8d7e2f4a
+              isRecoveryFlowEnabled: true
               url: https://myapp.example.com
               logoUrl: https://myapp.example.com/logo.png
               tosUri: https://myapp.example.com/terms
@@ -1693,6 +1987,9 @@ paths:
                       employee:
                         - emp_id
                         - department
+                    acrValues:
+                      - urn:thunder:silver
+                      - urn:thunder:gold
       responses:
         "201":
           description: Application created
@@ -1709,6 +2006,8 @@ paths:
                 authFlowId: edc013d0-e893-4dc0-990c-3e1d203e005b
                 registrationFlowId: 80024fb3-29ed-4c33-aa48-8aee5e96d522
                 isRegistrationFlowEnabled: true
+                recoveryFlowId: f60d3e8a-8c9a-4b2f-9e1a-5b3c8d7e2f4a
+                isRecoveryFlowEnabled: true
                 url: https://myapp.example.com
                 logoUrl: https://myapp.example.com/logo.png
                 tosUri: https://myapp.example.com/terms
@@ -1786,6 +2085,9 @@ paths:
                         employee:
                           - emp_id
                           - department
+                      acrValues:
+                        - urn:thunder:silver
+                        - urn:thunder:gold
         "400":
           description: Bad request
           content:
@@ -1823,6 +2125,16 @@ paths:
                     description:
                       key: error.applicationservice.invalid_grant_type_description
                       defaultValue: One or more grant types are not supported
+                invalid-recovery-flow-id:
+                  summary: Invalid or disabled recovery flow ID
+                  value:
+                    code: APP-1005
+                    message:
+                      key: error.applicationservice.invalid_recovery_flow_id
+                      defaultValue: Invalid or disabled recovery flow ID
+                    description:
+                      key: error.applicationservice.invalid_recovery_flow_id_description
+                      defaultValue: The provided recoveryFlowId does not exist or is not enabled
         "500":
           description: Internal server error
           content:
@@ -1868,6 +2180,8 @@ paths:
                 authFlowId: edc013d0-e893-4dc0-990c-3e1d203e005b
                 registrationFlowId: 80024fb3-29ed-4c33-aa48-8aee5e96d522
                 isRegistrationFlowEnabled: true
+                recoveryFlowId: f60d3e8a-8c9a-4b2f-9e1a-5b3c8d7e2f4a
+                isRecoveryFlowEnabled: true
                 url: https://myapp.example.com
                 logoUrl: https://myapp.example.com/logo.png
                 tosUri: https://myapp.example.com/terms
@@ -1944,6 +2258,9 @@ paths:
                         employee:
                           - emp_id
                           - department
+                      acrValues:
+                        - urn:thunder:silver
+                        - urn:thunder:gold
         "400":
           description: Bad request
           content:
@@ -2013,6 +2330,8 @@ paths:
               authFlowId: edc013d0-e893-4dc0-990c-3e1d203e005b
               registrationFlowId: 80024fb3-29ed-4c33-aa48-8aee5e96d522
               isRegistrationFlowEnabled: true
+              recoveryFlowId: f60d3e8a-8c9a-4b2f-9e1a-5b3c8d7e2f4a
+              isRecoveryFlowEnabled: true
               url: https://myapp.example.com
               logoUrl: https://myapp.example.com/updated-logo.png
               tosUri: https://myapp.example.com/terms
@@ -2090,6 +2409,9 @@ paths:
                       employee:
                         - emp_id
                         - department
+                    acrValues:
+                      - urn:thunder:silver
+                      - urn:thunder:gold
       responses:
         "200":
           description: Application updated
@@ -2106,6 +2428,8 @@ paths:
                 authFlowId: edc013d0-e893-4dc0-990c-3e1d203e005b
                 registrationFlowId: 80024fb3-29ed-4c33-aa48-8aee5e96d522
                 isRegistrationFlowEnabled: true
+                recoveryFlowId: f60d3e8a-8c9a-4b2f-9e1a-5b3c8d7e2f4a
+                isRecoveryFlowEnabled: true
                 url: https://myapp.example.com
                 logoUrl: https://myapp.example.com/updated-logo.png
                 tosUri: https://myapp.example.com/terms
@@ -2185,6 +2509,9 @@ paths:
                         employee:
                           - emp_id
                           - department
+                      acrValues:
+                        - urn:thunder:silver
+                        - urn:thunder:gold
         "400":
           description: Bad request
           content:
@@ -2212,6 +2539,16 @@ paths:
                     description:
                       key: error.applicationservice.invalid_redirect_uri_description
                       defaultValue: One or more redirect URIs are not valid
+                invalid-recovery-flow-id:
+                  summary: Invalid or disabled recovery flow ID
+                  value:
+                    code: APP-1005
+                    message:
+                      key: error.applicationservice.invalid_recovery_flow_id
+                      defaultValue: Invalid or disabled recovery flow ID
+                    description:
+                      key: error.applicationservice.invalid_recovery_flow_id_description
+                      defaultValue: The provided recoveryFlowId does not exist or is not enabled
         "404":
           description: Application not found
           content:
@@ -2310,7 +2647,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTH-CRED-1001
                 message:
@@ -2324,7 +2661,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTH-CRED-1002
                 message:
@@ -2338,7 +2675,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-1008
                 message:
@@ -2353,7 +2690,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /auth/otp/sms/send:
     post:
       summary: Send a SMS OTP
@@ -2380,7 +2717,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-OTP-1002
                 message:
@@ -2395,7 +2732,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /auth/otp/sms/verify:
     post:
       summary: Verify a SMS OTP
@@ -2422,7 +2759,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-OTP-1005
                 message:
@@ -2436,7 +2773,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-OTP-1006
                 message:
@@ -2450,7 +2787,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-1008
                 message:
@@ -2465,7 +2802,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /auth/oauth/google/start:
     post:
       summary: Start Google authentication
@@ -2495,7 +2832,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-1001
                 message:
@@ -2510,7 +2847,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /auth/oauth/google/finish:
     post:
       summary: Finish Google authentication
@@ -2537,7 +2874,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-1003
                 message:
@@ -2552,7 +2889,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /auth/oauth/github/start:
     post:
       summary: Start Github authentication
@@ -2582,7 +2919,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-1001
                 message:
@@ -2597,7 +2934,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /auth/oauth/github/finish:
     post:
       summary: Finish Github authentication
@@ -2624,7 +2961,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-1003
                 message:
@@ -2639,7 +2976,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /auth/oauth/standard/start:
     post:
       summary: Start standard OAuth authentication
@@ -2669,7 +3006,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-1001
                 message:
@@ -2684,7 +3021,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /auth/oauth/standard/finish:
     post:
       summary: Finish standard OAuth authentication
@@ -2711,7 +3048,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-1003
                 message:
@@ -2726,7 +3063,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /auth/passkey/start:
     post:
       summary: Start WebAuthn authentication
@@ -2752,7 +3089,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-1011
                 message:
@@ -2766,7 +3103,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-1008
                 message:
@@ -2781,7 +3118,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /auth/passkey/finish:
     post:
       summary: Finish WebAuthn authentication
@@ -2807,7 +3144,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               examples:
                 emptyCredentialId:
                   value:
@@ -2852,7 +3189,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: WEBAUTHN-1008
                 message:
@@ -2866,7 +3203,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-1008
                 message:
@@ -2881,7 +3218,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /design/themes:
     get:
       tags:
@@ -3395,7 +3732,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: DSR-1004
                 message:
@@ -3423,6 +3760,10 @@ paths:
             example:
               applications:
                 - 550e8400-e29b-41d4-a716-446655440000
+              resourceServers:
+                - "*"
+              roles:
+                - "*"
               flows:
                 - "*"
               options:
@@ -3473,6 +3814,8 @@ paths:
                     description:
                       key: error.exportservice.no_resources_found_description
                       defaultValue: No valid resources found for the provided identifiers
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           description: Internal server error
           content:
@@ -3507,6 +3850,10 @@ paths:
               $ref: "#/components/schemas/ExportRequest"
             example:
               applications:
+                - "*"
+              resourceServers:
+                - "*"
+              roles:
                 - "*"
               flows:
                 - "*"
@@ -3560,6 +3907,8 @@ paths:
                     description:
                       key: error.exportservice.no_resources_found_description
                       defaultValue: No valid resources found for the provided identifiers
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           description: Internal server error
           content:
@@ -3579,7 +3928,7 @@ paths:
       summary: Execute a flow step
       description: Execute a step in an authentication flow.
       tags:
-        - Execute a flow step
+        - flow-execution
       requestBody:
         required: true
         content:
@@ -3605,7 +3954,11 @@ paths:
                     password: thor@123
       responses:
         "200":
-          description: Flow step executed successfully
+          description: >
+            Flow step executed successfully.
+
+            Flow-level failures are returned with HTTP 200 and `flowStatus:
+            ERROR` in the response body.
           content:
             application/json:
               schema:
@@ -3613,6 +3966,13 @@ paths:
                   - $ref: "#/components/schemas/IncompleteFlowResponse"
                   - $ref: "#/components/schemas/CompleteFlowResponse"
                   - $ref: "#/components/schemas/ErrorFlowResponse"
+                discriminator:
+                  propertyName: flowStatus
+                  mapping:
+                    INCOMPLETE: "#/components/schemas/IncompleteFlowResponse"
+                    PROMPT_ONLY: "#/components/schemas/IncompleteFlowResponse"
+                    COMPLETE: "#/components/schemas/CompleteFlowResponse"
+                    ERROR: "#/components/schemas/ErrorFlowResponse"
               examples:
                 incompleteFlow:
                   summary: Incomplete flow (prompt for user input)
@@ -3673,14 +4033,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
         "500":
           description: "Internal Server Error: An unexpected error occurred while
             processing the request"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /flows:
     get:
       tags:
@@ -3727,7 +4087,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientError"
+                $ref: "#/components/schemas/Error"
               example:
                 code: FMS-1001
                 message:
@@ -3736,12 +4096,16 @@ paths:
                 description:
                   key: error.flowmgtservice.invalid_request_format_description
                   defaultValue: The limit parameter must be between 1 and 100
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerError"
+                $ref: "#/components/schemas/Error"
     post:
       tags:
         - Flow Management
@@ -3767,7 +4131,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientError"
+                $ref: "#/components/schemas/Error"
               example:
                 code: FMS-1001
                 message:
@@ -3776,12 +4140,16 @@ paths:
                 description:
                   key: error.flowmgtservice.invalid_request_format_description
                   defaultValue: The request body is malformed or contains invalid data
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerError"
+                $ref: "#/components/schemas/Error"
   /flows/{flowId}:
     get:
       tags:
@@ -3803,12 +4171,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FlowDefinitionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: Flow not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientError"
+                $ref: "#/components/schemas/Error"
               example:
                 code: FMS-1006
                 message:
@@ -3822,7 +4194,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerError"
+                $ref: "#/components/schemas/Error"
     put:
       tags:
         - Flow Management
@@ -3854,7 +4226,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientError"
+                $ref: "#/components/schemas/Error"
               example:
                 code: FMS-1001
                 message:
@@ -3863,12 +4235,16 @@ paths:
                 description:
                   key: error.flowmgtservice.invalid_request_format_description
                   defaultValue: The request body is malformed or contains invalid data
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: Flow not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientError"
+                $ref: "#/components/schemas/Error"
               example:
                 code: FMS-1006
                 message:
@@ -3882,7 +4258,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerError"
+                $ref: "#/components/schemas/Error"
     delete:
       tags:
         - Flow Management
@@ -3904,7 +4280,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientError"
+                $ref: "#/components/schemas/Error"
               example:
                 code: FMS-1002
                 message:
@@ -3913,13 +4289,17 @@ paths:
                 description:
                   key: error.flowmgtservice.invalid_flow_id_description
                   defaultValue: The provided flow ID is not a valid UUID
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "409":
           description: Flow cannot be deleted (e.g., it's a default flow or currently in
             use)
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientError"
+                $ref: "#/components/schemas/Error"
               example:
                 code: FMS-1007
                 message:
@@ -3933,7 +4313,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerError"
+                $ref: "#/components/schemas/Error"
   /flows/{flowId}/versions:
     get:
       tags:
@@ -3956,12 +4336,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FlowVersionListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: Flow not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientError"
+                $ref: "#/components/schemas/Error"
               example:
                 code: FMS-1006
                 message:
@@ -3975,7 +4359,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerError"
+                $ref: "#/components/schemas/Error"
   /flows/{flowId}/versions/{version}:
     get:
       tags:
@@ -4004,12 +4388,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FlowVersionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: Flow or version not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientError"
+                $ref: "#/components/schemas/Error"
               example:
                 code: FMS-1006
                 message:
@@ -4023,7 +4411,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerError"
+                $ref: "#/components/schemas/Error"
   /flows/{flowId}/restore:
     post:
       tags:
@@ -4060,7 +4448,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientError"
+                $ref: "#/components/schemas/Error"
               example:
                 code: FMS-1001
                 message:
@@ -4069,12 +4457,16 @@ paths:
                 description:
                   key: error.flowmgtservice.invalid_request_format_description
                   defaultValue: The specified version number is invalid
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: Flow or version not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientError"
+                $ref: "#/components/schemas/Error"
               example:
                 code: FMS-1006
                 message:
@@ -4088,7 +4480,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerError"
+                $ref: "#/components/schemas/Error"
   /flow/meta:
     get:
       tags:
@@ -4104,7 +4496,7 @@ paths:
 
         - i18n translations based on language and namespace filters
 
-        - Registration flow enablement status
+        - Registration and recovery flow enablement status
 
 
         **Note:** When `type=APP`, the OU metadata is only included in the
@@ -4164,6 +4556,7 @@ paths:
                   summary: Application metadata with i18n
                   value:
                     isRegistrationFlowEnabled: true
+                    isRecoveryFlowEnabled: true
                     application:
                       id: 60a9b38b-6eba-9f9e-55f9-267067de4680
                       name: My Web Application
@@ -4208,6 +4601,7 @@ paths:
                   summary: Organization unit metadata
                   value:
                     isRegistrationFlowEnabled: false
+                    isRecoveryFlowEnabled: false
                     ou:
                       id: fe447a2f-29c5-4e33-ac8f-d77be15fdb32
                       handle: default
@@ -5128,9 +5522,21 @@ paths:
       summary: Liveness Check
       responses:
         "200":
-          description: OK
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+              example:
+                status: UP
         "503":
           description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+              example:
+                status: DOWN
   /health/readiness:
     get:
       tags:
@@ -5439,7 +5845,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
     post:
       summary: Create an identity provider
       description: Creates a new identity provider with the provided details.
@@ -5465,7 +5871,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: IDP-1007
                 message:
@@ -5479,7 +5885,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: IDP-1004
                 message:
@@ -5494,7 +5900,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /identity-providers/{id}:
     get:
       summary: Get an identity provider by ID
@@ -5521,7 +5927,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: IDP-1002
                 message:
@@ -5536,7 +5942,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: IDP-1001
                 message:
@@ -5551,7 +5957,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
     put:
       summary: Update an identity provider
       description: Update the details of an existing identity provider.
@@ -5584,7 +5990,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: IDP-1002
                 message:
@@ -5599,7 +6005,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: IDP-1001
                 message:
@@ -5613,7 +6019,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: IDP-1004
                 message:
@@ -5628,7 +6034,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
     delete:
       summary: Delete an identity provider
       description: Delete an identity provider using its ID.
@@ -5650,7 +6056,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: IDP-1002
                 message:
@@ -5665,7 +6071,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /import:
     post:
       tags:
@@ -5789,6 +6195,8 @@ paths:
                     description:
                       key: error.import.adapterNotConfigured.description
                       defaultValue: The required resource adapter is not configured
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           description: Internal server error
           content:
@@ -5845,6 +6253,8 @@ paths:
                 description:
                   key: error.import.invalidRequest.description
                   defaultValue: The provided import request is invalid or malformed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           description: Internal server error
           content:
@@ -5878,7 +6288,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
     post:
       summary: Create a new message notification sender
       description: Create a new message notification sender with the provided details.
@@ -5903,7 +6313,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: MNS-1006
                 message:
@@ -5918,7 +6328,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: MNS-1005
                 message:
@@ -5933,7 +6343,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /notification-senders/message/{id}:
     get:
       summary: Get a message notification sender by ID
@@ -5959,7 +6369,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: MNS-1002
                 message:
@@ -5973,7 +6383,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: MNS-1001
                 message:
@@ -5988,7 +6398,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
     put:
       summary: Update a message notification sender
       description: Update an existing message notification sender with the provided details.
@@ -6020,7 +6430,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: MNS-1002
                 message:
@@ -6034,7 +6444,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: MNS-1001
                 message:
@@ -6049,7 +6459,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
     delete:
       summary: Delete a message notification sender
       description: Delete a message notification sender using its unique identifier.
@@ -6070,7 +6480,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: MNS-1002
                 message:
@@ -6085,7 +6495,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /notification-senders/otp/send:
     post:
       summary: Send a One Time Password (OTP)
@@ -6136,20 +6546,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
         "404":
           description: "Not Found: The specified message notification sender does not exist"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
         "500":
           description: "Internal Server Error: An unexpected error occurred while
             processing the request"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /notification-senders/otp/verify:
     post:
       summary: Verify a One Time Password (OTP)
@@ -6190,14 +6600,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
         "500":
           description: "Internal Server Error: An unexpected error occurred while
             processing the request"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
   /organization-units:
     get:
       tags:
@@ -6206,6 +6616,34 @@ paths:
       parameters:
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
+        - in: query
+          name: filter
+          required: false
+          description: >
+            Filter organization units by attribute values.
+
+            Supported operators: `eq`, `gt`, `lt`.
+
+            Filterable attributes: `name`, `handle`, `description`, `createdAt`, `updatedAt`.
+
+            Format: `attribute operator "value"`.
+
+            Examples:
+
+            - `name eq "Engineering"`
+
+            - `handle eq "frontend"`
+
+            - `createdAt gt "2026-01-01T00:00:00Z"`
+          schema:
+            type: string
+          examples:
+            name-filter:
+              summary: Filter by name
+              value: name eq "Engineering"
+            created-at-filter:
+              summary: Filter by creation timestamp
+              value: createdAt gt "2026-01-01T00:00:00Z"
       responses:
         "200":
           description: List of root organization units
@@ -6258,6 +6696,16 @@ paths:
                     description:
                       key: error.ouservice.invalid_offset_parameter_description
                       defaultValue: The offset parameter must be a non-negative integer
+                invalid-filter:
+                  summary: Invalid filter parameter
+                  value:
+                    code: OU-1014
+                    message:
+                      key: error.ouservice.invalid_filter
+                      defaultValue: Invalid filter parameter
+                    description:
+                      key: error.ouservice.invalid_filter_description
+                      defaultValue: 'The filter parameter is invalid. Use format: attribute (eq|gt|lt) "value"'
         "500":
           description: Internal server error
     post:
@@ -6556,6 +7004,34 @@ paths:
             format: uuid
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
+        - in: query
+          name: filter
+          required: false
+          description: >
+            Filter organization units by attribute values.
+
+            Supported operators: `eq`, `gt`, `lt`.
+
+            Filterable attributes: `name`, `handle`, `description`, `createdAt`, `updatedAt`.
+
+            Format: `attribute operator "value"`.
+
+            Examples:
+
+            - `name eq "Engineering"`
+
+            - `handle eq "frontend"`
+
+            - `createdAt gt "2026-01-01T00:00:00Z"`
+          schema:
+            type: string
+          examples:
+            name-filter:
+              summary: Filter by name
+              value: name eq "Engineering"
+            created-at-filter:
+              summary: Filter by creation timestamp
+              value: createdAt gt "2026-01-01T00:00:00Z"
       responses:
         "200":
           description: List of child organization units
@@ -6608,6 +7084,16 @@ paths:
                     description:
                       key: error.ouservice.invalid_offset_parameter_description
                       defaultValue: The offset parameter must be a non-negative integer
+                invalid-filter:
+                  summary: Invalid filter parameter
+                  value:
+                    code: OU-1014
+                    message:
+                      key: error.ouservice.invalid_filter
+                      defaultValue: Invalid filter parameter
+                    description:
+                      key: error.ouservice.invalid_filter_description
+                      defaultValue: 'The filter parameter is invalid. Use format: attribute (eq|gt|lt) "value"'
         "404":
           description: Organization unit not found
           content:
@@ -6715,7 +7201,6 @@ paths:
             format: uuid
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
-        - $ref: "#/components/parameters/includeGroupQueryParam"
       responses:
         "200":
           description: List of groups in the organization unit
@@ -7228,6 +7713,34 @@ paths:
           example: engineering/frontend
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
+        - in: query
+          name: filter
+          required: false
+          description: >
+            Filter organization units by attribute values.
+
+            Supported operators: `eq`, `gt`, `lt`.
+
+            Filterable attributes: `name`, `handle`, `description`, `createdAt`, `updatedAt`.
+
+            Format: `attribute operator "value"`.
+
+            Examples:
+
+            - `name eq "Engineering"`
+
+            - `handle eq "frontend"`
+
+            - `createdAt gt "2026-01-01T00:00:00Z"`
+          schema:
+            type: string
+          examples:
+            name-filter:
+              summary: Filter by name
+              value: name eq "Engineering"
+            created-at-filter:
+              summary: Filter by creation timestamp
+              value: createdAt gt "2026-01-01T00:00:00Z"
       responses:
         "200":
           description: List of child organization units
@@ -7280,6 +7793,16 @@ paths:
                     description:
                       key: error.ouservice.invalid_offset_parameter_description
                       defaultValue: The offset parameter must be a non-negative integer
+                invalid-filter:
+                  summary: Invalid filter parameter
+                  value:
+                    code: OU-1014
+                    message:
+                      key: error.ouservice.invalid_filter
+                      defaultValue: Invalid filter parameter
+                    description:
+                      key: error.ouservice.invalid_filter_description
+                      defaultValue: 'The filter parameter is invalid. Use format: attribute (eq|gt|lt) "value"'
         "404":
           description: Organization unit not found
           content:
@@ -7439,7 +7962,6 @@ paths:
           example: engineering/frontend
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/offsetQueryParam"
-        - $ref: "#/components/parameters/includeGroupQueryParam"
       responses:
         "200":
           description: List of groups in the organization unit
@@ -7542,7 +8064,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-1011
                 message:
@@ -7556,7 +8078,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-1008
                 message:
@@ -7571,7 +8093,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: SSE-5000
                 message:
@@ -7605,7 +8127,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               examples:
                 emptyCredentialId:
                   value:
@@ -7649,7 +8171,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: PASS-1009
                 message:
@@ -7663,7 +8185,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ClientErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: AUTHN-1008
                 message:
@@ -7678,7 +8200,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ServerErrorResponse"
+                $ref: "#/components/schemas/Error"
               example:
                 code: SSE-5000
                 message:
@@ -10638,16 +11160,6 @@ paths:
                     description:
                       key: error.userservice.invalid_request_format_description
                       defaultValue: The request body is malformed or contains invalid data
-                invalid-group-id:
-                  summary: Invalid group ID
-                  value:
-                    code: USR-1007
-                    message:
-                      key: error.userservice.invalid_group_id
-                      defaultValue: Invalid group ID
-                    description:
-                      key: error.userservice.invalid_group_id_description
-                      defaultValue: One or more group IDs in the request do not exist
                 ou-not-found:
                   summary: Organization unit not found
                   value:
@@ -10668,16 +11180,6 @@ paths:
                     description:
                       key: error.userservice.schema_validation_failed_description
                       defaultValue: User attributes do not conform to the required schema
-                user-type-not-found:
-                  summary: user type not found
-                  value:
-                    code: USR-1021
-                    message:
-                      key: error.userservice.user_type_not_found
-                      defaultValue: user type not found
-                    description:
-                      key: error.userservice.user_type_not_found_description
-                      defaultValue: The specified user type does not exist
         "409":
           description: Conflict
           content:
@@ -10805,16 +11307,6 @@ paths:
                     description:
                       key: error.userservice.invalid_request_format_description
                       defaultValue: The request body is malformed or contains invalid data
-                invalid-group-id:
-                  summary: Invalid group ID
-                  value:
-                    code: USR-1007
-                    message:
-                      key: error.userservice.invalid_group_id
-                      defaultValue: Invalid group ID
-                    description:
-                      key: error.userservice.invalid_group_id_description
-                      defaultValue: One or more group IDs in the request do not exist
                 ou-not-found:
                   summary: Organization unit not found
                   value:
@@ -10835,16 +11327,6 @@ paths:
                     description:
                       key: error.userservice.schema_validation_failed_description
                       defaultValue: User attributes do not conform to the required schema
-                user-type-not-found:
-                  summary: user type not found
-                  value:
-                    code: USR-1021
-                    message:
-                      key: error.userservice.user_type_not_found
-                      defaultValue: user type not found
-                    description:
-                      key: error.userservice.user_type_not_found_description
-                      defaultValue: The specified user type does not exist
         "404":
           description: User not found
           content:
@@ -11215,16 +11697,6 @@ paths:
                     description:
                       key: error.userservice.schema_validation_failed_description
                       defaultValue: User attributes do not conform to the required schema
-                user-type-not-found:
-                  summary: user type not found
-                  value:
-                    code: USR-1021
-                    message:
-                      key: error.userservice.user_type_not_found
-                      defaultValue: user type not found
-                    description:
-                      key: error.userservice.user_type_not_found_description
-                      defaultValue: The specified user type does not exist
         "404":
           description: Organization unit not found
           content:
@@ -11312,19 +11784,19 @@ paths:
                   lastname: Wu
                   email: alice.wu@company.inc
         "401":
-          description: Unauthorized - missing or invalid token
+          description: Unauthorized - missing or invalid authentication token
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
               example:
-                code: USR-1018
+                code: AUTH-4010
                 message:
-                  key: error.userservice.authentication_failed
-                  defaultValue: Authentication failed
+                  key: error.unauthorized
+                  defaultValue: Unauthorized
                 description:
-                  key: error.userservice.authentication_failed_description
-                  defaultValue: Invalid credentials provided
+                  key: error.unauthorized_description
+                  defaultValue: Authentication is required to access this resource
         "404":
           description: Authenticated user not found
           content:
@@ -11415,29 +11887,29 @@ paths:
                       key: error.userservice.schema_validation_failed_description
                       defaultValue: User attributes do not conform to the required schema
                 user-type-not-found:
-                  summary: user type not found
+                  summary: User type not found
                   value:
                     code: USR-1021
                     message:
                       key: error.userservice.user_type_not_found
-                      defaultValue: user type not found
+                      defaultValue: User type not found
                     description:
                       key: error.userservice.user_type_not_found_description
                       defaultValue: The specified user type does not exist
         "401":
-          description: Unauthorized - missing or invalid token
+          description: Unauthorized - missing or invalid authentication token
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
               example:
-                code: USR-1018
+                code: AUTH-4010
                 message:
-                  key: error.userservice.authentication_failed
-                  defaultValue: Authentication failed
+                  key: error.unauthorized
+                  defaultValue: Unauthorized
                 description:
-                  key: error.userservice.authentication_failed_description
-                  defaultValue: Invalid credentials provided
+                  key: error.unauthorized_description
+                  defaultValue: Authentication is required to access this resource
         "404":
           description: Authenticated user not found
           content:
@@ -11517,19 +11989,19 @@ paths:
                       key: error.userservice.missing_credentials_description
                       defaultValue: At least one credential field must be provided
         "401":
-          description: Unauthorized - missing or invalid token
+          description: Unauthorized - missing or invalid authentication token
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
               example:
-                code: USR-1018
+                code: AUTH-4010
                 message:
-                  key: error.userservice.authentication_failed
-                  defaultValue: Authentication failed
+                  key: error.unauthorized
+                  defaultValue: Unauthorized
                 description:
-                  key: error.userservice.authentication_failed_description
-                  defaultValue: Invalid credentials provided
+                  key: error.unauthorized_description
+                  defaultValue: Authentication is required to access this resource
         "404":
           description: Authenticated user not found
           content:
@@ -11581,7 +12053,7 @@ paths:
                 totalResults: 3
                 startIndex: 1
                 count: 3
-                schemas:
+                types:
                   - id: 660e8400-e29b-41d4-a716-446655440001
                     name: employee
                     ouId: a839f4bd-39dc-4eaa-b5cc-210d8ecaee87
@@ -11676,7 +12148,7 @@ paths:
                   type: string
       responses:
         "201":
-          description: user type created
+          description: User type created
           content:
             application/json:
               schema:
@@ -11751,7 +12223,7 @@ paths:
                 code: USRS-1003
                 message:
                   key: error.entitytypeservice.user_type_name_conflict
-                  defaultValue: user type name conflict
+                  defaultValue: User type name conflict
                 description:
                   key: error.entitytypeservice.user_type_name_conflict_description
                   defaultValue: A user type with the same name already exists
@@ -11775,7 +12247,7 @@ paths:
         - $ref: "#/components/parameters/includeQueryParam"
       responses:
         "200":
-          description: user type details
+          description: User type details
           content:
             application/json:
               schema:
@@ -11861,7 +12333,7 @@ paths:
                             - phone
                             - mail
         "404":
-          description: user type not found
+          description: User type not found
           content:
             application/json:
               schema:
@@ -11870,7 +12342,7 @@ paths:
                 code: USRS-1002
                 message:
                   key: error.entitytypeservice.user_type_not_found
-                  defaultValue: user type not found
+                  defaultValue: User type not found
                 description:
                   key: error.entitytypeservice.user_type_not_found_description
                   defaultValue: The user type with the specified id does not exist
@@ -11933,7 +12405,7 @@ paths:
                     - platinum
       responses:
         "200":
-          description: user type updated
+          description: User type updated
           content:
             application/json:
               schema:
@@ -12001,7 +12473,7 @@ paths:
                       key: error.entitytypeservice.invalid_user_type_request_description
                       defaultValue: One or more attribute definitions are invalid
         "404":
-          description: user type not found
+          description: User type not found
           content:
             application/json:
               schema:
@@ -12010,12 +12482,12 @@ paths:
                 code: USRS-1002
                 message:
                   key: error.entitytypeservice.user_type_not_found
-                  defaultValue: user type not found
+                  defaultValue: User type not found
                 description:
                   key: error.entitytypeservice.user_type_not_found_description
                   defaultValue: The user type with the specified id does not exist
         "409":
-          description: user type name already exists
+          description: User type name already exists
           content:
             application/json:
               schema:
@@ -12024,7 +12496,7 @@ paths:
                 code: USRS-1003
                 message:
                   key: error.entitytypeservice.user_type_name_conflict
-                  defaultValue: user type name conflict
+                  defaultValue: User type name conflict
                 description:
                   key: error.entitytypeservice.user_type_name_conflict_description
                   defaultValue: A user type with the same name already exists
@@ -12047,7 +12519,7 @@ paths:
           example: 550e8400-e29b-41d4-a716-446655440000
       responses:
         "204":
-          description: user type deleted
+          description: User type deleted
         "400":
           description: Bad request
           content:
@@ -13078,7 +13550,7 @@ components:
           type: integer
           description: Number of elements in the returned page.
           example: 3
-        schemas:
+        types:
           type: array
           items:
             type: object
@@ -13173,23 +13645,6 @@ components:
           description: JSON Schema definition for the agent type
           additionalProperties:
             $ref: "#/components/schemas/AgentType/properties/schema/additionalProperties"
-    EntityTypeError:
-      type: object
-      required:
-        - code
-        - message
-      description: >
-        Internationalized error response returned by entity type management
-        endpoints.
-      properties:
-        code:
-          type: string
-          description: Machine-readable error code (USRS-XXXX prefix shared with
-            user-types).
-        message:
-          $ref: "#/components/schemas/I18nMessage"
-        description:
-          $ref: "#/components/schemas/I18nMessage"
     I18nMessage:
       type: object
       description: Internationalized message with translation key and default value.
@@ -13220,6 +13675,8 @@ components:
       properties:
         code:
           type: string
+          description: Error code. Codes follow the USR-XXXX convention.
+          example: USR-1001
         message:
           $ref: "#/components/schemas/I18nMessage"
         description:
@@ -13253,6 +13710,19 @@ components:
         isRegistrationFlowEnabled:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
+          example: true
+          default: false
+        recoveryFlowId:
+          type: string
+          description: The ID of the recovery flow.
+          example: f60d3e8a-8c9a-4b2f-9e1a-5b3c8d7e2f4a
+        isRecoveryFlowEnabled:
+          type: boolean
+          description: >
+            Indicates if the recovery flow is enabled for the application.
+            When set to true, recoveryFlowId must also be provided in the
+            ApplicationRequest; omitting recoveryFlowId while setting this
+            field to true will result in a 400 error.
           example: true
           default: false
         themeId:
@@ -13368,6 +13838,14 @@ components:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
           example: true
+        recoveryFlowId:
+          type: string
+          description: The ID of the recovery flow.
+          example: f60d3e8a-8c9a-4b2f-9e1a-5b3c8d7e2f4a
+        isRecoveryFlowEnabled:
+          type: boolean
+          description: Indicates if the recovery flow is enabled for the application.
+          example: true
         themeId:
           type: string
           format: uuid
@@ -13479,6 +13957,14 @@ components:
         isRegistrationFlowEnabled:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
+          example: true
+        recoveryFlowId:
+          type: string
+          description: The ID of the recovery flow.
+          example: f60d3e8a-8c9a-4b2f-9e1a-5b3c8d7e2f4a
+        isRecoveryFlowEnabled:
+          type: boolean
+          description: Indicates if the recovery flow is enabled for the application.
           example: true
         themeId:
           type: string
@@ -13593,6 +14079,14 @@ components:
           type: boolean
           description: Indicates if the registration flow is enabled for the application.
           example: true
+        recoveryFlowId:
+          type: string
+          description: The ID of the recovery flow.
+          example: f60d3e8a-8c9a-4b2f-9e1a-5b3c8d7e2f4a
+        isRecoveryFlowEnabled:
+          type: boolean
+          description: Indicates if the recovery flow is enabled for the application.
+          example: true
         themeId:
           type: string
           format: uuid
@@ -13669,6 +14163,7 @@ components:
           enum:
             - client_secret_basic
             - client_secret_post
+            - private_key_jwt
             - none
           description: The token endpoint authentication method for the OAuth application.
             Defaults to "client_secret_basic" if not specified.
@@ -13727,6 +14222,30 @@ components:
             employee:
               - emp_id
               - department
+        acrValues:
+          type: array
+          items:
+            type: string
+          description: >
+            ACR (Authentication Context Class Reference) values for the
+            application.
+
+            Defines the allowed set of ACR values for authorization requests.
+            When acr_values is
+
+            provided in an authorization request, only values present in this
+            list are accepted;
+
+            unrecognised values are silently ignored. If filtering removes all
+            requested ACRs,
+
+            the full list is used as a fallback. When acr_values is omitted from
+            the request,
+
+            this configured list is used as the effective ACR set.
+          example:
+            - urn:thunder:silver
+            - urn:thunder:gold
     OAuthAppConfigComplete:
       type: object
       properties:
@@ -13780,6 +14299,7 @@ components:
           enum:
             - client_secret_basic
             - client_secret_post
+            - private_key_jwt
             - none
           description: The token endpoint authentication method for the OAuth application.
             Defaults to "client_secret_basic" if not specified.
@@ -13838,6 +14358,30 @@ components:
             employee:
               - emp_id
               - department
+        acrValues:
+          type: array
+          items:
+            type: string
+          description: >
+            ACR (Authentication Context Class Reference) values for the
+            application.
+
+            Defines the allowed set of ACR values for authorization requests.
+            When acr_values is
+
+            provided in an authorization request, only values present in this
+            list are accepted;
+
+            unrecognised values are silently ignored. If filtering removes all
+            requested ACRs,
+
+            the full list is used as a fallback. When acr_values is omitted from
+            the request,
+
+            this configured list is used as the effective ACR set.
+          example:
+            - urn:thunder:silver
+            - urn:thunder:gold
     CredentialAuthRequest:
       type: object
       properties:
@@ -14149,32 +14693,6 @@ components:
       required:
         - publicKeyCredential
         - sessionToken
-    ErrorResponse:
-      type: object
-      properties:
-        code:
-          type: string
-          description: Error code
-        message:
-          $ref: "#/components/schemas/I18nMessage"
-        description:
-          $ref: "#/components/schemas/I18nMessage"
-    ClientErrorResponse:
-      allOf:
-        - $ref: "#/components/schemas/ErrorResponse"
-        - type: object
-    ServerErrorResponse:
-      allOf:
-        - $ref: "#/components/schemas/ErrorResponse"
-        - type: object
-      example:
-        code: SSE-5000
-        message:
-          key: error.internal_server_error
-          defaultValue: Internal server error
-        description:
-          key: error.internal_server_error_description
-          defaultValue: An unexpected error occurred while processing the request
     ThemeRequest:
       type: object
       required:
@@ -14518,6 +15036,16 @@ components:
           items:
             type: string
           description: IDs of users to export, or ["*"] for all.
+        resourceServers:
+          type: array
+          items:
+            type: string
+          description: IDs of resource servers to export, or ["*"] for all.
+        roles:
+          type: array
+          items:
+            type: string
+          description: IDs of roles to export, or ["*"] for all.
         flows:
           type: array
           items:
@@ -14818,6 +15346,7 @@ components:
           enum:
             - AUTHENTICATION
             - REGISTRATION
+            - RECOVERY
           example: AUTHENTICATION
     SubSequentFlowRequest:
       type: object
@@ -15768,38 +16297,21 @@ components:
           items:
             $ref: "#/components/schemas/Component"
           description: Nested child components (for BLOCK type)
-    ClientError:
-      type: object
-      properties:
-        code:
-          type: string
-          description: The error code
-          example: FMS-1001
-        message:
-          $ref: "#/components/schemas/I18nMessage"
-        description:
-          $ref: "#/components/schemas/I18nMessage"
-    ServerError:
-      type: object
-      properties:
-        code:
-          type: string
-          description: The server error code
-          example: SSE-5000
-        message:
-          $ref: "#/components/schemas/I18nMessage"
-        description:
-          $ref: "#/components/schemas/I18nMessage"
     FlowMetadataResponse:
       type: object
       required:
         - isRegistrationFlowEnabled
+        - isRecoveryFlowEnabled
         - design
         - i18n
       properties:
         isRegistrationFlowEnabled:
           type: boolean
           description: Indicates if registration flow is enabled for the entity
+          example: true
+        isRecoveryFlowEnabled:
+          type: boolean
+          description: Indicates if recovery flow is enabled for the entity
           example: true
         application:
           $ref: "#/components/schemas/ApplicationMetadata"
@@ -16634,6 +17146,9 @@ components:
         - id
         - handle
         - name
+        - isReadOnly
+        - createdAt
+        - updatedAt
       properties:
         id:
           type: string
@@ -16648,6 +17163,20 @@ components:
           type: string
           format: uri
           description: Logo URL for the organization unit
+        isReadOnly:
+          type: boolean
+          readOnly: true
+          description: Whether the organization unit is immutable by clients.
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Creation timestamp in UTC.
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Last update timestamp in UTC.
     OrganizationUnit:
       allOf:
         - $ref: "#/components/schemas/OrganizationUnitBasic"
@@ -16656,6 +17185,26 @@ components:
           type: string
           format: uuid
           nullable: true
+        themeId:
+          type: string
+          format: uuid
+          description: Theme configuration ID for the organization unit
+        layoutId:
+          type: string
+          format: uuid
+          description: Layout configuration ID for the organization unit
+        tosUri:
+          type: string
+          format: uri
+          description: Terms of Service URI
+        policyUri:
+          type: string
+          format: uri
+          description: Privacy Policy URI
+        cookiePolicyUri:
+          type: string
+          format: uri
+          description: Cookie Policy URI
     User:
       type: object
       required:
@@ -17993,7 +18542,7 @@ components:
           type: integer
           description: Number of elements in the returned page.
           example: 3
-        schemas:
+        types:
           type: array
           items:
             type: object
@@ -18097,12 +18646,40 @@ components:
           scopes:
             system: Access to system management APIs
   responses:
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: AUTH-4010
+            message:
+              key: error.unauthorized
+              defaultValue: Unauthorized
+            description:
+              key: error.unauthorized_description
+              defaultValue: Authentication is required to access this resource
+    Forbidden:
+      description: Forbidden - insufficient permissions to perform this operation
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: AUTH-4030
+            message:
+              key: error.forbidden
+              defaultValue: Forbidden
+            description:
+              key: error.forbidden_description
+              defaultValue: You do not have sufficient permissions to access this resource
     BadRequest:
       description: Bad request - Invalid input
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: "#/components/schemas/Error"
           examples:
             invalid-language:
               summary: Invalid language tag format
@@ -18137,26 +18714,12 @@ components:
                   key: error.i18nservice.invalid_key_description
                   defaultValue: The key can only contain alphanumeric characters, dots,
                     underscores, and hyphens
-    Unauthorized:
-      description: Authentication required
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-          example:
-            code: AUTH-4001
-            message:
-              key: error.auth.unauthorized
-              defaultValue: Unauthorized
-            description:
-              key: error.auth.unauthorized_description
-              defaultValue: Authentication is required to access this resource
     NotFound:
       description: Resource not found
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: "#/components/schemas/Error"
           example:
             code: I18N-1006
             message:
@@ -18171,7 +18734,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: "#/components/schemas/Error"
           example:
             code: THM-1004
             message:
@@ -18186,7 +18749,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: "#/components/schemas/Error"
           example:
             code: I18N-5000
             message:
@@ -18195,20 +18758,6 @@ components:
             description:
               key: error.i18nservice.internal_server_error_description
               defaultValue: An unexpected error occurred while processing the request
-    Forbidden:
-      description: Insufficient permissions
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-          example:
-            code: AUTH-4003
-            message:
-              key: error.auth.forbidden
-              defaultValue: Forbidden
-            description:
-              key: error.auth.forbidden_description
-              defaultValue: You do not have permission to access this resource
   parameters:
     limitQueryParam:
       in: query

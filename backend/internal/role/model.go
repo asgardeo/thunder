@@ -18,7 +18,7 @@
 
 package role
 
-import "github.com/asgardeo/thunder/internal/system/utils"
+import "github.com/thunder-id/thunderid/internal/system/utils"
 
 // AssigneeType represents the type of assignee principal.
 type AssigneeType string
@@ -143,7 +143,9 @@ type ResourcePermissions struct {
 }
 
 // RoleCreationDetail represents the parameters for creating a role.
+// ID is optional; if empty, the service generates a new UUID.
 type RoleCreationDetail struct {
+	ID          string
 	Name        string
 	Description string
 	OUID        string

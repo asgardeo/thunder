@@ -137,6 +137,11 @@ $customerUserTypeData = ([ordered]@{
             displayName = "Last Name"
             required = $false
         }
+        name = @{
+            type = "string"
+            displayName = "Full Name"
+            required = $false
+        }
         mobileNumber = @{
             type = "string"
             displayName = "Mobile Number"

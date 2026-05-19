@@ -42,8 +42,8 @@ vi.mock('@thunderid/contexts', () => ({
   }),
 }));
 
-// Mock AsgardeoProvider
-interface MockAsgardeoProviderProps {
+// Mock ThunderIDProvider
+interface MockThunderIDProviderProps {
   children: ReactNode;
   baseUrl?: string | null;
   clientId?: string | null;
@@ -51,14 +51,14 @@ interface MockAsgardeoProviderProps {
   scopes?: string[];
 }
 
-vi.mock('@asgardeo/react', () => ({
-  AsgardeoProvider: ({
+vi.mock('@thunderid/react', () => ({
+  ThunderIDProvider: ({
     children,
     baseUrl = null,
     clientId = null,
     afterSignInUrl = null,
     scopes = undefined,
-  }: MockAsgardeoProviderProps) => (
+  }: MockThunderIDProviderProps) => (
     <div
       data-testid="asgardeo-provider"
       data-base-url={baseUrl}
@@ -71,12 +71,17 @@ vi.mock('@asgardeo/react', () => ({
   ),
 }));
 
-// Mock OxygenUI (used by withTheme and Head)
-vi.mock('@wso2/oxygen-ui', () => ({
-  AcrylicOrangeTheme: {palette: {primary: {main: '#ff5700'}}},
-  OxygenUIThemeProvider: ({children}: {children: ReactNode}) => <div data-testid="theme-provider">{children}</div>,
-  useColorScheme: () => ({mode: 'light', systemMode: 'light'}),
-}));
+// Mock OxygenUI (used by withTheme)
+vi.mock('@wso2/oxygen-ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@wso2/oxygen-ui')>();
+  return {
+    ...actual,
+    createOxygenTheme: actual.createOxygenTheme ?? ((theme: unknown) => theme),
+    HighContrastTheme: actual.HighContrastTheme ?? {},
+    OxygenUIThemeProvider: ({children}: {children: ReactNode}) => <div data-testid="theme-provider">{children}</div>,
+    useColorScheme: () => ({mode: 'light', systemMode: 'light'}),
+  };
+});
 
 // Mock i18next top-level await in withI18n
 vi.mock('i18next', () => ({
@@ -118,7 +123,7 @@ describe('AppWithDecorators', () => {
     mockGetTrustedIssuerScopes.mockReturnValue([]);
   });
 
-  it('renders AsgardeoProvider with config values', () => {
+  it('renders ThunderIDProvider with config values', () => {
     mockGetTrustedIssuerClientId.mockReturnValue('test-client-id');
     mockGetTrustedIssuerUrl.mockReturnValue('https://test-server.example.com');
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');

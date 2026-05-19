@@ -26,11 +26,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	oupkg "github.com/asgardeo/thunder/internal/ou"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/i18n/core"
-	"github.com/asgardeo/thunder/tests/mocks/oumock"
+	oupkg "github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/tests/mocks/oumock"
 )
 
 // TestValidateEntityType tests the validateEntityType function with various scenarios.
@@ -228,11 +228,12 @@ func TestValidateEntityTypeWrapper(t *testing.T) {
 // TestParseToEntityTypeDTO tests the parseToEntityTypeDTO function.
 func TestParseToEntityTypeDTO(t *testing.T) {
 	testCases := []struct {
-		name    string
-		yaml    string
-		want    *EntityType
-		wantErr bool
-		errMsg  string
+		name           string
+		yaml           string
+		want           *EntityType
+		wantErr        bool
+		errMsg         string
+		validateSchema bool
 	}{
 		{
 			name: "valid YAML",
@@ -287,6 +288,38 @@ schema: '{invalid json}'
 			wantErr: true,
 			errMsg:  "schema field contains invalid JSON",
 		},
+		{
+			name: "schema as YAML object",
+			yaml: `
+id: schema-1
+name: Test Schema
+organization_unit_id: ou-1
+schema:
+  username:
+    type: string
+    required: true
+`,
+			want: &EntityType{
+				ID:   "schema-1",
+				Name: "Test Schema",
+				OUID: "ou-1",
+				Schema: json.RawMessage(
+					`{"username":{"required":true,"type":"string"}}`,
+				),
+			},
+			wantErr:        false,
+			validateSchema: true,
+		},
+		{
+			name: "missing schema field",
+			yaml: `
+id: schema-1
+name: Test Schema
+organization_unit_id: ou-1
+`,
+			wantErr: true,
+			errMsg:  "schema field contains invalid JSON",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -304,6 +337,14 @@ schema: '{invalid json}'
 				assert.Equal(t, tc.want.Name, result.Name)
 				assert.Equal(t, tc.want.OUID, result.OUID)
 				assert.Equal(t, tc.want.AllowSelfRegistration, result.AllowSelfRegistration)
+				if tc.validateSchema {
+					var got, expected map[string]interface{}
+					assert.NoError(t, json.Unmarshal(result.Schema, &got), "result schema must decode to JSON object")
+					assert.NoError(t, json.Unmarshal(tc.want.Schema, &expected),
+						"test fixture schema must decode to JSON object")
+					assert.Equal(t, expected, got, "decoded schema must deep-equal the expected value")
+					assert.NotEqual(t, map[string]interface{}{}, got, "schema must not decode to an empty object")
+				}
 			}
 		})
 	}
@@ -407,7 +448,7 @@ func TestGetAllResourceIDs_WithReadOnlyFilter(t *testing.T) {
 	exporter := newEntityTypeExporter(mockService)
 
 	response := &EntityTypeListResponse{
-		Schemas: []EntityTypeListItem{
+		Types: []EntityTypeListItem{
 			{ID: "schema1", Name: "Schema 1", IsReadOnly: false}, // Mutable - should be included
 			{ID: "schema2", Name: "Schema 2", IsReadOnly: true},  // Immutable - should be excluded
 			{ID: "schema3", Name: "Schema 3", IsReadOnly: false}, // Mutable - should be included

@@ -25,17 +25,17 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/asgardeo/thunder/internal/consent"
-	"github.com/asgardeo/thunder/internal/entitytype/model"
-	oupkg "github.com/asgardeo/thunder/internal/ou"
-	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/i18n/core"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/security"
-	"github.com/asgardeo/thunder/internal/system/sysauthz"
-	"github.com/asgardeo/thunder/internal/system/transaction"
-	"github.com/asgardeo/thunder/internal/system/utils"
+	"github.com/thunder-id/thunderid/internal/consent"
+	"github.com/thunder-id/thunderid/internal/entitytype/model"
+	oupkg "github.com/thunder-id/thunderid/internal/ou"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/security"
+	"github.com/thunder-id/thunderid/internal/system/sysauthz"
+	"github.com/thunder-id/thunderid/internal/system/transaction"
+	"github.com/thunder-id/thunderid/internal/system/utils"
 )
 
 const entityTypeLoggerComponentName = "EntityTypeService"
@@ -74,18 +74,16 @@ type EntityTypeServiceInterface interface {
 		attributes json.RawMessage,
 		exists func(map[string]interface{}) (bool, error),
 	) (bool, *serviceerror.ServiceError)
-	GetCredentialAttributes(
+	GetAttributes(
 		ctx context.Context, category TypeCategory, entityType string,
-	) ([]string, *serviceerror.ServiceError)
+		allowCredential, allowNonCredential, requiredOnly bool,
+	) ([]AttributeInfo, *serviceerror.ServiceError)
 	GetUniqueAttributes(
 		ctx context.Context, category TypeCategory, entityType string,
 	) ([]string, *serviceerror.ServiceError)
 	GetDisplayAttributesByNames(
 		ctx context.Context, category TypeCategory, names []string,
 	) (map[string]string, *serviceerror.ServiceError)
-	GetNonCredentialAttributes(
-		ctx context.Context, category TypeCategory, entityType string, requiredOnly bool,
-	) ([]AttributeInfo, *serviceerror.ServiceError)
 }
 
 // entityTypeService is the default implementation of the EntityTypeServiceInterface.
@@ -164,7 +162,7 @@ func (us *entityTypeService) listAllEntityTypes(
 		TotalResults: totalCount,
 		StartIndex:   offset + 1,
 		Count:        len(entityTypes),
-		Schemas:      entityTypes,
+		Types:        entityTypes,
 		Links: buildPaginationLinks(category, limit, offset, totalCount,
 			utils.DisplayQueryParam(includeDisplay)),
 	}, nil
@@ -182,7 +180,7 @@ func (us *entityTypeService) listAccessibleEntityTypes(
 			TotalResults: 0,
 			StartIndex:   offset + 1,
 			Count:        0,
-			Schemas:      []EntityTypeListItem{},
+			Types:        []EntityTypeListItem{},
 			Links:        buildPaginationLinks(category, limit, offset, 0, displayQuery),
 		}, nil
 	}
@@ -205,7 +203,7 @@ func (us *entityTypeService) listAccessibleEntityTypes(
 		TotalResults: totalCount,
 		StartIndex:   offset + 1,
 		Count:        len(entityTypes),
-		Schemas:      entityTypes,
+		Types:        entityTypes,
 		Links:        buildPaginationLinks(category, limit, offset, totalCount, displayQuery),
 	}, nil
 }
@@ -218,6 +216,10 @@ func (us *entityTypeService) CreateEntityType(
 
 	if svcErr := validateCategory(category); svcErr != nil {
 		return nil, svcErr
+	}
+
+	if category == TypeCategoryAgent && request.Name != DefaultAgentTypeName {
+		return nil, &ErrorAgentTypeOnlyDefaultAllowed
 	}
 
 	if isDeclarativeModeEnabled() {
@@ -374,6 +376,10 @@ func (us *entityTypeService) UpdateEntityType(ctx context.Context, category Type
 		return nil, svcErr
 	}
 
+	if category == TypeCategoryAgent && request.Name != DefaultAgentTypeName {
+		return nil, &ErrorAgentTypeOnlyDefaultAllowed
+	}
+
 	if schemaID == "" {
 		return nil, invalidEntityTypeRequestErr(category, "schema id must not be empty")
 	}
@@ -467,6 +473,10 @@ func (us *entityTypeService) DeleteEntityType(ctx context.Context, category Type
 
 	if svcErr := validateCategory(category); svcErr != nil {
 		return svcErr
+	}
+
+	if category == TypeCategoryAgent {
+		return &ErrorAgentTypeCannotDelete
 	}
 
 	if schemaID == "" {
@@ -604,10 +614,13 @@ func (us *entityTypeService) ValidateEntityUniqueness(
 	return true, nil
 }
 
-// GetCredentialAttributes returns the names of schema properties marked as credentials for a given entity type.
-func (us *entityTypeService) GetCredentialAttributes(
+// GetAttributes returns schema properties filtered by the provided flags for the given entity type.
+// allowCredential includes credential properties; allowNonCredential includes non-credential properties.
+// When requiredOnly is true, only required properties are included.
+func (us *entityTypeService) GetAttributes(
 	ctx context.Context, category TypeCategory, entityType string,
-) ([]string, *serviceerror.ServiceError) {
+	allowCredential, allowNonCredential, requiredOnly bool,
+) ([]AttributeInfo, *serviceerror.ServiceError) {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, entityTypeLoggerComponentName))
 
 	if svcErr := validateCategory(category); svcErr != nil {
@@ -619,10 +632,10 @@ func (us *entityTypeService) GetCredentialAttributes(
 		if errors.Is(err, ErrEntityTypeNotFound) {
 			return nil, entityTypeNotFoundErr(category)
 		}
-		return nil, logAndReturnServerError(logger, "Failed to load entity type for credential attributes", err)
+		return nil, logAndReturnServerError(logger, "Failed to load entity type for attribute infos", err)
 	}
 
-	return compiledSchema.GetCredentialAttributes(), nil
+	return compiledSchema.GetAttributes(allowCredential, allowNonCredential, requiredOnly), nil
 }
 
 // GetUniqueAttributes returns the names of schema properties marked as unique for a given entity type.
@@ -666,29 +679,6 @@ func (us *entityTypeService) GetDisplayAttributesByNames(
 	}
 
 	return result, nil
-}
-
-// GetNonCredentialAttributes returns non-credential attributes defined in the schema for the given
-// category and entity type. When requiredOnly is true, only required attributes are returned.
-func (us *entityTypeService) GetNonCredentialAttributes(
-	ctx context.Context, category TypeCategory, entityType string, requiredOnly bool,
-) ([]AttributeInfo, *serviceerror.ServiceError) {
-	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, entityTypeLoggerComponentName))
-
-	if svcErr := validateCategory(category); svcErr != nil {
-		return nil, svcErr
-	}
-
-	compiledSchema, err := us.getCompiledSchemaForEntityType(ctx, category, entityType, logger)
-	if err != nil {
-		if errors.Is(err, ErrEntityTypeNotFound) {
-			return nil, entityTypeNotFoundErr(category)
-		}
-		return nil, logAndReturnServerError(logger,
-			"Failed to load entity type for non-credential attributes", err)
-	}
-
-	return compiledSchema.GetNonCredentialAttributes(requiredOnly), nil
 }
 
 func (us *entityTypeService) getCompiledSchemaForEntityType(

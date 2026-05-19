@@ -22,11 +22,13 @@ import (
 	"context"
 	"fmt"
 
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
-	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
-	"github.com/asgardeo/thunder/internal/system/jose/jwt"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jwksresolver"
+	oauth2model "github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
+	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
+	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
+	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 )
 
 func resolveContext(ctx context.Context) context.Context {
@@ -45,13 +47,21 @@ type TokenBuilderInterface interface {
 
 // TokenBuilder implements TokenBuilderInterface.
 type tokenBuilder struct {
-	jwtService jwt.JWTServiceInterface
+	jwtService   jwt.JWTServiceInterface
+	jweService   jwe.JWEServiceInterface
+	jwksResolver *jwksresolver.Resolver
 }
 
-// NewTokenBuilder creates a new TokenBuilder instance.
-func newTokenBuilder(jwtService jwt.JWTServiceInterface) TokenBuilderInterface {
+// newTokenBuilder creates a new TokenBuilder instance.
+func newTokenBuilder(
+	jwtService jwt.JWTServiceInterface,
+	jweService jwe.JWEServiceInterface,
+	resolver *jwksresolver.Resolver,
+) TokenBuilderInterface {
 	return &tokenBuilder{
-		jwtService: jwtService,
+		jwtService:   jwtService,
+		jweService:   jweService,
+		jwksResolver: resolver,
 	}
 }
 
@@ -330,6 +340,37 @@ func (tb *tokenBuilder) BuildIDToken(ctx *IDTokenBuildContext) (*oauth2model.Tok
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate ID token: %v", err.Error)
+	}
+
+	// Optionally encrypt the signed ID token when responseType is JWE or NESTED_JWT.
+	if ctx.OAuthApp != nil && ctx.OAuthApp.Token != nil && ctx.OAuthApp.Token.IDToken != nil {
+		idTokenCfg := ctx.OAuthApp.Token.IDToken
+		rt := idTokenCfg.ResponseType
+		if rt == inboundmodel.IDTokenResponseTypeJWE || rt == inboundmodel.IDTokenResponseTypeNESTEDJWT {
+			if tb.jweService == nil {
+				return nil, fmt.Errorf("JWE service is not configured")
+			}
+			rpKey, rpKID, svcErr := tb.jwksResolver.ResolveEncryptionKey(
+				resolveContext(ctx.Context),
+				ctx.OAuthApp.Certificate,
+				idTokenCfg.EncryptionAlg,
+				jwksresolver.KeyUseLenientEnc,
+			)
+			if svcErr != nil {
+				return nil, fmt.Errorf("failed to resolve ID token encryption key: %v", svcErr)
+			}
+			// cty="JWT" indicates a nested JWT (signed JWS payload encrypted as JWE per OIDC spec)
+			encrypted, svcErr := tb.jweService.Encrypt(
+				[]byte(token), rpKey,
+				jwe.KeyEncAlgorithm(idTokenCfg.EncryptionAlg),
+				jwe.ContentEncAlgorithm(idTokenCfg.EncryptionEnc),
+				"JWT", rpKID,
+			)
+			if svcErr != nil {
+				return nil, fmt.Errorf("failed to encrypt ID token: %v", svcErr)
+			}
+			token = encrypted
+		}
 	}
 
 	// Assign generated token and issued at time

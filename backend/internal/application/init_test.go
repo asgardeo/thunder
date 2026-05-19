@@ -24,19 +24,20 @@ import (
 	"os"
 	"testing"
 
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"github.com/asgardeo/thunder/internal/application/model"
-	"github.com/asgardeo/thunder/internal/cert"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/system/config"
-	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
-	"github.com/asgardeo/thunder/internal/system/database/provider"
-	"github.com/asgardeo/thunder/tests/mocks/certmock"
-	"github.com/asgardeo/thunder/tests/mocks/entitymock"
-	"github.com/asgardeo/thunder/tests/mocks/entitytypemock"
-	"github.com/asgardeo/thunder/tests/mocks/flow/flowmgtmock"
-	"github.com/asgardeo/thunder/tests/mocks/inboundclientmock"
+	"github.com/thunder-id/thunderid/internal/cert"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	dbmodel "github.com/thunder-id/thunderid/internal/system/database/model"
+	"github.com/thunder-id/thunderid/internal/system/database/provider"
+	"github.com/thunder-id/thunderid/tests/mocks/certmock"
+	"github.com/thunder-id/thunderid/tests/mocks/entitymock"
+	"github.com/thunder-id/thunderid/tests/mocks/entitytypemock"
+	"github.com/thunder-id/thunderid/tests/mocks/flow/flowmgtmock"
+	"github.com/thunder-id/thunderid/tests/mocks/inboundclientmock"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -273,25 +274,25 @@ inbound_auth_config:
 
 	// Verify inbound auth config
 	assert.Len(suite.T(), appDTO.InboundAuthConfig, 1)
-	assert.Equal(suite.T(), model.OAuthInboundAuthType, appDTO.InboundAuthConfig[0].Type)
-	assert.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig)
-	assert.Equal(suite.T(), "test-client-id", appDTO.InboundAuthConfig[0].OAuthAppConfig.ClientID)
+	assert.Equal(suite.T(), inboundmodel.OAuthInboundAuthType, appDTO.InboundAuthConfig[0].Type)
+	assert.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthConfig)
+	assert.Equal(suite.T(), "test-client-id", appDTO.InboundAuthConfig[0].OAuthConfig.ClientID)
 	assert.Equal(
-		suite.T(), "test-client-secret", appDTO.InboundAuthConfig[0].OAuthAppConfig.ClientSecret)
+		suite.T(), "test-client-secret", appDTO.InboundAuthConfig[0].OAuthConfig.ClientSecret)
 	assert.Equal(suite.T(), []string{"https://example.com/callback"},
-		appDTO.InboundAuthConfig[0].OAuthAppConfig.RedirectURIs)
+		appDTO.InboundAuthConfig[0].OAuthConfig.RedirectURIs)
 	// Note: GrantTypes and ResponseTypes are typed constants, not plain strings
-	assert.Contains(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.GrantTypes,
+	assert.Contains(suite.T(), appDTO.InboundAuthConfig[0].OAuthConfig.GrantTypes,
 		oauth2const.GrantType("authorization_code"))
-	assert.Contains(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.ResponseTypes,
+	assert.Contains(suite.T(), appDTO.InboundAuthConfig[0].OAuthConfig.ResponseTypes,
 		oauth2const.ResponseType("code"))
 	assert.Equal(suite.T(), oauth2const.TokenEndpointAuthMethod("client_secret_basic"),
-		appDTO.InboundAuthConfig[0].OAuthAppConfig.TokenEndpointAuthMethod)
-	assert.True(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.PKCERequired)
-	assert.False(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.PublicClient)
+		appDTO.InboundAuthConfig[0].OAuthConfig.TokenEndpointAuthMethod)
+	assert.True(suite.T(), appDTO.InboundAuthConfig[0].OAuthConfig.PKCERequired)
+	assert.False(suite.T(), appDTO.InboundAuthConfig[0].OAuthConfig.PublicClient)
 
 	// Verify OAuth token config
-	assert.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.Token)
+	assert.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthConfig.Token)
 	// Note: OAuthTokenConfig doesn't have ValidityPeriod and UserAttributes directly
 	// Those are in AccessToken and IDToken sub-configs
 }
@@ -346,8 +347,8 @@ inbound_auth_config:
 	assert.NotNil(suite.T(), appDTO)
 	// Should only include OAuth config, SAML should be filtered out
 	assert.Len(suite.T(), appDTO.InboundAuthConfig, 1)
-	assert.Equal(suite.T(), model.OAuthInboundAuthType, appDTO.InboundAuthConfig[0].Type)
-	assert.Equal(suite.T(), "test-client-id", appDTO.InboundAuthConfig[0].OAuthAppConfig.ClientID)
+	assert.Equal(suite.T(), inboundmodel.OAuthInboundAuthType, appDTO.InboundAuthConfig[0].Type)
+	assert.Equal(suite.T(), "test-client-id", appDTO.InboundAuthConfig[0].OAuthConfig.ClientID)
 }
 
 // TestParseToApplicationDTO_WithOAuthConfigWithoutConfig tests parsing OAuth type without config
@@ -437,7 +438,7 @@ inbound_auth_config:
 	assert.NotNil(suite.T(), appDTO)
 	assert.Len(suite.T(), appDTO.InboundAuthConfig, 1)
 
-	oauthConfig := appDTO.InboundAuthConfig[0].OAuthAppConfig
+	oauthConfig := appDTO.InboundAuthConfig[0].OAuthConfig
 	assert.NotNil(suite.T(), oauthConfig)
 	assert.Equal(suite.T(), "oauth-client", oauthConfig.ClientID)
 	assert.Equal(suite.T(), "oauth-secret", oauthConfig.ClientSecret)
@@ -534,8 +535,8 @@ inbound_auth_config:
 	assert.Equal(t, "Test application", appDTO.Description)
 	assert.True(t, appDTO.IsRegistrationFlowEnabled)
 	assert.Len(t, appDTO.InboundAuthConfig, 1)
-	assert.Equal(t, model.OAuthInboundAuthType, appDTO.InboundAuthConfig[0].Type)
-	assert.Equal(t, "test-client-id", appDTO.InboundAuthConfig[0].OAuthAppConfig.ClientID)
+	assert.Equal(t, inboundmodel.OAuthInboundAuthType, appDTO.InboundAuthConfig[0].Type)
+	assert.Equal(t, "test-client-id", appDTO.InboundAuthConfig[0].OAuthConfig.ClientID)
 }
 
 // TestParseToApplicationDTO_InvalidYAML_Standalone tests parsing invalid YAML
@@ -681,11 +682,11 @@ inbound_auth_config:
 	assert.NotNil(suite.T(), appDTO)
 	require.Len(suite.T(), appDTO.InboundAuthConfig, 1,
 		"InboundAuthConfig should have exactly 1 entry before accessing index 0")
-	require.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig,
-		"OAuthAppConfig should not be nil before accessing fields")
-	require.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims,
+	require.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthConfig,
+		"OAuthConfig should not be nil before accessing fields")
+	require.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthConfig.ScopeClaims,
 		"ScopeClaims should not be nil before accessing map keys")
-	scopeClaims := appDTO.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims
+	scopeClaims := appDTO.InboundAuthConfig[0].OAuthConfig.ScopeClaims
 	require.Contains(suite.T(), scopeClaims, "profile", "ScopeClaims should contain 'profile' key")
 	require.NotNil(suite.T(), scopeClaims["profile"], "profile scope claims should not be nil")
 	assert.Len(suite.T(), scopeClaims["profile"], 3)
@@ -714,12 +715,12 @@ inbound_auth_config:
 	assert.NotNil(suite.T(), appDTO)
 	require.Len(suite.T(), appDTO.InboundAuthConfig, 1,
 		"InboundAuthConfig should have exactly 1 entry before accessing index 0")
-	require.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig,
-		"OAuthAppConfig should not be nil before accessing fields")
-	assert.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.Scopes)
-	assert.Len(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.Scopes, 2)
-	assert.Contains(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.Scopes, "openid")
-	assert.Contains(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.Scopes, "profile")
+	require.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthConfig,
+		"OAuthConfig should not be nil before accessing fields")
+	assert.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthConfig.Scopes)
+	assert.Len(suite.T(), appDTO.InboundAuthConfig[0].OAuthConfig.Scopes, 2)
+	assert.Contains(suite.T(), appDTO.InboundAuthConfig[0].OAuthConfig.Scopes, "openid")
+	assert.Contains(suite.T(), appDTO.InboundAuthConfig[0].OAuthConfig.Scopes, "profile")
 }
 
 // TestParseToApplicationDTO_WithUserInfo tests parsing with UserInfo configuration
@@ -746,11 +747,11 @@ inbound_auth_config:
 	assert.NotNil(suite.T(), appDTO)
 	require.Len(suite.T(), appDTO.InboundAuthConfig, 1,
 		"InboundAuthConfig should have exactly 1 entry before accessing index 0")
-	require.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig,
-		"OAuthAppConfig should not be nil before accessing fields")
-	require.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.UserInfo,
+	require.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthConfig,
+		"OAuthConfig should not be nil before accessing fields")
+	require.NotNil(suite.T(), appDTO.InboundAuthConfig[0].OAuthConfig.UserInfo,
 		"UserInfo should not be nil before accessing UserAttributes")
-	assert.Len(suite.T(), appDTO.InboundAuthConfig[0].OAuthAppConfig.UserInfo.UserAttributes, 3)
+	assert.Len(suite.T(), appDTO.InboundAuthConfig[0].OAuthConfig.UserInfo.UserAttributes, 3)
 }
 
 // TestParseToApplicationDTO_WithAllOAuthFieldsIncludingFixedFields tests all OAuth fields
@@ -796,8 +797,8 @@ inbound_auth_config:
 	assert.NotNil(suite.T(), appDTO)
 	require.NotEmpty(suite.T(), appDTO.InboundAuthConfig,
 		"InboundAuthConfig should not be empty before accessing index 0")
-	oauth := appDTO.InboundAuthConfig[0].OAuthAppConfig
-	require.NotNil(suite.T(), oauth, "OAuthAppConfig should not be nil before accessing fields")
+	oauth := appDTO.InboundAuthConfig[0].OAuthConfig
+	require.NotNil(suite.T(), oauth, "OAuthConfig should not be nil before accessing fields")
 	assert.Equal(suite.T(), "complete-client", oauth.ClientID)
 	assert.Equal(suite.T(), "secret-value", oauth.ClientSecret)
 	assert.Len(suite.T(), oauth.RedirectURIs, 1)
@@ -844,8 +845,8 @@ inbound_auth_config:
 	require.NotNil(suite.T(), appDTO, "appDTO should not be nil")
 	require.NotEmpty(suite.T(), appDTO.InboundAuthConfig,
 		"InboundAuthConfig should not be empty before accessing index 0")
-	oauth := appDTO.InboundAuthConfig[0].OAuthAppConfig
-	require.NotNil(suite.T(), oauth, "OAuthAppConfig should not be nil before accessing fields")
+	oauth := appDTO.InboundAuthConfig[0].OAuthConfig
+	require.NotNil(suite.T(), oauth, "OAuthConfig should not be nil before accessing fields")
 
 	// Verify scope_claims are properly copied (this was the bug in issue #1445)
 	assert.NotNil(suite.T(), oauth.ScopeClaims, "ScopeClaims should not be nil")

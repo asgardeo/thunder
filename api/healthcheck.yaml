@@ -2,7 +2,7 @@ openapi: 3.0.3
 
 info:
   title: Health Check API
-  version: 0.1.0
+  version: "1.0"
   description: This API is used to retrieve health status of the server including readiness and liveness checks.
   license:
     name: Apache 2.0
@@ -20,6 +20,8 @@ tags:
   - name: health
     description: Health check operations
 
+security: []
+
 paths:
   /health/liveness:
     get:
@@ -28,9 +30,21 @@ paths:
       summary: Liveness Check
       responses:
         '200':
-          description: OK
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              example:
+                status: "UP"
         '503':
           description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              example:
+                status: "DOWN"
 
   /health/readiness:
     get:

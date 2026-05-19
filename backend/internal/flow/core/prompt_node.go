@@ -22,9 +22,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
 const failureReasonInvalidAction = "Invalid action selected"
@@ -379,37 +379,15 @@ func (n *promptNode) hasRequiredInputs(ctx *NodeContext, nodeResp *common.NodeRe
 	return !n.appendMissingInputs(ctx, nodeResp, n.getAllInputs())
 }
 
-// appendMissingInputs appends the missing required inputs to the node response.
-// Returns true if any required data is found missing, otherwise false.
+// appendMissingInputs appends the missing prompt inputs to the node response.
+// Returns true when the prompt should pause for user input.
 func (n *promptNode) appendMissingInputs(ctx *NodeContext, nodeResp *common.NodeResponse,
 	requiredInputs []common.Input) bool {
 	logger := log.GetLogger().With(log.String(log.LoggerKeyExecutionID, ctx.ExecutionID))
 
-	requireInputs := false
-	for _, input := range requiredInputs {
-		if _, ok := ctx.UserInputs[input.Identifier]; !ok {
-			if _, ok := ctx.RuntimeData[input.Identifier]; ok {
-				logger.Debug("Input available in runtime data, skipping",
-					log.String("identifier", input.Identifier), log.Bool("isRequired", input.Required))
-				continue
-			}
-			if value, ok := ctx.ForwardedData[input.Identifier]; ok {
-				if _, isString := value.(string); isString {
-					logger.Debug("Input available in forwarded data, skipping",
-						log.String("identifier", input.Identifier), log.Bool("isRequired", input.Required))
-					continue
-				}
-			}
-			if input.Required {
-				requireInputs = true
-			}
-			nodeResp.Inputs = append(nodeResp.Inputs, input)
-			logger.Debug("Input not available in the context",
-				log.String("identifier", input.Identifier), log.Bool("isRequired", input.Required))
-		}
-	}
-
-	return requireInputs
+	missing := collectMissingInputs(ctx, GetPresentedOptionalInputs(ctx.RuntimeData), requiredInputs, logger)
+	nodeResp.Inputs = append(nodeResp.Inputs, missing...)
+	return len(missing) > 0
 }
 
 // enrichInputsFromForwardedData enriches the inputs in the node response with dynamic data
@@ -446,6 +424,12 @@ func (n *promptNode) enrichInputsFromForwardedData(ctx *NodeContext, nodeResp *c
 			if fwdInput.Required && !nodeResp.Inputs[idx].Required {
 				nodeResp.Inputs[idx].Required = true
 				n.logger.Debug("Updated input required flag from ForwardedData",
+					log.String("identifier", fwdInput.Identifier))
+			}
+			if fwdInput.Type == common.InputTypePassword &&
+				nodeResp.Inputs[idx].Type != common.InputTypePassword {
+				nodeResp.Inputs[idx].Type = common.InputTypePassword
+				n.logger.Debug("Updated input type to password from ForwardedData",
 					log.String("identifier", fwdInput.Identifier))
 			}
 			if fwdInput.Type == common.InputTypeSelect &&
@@ -652,44 +636,49 @@ func filterMetaComponents(comps []interface{}, allowedRefs, knownInputActionRefs
 	return result
 }
 
-// appendSyntheticMetaComponents ensures every input in the list has a corresponding meta
-// component. For inputs whose component already exists (matched by ref or id), the required
-// field is updated in-place if the input marks it required. For inputs with no existing
-// component, a minimal synthetic component is created and inserted into the first BLOCK
-// before any ACTION. If no BLOCK exists, a new one is appended.
-// The label uses DisplayName when set, falling back to Identifier.
-func (n *promptNode) appendSyntheticMetaComponents(trimmedMeta interface{}, inputs []common.Input) interface{} {
-	metaMap, ok := trimmedMeta.(map[string]interface{})
-	if !ok {
-		return trimmedMeta
+// cloneBlockWithChildren returns a shallow copy of compMap with its "components"
+// field replaced by the provided children slice.
+func cloneBlockWithChildren(compMap map[string]interface{}, children []interface{}) map[string]interface{} {
+	newBlock := make(map[string]interface{}, len(compMap))
+	for k, v := range compMap {
+		newBlock[k] = v
 	}
+	newBlock["components"] = children
+	return newBlock
+}
 
-	// Build a set of refs/ids from the node's own configured prompt inputs —
-	// used to suppress synthesis for node-defined inputs with no meta component.
-	nodeInputRefs := make(map[string]struct{})
-	for _, inp := range n.getAllInputs() {
-		if inp.Ref != "" {
-			nodeInputRefs[inp.Ref] = struct{}{}
-		}
-		nodeInputRefs[inp.Identifier] = struct{}{}
-	}
-
-	// Build ref/id → component map for O(1) lookup and in-place required update.
-	metaCompByRef := make(map[string]map[string]interface{})
-	collectMetaComponentMap(metaMap["components"], metaCompByRef)
-
-	// Single pass: update required on existing components; collect synthetic for missing ones.
-	// For each input, try to find its meta component by Identifier first, then by Ref.
-	// Node-configured inputs with no meta component are skipped (no synthesis).
-	synthetic := make([]interface{}, 0, len(inputs))
+// buildSyntheticComponentList separates missing inputs into promoted meta
+// components and newly synthesized component definitions for inputs absent from
+// the meta tree.
+func (n *promptNode) buildSyntheticComponentList(
+	inputs []common.Input,
+	metaCompByRef map[string]map[string]interface{},
+	nodeInputRefs map[string]struct{},
+) (synthetic []interface{}, promotions map[string]map[string]interface{}) {
+	synthetic = make([]interface{}, 0, len(inputs))
+	promotions = make(map[string]map[string]interface{})
 	for _, input := range inputs {
-		comp, inMeta := metaCompByRef[input.Identifier]
+		ref := input.Identifier
+		comp, inMeta := metaCompByRef[ref]
 		if !inMeta && input.Ref != "" {
-			comp, inMeta = metaCompByRef[input.Ref]
+			ref = input.Ref
+			comp, inMeta = metaCompByRef[ref]
 		}
 		if inMeta {
-			if input.Required {
-				comp["required"] = true
+			needsRequired := input.Required && comp["required"] != true
+			needsPassword := input.Type == common.InputTypePassword && comp["type"] != common.InputTypePassword
+			if needsRequired || needsPassword {
+				cloned := make(map[string]interface{}, len(comp))
+				for k, v := range comp {
+					cloned[k] = v
+				}
+				if needsRequired {
+					cloned["required"] = true
+				}
+				if needsPassword {
+					cloned["type"] = common.InputTypePassword
+				}
+				promotions[ref] = cloned
 			}
 			continue
 		}
@@ -712,6 +701,81 @@ func (n *promptNode) appendSyntheticMetaComponents(trimmedMeta interface{}, inpu
 			"required": input.Required,
 		})
 	}
+	return synthetic, promotions
+}
+
+// applyComponentPromotions recursively walks a components slice and replaces any component
+// whose ref or id matches a key in promotions with the corresponding cloned+promoted map.
+// Parent nodes are cloned only when a descendant is actually replaced.
+// Returns the updated slice and whether any replacement was made.
+func applyComponentPromotions(comps []interface{}, promotions map[string]map[string]interface{}) ([]interface{}, bool) {
+	result := make([]interface{}, len(comps))
+	copy(result, comps)
+	changed := false
+	for i, comp := range result {
+		compMap, ok := comp.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		if ref, _ := compMap["ref"].(string); ref != "" {
+			if promoted, ok := promotions[ref]; ok {
+				result[i] = promoted
+				changed = true
+				continue
+			}
+		}
+		if id, _ := compMap["id"].(string); id != "" {
+			if promoted, ok := promotions[id]; ok {
+				result[i] = promoted
+				changed = true
+				continue
+			}
+		}
+		children, hasChildren := compMap["components"].([]interface{})
+		if !hasChildren {
+			continue
+		}
+		newChildren, childChanged := applyComponentPromotions(children, promotions)
+		if childChanged {
+			cloned := make(map[string]interface{}, len(compMap))
+			for k, v := range compMap {
+				cloned[k] = v
+			}
+			cloned["components"] = newChildren
+			result[i] = cloned
+			changed = true
+		}
+	}
+	return result, changed
+}
+
+// appendSyntheticMetaComponents ensures every input in the list has a corresponding meta
+// component. For inputs whose component already exists (matched by ref or id), a cloned
+// component with the promoted fields (required, type) is swapped in — the original shared
+// metadata is never mutated. For inputs with no existing component, a minimal synthetic
+// component is created and inserted into the first BLOCK before any ACTION. If no BLOCK
+// exists, a new one is appended.
+// The label uses DisplayName when set, falling back to Identifier.
+func (n *promptNode) appendSyntheticMetaComponents(trimmedMeta interface{}, inputs []common.Input) interface{} {
+	metaMap, ok := trimmedMeta.(map[string]interface{})
+	if !ok {
+		return trimmedMeta
+	}
+
+	// Build a set of refs/ids from the node's own configured prompt inputs —
+	// used to suppress synthesis for node-defined inputs with no meta component.
+	nodeInputRefs := make(map[string]struct{})
+	for _, inp := range n.getAllInputs() {
+		if inp.Ref != "" {
+			nodeInputRefs[inp.Ref] = struct{}{}
+		}
+		nodeInputRefs[inp.Identifier] = struct{}{}
+	}
+
+	metaCompByRef := make(map[string]map[string]interface{})
+	collectMetaComponentMap(metaMap["components"], metaCompByRef)
+
+	synthetic, promotions := n.buildSyntheticComponentList(inputs, metaCompByRef, nodeInputRefs)
 
 	// Walk the meta tree and either replace a DYNAMIC_INPUT_PLACEHOLDER with synthetic
 	// inputs (preferred — exact insertion point), or insert before the first ACTION in
@@ -725,6 +789,10 @@ func (n *promptNode) appendSyntheticMetaComponents(trimmedMeta interface{}, inpu
 	existing, _ := metaMap["components"].([]interface{})
 	updatedComponents := make([]interface{}, len(existing))
 	copy(updatedComponents, existing)
+
+	if len(promotions) > 0 {
+		updatedComponents, _ = applyComponentPromotions(updatedComponents, promotions)
+	}
 
 	placeholderStripped := false
 	inserted := false
@@ -746,12 +814,7 @@ func (n *promptNode) appendSyntheticMetaComponents(trimmedMeta interface{}, inpu
 			newChildren = append(newChildren, children[:j]...)
 			newChildren = append(newChildren, synthetic...)
 			newChildren = append(newChildren, children[j+1:]...)
-			newBlock := make(map[string]interface{}, len(compMap))
-			for k, v := range compMap {
-				newBlock[k] = v
-			}
-			newBlock["components"] = newChildren
-			updatedComponents[i] = newBlock
+			updatedComponents[i] = cloneBlockWithChildren(compMap, newChildren)
 			placeholderStripped = true
 			inserted = true
 			break
@@ -777,17 +840,12 @@ func (n *promptNode) appendSyntheticMetaComponents(trimmedMeta interface{}, inpu
 		newChildren = append(newChildren, children[:insertIdx]...)
 		newChildren = append(newChildren, synthetic...)
 		newChildren = append(newChildren, children[insertIdx:]...)
-		newBlock := make(map[string]interface{}, len(compMap))
-		for k, v := range compMap {
-			newBlock[k] = v
-		}
-		newBlock["components"] = newChildren
-		updatedComponents[i] = newBlock
+		updatedComponents[i] = cloneBlockWithChildren(compMap, newChildren)
 		inserted = true
 		break
 	}
 
-	if len(synthetic) == 0 && !placeholderStripped {
+	if len(synthetic) == 0 && !placeholderStripped && len(promotions) == 0 {
 		return trimmedMeta
 	}
 

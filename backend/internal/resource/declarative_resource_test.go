@@ -23,10 +23,10 @@ import (
 	"errors"
 	"testing"
 
-	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
-	"github.com/asgardeo/thunder/internal/system/log"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/internal/system/log"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -384,7 +384,7 @@ func TestProcessResourceServer_SetsPermissionsAndDelimiter(t *testing.T) {
 		},
 	}
 
-	err := processResourceServer(rs)
+	err := ProcessResourceServer(rs)
 
 	assert.NoError(t, err)
 	assert.Equal(t, ":", rs.Delimiter)
@@ -415,7 +415,7 @@ func TestProcessResourceServer_WithHandlePrefixesPermissions(t *testing.T) {
 		},
 	}
 
-	err := processResourceServer(rs)
+	err := ProcessResourceServer(rs)
 
 	assert.NoError(t, err)
 	assert.Equal(t, ":", rs.Delimiter)
@@ -436,7 +436,7 @@ func TestProcessResourceServer_DuplicateHandle(t *testing.T) {
 		},
 	}
 
-	err := processResourceServer(rs)
+	err := ProcessResourceServer(rs)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "duplicate resource handle")

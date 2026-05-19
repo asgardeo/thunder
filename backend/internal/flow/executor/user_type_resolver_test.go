@@ -19,7 +19,8 @@
 package executor
 
 import (
-	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 
 	"context"
 	"testing"
@@ -28,14 +29,14 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
-	"github.com/asgardeo/thunder/internal/entitytype"
-	"github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/flow/core"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/entitytypemock"
-	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
-	"github.com/asgardeo/thunder/tests/mocks/oumock"
+	appmodel "github.com/thunder-id/thunderid/internal/application/model"
+	"github.com/thunder-id/thunderid/internal/entitytype"
+	"github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/internal/flow/core"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/tests/mocks/entitytypemock"
+	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
+	"github.com/thunder-id/thunderid/tests/mocks/oumock"
 )
 
 type UserTypeResolverTestSuite struct {
@@ -131,7 +132,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_AuthenticationFlow_WithAllow
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeAuthentication,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee", "customer"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee", "customer"},
+			},
 		},
 		RuntimeData: map[string]string{},
 	}
@@ -152,7 +155,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_AuthenticationFlow_NoAllowed
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeAuthentication,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{},
+			},
 		},
 		RuntimeData: map[string]string{},
 	}
@@ -189,7 +194,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UnsupportedFlowType() {
 				ExecutionID: "flow-123",
 				FlowType:    tc.flowType,
 				Application: appmodel.Application{
-					AllowedUserTypes: []string{"employee"},
+					InboundAuthProfile: inboundmodel.InboundAuthProfile{
+						AllowedUserTypes: []string{"employee"},
+					},
 				},
 				RuntimeData: map[string]string{},
 			}
@@ -228,7 +235,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Succ
 				ExecutionID: "flow-123",
 				FlowType:    common.FlowTypeRegistration,
 				Application: appmodel.Application{
-					AllowedUserTypes: tc.allowedUserTypes,
+					InboundAuthProfile: inboundmodel.InboundAuthProfile{
+						AllowedUserTypes: tc.allowedUserTypes,
+					},
 				},
 				UserInputs: map[string]string{
 					userTypeKey: tc.providedUserType,
@@ -265,7 +274,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_NoOU
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee", "customer"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee", "customer"},
+			},
 		},
 		UserInputs: map[string]string{
 			userTypeKey: "employee",
@@ -297,7 +308,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_NotA
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee", "customer"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee", "customer"},
+			},
 		},
 		UserInputs: map[string]string{
 			userTypeKey: "partner",
@@ -321,7 +334,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_OURe
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee"},
+			},
 		},
 		UserInputs: map[string]string{
 			userTypeKey: "employee",
@@ -357,7 +372,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_NoAllowedUserTypes() {
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{},
+			},
 		},
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -379,7 +396,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_Succes
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee"},
+			},
 		},
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -412,7 +431,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_NoOU()
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee"},
+			},
 		},
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -442,7 +463,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_OUReso
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee"},
+			},
 		},
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -476,7 +499,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Pro
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee", "customer", "partner"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee", "customer", "partner"},
+			},
 		},
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -519,7 +544,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_EmptyUserTypeInput() {
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee", "customer"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee", "customer"},
+			},
 		},
 		UserInputs: map[string]string{
 			userTypeKey: "",
@@ -561,7 +588,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserTypeProvidedInInput_Self
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee"},
+			},
 		},
 		UserInputs: map[string]string{
 			userTypeKey: "employee",
@@ -594,7 +623,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_SingleAllowedUserType_SelfRe
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee"},
+			},
 		},
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -625,7 +656,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Onl
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee", "customer", "partner"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee", "customer", "partner"},
+			},
 		},
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -675,7 +708,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_NoS
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee", "customer"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee", "customer"},
+			},
 		},
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -716,7 +751,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_MultipleAllowedUserTypes_Sch
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee", "customer"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee", "customer"},
+			},
 		},
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -760,7 +797,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_RegistrationFlow_NodeAllowed
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee", "customer", "partner"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee", "customer", "partner"},
+			},
 		},
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -793,7 +832,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_RegistrationFlow_NodeAllowed
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee", "customer", "partner"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee", "customer", "partner"},
+			},
 		},
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -822,7 +863,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_RegistrationFlow_NodeAllowed
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee", "customer"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee", "customer"},
+			},
 		},
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{},
@@ -846,7 +889,9 @@ func (suite *UserTypeResolverTestSuite) TestExecute_RegistrationFlow_NodeAllowed
 		ExecutionID: "flow-123",
 		FlowType:    common.FlowTypeRegistration,
 		Application: appmodel.Application{
-			AllowedUserTypes: []string{"employee", "customer", "partner"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				AllowedUserTypes: []string{"employee", "customer", "partner"},
+			},
 		},
 		UserInputs:  map[string]string{userTypeKey: "partner"},
 		RuntimeData: map[string]string{},
@@ -1007,7 +1052,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 
 	// Mock GetEntityTypeList returning empty list
 	emptyList := &entitytype.EntityTypeListResponse{
-		Schemas: []entitytype.EntityTypeListItem{},
+		Types: []entitytype.EntityTypeListItem{},
 	}
 	suite.mockEntityTypeService.On("GetEntityTypeList", ctx.Context, mock.Anything, 100, 0, false).
 		Return(emptyList, nil)
@@ -1057,7 +1102,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 
 	// Mock GetEntityTypeList returning a single schema
 	schemaList := &entitytype.EntityTypeListResponse{
-		Schemas: []entitytype.EntityTypeListItem{
+		Types: []entitytype.EntityTypeListItem{
 			{Name: "employee", OUID: "ou-123"},
 		},
 	}
@@ -1085,7 +1130,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_NoUserTyp
 
 	// Mock GetEntityTypeList returning schemas
 	schemaList := &entitytype.EntityTypeListResponse{
-		Schemas: []entitytype.EntityTypeListItem{
+		Types: []entitytype.EntityTypeListItem{
 			{Name: "employee"},
 			{Name: "customer"},
 		},
@@ -1121,7 +1166,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_AllowedUs
 
 	// Mock GetEntityTypeList returning multiple schemas
 	schemaList := &entitytype.EntityTypeListResponse{
-		Schemas: []entitytype.EntityTypeListItem{
+		Types: []entitytype.EntityTypeListItem{
 			{Name: "employee", OUID: "ou-123"},
 			{Name: "customer", OUID: "ou-456"},
 			{Name: "partner", OUID: "ou-789"},
@@ -1154,7 +1199,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_AllowedUs
 
 	// Mock GetEntityTypeList returning multiple schemas including non-allowed ones
 	schemaList := &entitytype.EntityTypeListResponse{
-		Schemas: []entitytype.EntityTypeListItem{
+		Types: []entitytype.EntityTypeListItem{
 			{Name: "employee", OUID: "ou-123"},
 			{Name: "customer", OUID: "ou-456"},
 			{Name: "partner", OUID: "ou-789"},
@@ -1189,7 +1234,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboardingFlow_AllowedUs
 
 	// Mock GetEntityTypeList returning schemas that don't match the allowed list
 	schemaList := &entitytype.EntityTypeListResponse{
-		Schemas: []entitytype.EntityTypeListItem{
+		Types: []entitytype.EntityTypeListItem{
 			{Name: "employee", OUID: "ou-123"},
 			{Name: "customer", OUID: "ou-456"},
 		},
@@ -1446,7 +1491,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_Filte
 	}
 
 	schemaList := &entitytype.EntityTypeListResponse{
-		Schemas: []entitytype.EntityTypeListItem{
+		Types: []entitytype.EntityTypeListItem{
 			{Name: "employee", OUID: "parent-ou-123"},
 			{Name: "customer", OUID: "other-ou-789"},
 			{Name: "partner", OUID: "parent-ou-123"},
@@ -1486,7 +1531,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_Filte
 	}
 
 	schemaList := &entitytype.EntityTypeListResponse{
-		Schemas: []entitytype.EntityTypeListItem{
+		Types: []entitytype.EntityTypeListItem{
 			{Name: "employee", OUID: "parent-ou-123"},
 			{Name: "customer", OUID: "other-ou-789"},
 		},
@@ -1522,7 +1567,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_AllSc
 	}
 
 	schemaList := &entitytype.EntityTypeListResponse{
-		Schemas: []entitytype.EntityTypeListItem{
+		Types: []entitytype.EntityTypeListItem{
 			{Name: "employee", OUID: "ou-123"},
 			{Name: "customer", OUID: "ou-456"},
 		},
@@ -1557,7 +1602,7 @@ func (suite *UserTypeResolverTestSuite) TestExecute_UserOnboarding_OUFirst_IsPar
 	}
 
 	schemaList := &entitytype.EntityTypeListResponse{
-		Schemas: []entitytype.EntityTypeListItem{
+		Types: []entitytype.EntityTypeListItem{
 			{Name: "employee", OUID: "parent-ou-123"},
 			{Name: "customer", OUID: "error-ou"},
 		},

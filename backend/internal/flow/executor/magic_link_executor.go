@@ -23,15 +23,15 @@ import (
 	"slices"
 	"strconv"
 
-	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	"github.com/asgardeo/thunder/internal/authn/magiclink"
-	"github.com/asgardeo/thunder/internal/entityprovider"
-	"github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/flow/core"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/jose/jwt"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/utils"
+	authncm "github.com/thunder-id/thunderid/internal/authn/common"
+	"github.com/thunder-id/thunderid/internal/authn/magiclink"
+	"github.com/thunder-id/thunderid/internal/entityprovider"
+	"github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/internal/flow/core"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/utils"
 )
 
 // magicLinkAuthExecutor implements the ExecutorInterface for Magic Link authentication.
@@ -181,13 +181,13 @@ func (m *magicLinkAuthExecutor) InitiateMagicLink(ctx *core.NodeContext,
 
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
-			return execResp, errors.New(svcErr.ErrorDescription.DefaultValue)
+			execResp.Status = common.ExecFailure
+			execResp.FailureReason = svcErr.ErrorDescription.DefaultValue
+			return execResp, nil
 		}
 		return execResp, errors.New("failed to generate magic link")
 	}
 
-	execResp.RuntimeData[common.RuntimeKeyMagicLinkURL] = generatedURL
-	execResp.RuntimeData[common.RuntimeKeyMagicLinkExpiryMinutes] = utils.SecondsToMinutes(expirySeconds)
 	if destValue != "" {
 		execResp.RuntimeData[destAttr] = destValue
 	}
@@ -304,7 +304,7 @@ func (m *magicLinkAuthExecutor) executeVerify(ctx *core.NodeContext) (*common.Ex
 		return execResp, nil
 	}
 
-	subject, tokenJTI, failure, err := m.validateMagicLinkToken(ctx, logger)
+	tokenJTI, failure, err := m.validateMagicLinkToken(ctx, logger)
 	if err != nil {
 		return execResp, err
 	}
@@ -316,12 +316,9 @@ func (m *magicLinkAuthExecutor) executeVerify(ctx *core.NodeContext) (*common.Ex
 
 	execResp.RuntimeData[common.RuntimeKeyMagicLinkUsedJti] = tokenJTI
 
-	if ctx.FlowType == common.FlowTypeRegistration {
-		// In registration, validateMagicLinkToken returns the destination value as the subject.
-		destAttr := ctx.RuntimeData[common.RuntimeKeyMagicLinkDestinationAttribute]
-		execResp.RuntimeData[destAttr] = subject
-	} else {
-		authenticatedUser, err := m.getAuthenticatedUser(subject)
+	if ctx.FlowType != common.FlowTypeRegistration {
+		userID := ctx.RuntimeData[userAttributeUserID]
+		authenticatedUser, err := m.getAuthenticatedUser(userID)
 		if err != nil {
 			return execResp, fmt.Errorf("failed to get authenticated user details: %w", err)
 		}
@@ -335,10 +332,10 @@ func (m *magicLinkAuthExecutor) executeVerify(ctx *core.NodeContext) (*common.Ex
 
 // validateMagicLinkToken validates the magic link token from user input and returns the associated subject.
 func (m *magicLinkAuthExecutor) validateMagicLinkToken(ctx *core.NodeContext,
-	logger *log.Logger) (string, string, string, error) {
+	logger *log.Logger) (string, string, error) {
 	token, ok := ctx.UserInputs[userInputMagicLinkToken]
 	if !ok || token == "" {
-		return "", "", "Magic link token is required", nil
+		return "", "Magic link token is required", nil
 	}
 
 	isRegistration := ctx.FlowType == common.FlowTypeRegistration
@@ -347,8 +344,7 @@ func (m *magicLinkAuthExecutor) validateMagicLinkToken(ctx *core.NodeContext,
 	if isRegistration {
 		destinationAttribute = ctx.RuntimeData[common.RuntimeKeyMagicLinkDestinationAttribute]
 		if destinationAttribute == "" {
-			logger.Error("Magic link destination attribute missing from runtime data")
-			return "", "", "", errors.New("magic link destination attribute missing from runtime data")
+			return "", "", errors.New("magic link destination attribute missing from runtime data")
 		}
 	}
 
@@ -359,54 +355,41 @@ func (m *magicLinkAuthExecutor) validateMagicLinkToken(ctx *core.NodeContext,
 		// In registration, it's expected that the user doesn't exist in the DB yet.
 		if !(isRegistration && svcErr.Code == authncm.ErrorUserNotFound.Code) {
 			if svcErr.Type == serviceerror.ClientErrorType {
-				return "", "", svcErr.ErrorDescription.DefaultValue, nil
+				return "", svcErr.ErrorDescription.DefaultValue, nil
 			}
-			return "", "", "", errors.New("failed to verify magic link token")
+			return "", "", errors.New("failed to verify magic link token")
 		}
 	} else if isRegistration {
 		// If VerifyMagicLink found a user during a registration flow, something is wrong.
 		logger.Debug("User already exists during magic link registration verification.")
-		return "", "", "Invalid registration state", nil
+		return "", "Invalid registration state", nil
 	} else if user == nil {
-		return "", "", failureReasonUserNotFound, nil
+		return "", failureReasonUserNotFound, nil
 	}
 
 	payload, decodeErr := jwt.DecodeJWTPayload(token)
 	if decodeErr != nil {
 		logger.Debug("Failed to decode magic link token", log.Error(decodeErr))
-		return "", "", common.InvalidMagicLinkToken, nil
+		return "", failureReasonInvalidMagicLink, nil
 	}
 
 	executionIDClaim := utils.ConvertInterfaceValueToString(payload["executionId"])
 	if executionIDClaim == "" || executionIDClaim != ctx.ExecutionID {
 		logger.Debug("Magic link token executionId mismatch")
-		return "", "", common.InvalidMagicLinkToken, nil
+		return "", failureReasonInvalidMagicLink, nil
 	}
 
 	jtiClaim := utils.ConvertInterfaceValueToString(payload["jti"])
 	if jtiClaim == "" {
-		return "", "", common.InvalidMagicLinkToken, nil
+		return "", failureReasonInvalidMagicLink, nil
 	}
 	if usedJti, exists := ctx.RuntimeData[common.RuntimeKeyMagicLinkUsedJti]; exists && usedJti == jtiClaim {
 		logger.Debug("Magic link token has already been used", log.String("jti", jtiClaim))
-		return "", "", "Magic link has already been used", nil
+		return "", "Magic link has already been used", nil
 	}
 
-	if isRegistration {
-		destAttrValue := utils.ConvertInterfaceValueToString(payload["sub"])
-		if destAttrValue == "" {
-			logger.Debug("Magic link token missing subject claim")
-			return "", "", common.InvalidMagicLinkToken, nil
-		}
-
-		logger.Debug("Registration magic link token validated successfully",
-			log.MaskedString("destination", destAttrValue))
-		return destAttrValue, jtiClaim, "", nil
-	}
-
-	logger.Debug("Auth magic link token validated successfully",
-		log.String("userID", user.ID))
-	return user.ID, jtiClaim, "", nil
+	logger.Debug("Magic link token validated successfully")
+	return jtiClaim, "", nil
 }
 
 // resolveDestinationAttribute infers the destination attribute from the first configured node input.

@@ -77,5 +77,5 @@ export interface RoleAssignmentListParams {
   /** Set to "display" to resolve display names */
   include?: 'display';
   /** Filter by assignment type */
-  type?: 'user' | 'group' | 'app';
+  type?: 'user' | 'group' | 'app' | 'agent';
 }

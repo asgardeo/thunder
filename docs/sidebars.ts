@@ -38,6 +38,12 @@ import productConfig from './docusaurus.product.config';
  */
 const sidebars: SidebarsConfig = {
   docsSidebar: [
+    {
+      type: 'doc',
+      id: 'index',
+      label: 'Home',
+      className: 'sidebar-doc-home',
+    },
     // Introduction Section
     {
       type: 'html',
@@ -64,8 +70,31 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'doc',
-          id: 'guides/getting-started/configuration',
-          label: 'Configuration',
+          id: 'guides/quick-start/quickstart',
+          label: 'Register an Application',
+        },
+        {
+          type: 'doc',
+          id: 'guides/guides/flows/build-a-flow',
+          label: 'Build a Sign-In Flow',
+        },
+        {
+          type: 'category',
+          label: 'Connect Your Application',
+          collapsed: false,
+          collapsible: true,
+          items: [
+            {
+              type: 'doc',
+              id: 'guides/quick-start/connect-your-application/react',
+              label: 'React',
+            },
+            {
+              type: 'doc',
+              id: 'guides/quick-start/connect-your-application/vue',
+              label: 'Vue',
+            },
+          ],
         },
       ],
     },
@@ -88,46 +117,6 @@ const sidebars: SidebarsConfig = {
           type: 'doc',
           id: 'guides/working-with-ai/mcp-server',
           label: 'MCP Server',
-        },
-      ],
-    },
-
-    // Quick Start Section
-    {
-      type: 'html',
-      value:
-        '<div class="sidebar-section-label"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg><span>Quick Start</span></div>',
-      className: 'sidebar-html-section-header sidebar-persona-app sidebar-persona-not-devops',
-    },
-    {
-      type: 'category',
-      label: 'Quick Start',
-      collapsed: false,
-      collapsible: false,
-      className: 'sidebar-section sidebar-persona-app sidebar-persona-not-devops',
-      items: [
-        {
-          type: 'doc',
-          id: 'guides/quick-start/quickstart',
-          label: 'Quickstart',
-        },
-        {
-          type: 'category',
-          label: 'Connect Your Application',
-          collapsed: true,
-          collapsible: true,
-          items: [
-            {
-              type: 'doc',
-              id: 'guides/quick-start/connect-your-application/react',
-              label: 'React',
-            },
-            {
-              type: 'doc',
-              id: 'guides/quick-start/connect-your-application/nextjs',
-              label: 'Next.js',
-            },
-          ],
         },
       ],
     },
@@ -248,6 +237,51 @@ const sidebars: SidebarsConfig = {
       ],
     },
 
+    // Use Cases Section
+    {
+      type: 'html',
+      value:
+        '<div class="sidebar-section-label"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg><span>Use Cases</span></div>',
+      className: 'sidebar-html-section-header',
+    },
+    {
+      type: 'category',
+      label: 'Use Cases',
+      collapsed: false,
+      collapsible: false,
+      className: 'sidebar-section',
+      items: [
+        {type: 'doc', id: 'use-cases/overview', label: 'Overview'},
+        {
+          type: 'category',
+          label: 'Consumer Applications (B2C)',
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {type: 'doc', id: 'use-cases/b2c/customer-identity', label: 'Customer Identity'},
+          ],
+        },
+        {
+          type: 'category',
+          label: 'SaaS Applications (B2B)',
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {type: 'doc', id: 'use-cases/b2b/multi-tenant-saas', label: 'Multi-Tenant SaaS'},
+          ],
+        },
+        {
+          type: 'category',
+          label: 'AI Agents and MCP',
+          collapsible: true,
+          collapsed: true,
+          items: [
+            {type: 'doc', id: 'use-cases/ai-agents/agent-authentication', label: 'Agent Authentication'},
+          ],
+        },
+      ],
+    },
+
     // Key Concepts Section
     {
       type: 'html',
@@ -324,6 +358,11 @@ const sidebars: SidebarsConfig = {
       items: [
         {
           type: 'doc',
+          id: 'guides/getting-started/configuration',
+          label: 'Configuration',
+        },
+        {
+          type: 'doc',
           id: 'guides/deployment-patterns/index',
           label: 'Choose Your Deployment',
         },
@@ -346,7 +385,6 @@ const sidebars: SidebarsConfig = {
     },
   ],
   reactSdkSidebar,
-  useCasesSidebar: [{type: 'autogenerated', dirName: 'use-cases'}],
   communitySidebar: [{type: 'autogenerated', dirName: 'community'}],
 };
 

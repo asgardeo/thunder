@@ -29,12 +29,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/internal/system/cmodels"
-	"github.com/asgardeo/thunder/internal/system/config"
-	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/database/provider"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
+	"github.com/thunder-id/thunderid/internal/system/cache"
+	"github.com/thunder-id/thunderid/internal/system/cmodels"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
+	"github.com/thunder-id/thunderid/internal/system/database/provider"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/tests/mocks/database/providermock"
 )
 
 const (
@@ -85,7 +86,7 @@ func (s *IDPInitTestSuite) TestInitialize() {
 	_ = config.InitializeServerRuntime("", testConfig)
 	mux := http.NewServeMux()
 
-	service, _, err := Initialize(mux)
+	service, _, err := Initialize(cache.Initialize(), mux)
 	s.NoError(err)
 	s.NotNil(service)
 	s.Implements((*IDPServiceInterface)(nil), service)
@@ -316,7 +317,7 @@ func (suite *IDPInitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled()
 	mux := http.NewServeMux()
 
 	// Execute
-	service, _, err := Initialize(mux)
+	service, _, err := Initialize(cache.Initialize(), mux)
 
 	// Assert
 	suite.NoError(err)
@@ -367,7 +368,7 @@ func TestInitialize_WithDeclarativeResourcesEnabled_EmptyDirectory(t *testing.T)
 	mux := http.NewServeMux()
 
 	// Execute
-	service, _, err := Initialize(mux)
+	service, _, err := Initialize(cache.Initialize(), mux)
 
 	// Assert
 	assert.NoError(t, err)
@@ -466,7 +467,7 @@ properties:
 	mux := http.NewServeMux()
 
 	// Execute
-	service, _, err := Initialize(mux)
+	service, _, err := Initialize(cache.Initialize(), mux)
 
 	// Assert
 	assert.NoError(t, err)
@@ -556,7 +557,7 @@ func TestInitialize_WithDeclarativeResourcesEnabled_InvalidYAML(t *testing.T) {
 	mux := http.NewServeMux()
 
 	// Initialize should return an error due to invalid YAML
-	_, _, err = Initialize(mux)
+	_, _, err = Initialize(cache.Initialize(), mux)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load identity provider resources")
 }
@@ -617,7 +618,7 @@ properties:
 	mux := http.NewServeMux()
 
 	// Initialize should return an error due to validation failure
-	_, _, err = Initialize(mux)
+	_, _, err = Initialize(cache.Initialize(), mux)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load identity provider resources")
 }
@@ -678,7 +679,7 @@ properties:
 	mux := http.NewServeMux()
 
 	// Initialize should return an error due to invalid IDP type
-	_, _, err = Initialize(mux)
+	_, _, err = Initialize(cache.Initialize(), mux)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load identity provider resources")
 }
@@ -817,7 +818,7 @@ func (s *IDPInitTestSuite) TestInitialize_DBClientError() {
 	}()
 
 	mux := http.NewServeMux()
-	_, _, err := Initialize(mux)
+	_, _, err := Initialize(cache.Initialize(), mux)
 
 	s.Error(err)
 	s.Equal("mock db client error", err.Error())
@@ -841,7 +842,7 @@ func (s *IDPInitTestSuite) TestInitialize_TransactionerError() {
 	}()
 
 	mux := http.NewServeMux()
-	_, _, err := Initialize(mux)
+	_, _, err := Initialize(cache.Initialize(), mux)
 
 	s.Error(err)
 	s.Equal("mock transactioner error", err.Error())

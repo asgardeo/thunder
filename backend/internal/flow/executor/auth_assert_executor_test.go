@@ -19,7 +19,7 @@
 package executor
 
 import (
-	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
 
 	"context"
 	"encoding/json"
@@ -29,28 +29,28 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
-	"github.com/asgardeo/thunder/internal/attributecache"
-	authnassert "github.com/asgardeo/thunder/internal/authn/assert"
-	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
-	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
-	"github.com/asgardeo/thunder/internal/entityprovider"
-	"github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/flow/core"
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/ou"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/attributecachemock"
-	"github.com/asgardeo/thunder/tests/mocks/authn/assertmock"
-	"github.com/asgardeo/thunder/tests/mocks/authnprovider/managermock"
-	"github.com/asgardeo/thunder/tests/mocks/entityprovidermock"
-	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
-	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
-	"github.com/asgardeo/thunder/tests/mocks/oumock"
-	"github.com/asgardeo/thunder/tests/mocks/rolemock"
+	appmodel "github.com/thunder-id/thunderid/internal/application/model"
+	"github.com/thunder-id/thunderid/internal/attributecache"
+	authnassert "github.com/thunder-id/thunderid/internal/authn/assert"
+	authncm "github.com/thunder-id/thunderid/internal/authn/common"
+	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
+	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
+	"github.com/thunder-id/thunderid/internal/entityprovider"
+	"github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/internal/flow/core"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/tests/mocks/attributecachemock"
+	"github.com/thunder-id/thunderid/tests/mocks/authn/assertmock"
+	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
+	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
+	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
+	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
+	"github.com/thunder-id/thunderid/tests/mocks/oumock"
+	"github.com/thunder-id/thunderid/tests/mocks/rolemock"
 )
 
 const (
@@ -130,7 +130,7 @@ func (suite *AuthAssertExecutorTestSuite) TestNewAuthAssertExecutor() {
 func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -148,8 +148,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserAuthenticated_Success(
 			},
 		},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"userType", "ouId"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"userType", "ouId"},
+				},
 			},
 		},
 	}
@@ -196,7 +198,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_UserNotAuthenticated() {
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAuthorizedPermissions() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -230,7 +232,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -239,8 +241,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"email", "phone"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"email", "phone"},
+				},
 			},
 		},
 	}
@@ -268,7 +272,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserAttributes() {
 func (suite *AuthAssertExecutorTestSuite) TestExecute_JWTGenerationFails() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -300,7 +304,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_JWTGenerationFails() {
 func (suite *AuthAssertExecutorTestSuite) TestExecute_AssertionGenerationFails_ServerError() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -531,7 +535,7 @@ func (suite *AuthAssertExecutorTestSuite) TestGetUserAttributesFromAuthnProvider
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -541,8 +545,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithUserTypeAndOU() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"userType", "ouId"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"userType", "ouId"},
+				},
 			},
 		},
 	}
@@ -567,7 +573,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
 	// App-level assertion config (validity period only — issuer always comes from  config)
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -575,8 +581,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				ValidityPeriod: 7200,
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					ValidityPeriod: 7200,
+				},
 			},
 		},
 	}
@@ -595,7 +603,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithCustomTokenConfig() {
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -604,8 +612,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithOUNameAndHandle() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"ouId", "ouName", "ouHandle"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"ouId", "ouName", "ouHandle"},
+				},
 			},
 		},
 	}
@@ -639,7 +649,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -647,8 +657,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"email"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"email"},
+				},
 			},
 		},
 	}
@@ -703,7 +715,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendUserDetailsToClaimsF
 func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFails() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -712,8 +724,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFai
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{oauth2const.ClaimOUID},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{oauth2const.ClaimOUID},
+				},
 			},
 		},
 	}
@@ -736,7 +750,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_AppendOUDetailsToClaimsFai
 func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserAttributesFails() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -745,8 +759,10 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserA
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"email", "phone"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"email", "phone"},
+				},
 			},
 		},
 	}
@@ -767,7 +783,7 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendUserDetailsToClaims_GetUserA
 func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganizationUnitFails() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -776,8 +792,10 @@ func (suite *AuthAssertExecutorTestSuite) TestAppendOUDetailsToClaims_GetOrganiz
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{oauth2const.ClaimOUID},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{oauth2const.ClaimOUID},
+				},
 			},
 		},
 	}
@@ -804,7 +822,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -813,8 +831,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
 			// Token config with user attributes configured
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"email", "username", "given_name"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"email", "username", "given_name"},
+				},
 			},
 		},
 	}
@@ -846,7 +866,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConfiguredUserAttribut
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -854,8 +874,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{oauth2const.UserAttributeGroups},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{oauth2const.UserAttributeGroups},
+				},
 			},
 		},
 	}
@@ -890,7 +912,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups() {
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -898,8 +920,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{oauth2const.UserAttributeGroups},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{oauth2const.UserAttributeGroups},
+				},
 			},
 		},
 	}
@@ -925,7 +949,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_EmptyGroups() {
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_GetUserGroupsFails() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -933,8 +957,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithGroups_GetUserGroupsFa
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{oauth2const.UserAttributeGroups},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{oauth2const.UserAttributeGroups},
+				},
 			},
 		},
 	}
@@ -1024,7 +1050,9 @@ func (suite *AuthAssertExecutorTestSuite) TestGetRequiredUserAttributes_Fallback
 		ExecutionID: "flow-123",
 		RuntimeData: map[string]string{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email", "phone"}},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email", "phone"}},
+			},
 		},
 	}
 
@@ -1053,7 +1081,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConsentedAttributes_Fi
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1065,8 +1093,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConsentedAttributes_Fi
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"email", "phone", "name"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"email", "phone", "name"},
+				},
 			},
 		},
 	}
@@ -1098,7 +1128,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithConsentedAttributes_Fi
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithEmptyConsentedAttributes() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1125,7 +1155,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithEmptyConsentedAttribut
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithoutConsentedAttributes() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1154,7 +1184,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_AttrsSt
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1165,8 +1195,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_AttrsSt
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"email", "phone"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"email", "phone"},
+				},
 			},
 		},
 	}
@@ -1209,7 +1241,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_NilUser
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1221,8 +1253,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_NilUser
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: nil,
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: nil,
+				},
 			},
 		},
 	}
@@ -1258,7 +1292,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_OnlyRes
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1269,8 +1303,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_OnlyRes
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"email", "phone"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"email", "phone"},
+				},
 			},
 		},
 	}
@@ -1312,7 +1348,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_NilAsse
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1324,7 +1360,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_NilAsse
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: nil,
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: nil,
+			},
 		},
 	}
 
@@ -1533,7 +1571,7 @@ func (suite *AuthAssertExecutorTestSuite) TestResolveUserAttributes_WithOUDetail
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_GroupsIncludedInCache() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1544,8 +1582,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_GroupsI
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{oauth2const.UserAttributeGroups},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{oauth2const.UserAttributeGroups},
+				},
 			},
 		},
 	}
@@ -1581,7 +1621,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_GroupsI
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_UserTypeIncludedInCache() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1593,8 +1633,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_UserTyp
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{oauth2const.ClaimUserType},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{oauth2const.ClaimUserType},
+				},
 			},
 		},
 	}
@@ -1621,7 +1663,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_UserTyp
 func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_OUDetailsIncludedInCache() {
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		Context:     context.Background(),
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1633,8 +1675,10 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithAttributeCache_OUDetai
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{oauth2const.ClaimOUID, oauth2const.ClaimOUName},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{oauth2const.ClaimOUID, oauth2const.ClaimOUName},
+				},
 			},
 		},
 	}
@@ -1668,7 +1712,7 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithRuntimeRequiredEssenti
 
 	ctx := &core.NodeContext{
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		FlowType:    common.FlowTypeAuthentication,
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
@@ -1680,7 +1724,9 @@ func (suite *AuthAssertExecutorTestSuite) TestExecute_WithRuntimeRequiredEssenti
 		},
 		ExecutionHistory: map[string]*common.NodeExecutionRecord{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email", "phone", "name"}},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{UserAttributes: []string{"email", "phone", "name"}},
+			},
 		},
 	}
 

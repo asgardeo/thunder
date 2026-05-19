@@ -139,11 +139,11 @@ const mockUseAsgardeo = vi.fn().mockReturnValue({
   resolveFlowTemplateLiterals: (template: string) => template,
 });
 
-vi.mock('@asgardeo/react', async () => {
-  const actual = await vi.importActual('@asgardeo/react');
+vi.mock('@thunderid/react', async () => {
+  const actual = await vi.importActual('@thunderid/react');
   return {
     ...actual,
-    useAsgardeo: () => mockUseAsgardeo() as {resolveFlowTemplateLiterals: (t: string) => string; meta: unknown},
+    useThunderID: () => mockUseAsgardeo() as {resolveFlowTemplateLiterals: (t: string) => string; meta: unknown},
     AcceptInvite: ({
       children,
       onGoToSignIn = undefined,

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-// Package reactsdk provides MCP tools for integrating with the Asgardeo React SDK.
+// Package reactsdk provides MCP tools for integrating with the ThunderID React SDK.
 package reactsdk
 
 import (
@@ -31,7 +31,7 @@ func RegisterTools(server *mcp.Server) {
 	mcp.AddTool(server, &mcp.Tool{
 		Name: "thunderid_integrate_react_sdk",
 		Description: "Provides instructions and code snippets for integrating ThunderID authentication via the " +
-			"Asgardeo React SDK into a React application. Supports two modes: Mode 1 (default) - ThunderID-hosted " +
+			"ThunderID React SDK into a React application. Supports two modes: Mode 1 (default) - ThunderID-hosted " +
 			"login pages with redirect-based OAuth 2.0/OIDC flow. Mode 2 - Self-hosted login pages using Flow API " +
 			"or direct API calls for custom authentication UI.",
 		Annotations: &mcp.ToolAnnotations{
@@ -55,7 +55,7 @@ func integrateReactSDK(
 ThunderID supports two ways to integrate React authentication:
 
 - **Mode 1 (Default - Recommended)**: ThunderID-hosted login pages with redirect-based
-  OAuth 2.0/OIDC flow using the Asgardeo React SDK. Minimal configuration,
+  OAuth 2.0/OIDC flow using the ThunderID React SDK. Minimal configuration,
   recommended for most use cases.
 - **Mode 2**: Self-hosted custom login pages using direct API calls or flow
   orchestration for maximum control. Refer to the React Vanilla Sample or React
@@ -65,12 +65,12 @@ This guide covers both integration modes:
 - **Mode 1** (default): ThunderID-hosted login with redirect-based OAuth 2.0/OIDC.
 - **Mode 2**: Self-hosted app-native login using alternate API-driven patterns.
 
-Mode 1 remains the recommended default path and uses the **Asgardeo React SDK**
+Mode 1 remains the recommended default path and uses the **ThunderID React SDK**
 for a minimal, declarative authentication flow.
 
 ## Project Context
 This project is a **React application** that integrates **ThunderID
-authentication** using the **Asgardeo React SDK**, covering both
+authentication** using the **ThunderID React SDK**, covering both
 ThunderID-hosted login (Mode 1) and app-native/self-hosted flows (Mode 2).
 
 The goal is to demonstrate a **minimal, declarative authentication flow** with minimal setup.
@@ -80,8 +80,7 @@ This project intentionally avoids custom logic, hooks, and advanced configuratio
 ---
 
 ## SDK & Platform
-- **SDK**: @asgardeo/react
-- **Platform**: AsgardeoV2
+- **SDK**: @thunderid/react
 - **Authentication Mode**: ThunderID-hosted login (redirect-based)
 - **Base URL**: https://localhost:8090 (or ThunderID instance URL)
 - **Client ID**: <CREATED_APP'S_CLIENT_ID>
@@ -90,35 +89,34 @@ This project intentionally avoids custom logic, hooks, and advanced configuratio
 
 ## CRITICAL: Mode 1 Provider Configuration Rules (MUST FOLLOW EXACTLY)
 
-For **Mode 1 only**, ~AsgardeoProvider~ **MUST** be configured using **ONLY**
-the following three props.
-Always create a NEW public SPA application with token endpoint method as none and use the 
+For **Mode 1 only**, ~ThunderIDProvider~ **MUST** be configured using **ONLY**
+the following two props.
+Always create a NEW public SPA application with token endpoint method as none and use the
 client id. Use the application's URL as the redirect URL.
 Use the thunderid_get_application_templates tool to get the template and defaults(e.g. user attributes and scopes)
 before creating the application.
 No variations, no abstractions, no helper objects.
 
-**Mode 2 note:** Method 2 uses an alternate ~AsgardeoProvider~ shape with
+**Mode 2 note:** Method 2 uses an alternate ~ThunderIDProvider~ shape with
 ~applicationId~ (instead of ~clientId~), as shown in the Mode 2 examples.
 
 ### ✅ REQUIRED Provider Configuration
 ~~~jsx
-import { AsgardeoProvider } from '@asgardeo/react'
+import { ThunderIDProvider } from '@thunderid/react'
 
-<AsgardeoProvider
+<ThunderIDProvider
   clientId="<client-id>"
   baseUrl="https://localhost:8090"
-  platform="AsgardeoV2"
 >
   <App />
-</AsgardeoProvider>
+</ThunderIDProvider>
 ~~~
 
 ### 🚨 FORBIDDEN Patterns
 **For Mode 1, NEVER** do any of the following:
-- ❌ ~const config = { ... }; <AsgardeoProvider {...config} />~
+- ❌ ~const config = { ... }; <ThunderIDProvider {...config} />~
 - ❌ Extract props to variables
-- ❌ Add any other props beyond the three required ones
+- ❌ Add any other props beyond the two required ones
 - ❌ Use different prop names or aliases
 
 ---
@@ -129,19 +127,18 @@ import { AsgardeoProvider } from '@asgardeo/react'
 ~~~jsx
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { AsgardeoProvider } from '@asgardeo/react'
+import { ThunderIDProvider } from '@thunderid/react'
 import App from './App.jsx'
 import './index.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <AsgardeoProvider
+    <ThunderIDProvider
       clientId="<client-id>"
       baseUrl="https://localhost:8090"
-      platform="AsgardeoV2"
     >
       <App />
-    </AsgardeoProvider>
+    </ThunderIDProvider>
   </StrictMode>
 )
 ~~~
@@ -156,7 +153,7 @@ The SDK provides declarative components for handling auth states:
 
 #### 1. Sign In/Out Buttons
 ~~~jsx
-import { SignInButton, SignOutButton } from '@asgardeo/react'
+import { SignInButton, SignOutButton } from '@thunderid/react'
 
 function Navigation() {
   return (
@@ -170,7 +167,7 @@ function Navigation() {
 
 #### 2. Conditional Rendering Based on Auth State
 ~~~jsx
-import { SignedIn, SignedOut, Loading } from '@asgardeo/react'
+import { SignedIn, SignedOut, Loading } from '@thunderid/react'
 
 function App() {
   return (
@@ -195,10 +192,10 @@ function App() {
 
 #### 3. Display User Information
 
-**PREFERRED:** Use the ~User~ component from ~@asgardeo/react~ with render props pattern:
+**PREFERRED:** Use the ~User~ component from ~@thunderid/react~ with render props pattern:
 
 ~~~jsx
-import { SignedIn, User } from '@asgardeo/react'
+import { SignedIn, User } from '@thunderid/react'
 
 function UserProfile() {
   return (
@@ -209,9 +206,9 @@ function UserProfile() {
           {(user) => user && (
             <>
               {user.picture && (
-                <img 
-                  src={user.picture} 
-                  alt={user.name || 'User avatar'} 
+                <img
+                  src={user.picture}
+                  alt={user.name || 'User avatar'}
                   style={{ width: '80px', height: '80px', borderRadius: '50%' }}
                 />
               )}
@@ -232,13 +229,13 @@ function UserProfile() {
 
 ## Using the Hook (Advanced/Programmatic Control Only)
 
-The ~useAsgardeo~ hook should only be used when you need programmatic control:
+The ~useThunderID~ hook should only be used when you need programmatic control:
 
 ~~~jsx
-import { useAsgardeo } from '@asgardeo/react'
+import { useThunderID } from '@thunderid/react'
 
 function CustomComponent() {
-  const { isSignedIn, user, signIn, signOut, loading, error } = useAsgardeo()
+  const { isSignedIn, user, signIn, signOut, loading, error } = useThunderID()
 
   if (loading) {
     return <div>Loading...</div>
@@ -263,7 +260,7 @@ function CustomComponent() {
 }
 ~~~
 
-**Important:** The ~useAsgardeo~ hook must be used within a component that is a descendant of ~AsgardeoProvider~.
+**Important:** The ~useThunderID~ hook must be used within a component that is a descendant of ~ThunderIDProvider~.
 
 ---
 
@@ -271,7 +268,7 @@ function CustomComponent() {
 
 ### Option 1: Using SDK Control Components
 ~~~jsx
-import { SignedIn, SignedOut } from '@asgardeo/react'
+import { SignedIn, SignedOut } from '@thunderid/react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
 function App() {
@@ -280,13 +277,13 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/signin" element={<SignInPage />} />
-        <Route 
-          path="/dashboard" 
+        <Route
+          path="/dashboard"
           element={
             <SignedIn fallback={<Navigate to="/signin" />}>
               <Dashboard />
             </SignedIn>
-          } 
+          }
         />
       </Routes>
     </BrowserRouter>
@@ -296,29 +293,29 @@ function App() {
 
 ### Option 2: Using React Router Integration
 ~~~bash
-npm install @asgardeo/react-router
+npm install @thunderid/react-router
 ~~~
 
 ~~~jsx
-import { ProtectedRoute } from '@asgardeo/react-router'
+import { ProtectedRoute } from '@thunderid/react-router'
 
-<Route 
-  path="/dashboard" 
+<Route
+  path="/dashboard"
   element={
     <ProtectedRoute redirectTo="/signin">
       <Dashboard />
     </ProtectedRoute>
-  } 
+  }
 />
 ~~~
 
 ### Option 3: Custom Implementation
 ~~~jsx
-import { useAsgardeo } from '@asgardeo/react'
+import { useThunderID } from '@thunderid/react'
 import { Navigate } from 'react-router-dom'
 
 function ProtectedRoute({ children }) {
-  const { isSignedIn, loading } = useAsgardeo()
+  const { isSignedIn, loading } = useThunderID()
 
   if (loading) {
     return <div>Loading...</div>
@@ -338,11 +335,11 @@ function ProtectedRoute({ children }) {
 
 ### Using SDK Built-in HTTP Client (webWorker storage)
 ~~~jsx
-import { useAsgardeo } from '@asgardeo/react'
+import { useThunderID } from '@thunderid/react'
 import { useEffect, useState } from 'react'
 
 function UserData() {
-  const { http, isSignedIn } = useAsgardeo()
+  const { http, isSignedIn } = useThunderID()
   const [data, setData] = useState(null)
 
   useEffect(() => {
@@ -373,22 +370,22 @@ function UserData() {
 
 ### Using Custom HTTP Client (sessionStorage/localStorage)
 ~~~jsx
-import { useAsgardeo } from '@asgardeo/react'
+import { useThunderID } from '@thunderid/react'
 
 async function fetchUserData() {
-  const { getAccessToken, isSignedIn } = useAsgardeo()
-  
+  const { getAccessToken, isSignedIn } = useThunderID()
+
   if (!isSignedIn) return
 
   const token = await getAccessToken()
-  
+
   const response = await fetch('https://localhost:8090/scim2/Me', {
     headers: {
       'Authorization': ~Bearer ${token}~,
       'Accept': 'application/json'
     }
   })
-  
+
   return response.json()
 }
 ~~~
@@ -401,26 +398,25 @@ async function fetchUserData() {
 // main.jsx
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { AsgardeoProvider } from '@asgardeo/react'
+import { ThunderIDProvider } from '@thunderid/react'
 import App from './App.jsx'
 import './index.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <AsgardeoProvider
+    <ThunderIDProvider
       clientId="<client-id>"
       baseUrl="https://localhost:8090"
-      platform="AsgardeoV2"
     >
       <App />
-    </AsgardeoProvider>
+    </ThunderIDProvider>
   </StrictMode>
 )
 ~~~
 
 ~~~jsx
 // App.jsx
-import { SignedIn, SignedOut, SignInButton, SignOutButton, Loading } from '@asgardeo/react'
+import { SignedIn, SignedOut, SignInButton, SignOutButton, Loading } from '@thunderid/react'
 import User from './components/User'
 
 function App() {
@@ -471,7 +467,7 @@ export default App
 ## Method 2: ThunderID App Native Authentication with React (Vite)
 
 This guide shows how to integrate ThunderID App Native authentication into a React
-app using ~@asgardeo/react~, based on this sample project.
+app using ~@thunderid/react~, based on this sample project.
 
 ### Prerequisites
 
@@ -492,12 +488,12 @@ npm install
 ### 2) Install dependencies
 
 ~~~bash
-npm install @asgardeo/react
+npm install @thunderid/react
 ~~~
 
 If the dependency already exists in ~package.json~, you can skip the above steps.
 
-### 3) Wrap your app with ~AsgardeoProvider~
+### 3) Wrap your app with ~ThunderIDProvider~
 
 Update ~src/main.jsx~ to configure the authentication provider.
 
@@ -505,18 +501,17 @@ Update ~src/main.jsx~ to configure the authentication provider.
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
-import { AsgardeoProvider } from '@asgardeo/react';
+import { ThunderIDProvider } from '@thunderid/react';
 import './index.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <AsgardeoProvider
+    <ThunderIDProvider
       baseUrl="https://localhost:8090"
       applicationId="<THUNDERID_APP_ID>"
-      platform="AsgardeoV2"
     >
       <App />
-    </AsgardeoProvider>
+    </ThunderIDProvider>
   </StrictMode>
 );
 ~~~
@@ -528,7 +523,7 @@ Replace ~<THUNDERID_APP_ID>~ with your real application UUID from ThunderID.
 You can quickly enable login by using the built-in ~SignIn~ component.
 
 ~~~jsx
-import { SignIn } from '@asgardeo/react';
+import { SignIn } from '@thunderid/react';
 
 function App() {
   return (
@@ -564,13 +559,12 @@ VITE_THUNDERID_APP_ID=<THUNDERID_APP_ID>
 Then use them in ~src/main.jsx~:
 
 ~~~jsx
-<AsgardeoProvider
+<ThunderIDProvider
   baseUrl={import.meta.env.VITE_THUNDERID_BASE_URL}
   applicationId={import.meta.env.VITE_THUNDERID_APP_ID}
-  platform="AsgardeoV2"
 >
   <App />
-</AsgardeoProvider>
+</ThunderIDProvider>
 ~~~
 
 ### Do's and Don'ts
@@ -579,9 +573,9 @@ Then use them in ~src/main.jsx~:
 
 - Do replace ~<THUNDERID_APP_ID>~ with the exact UUID from your ThunderID app registration.
 - Do keep auth settings (~baseUrl~, app ID) environment-specific (dev/stage/prod).
-- Do keep ~AsgardeoProvider~ high in the component tree (usually in ~src/main.jsx~).
+- Do keep ~ThunderIDProvider~ high in the component tree (usually in ~src/main.jsx~).
 - Do validate the ~baseUrl~ and cert setup when running locally over HTTPS.
-- Do use the latest compatible ~@asgardeo/react~ version for your app.
+- Do use the latest compatible ~@thunderid/react~ version for your app.
 
 #### ❌ Don't
 
@@ -615,7 +609,7 @@ Both samples show how to build custom authentication UIs while leveraging Thunde
 - Use declarative components (~<SignedIn>~, ~<SignedOut>~, ~<Loading>~) for UI state
 - Use pre-built action components (~<SignInButton>~, ~<SignOutButton>~)
 - Keep the provider configuration minimal and explicit
-- Use the ~useAsgardeo~ hook only when programmatic control is needed
+- Use the ~useThunderID~ hook only when programmatic control is needed
 - Handle loading and error states properly
 
 ### ❌ DON'T:
@@ -623,7 +617,7 @@ Both samples show how to build custom authentication UIs while leveraging Thunde
 - Don't manipulate tokens manually
 - Don't store tokens in localStorage unless using the SDK's storage mechanism
 - Don't add unnecessary configuration to the provider
-- Don't use the hook outside of components wrapped by ~AsgardeoProvider~
+- Don't use the hook outside of components wrapped by ~ThunderIDProvider~
 
 ---
 
@@ -671,7 +665,7 @@ function App() {
       <Loading fallback={null}>
         <div className="spinner">Authenticating...</div>
       </Loading>
-      
+
       <SignedIn>
         <Dashboard />
       </SignedIn>
@@ -684,8 +678,8 @@ function App() {
 
 ## Troubleshooting
 
-### Issue: Hook Error "useAsgardeo must be used within AsgardeoProvider"
-**Solution:** Ensure the component using ~useAsgardeo~ is a child of ~<AsgardeoProvider>~
+### Issue: Hook Error "useThunderID must be used within ThunderIDProvider"
+**Solution:** Ensure the component using ~useThunderID~ is a child of ~<ThunderIDProvider>~
 
 ### Issue: Infinite redirect loop
 **Solution:** Check that ~baseUrl~ and ~clientId~ are correct. Verify token validation settings.
@@ -694,31 +688,30 @@ function App() {
 **Solution:** Ensure authentication has completed. Check for any errors in the console.
 
 ### Issue: CORS errors
-**Solution:** Configure CORS settings in ThunderID/Asgardeo to allow your app's origin.
+**Solution:** Configure CORS settings in ThunderID to allow your app's origin.
 
 ---
 
 ## References
-- [Asgardeo React SDK Docs](https://wso2.com/asgardeo/docs/sdks/react/overview/)
-- [AsgardeoProvider Configuration](https://wso2.com/asgardeo/docs/sdks/react/contexts/asgardeo-provider/)
-- [SDK Components](https://wso2.com/asgardeo/docs/sdks/react/components/action-components/sign-in-button/)
-- [useAsgardeo Hook](https://wso2.com/asgardeo/docs/sdks/react/hooks/use-asgardeo/)
-- [Protecting Routes](https://wso2.com/asgardeo/docs/sdks/react/guides/protecting-routes/)
-- [Accessing Protected APIs](https://wso2.com/asgardeo/docs/sdks/react/guides/accessing-protected-apis/)
+- [ThunderID React SDK Docs](/docs/next/sdks/react/overview)
+- [ThunderIDProvider Configuration](/docs/next/sdks/react/apis/contexts/thunderid-provider)
+- [SDK Components](/docs/next/sdks/react/apis/components/sign-in-button)
+- [useThunderID Hook](/docs/next/sdks/react/apis/hooks/use-thunderid)
+- [Protecting Routes](/docs/next/sdks/react/guides/protecting-routes/overview)
+- [Accessing Protected APIs](/docs/next/sdks/react/guides/accessing-protected-apis)
 `
 	instructions := strings.ReplaceAll(rawInstructions, "~", "`")
 
 	snippets := `
-import { AsgardeoProvider } from '@asgardeo/react';
+import { ThunderIDProvider } from '@thunderid/react';
 
 // Main Provider Setup
-<AsgardeoProvider
+<ThunderIDProvider
   clientId="<client-id>"
   baseUrl="https://localhost:8090"
-  platform="AsgardeoV2"
 >
   <App />
-</AsgardeoProvider>
+</ThunderIDProvider>
 `
 
 	// Template the URL if provided

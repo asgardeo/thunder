@@ -33,7 +33,7 @@ export interface RoleAssignment {
   /** Unique identifier of the user or group */
   id: string;
   /** Type of assignee */
-  type: 'user' | 'group' | 'app';
+  type: 'user' | 'group' | 'app' | 'agent';
   /** Display name (resolved when include=display is used) */
   display?: string;
 }

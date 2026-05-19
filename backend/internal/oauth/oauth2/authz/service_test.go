@@ -28,18 +28,18 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	flowcm "github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/flow/flowexec"
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/jose/jwt"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/tests/mocks/flow/flowexecmock"
-	"github.com/asgardeo/thunder/tests/mocks/inboundclientmock"
-	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
+	flowcm "github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/internal/flow/flowexec"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	oauth2model "github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/tests/mocks/flow/flowexecmock"
+	"github.com/thunder-id/thunderid/tests/mocks/inboundclientmock"
+	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 )
 
 // stubTransactioner is a no-op Transactioner for use in service tests.
@@ -118,10 +118,10 @@ func (suite *AuthorizeServiceTestSuite) newService() *authorizeService {
 	}
 }
 
-// testApp returns a minimal OAuthAppConfigProcessedDTO for use in tests.
+// testApp returns a minimal OAuthClient for use in tests.
 func (suite *AuthorizeServiceTestSuite) testApp() *inboundmodel.OAuthClient {
 	return &inboundmodel.OAuthClient{
-		AppID:        "test-app-id",
+		ID:           "test-app-id",
 		ClientID:     "test-client-id",
 		RedirectURIs: []string{"https://client.example.com/callback"},
 		GrantTypes:   []oauth2const.GrantType{oauth2const.GrantTypeAuthorizationCode},
@@ -728,7 +728,7 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_NilApp() {
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_NilTokenConfig() {
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token:    nil,
 	}
@@ -747,7 +747,7 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_NilTokenCon
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_AccessTokenClaimsOnly() {
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			AccessToken: &inboundmodel.AccessTokenConfig{
@@ -773,7 +773,7 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_AccessToken
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_NoOpenIDScope() {
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			AccessToken: &inboundmodel.AccessTokenConfig{
@@ -804,7 +804,7 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_NoOpenIDSco
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_StandardOIDCScopes_CodeFlow() {
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			IDToken: &inboundmodel.IDTokenConfig{
@@ -833,7 +833,7 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_StandardOID
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_StandardOIDCScopes_ImplicitFlow() {
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			IDToken: &inboundmodel.IDTokenConfig{
@@ -869,7 +869,7 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_ClaimsParam
 	}
 
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			IDToken: &inboundmodel.IDTokenConfig{
@@ -901,7 +901,7 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_ClaimsParam
 	}
 
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token:    &inboundmodel.OAuthTokenConfig{}, // Need Token config for the method to process claims
 		UserInfo: &inboundmodel.UserInfoConfig{
@@ -933,7 +933,7 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_ClaimsParam
 	}
 
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			IDToken: &inboundmodel.IDTokenConfig{
@@ -960,7 +960,7 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_ClaimsParam
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_CustomScopeMapping() {
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			IDToken: &inboundmodel.IDTokenConfig{
@@ -993,7 +993,7 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_CustomScope
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_CustomScopeOverridesStandardScope() {
 	// If app defines custom mapping for a standard scope, it should override
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			IDToken: &inboundmodel.IDTokenConfig{
@@ -1026,7 +1026,7 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_CustomScope
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_MultipleScopesCodeFlow() {
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			AccessToken: &inboundmodel.AccessTokenConfig{
@@ -1075,7 +1075,7 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_CompleteSce
 	}
 
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			AccessToken: &inboundmodel.AccessTokenConfig{
@@ -1117,7 +1117,7 @@ func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_CompleteSce
 
 func (suite *AuthorizeServiceTestSuite) TestDetermineClaimsForTokens_EmptyAllowedSets() {
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			IDToken: &inboundmodel.IDTokenConfig{
@@ -1155,7 +1155,7 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_NilApp() {
 
 func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_NilTokenConfig() {
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token:    nil,
 	}
@@ -1173,7 +1173,7 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_NilTokenConfig
 
 func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_AccessTokenOnly() {
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			AccessToken: &inboundmodel.AccessTokenConfig{
@@ -1200,7 +1200,7 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_AccessTokenOnl
 
 func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_CodeFlowWithScopes() {
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			AccessToken: &inboundmodel.AccessTokenConfig{
@@ -1235,7 +1235,7 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_CodeFlowWithSc
 
 func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_ImplicitFlowWithScopes() {
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			IDToken: &inboundmodel.IDTokenConfig{
@@ -1272,7 +1272,7 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_WithClaimsPara
 	}
 
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			AccessToken: &inboundmodel.AccessTokenConfig{
@@ -1317,7 +1317,7 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_ClaimsParamete
 	}
 
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			AccessToken: &inboundmodel.AccessTokenConfig{
@@ -1357,7 +1357,7 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_DeduplicatesCl
 	}
 
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			AccessToken: &inboundmodel.AccessTokenConfig{
@@ -1386,7 +1386,7 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_DeduplicatesCl
 
 func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_CustomScopeMapping() {
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			IDToken: &inboundmodel.IDTokenConfig{
@@ -1428,7 +1428,7 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_ComplexScenari
 	}
 
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			AccessToken: &inboundmodel.AccessTokenConfig{
@@ -1472,7 +1472,7 @@ func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_ComplexScenari
 
 func (suite *AuthorizeServiceTestSuite) TestGetRequiredAttributes_NoOpenIDScope() {
 	app := &inboundmodel.OAuthClient{
-		AppID:    "test-app",
+		ID:       "test-app",
 		ClientID: "test-client",
 		Token: &inboundmodel.OAuthTokenConfig{
 			AccessToken: &inboundmodel.AccessTokenConfig{

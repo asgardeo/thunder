@@ -21,12 +21,14 @@ package application
 import (
 	"net/http"
 
-	"github.com/asgardeo/thunder/internal/application/model"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/system/error/apierror"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/log"
-	sysutils "github.com/asgardeo/thunder/internal/system/utils"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+
+	"github.com/thunder-id/thunderid/internal/application/model"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/system/error/apierror"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
 
 // ApplicationHandler defines the handler for managing application API requests.
@@ -57,25 +59,29 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 	}
 
 	appDTO := model.ApplicationDTO{
-		OUID:                      appRequest.OUID,
-		Name:                      appRequest.Name,
-		Description:               appRequest.Description,
-		AuthFlowID:                appRequest.AuthFlowID,
-		RegistrationFlowID:        appRequest.RegistrationFlowID,
-		IsRegistrationFlowEnabled: appRequest.IsRegistrationFlowEnabled,
-		ThemeID:                   appRequest.ThemeID,
-		LayoutID:                  appRequest.LayoutID,
-		Template:                  appRequest.Template,
-		URL:                       appRequest.URL,
-		LogoURL:                   appRequest.LogoURL,
-		Assertion:                 appRequest.Assertion,
-		Certificate:               appRequest.Certificate,
-		TosURI:                    appRequest.TosURI,
-		PolicyURI:                 appRequest.PolicyURI,
-		Contacts:                  appRequest.Contacts,
-		AllowedUserTypes:          appRequest.AllowedUserTypes,
-		LoginConsent:              appRequest.LoginConsent,
-		Metadata:                  appRequest.Metadata,
+		OUID:        appRequest.OUID,
+		Name:        appRequest.Name,
+		Description: appRequest.Description,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:                appRequest.AuthFlowID,
+			RegistrationFlowID:        appRequest.RegistrationFlowID,
+			IsRegistrationFlowEnabled: appRequest.IsRegistrationFlowEnabled,
+			RecoveryFlowID:            appRequest.RecoveryFlowID,
+			IsRecoveryFlowEnabled:     appRequest.IsRecoveryFlowEnabled,
+			ThemeID:                   appRequest.ThemeID,
+			LayoutID:                  appRequest.LayoutID,
+			Assertion:                 appRequest.Assertion,
+			Certificate:               appRequest.Certificate,
+			AllowedUserTypes:          appRequest.AllowedUserTypes,
+			LoginConsent:              appRequest.LoginConsent,
+		},
+		Template:  appRequest.Template,
+		URL:       appRequest.URL,
+		LogoURL:   appRequest.LogoURL,
+		TosURI:    appRequest.TosURI,
+		PolicyURI: appRequest.PolicyURI,
+		Contacts:  appRequest.Contacts,
+		Metadata:  appRequest.Metadata,
 	}
 	appDTO.InboundAuthConfig = ah.processInboundAuthConfigFromRequest(appRequest.InboundAuthConfig)
 
@@ -87,26 +93,30 @@ func (ah *applicationHandler) HandleApplicationPostRequest(w http.ResponseWriter
 	}
 
 	returnApp := model.ApplicationCompleteResponse{
-		ID:                        createdAppDTO.ID,
-		OUID:                      createdAppDTO.OUID,
-		Name:                      createdAppDTO.Name,
-		Description:               createdAppDTO.Description,
-		AuthFlowID:                createdAppDTO.AuthFlowID,
-		RegistrationFlowID:        createdAppDTO.RegistrationFlowID,
-		IsRegistrationFlowEnabled: createdAppDTO.IsRegistrationFlowEnabled,
-		ThemeID:                   createdAppDTO.ThemeID,
-		LayoutID:                  createdAppDTO.LayoutID,
-		Template:                  createdAppDTO.Template,
-		URL:                       createdAppDTO.URL,
-		LogoURL:                   createdAppDTO.LogoURL,
-		Assertion:                 createdAppDTO.Assertion,
-		Certificate:               createdAppDTO.Certificate,
-		TosURI:                    createdAppDTO.TosURI,
-		PolicyURI:                 createdAppDTO.PolicyURI,
-		Contacts:                  createdAppDTO.Contacts,
-		AllowedUserTypes:          createdAppDTO.AllowedUserTypes,
-		LoginConsent:              createdAppDTO.LoginConsent,
-		Metadata:                  createdAppDTO.Metadata,
+		ID:          createdAppDTO.ID,
+		OUID:        createdAppDTO.OUID,
+		Name:        createdAppDTO.Name,
+		Description: createdAppDTO.Description,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:                createdAppDTO.AuthFlowID,
+			RegistrationFlowID:        createdAppDTO.RegistrationFlowID,
+			IsRegistrationFlowEnabled: createdAppDTO.IsRegistrationFlowEnabled,
+			RecoveryFlowID:            createdAppDTO.RecoveryFlowID,
+			IsRecoveryFlowEnabled:     createdAppDTO.IsRecoveryFlowEnabled,
+			ThemeID:                   createdAppDTO.ThemeID,
+			LayoutID:                  createdAppDTO.LayoutID,
+			Assertion:                 createdAppDTO.Assertion,
+			Certificate:               createdAppDTO.Certificate,
+			AllowedUserTypes:          createdAppDTO.AllowedUserTypes,
+			LoginConsent:              createdAppDTO.LoginConsent,
+		},
+		Template:  createdAppDTO.Template,
+		URL:       createdAppDTO.URL,
+		LogoURL:   createdAppDTO.LogoURL,
+		TosURI:    createdAppDTO.TosURI,
+		PolicyURI: createdAppDTO.PolicyURI,
+		Contacts:  createdAppDTO.Contacts,
+		Metadata:  createdAppDTO.Metadata,
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
@@ -161,31 +171,35 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 	}
 
 	returnApp := model.ApplicationGetResponse{
-		ID:                        appDTO.ID,
-		OUID:                      appDTO.OUID,
-		Name:                      appDTO.Name,
-		Description:               appDTO.Description,
-		AuthFlowID:                appDTO.AuthFlowID,
-		RegistrationFlowID:        appDTO.RegistrationFlowID,
-		IsRegistrationFlowEnabled: appDTO.IsRegistrationFlowEnabled,
-		ThemeID:                   appDTO.ThemeID,
-		LayoutID:                  appDTO.LayoutID,
-		Template:                  appDTO.Template,
-		URL:                       appDTO.URL,
-		LogoURL:                   appDTO.LogoURL,
-		Assertion:                 appDTO.Assertion,
-		Certificate:               appDTO.Certificate,
-		TosURI:                    appDTO.TosURI,
-		PolicyURI:                 appDTO.PolicyURI,
-		Contacts:                  appDTO.Contacts,
-		AllowedUserTypes:          appDTO.AllowedUserTypes,
-		LoginConsent:              appDTO.LoginConsent,
-		Metadata:                  appDTO.Metadata,
+		ID:          appDTO.ID,
+		OUID:        appDTO.OUID,
+		Name:        appDTO.Name,
+		Description: appDTO.Description,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:                appDTO.AuthFlowID,
+			RegistrationFlowID:        appDTO.RegistrationFlowID,
+			IsRegistrationFlowEnabled: appDTO.IsRegistrationFlowEnabled,
+			RecoveryFlowID:            appDTO.RecoveryFlowID,
+			IsRecoveryFlowEnabled:     appDTO.IsRecoveryFlowEnabled,
+			ThemeID:                   appDTO.ThemeID,
+			LayoutID:                  appDTO.LayoutID,
+			Assertion:                 appDTO.Assertion,
+			Certificate:               appDTO.Certificate,
+			AllowedUserTypes:          appDTO.AllowedUserTypes,
+			LoginConsent:              appDTO.LoginConsent,
+		},
+		Template:  appDTO.Template,
+		URL:       appDTO.URL,
+		LogoURL:   appDTO.LogoURL,
+		TosURI:    appDTO.TosURI,
+		PolicyURI: appDTO.PolicyURI,
+		Contacts:  appDTO.Contacts,
+		Metadata:  appDTO.Metadata,
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
 	if len(appDTO.InboundAuthConfig) > 0 {
-		if appDTO.InboundAuthConfig[0].Type != model.OAuthInboundAuthType {
+		if appDTO.InboundAuthConfig[0].Type != inboundmodel.OAuthInboundAuthType {
 			logger.Error("Unsupported inbound authentication type returned",
 				log.String("type", string(appDTO.InboundAuthConfig[0].Type)))
 
@@ -198,8 +212,7 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 			return
 		}
 
-		returnInboundAuthConfig := appDTO.InboundAuthConfig[0]
-		if returnInboundAuthConfig.OAuthAppConfig == nil {
+		if appDTO.InboundAuthConfig[0].OAuthConfig == nil {
 			logger.Error("OAuth application configuration is nil")
 
 			errResp := apierror.ErrorResponse{
@@ -211,45 +224,53 @@ func (ah *applicationHandler) HandleApplicationGetRequest(w http.ResponseWriter,
 			return
 		}
 
-		redirectURIs := returnInboundAuthConfig.OAuthAppConfig.RedirectURIs
-		if len(redirectURIs) == 0 {
-			redirectURIs = []string{}
-		}
-		grantTypes := returnInboundAuthConfig.OAuthAppConfig.GrantTypes
-		if len(grantTypes) == 0 {
-			grantTypes = []oauth2const.GrantType{}
-		}
-		responseTypes := returnInboundAuthConfig.OAuthAppConfig.ResponseTypes
-		if len(responseTypes) == 0 {
-			responseTypes = []oauth2const.ResponseType{}
-		}
-		tokenAuthMethod := returnInboundAuthConfig.OAuthAppConfig.TokenEndpointAuthMethod
-
-		returnInboundAuthConfigs := make([]model.InboundAuthConfig, 0)
+		returnInboundAuthConfigs := make([]inboundmodel.InboundAuthConfig, 0, len(appDTO.InboundAuthConfig))
 		for _, config := range appDTO.InboundAuthConfig {
-			oAuthAppConfig := model.OAuthAppConfig{
-				ClientID:                           config.OAuthAppConfig.ClientID,
+			if config.OAuthConfig == nil {
+				logger.Error("OAuth application configuration is nil")
+				errResp := apierror.ErrorResponse{
+					Code:        serviceerror.InternalServerError.Code,
+					Message:     serviceerror.InternalServerError.Error,
+					Description: serviceerror.InternalServerError.ErrorDescription,
+				}
+				sysutils.WriteErrorResponse(w, http.StatusInternalServerError, errResp)
+				return
+			}
+			redirectURIs := config.OAuthConfig.RedirectURIs
+			if len(redirectURIs) == 0 {
+				redirectURIs = []string{}
+			}
+			grantTypes := config.OAuthConfig.GrantTypes
+			if len(grantTypes) == 0 {
+				grantTypes = []oauth2const.GrantType{}
+			}
+			responseTypes := config.OAuthConfig.ResponseTypes
+			if len(responseTypes) == 0 {
+				responseTypes = []oauth2const.ResponseType{}
+			}
+			oAuthAppConfig := inboundmodel.OAuthConfig{
+				ClientID:                           config.OAuthConfig.ClientID,
 				RedirectURIs:                       redirectURIs,
 				GrantTypes:                         grantTypes,
 				ResponseTypes:                      responseTypes,
-				TokenEndpointAuthMethod:            tokenAuthMethod,
-				PKCERequired:                       config.OAuthAppConfig.PKCERequired,
-				PublicClient:                       config.OAuthAppConfig.PublicClient,
-				RequirePushedAuthorizationRequests: config.OAuthAppConfig.RequirePushedAuthorizationRequests,
-				Token:                              config.OAuthAppConfig.Token,
-				Scopes:                             config.OAuthAppConfig.Scopes,
-				UserInfo:                           config.OAuthAppConfig.UserInfo,
-				ScopeClaims:                        config.OAuthAppConfig.ScopeClaims,
-				Certificate:                        config.OAuthAppConfig.Certificate,
-				AcrValues:                          config.OAuthAppConfig.AcrValues,
+				TokenEndpointAuthMethod:            config.OAuthConfig.TokenEndpointAuthMethod,
+				PKCERequired:                       config.OAuthConfig.PKCERequired,
+				PublicClient:                       config.OAuthConfig.PublicClient,
+				RequirePushedAuthorizationRequests: config.OAuthConfig.RequirePushedAuthorizationRequests,
+				Token:                              config.OAuthConfig.Token,
+				Scopes:                             config.OAuthConfig.Scopes,
+				UserInfo:                           config.OAuthConfig.UserInfo,
+				ScopeClaims:                        config.OAuthConfig.ScopeClaims,
+				Certificate:                        config.OAuthConfig.Certificate,
+				AcrValues:                          config.OAuthConfig.AcrValues,
 			}
-			returnInboundAuthConfigs = append(returnInboundAuthConfigs, model.InboundAuthConfig{
-				Type:           config.Type,
-				OAuthAppConfig: &oAuthAppConfig,
+			returnInboundAuthConfigs = append(returnInboundAuthConfigs, inboundmodel.InboundAuthConfig{
+				Type:        config.Type,
+				OAuthConfig: &oAuthAppConfig,
 			})
 		}
 		returnApp.InboundAuthConfig = returnInboundAuthConfigs
-		returnApp.ClientID = appDTO.InboundAuthConfig[0].OAuthAppConfig.ClientID
+		returnApp.ClientID = appDTO.InboundAuthConfig[0].OAuthConfig.ClientID
 	}
 
 	sysutils.WriteSuccessResponse(w, http.StatusOK, returnApp)
@@ -283,26 +304,30 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 	}
 
 	updateReqAppDTO := model.ApplicationDTO{
-		ID:                        id,
-		OUID:                      appRequest.OUID,
-		Name:                      appRequest.Name,
-		Description:               appRequest.Description,
-		AuthFlowID:                appRequest.AuthFlowID,
-		RegistrationFlowID:        appRequest.RegistrationFlowID,
-		IsRegistrationFlowEnabled: appRequest.IsRegistrationFlowEnabled,
-		ThemeID:                   appRequest.ThemeID,
-		LayoutID:                  appRequest.LayoutID,
-		Template:                  appRequest.Template,
-		URL:                       appRequest.URL,
-		LogoURL:                   appRequest.LogoURL,
-		Assertion:                 appRequest.Assertion,
-		Certificate:               appRequest.Certificate,
-		TosURI:                    appRequest.TosURI,
-		PolicyURI:                 appRequest.PolicyURI,
-		Contacts:                  appRequest.Contacts,
-		AllowedUserTypes:          appRequest.AllowedUserTypes,
-		LoginConsent:              appRequest.LoginConsent,
-		Metadata:                  appRequest.Metadata,
+		ID:          id,
+		OUID:        appRequest.OUID,
+		Name:        appRequest.Name,
+		Description: appRequest.Description,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:                appRequest.AuthFlowID,
+			RegistrationFlowID:        appRequest.RegistrationFlowID,
+			IsRegistrationFlowEnabled: appRequest.IsRegistrationFlowEnabled,
+			RecoveryFlowID:            appRequest.RecoveryFlowID,
+			IsRecoveryFlowEnabled:     appRequest.IsRecoveryFlowEnabled,
+			ThemeID:                   appRequest.ThemeID,
+			LayoutID:                  appRequest.LayoutID,
+			Assertion:                 appRequest.Assertion,
+			Certificate:               appRequest.Certificate,
+			AllowedUserTypes:          appRequest.AllowedUserTypes,
+			LoginConsent:              appRequest.LoginConsent,
+		},
+		Template:  appRequest.Template,
+		URL:       appRequest.URL,
+		LogoURL:   appRequest.LogoURL,
+		TosURI:    appRequest.TosURI,
+		PolicyURI: appRequest.PolicyURI,
+		Contacts:  appRequest.Contacts,
+		Metadata:  appRequest.Metadata,
 	}
 	updateReqAppDTO.InboundAuthConfig = ah.processInboundAuthConfigFromRequest(appRequest.InboundAuthConfig)
 
@@ -314,26 +339,30 @@ func (ah *applicationHandler) HandleApplicationPutRequest(w http.ResponseWriter,
 	}
 
 	returnApp := model.ApplicationCompleteResponse{
-		ID:                        updatedAppDTO.ID,
-		OUID:                      updatedAppDTO.OUID,
-		Name:                      updatedAppDTO.Name,
-		Description:               updatedAppDTO.Description,
-		AuthFlowID:                updatedAppDTO.AuthFlowID,
-		RegistrationFlowID:        updatedAppDTO.RegistrationFlowID,
-		IsRegistrationFlowEnabled: updatedAppDTO.IsRegistrationFlowEnabled,
-		ThemeID:                   updatedAppDTO.ThemeID,
-		LayoutID:                  updatedAppDTO.LayoutID,
-		Template:                  updatedAppDTO.Template,
-		URL:                       updatedAppDTO.URL,
-		LogoURL:                   updatedAppDTO.LogoURL,
-		Assertion:                 updatedAppDTO.Assertion,
-		Certificate:               updatedAppDTO.Certificate,
-		TosURI:                    updatedAppDTO.TosURI,
-		PolicyURI:                 updatedAppDTO.PolicyURI,
-		Contacts:                  updatedAppDTO.Contacts,
-		AllowedUserTypes:          updatedAppDTO.AllowedUserTypes,
-		LoginConsent:              updatedAppDTO.LoginConsent,
-		Metadata:                  updatedAppDTO.Metadata,
+		ID:          updatedAppDTO.ID,
+		OUID:        updatedAppDTO.OUID,
+		Name:        updatedAppDTO.Name,
+		Description: updatedAppDTO.Description,
+		InboundAuthProfile: inboundmodel.InboundAuthProfile{
+			AuthFlowID:                updatedAppDTO.AuthFlowID,
+			RegistrationFlowID:        updatedAppDTO.RegistrationFlowID,
+			IsRegistrationFlowEnabled: updatedAppDTO.IsRegistrationFlowEnabled,
+			RecoveryFlowID:            updatedAppDTO.RecoveryFlowID,
+			IsRecoveryFlowEnabled:     updatedAppDTO.IsRecoveryFlowEnabled,
+			ThemeID:                   updatedAppDTO.ThemeID,
+			LayoutID:                  updatedAppDTO.LayoutID,
+			Assertion:                 updatedAppDTO.Assertion,
+			Certificate:               updatedAppDTO.Certificate,
+			AllowedUserTypes:          updatedAppDTO.AllowedUserTypes,
+			LoginConsent:              updatedAppDTO.LoginConsent,
+		},
+		Template:  updatedAppDTO.Template,
+		URL:       updatedAppDTO.URL,
+		LogoURL:   updatedAppDTO.LogoURL,
+		TosURI:    updatedAppDTO.TosURI,
+		PolicyURI: updatedAppDTO.PolicyURI,
+		Contacts:  updatedAppDTO.Contacts,
+		Metadata:  updatedAppDTO.Metadata,
 	}
 
 	// TODO: Need to refactor when supporting other/multiple inbound auth types.
@@ -380,59 +409,60 @@ func (ah *applicationHandler) HandleApplicationDeleteRequest(w http.ResponseWrit
 func (ah *applicationHandler) processInboundAuthConfig(logger *log.Logger, appDTO *model.ApplicationDTO,
 	returnApp *model.ApplicationCompleteResponse) bool {
 	if len(appDTO.InboundAuthConfig) > 0 {
-		if appDTO.InboundAuthConfig[0].Type != model.OAuthInboundAuthType {
+		if appDTO.InboundAuthConfig[0].Type != inboundmodel.OAuthInboundAuthType {
 			logger.Error("Unsupported inbound authentication type returned",
 				log.String("type", string(appDTO.InboundAuthConfig[0].Type)))
 
 			return false
 		}
 
-		returnInboundAuthConfig := appDTO.InboundAuthConfig[0]
-		if returnInboundAuthConfig.OAuthAppConfig == nil {
+		if appDTO.InboundAuthConfig[0].OAuthConfig == nil {
 			logger.Error("OAuth application configuration is nil")
 			return false
 		}
 
-		redirectURIs := returnInboundAuthConfig.OAuthAppConfig.RedirectURIs
-		if len(redirectURIs) == 0 {
-			redirectURIs = []string{}
-		}
-		grantTypes := returnInboundAuthConfig.OAuthAppConfig.GrantTypes
-		if len(grantTypes) == 0 {
-			grantTypes = []oauth2const.GrantType{}
-		}
-		responseTypes := returnInboundAuthConfig.OAuthAppConfig.ResponseTypes
-		if len(responseTypes) == 0 {
-			responseTypes = []oauth2const.ResponseType{}
-		}
-		tokenAuthMethod := returnInboundAuthConfig.OAuthAppConfig.TokenEndpointAuthMethod
-
-		returnInboundAuthConfigs := make([]model.InboundAuthConfigComplete, 0)
+		returnInboundAuthConfigs := make([]inboundmodel.InboundAuthConfigWithSecret, 0, len(appDTO.InboundAuthConfig))
 		for _, config := range appDTO.InboundAuthConfig {
-			oAuthAppConfig := model.OAuthAppConfigComplete{
-				ClientID:                           config.OAuthAppConfig.ClientID,
-				ClientSecret:                       config.OAuthAppConfig.ClientSecret,
+			if config.OAuthConfig == nil {
+				logger.Error("OAuth application configuration is nil")
+				return false
+			}
+			redirectURIs := config.OAuthConfig.RedirectURIs
+			if len(redirectURIs) == 0 {
+				redirectURIs = []string{}
+			}
+			grantTypes := config.OAuthConfig.GrantTypes
+			if len(grantTypes) == 0 {
+				grantTypes = []oauth2const.GrantType{}
+			}
+			responseTypes := config.OAuthConfig.ResponseTypes
+			if len(responseTypes) == 0 {
+				responseTypes = []oauth2const.ResponseType{}
+			}
+			oAuthAppConfig := inboundmodel.OAuthConfigWithSecret{
+				ClientID:                           config.OAuthConfig.ClientID,
+				ClientSecret:                       config.OAuthConfig.ClientSecret,
 				RedirectURIs:                       redirectURIs,
 				GrantTypes:                         grantTypes,
 				ResponseTypes:                      responseTypes,
-				TokenEndpointAuthMethod:            tokenAuthMethod,
-				PKCERequired:                       config.OAuthAppConfig.PKCERequired,
-				PublicClient:                       config.OAuthAppConfig.PublicClient,
-				RequirePushedAuthorizationRequests: config.OAuthAppConfig.RequirePushedAuthorizationRequests,
-				Token:                              config.OAuthAppConfig.Token,
-				Scopes:                             config.OAuthAppConfig.Scopes,
-				UserInfo:                           config.OAuthAppConfig.UserInfo,
-				ScopeClaims:                        config.OAuthAppConfig.ScopeClaims,
-				Certificate:                        config.OAuthAppConfig.Certificate,
-				AcrValues:                          config.OAuthAppConfig.AcrValues,
+				TokenEndpointAuthMethod:            config.OAuthConfig.TokenEndpointAuthMethod,
+				PKCERequired:                       config.OAuthConfig.PKCERequired,
+				PublicClient:                       config.OAuthConfig.PublicClient,
+				RequirePushedAuthorizationRequests: config.OAuthConfig.RequirePushedAuthorizationRequests,
+				Token:                              config.OAuthConfig.Token,
+				Scopes:                             config.OAuthConfig.Scopes,
+				UserInfo:                           config.OAuthConfig.UserInfo,
+				ScopeClaims:                        config.OAuthConfig.ScopeClaims,
+				Certificate:                        config.OAuthConfig.Certificate,
+				AcrValues:                          config.OAuthConfig.AcrValues,
 			}
-			returnInboundAuthConfigs = append(returnInboundAuthConfigs, model.InboundAuthConfigComplete{
-				Type:           config.Type,
-				OAuthAppConfig: &oAuthAppConfig,
+			returnInboundAuthConfigs = append(returnInboundAuthConfigs, inboundmodel.InboundAuthConfigWithSecret{
+				Type:        config.Type,
+				OAuthConfig: &oAuthAppConfig,
 			})
 		}
 		returnApp.InboundAuthConfig = returnInboundAuthConfigs
-		returnApp.ClientID = appDTO.InboundAuthConfig[0].OAuthAppConfig.ClientID
+		returnApp.ClientID = appDTO.InboundAuthConfig[0].OAuthConfig.ClientID
 	}
 
 	return true
@@ -472,35 +502,35 @@ func (ah *applicationHandler) handleError(w http.ResponseWriter, r *http.Request
 
 // processInboundAuthConfigFromRequest processes inbound auth config from request to DTO.
 func (ah *applicationHandler) processInboundAuthConfigFromRequest(
-	configs []model.InboundAuthConfigComplete) []model.InboundAuthConfigDTO {
+	configs []inboundmodel.InboundAuthConfigWithSecret) []inboundmodel.InboundAuthConfigWithSecret {
 	if len(configs) == 0 {
 		return nil
 	}
 
-	inboundAuthConfigDTOs := make([]model.InboundAuthConfigDTO, 0)
+	inboundAuthConfigDTOs := make([]inboundmodel.InboundAuthConfigWithSecret, 0)
 	for _, config := range configs {
-		if config.Type != model.OAuthInboundAuthType || config.OAuthAppConfig == nil {
+		if config.Type != inboundmodel.OAuthInboundAuthType || config.OAuthConfig == nil {
 			continue
 		}
 
-		inboundAuthConfigDTO := model.InboundAuthConfigDTO{
+		inboundAuthConfigDTO := inboundmodel.InboundAuthConfigWithSecret{
 			Type: config.Type,
-			OAuthAppConfig: &model.OAuthAppConfigDTO{
-				ClientID:                           config.OAuthAppConfig.ClientID,
-				ClientSecret:                       config.OAuthAppConfig.ClientSecret,
-				RedirectURIs:                       config.OAuthAppConfig.RedirectURIs,
-				GrantTypes:                         config.OAuthAppConfig.GrantTypes,
-				ResponseTypes:                      config.OAuthAppConfig.ResponseTypes,
-				TokenEndpointAuthMethod:            config.OAuthAppConfig.TokenEndpointAuthMethod,
-				PKCERequired:                       config.OAuthAppConfig.PKCERequired,
-				PublicClient:                       config.OAuthAppConfig.PublicClient,
-				RequirePushedAuthorizationRequests: config.OAuthAppConfig.RequirePushedAuthorizationRequests,
-				Token:                              config.OAuthAppConfig.Token,
-				Scopes:                             config.OAuthAppConfig.Scopes,
-				UserInfo:                           config.OAuthAppConfig.UserInfo,
-				ScopeClaims:                        config.OAuthAppConfig.ScopeClaims,
-				Certificate:                        config.OAuthAppConfig.Certificate,
-				AcrValues:                          config.OAuthAppConfig.AcrValues,
+			OAuthConfig: &inboundmodel.OAuthConfigWithSecret{
+				ClientID:                           config.OAuthConfig.ClientID,
+				ClientSecret:                       config.OAuthConfig.ClientSecret,
+				RedirectURIs:                       config.OAuthConfig.RedirectURIs,
+				GrantTypes:                         config.OAuthConfig.GrantTypes,
+				ResponseTypes:                      config.OAuthConfig.ResponseTypes,
+				TokenEndpointAuthMethod:            config.OAuthConfig.TokenEndpointAuthMethod,
+				PKCERequired:                       config.OAuthConfig.PKCERequired,
+				PublicClient:                       config.OAuthConfig.PublicClient,
+				RequirePushedAuthorizationRequests: config.OAuthConfig.RequirePushedAuthorizationRequests,
+				Token:                              config.OAuthConfig.Token,
+				Scopes:                             config.OAuthConfig.Scopes,
+				UserInfo:                           config.OAuthConfig.UserInfo,
+				ScopeClaims:                        config.OAuthConfig.ScopeClaims,
+				Certificate:                        config.OAuthConfig.Certificate,
+				AcrValues:                          config.OAuthConfig.AcrValues,
 			},
 		}
 		inboundAuthConfigDTOs = append(inboundAuthConfigDTOs, inboundAuthConfigDTO)

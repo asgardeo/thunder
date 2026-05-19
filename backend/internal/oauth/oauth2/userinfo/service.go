@@ -21,29 +21,24 @@ package userinfo
 
 import (
 	"context"
-	"crypto"
 	"encoding/json"
-	"io"
-	"net/http"
 	"slices"
 
-	"github.com/asgardeo/thunder/internal/attributecache"
-	certmodel "github.com/asgardeo/thunder/internal/cert"
-	"github.com/asgardeo/thunder/internal/inboundclient"
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
-	oauth2utils "github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
-	"github.com/asgardeo/thunder/internal/ou"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	syshttp "github.com/asgardeo/thunder/internal/system/http"
-	"github.com/asgardeo/thunder/internal/system/jose/jwe"
-	"github.com/asgardeo/thunder/internal/system/jose/jws"
-	"github.com/asgardeo/thunder/internal/system/jose/jwt"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/transaction"
+	"github.com/thunder-id/thunderid/internal/attributecache"
+	"github.com/thunder-id/thunderid/internal/inboundclient"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jwksresolver"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
+	oauth2utils "github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
+	"github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
+	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/transaction"
 )
 
 const serviceLoggerComponentName = "UserInfoService"
@@ -57,7 +52,7 @@ type userInfoServiceInterface interface {
 type userInfoService struct {
 	jwtService        jwt.JWTServiceInterface
 	jweService        jwe.JWEServiceInterface
-	httpClient        syshttp.HTTPClientInterface
+	jwksResolver      *jwksresolver.Resolver
 	tokenValidator    tokenservice.TokenValidatorInterface
 	inboundClient     inboundclient.InboundClientServiceInterface
 	ouService         ou.OrganizationUnitServiceInterface
@@ -70,23 +65,24 @@ type userInfoService struct {
 func newUserInfoService(
 	jwtService jwt.JWTServiceInterface,
 	jweService jwe.JWEServiceInterface,
-	httpClient syshttp.HTTPClientInterface,
+	resolver *jwksresolver.Resolver,
 	tokenValidator tokenservice.TokenValidatorInterface,
 	inboundClient inboundclient.InboundClientServiceInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	attributeCacheSvc attributecache.AttributeCacheServiceInterface,
 	transactioner transaction.Transactioner,
 ) userInfoServiceInterface {
+	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, serviceLoggerComponentName))
 	return &userInfoService{
 		jwtService:        jwtService,
 		jweService:        jweService,
-		httpClient:        httpClient,
+		jwksResolver:      resolver,
 		tokenValidator:    tokenValidator,
 		inboundClient:     inboundClient,
 		ouService:         ouService,
 		attributeCacheSvc: attributeCacheSvc,
 		transactioner:     transactioner,
-		logger:            log.GetLogger().With(log.String(log.LoggerKeyComponentName, serviceLoggerComponentName)),
+		logger:            logger,
 	}
 }
 
@@ -166,108 +162,6 @@ func (s *userInfoService) GetUserInfo(
 	}
 }
 
-// resolveRPPublicKey resolves the RP's public key from the application certificate.
-// It returns the public key and the kid from the matching JWK entry (empty string when absent).
-// encryptionAlg is the key-management algorithm (e.g. "RSA-OAEP-256") used to filter incompatible keys.
-func (s *userInfoService) resolveRPPublicKey(
-	ctx context.Context, certificate *inboundmodel.Certificate, encryptionAlg string,
-) (crypto.PublicKey, string, *serviceerror.ServiceError) {
-	if certificate == nil || certificate.Type == "" {
-		s.logger.Error("No certificate configured for userinfo encryption")
-		return nil, "", &serviceerror.InternalServerError
-	}
-
-	var jwksData []byte
-	switch certificate.Type {
-	case certmodel.CertificateTypeJWKS:
-		jwksData = []byte(certificate.Value)
-	case certmodel.CertificateTypeJWKSURI:
-		body, svcErr := s.fetchJWKS(ctx, certificate.Value)
-		if svcErr != nil {
-			return nil, "", svcErr
-		}
-		jwksData = body
-	default:
-		s.logger.Error("Unsupported certificate type for userinfo encryption",
-			log.String("type", string(certificate.Type)))
-		return nil, "", &serviceerror.InternalServerError
-	}
-
-	return s.parseEncryptionKeyFromJWKS(jwksData, encryptionAlg)
-}
-
-// fetchJWKS fetches the JWKS document from the given URI with SSRF protection and a 1 MB size cap.
-func (s *userInfoService) fetchJWKS(ctx context.Context, jwksURI string) ([]byte, *serviceerror.ServiceError) {
-	if err := syshttp.IsSSRFSafeURL(jwksURI); err != nil {
-		s.logger.Error("JWKS URI is not SSRF-safe", log.String("uri", jwksURI), log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, jwksURI, nil)
-	if err != nil {
-		s.logger.Error("Failed to build JWKS request", log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		s.logger.Error("Failed to fetch JWKS from URI", log.String("uri", jwksURI), log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
-		s.logger.Error("JWKS URI returned non-200 status",
-			log.String("uri", jwksURI), log.Int("statusCode", resp.StatusCode))
-		return nil, &serviceerror.InternalServerError
-	}
-	const maxJWKSBytes = 1 << 20 // 1 MB — guards against OOM from a malicious endpoint
-	limitedReader := io.LimitReader(resp.Body, maxJWKSBytes+1)
-	body, err := io.ReadAll(limitedReader)
-	if err != nil {
-		s.logger.Error("Failed to read JWKS response body", log.Error(err))
-		return nil, &serviceerror.InternalServerError
-	}
-	if len(body) > maxJWKSBytes {
-		s.logger.Error("JWKS URI response exceeds 1 MB size limit", log.String("uri", jwksURI))
-		return nil, &serviceerror.InternalServerError
-	}
-	return body, nil
-}
-
-// parseEncryptionKeyFromJWKS finds the first RSA enc key in the JWKS that matches encryptionAlg.
-// Returns the public key and its kid (empty when absent in the JWK entry).
-func (s *userInfoService) parseEncryptionKeyFromJWKS(
-	jwksData []byte, encryptionAlg string,
-) (crypto.PublicKey, string, *serviceerror.ServiceError) {
-	var jwksObj struct {
-		Keys []map[string]interface{} `json:"keys"`
-	}
-	if err := json.Unmarshal(jwksData, &jwksObj); err != nil {
-		s.logger.Error("Failed to parse JWKS for userinfo encryption", log.Error(err))
-		return nil, "", &serviceerror.InternalServerError
-	}
-
-	for _, key := range jwksObj.Keys {
-		use, _ := key["use"].(string)
-		if use != "enc" {
-			continue
-		}
-		kty, _ := key["kty"].(string)
-		if kty != "RSA" {
-			continue
-		}
-		if keyAlg, _ := key["alg"].(string); keyAlg != "" && keyAlg != encryptionAlg {
-			continue
-		}
-		pub, err := jws.JWKToPublicKey(key)
-		if err == nil && pub != nil {
-			kid, _ := key["kid"].(string)
-			return pub, kid, nil
-		}
-	}
-
-	s.logger.Error("No suitable encryption key found in JWKS")
-	return nil, "", &serviceerror.InternalServerError
-}
-
 // generateJWEUserInfo creates an encrypted JWE UserInfo response.
 func (s *userInfoService) generateJWEUserInfo(
 	ctx context.Context,
@@ -275,7 +169,8 @@ func (s *userInfoService) generateJWEUserInfo(
 	cfg *inboundmodel.UserInfoConfig,
 	certificate *inboundmodel.Certificate,
 ) (*UserInfoResponse, *serviceerror.ServiceError) {
-	rpKey, rpKID, svcErr := s.resolveRPPublicKey(ctx, certificate, cfg.EncryptionAlg)
+	rpKey, rpKID, svcErr := s.jwksResolver.ResolveEncryptionKey(
+		ctx, certificate, cfg.EncryptionAlg, jwksresolver.KeyUseStrictEnc)
 	if svcErr != nil {
 		return nil, svcErr
 	}
@@ -315,7 +210,8 @@ func (s *userInfoService) generateNestedJWTUserInfo(
 		return nil, svcErr
 	}
 
-	rpKey, rpKID, svcErr := s.resolveRPPublicKey(ctx, certificate, cfg.EncryptionAlg)
+	rpKey, rpKID, svcErr := s.jwksResolver.ResolveEncryptionKey(
+		ctx, certificate, cfg.EncryptionAlg, jwksresolver.KeyUseStrictEnc)
 	if svcErr != nil {
 		return nil, svcErr
 	}

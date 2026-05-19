@@ -25,9 +25,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/asgardeo/thunder/internal/system/cryptolab"
-	"github.com/asgardeo/thunder/internal/system/cryptolab/hash"
-	"github.com/asgardeo/thunder/internal/system/kmprovider"
+	"github.com/thunder-id/thunderid/internal/system/cryptolab"
+	"github.com/thunder-id/thunderid/internal/system/cryptolab/hash"
+	"github.com/thunder-id/thunderid/internal/system/kmprovider"
 )
 
 type encryptionService struct {
@@ -49,7 +49,7 @@ func (es *encryptionService) Encrypt(_ context.Context, plaintext []byte) ([]byt
 		return nil, errors.New("default encryption key not found")
 	}
 	ciphertext, _, err := cryptolab.Encrypt(
-		key, cryptolab.AlgorithmParams{Algorithm: cryptolab.AlgorithmAESGCM}, plaintext,
+		key, &cryptolab.AlgorithmParams{Algorithm: cryptolab.AlgorithmAESGCM}, plaintext,
 	)
 	if err != nil {
 		return nil, err

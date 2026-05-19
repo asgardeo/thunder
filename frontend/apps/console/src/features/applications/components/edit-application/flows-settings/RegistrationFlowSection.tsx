@@ -17,8 +17,9 @@
  */
 
 import {SettingsCard} from '@thunderid/components';
-import {Box, Typography, TextField, Autocomplete, CircularProgress} from '@wso2/oxygen-ui';
-import {useTranslation} from 'react-i18next';
+import {Box, Typography, TextField, Autocomplete, CircularProgress, Alert} from '@wso2/oxygen-ui';
+import {useTranslation, Trans} from 'react-i18next';
+import {Link} from 'react-router';
 import useGetFlows from '../../../../flows/api/useGetFlows';
 import {FlowType} from '../../../../flows/models/flows';
 import type {Application} from '../../../models/application';
@@ -41,6 +42,10 @@ interface RegistrationFlowSectionProps {
    * @param value - The new value for the field
    */
   onFieldChange: (field: keyof Application, value: unknown) => void;
+  /**
+   * Singular noun used to refer to the entity in user-visible copy (default: 'application').
+   */
+  entityLabel?: string;
 }
 
 /**
@@ -56,7 +61,12 @@ interface RegistrationFlowSectionProps {
  * @param props - Component props
  * @returns Registration flow selection UI within a SettingsCard
  */
-export default function RegistrationFlowSection({application, editedApp, onFieldChange}: RegistrationFlowSectionProps) {
+export default function RegistrationFlowSection({
+  application,
+  editedApp,
+  onFieldChange,
+  entityLabel = 'application',
+}: RegistrationFlowSectionProps) {
   const {t} = useTranslation();
   const {data: regFlowsData, isLoading: loadingRegFlows} = useGetFlows({flowType: FlowType.REGISTRATION});
 
@@ -69,6 +79,25 @@ export default function RegistrationFlowSection({application, editedApp, onField
       enabled={editedApp.isRegistrationFlowEnabled ?? application.isRegistrationFlowEnabled ?? false}
       onToggle={(enabled) => onFieldChange('isRegistrationFlowEnabled', enabled)}
     >
+      {(editedApp.registrationFlowId ?? application.registrationFlowId) && (
+        <Alert severity="info" sx={{mb: 2}}>
+          <Trans
+            i18nKey="applications:edit.flows.registrationFlow.alert"
+            components={[
+              <Link
+                key="edit"
+                to={`/flows/registration/${editedApp.registrationFlowId ?? application.registrationFlowId}`}
+                style={{color: 'inherit', fontWeight: 'bold', textDecoration: 'underline'}}
+              />,
+              <Link
+                key="create"
+                to="/flows"
+                style={{color: 'inherit', fontWeight: 'bold', textDecoration: 'underline'}}
+              />,
+            ]}
+          />
+        </Alert>
+      )}
       <Autocomplete
         fullWidth
         options={regFlowOptions}
@@ -83,7 +112,11 @@ export default function RegistrationFlowSection({application, editedApp, onField
           <TextField
             {...params}
             placeholder={t('applications:edit.flows.registrationFlow.placeholder')}
-            helperText={t('applications:edit.flows.registrationFlow.hint')}
+            helperText={t(
+              'applications:edit.flows.registrationFlow.hint',
+              'Select the flow that handles user registration for this {{entity}}.',
+              {entity: entityLabel},
+            )}
             InputProps={{
               ...params.InputProps,
               endAdornment: (

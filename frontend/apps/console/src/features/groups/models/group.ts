@@ -23,7 +23,7 @@ export interface Member {
   /** Unique identifier of the member */
   id: string;
   /** Type of the member */
-  type: 'user' | 'group' | 'app';
+  type: 'user' | 'group' | 'app' | 'agent';
   /** Display name of the member */
   display?: string;
 }

@@ -53,6 +53,8 @@ const (
 	PropLogoutEndpoint        = "logout_endpoint"
 	PropJwksEndpoint          = "jwks_endpoint"
 	PropPrompt                = "prompt"
+	PropIssuer                = "issuer"
+	PropTokenExchangeEnabled  = "token_exchange_enabled"
 )
 
 // Known endpoints for Google OAuth2/OIDC.
@@ -111,6 +113,8 @@ var idpPropertyConfigs = map[IDPType]idpPropertyConfig{
 			PropLogoutEndpoint,
 			PropJwksEndpoint,
 			PropPrompt,
+			PropIssuer,
+			PropTokenExchangeEnabled,
 		},
 		Defaults: map[string]string{},
 	},
@@ -128,6 +132,8 @@ var idpPropertyConfigs = map[IDPType]idpPropertyConfig{
 			PropLogoutEndpoint,
 			PropJwksEndpoint,
 			PropPrompt,
+			PropIssuer,
+			PropTokenExchangeEnabled,
 		},
 		Defaults: map[string]string{
 			PropAuthorizationEndpoint: googleAuthorizationEndpoint,
@@ -157,5 +163,17 @@ var idpPropertyConfigs = map[IDPType]idpPropertyConfig{
 			PropUserInfoEndpoint:      gitHubUserInfoEndpoint,
 			PropUserEmailEndpoint:     gitHubUserEmailEndpoint,
 		},
+	},
+}
+
+// tokenExchangeRequiredProps defines the required properties per IDP type when token exchange is enabled.
+var tokenExchangeRequiredProps = map[IDPType][]string{
+	IDPTypeOIDC: {
+		PropIssuer,
+		PropJwksEndpoint,
+	},
+	IDPTypeGoogle: {
+		PropIssuer,
+		PropJwksEndpoint,
 	},
 }

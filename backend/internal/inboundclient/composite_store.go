@@ -21,9 +21,9 @@ package inboundclient
 import (
 	"context"
 
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
+	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 )
 
 // compositeStore combines a file-backed (immutable, declarative) store and a database-backed
@@ -75,7 +75,7 @@ func (c *compositeStore) CreateInboundClient(ctx context.Context, client inbound
 }
 
 func (c *compositeStore) CreateOAuthProfile(ctx context.Context, entityID string,
-	oauthProfile *inboundmodel.OAuthProfileData) error {
+	oauthProfile *inboundmodel.OAuthProfile) error {
 	return c.dbStore.CreateOAuthProfile(ctx, entityID, oauthProfile)
 }
 
@@ -108,7 +108,7 @@ func (c *compositeStore) UpdateInboundClient(ctx context.Context, client inbound
 }
 
 func (c *compositeStore) UpdateOAuthProfile(ctx context.Context, entityID string,
-	oauthProfile *inboundmodel.OAuthProfileData) error {
+	oauthProfile *inboundmodel.OAuthProfile) error {
 	return c.dbStore.UpdateOAuthProfile(ctx, entityID, oauthProfile)
 }
 

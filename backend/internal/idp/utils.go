@@ -23,12 +23,27 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/asgardeo/thunder/internal/system/cmodels"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/i18n/core"
-	"github.com/asgardeo/thunder/internal/system/log"
-	sysutils "github.com/asgardeo/thunder/internal/system/utils"
+	"github.com/thunder-id/thunderid/internal/system/cmodels"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	sysutils "github.com/thunder-id/thunderid/internal/system/utils"
 )
+
+// GetPropertyValue returns the plain-text value for the named property from the slice,
+// or an empty string if the property is absent or its value cannot be retrieved.
+func GetPropertyValue(properties []cmodels.Property, name string) string {
+	for i := range properties {
+		if properties[i].GetName() == name {
+			val, err := properties[i].GetValue()
+			if err != nil {
+				return ""
+			}
+			return val
+		}
+	}
+	return ""
+}
 
 // validateIDP validates the identity provider details.
 func validateIDP(idp *IDPDTO, logger *log.Logger) *serviceerror.ServiceError {
@@ -107,8 +122,16 @@ func validateIDPProperties(idpType IDPType, properties []cmodels.Property, logge
 		filteredPropKeys = append(filteredPropKeys, propName)
 	}
 
-	// Check for required properties
-	for _, requiredProp := range config.Required {
+	// Check for required properties, using the token-exchange override when applicable.
+	requiredProps := config.Required
+	if teProps, ok := tokenExchangeRequiredProps[idpType]; ok {
+		if prop, exists := filteredPropsMap[PropTokenExchangeEnabled]; exists {
+			if val, err := prop.GetValue(); err == nil && val == "true" {
+				requiredProps = teProps
+			}
+		}
+	}
+	for _, requiredProp := range requiredProps {
 		if !slices.Contains(filteredPropKeys, requiredProp) {
 			return nil, serviceerror.CustomServiceError(ErrorInvalidIDPProperty, core.I18nMessage{
 				Key:          "error.idpservice.required_property_missing_description",

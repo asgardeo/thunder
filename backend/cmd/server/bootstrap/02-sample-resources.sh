@@ -123,6 +123,11 @@ read -r -d '' CUSTOMER_USER_TYPE_PAYLOAD <<JSON || true
       "displayName": "Last Name",
       "required": false
     },
+    "name": {
+      "type": "string",
+      "displayName": "Full Name",
+      "required": false
+    },
     "mobileNumber": {
       "type": "string",
       "displayName": "Mobile Number",

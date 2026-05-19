@@ -30,6 +30,11 @@ function MockChild() {
 }
 const WithThemeComponent = withTheme(MockChild);
 
+// Mock useConfig from @thunder/contexts
+vi.mock('@thunder/contexts', () => ({
+  useConfig: () => ({config: {}}),
+}));
+
 // Create mock for useDesign
 const mockUseDesign = vi.fn();
 vi.mock('@thunderid/design', () => ({
@@ -37,6 +42,7 @@ vi.mock('@thunderid/design', () => ({
   useDesign: () => mockUseDesign(),
   StylesheetInjector: () => null,
   GoogleFontLoader: () => null,
+  DefaultTheme: {},
 }));
 
 const mockUseConfig = vi.hoisted(() => vi.fn());
@@ -58,8 +64,8 @@ let mockLanguageSwitcherProps: {
 
 const mockOnLanguageChange = vi.fn();
 
-// Mock LanguageSwitcher from @asgardeo/react
-vi.mock('@asgardeo/react', () => ({
+// Mock LanguageSwitcher from @thunderid/react
+vi.mock('@thunderid/react', () => ({
   LanguageSwitcher: ({
     children,
   }: {
@@ -78,6 +84,8 @@ vi.mock('@asgardeo/react', () => ({
 // Mock OxygenUI components - capture props passed to theme provider
 vi.mock('@wso2/oxygen-ui', () => ({
   AcrylicOrangeTheme: {palette: {primary: {main: '#ff5700'}}},
+  HighContrastTheme: {palette: {primary: {main: '#000000'}}},
+  createOxygenTheme: (theme: unknown) => theme,
   OxygenUIThemeProvider: ({children, ...rest}: {children: ReactNode; theme?: unknown}) => {
     capturedThemeProviderProps = {...rest};
     return <div data-testid="theme-provider">{children}</div>;
@@ -168,7 +176,10 @@ describe('withTheme', () => {
     });
 
     render(<WithThemeComponent />);
-    expect(capturedThemeProviderProps?.theme).toBeNull();
+    const defaultEntry = (capturedThemeProviderProps?.themes as {key: string; theme: unknown}[])?.find(
+      (t) => t.key === 'default',
+    );
+    expect(defaultEntry?.theme).toEqual({});
   });
 
   it('passes undefined theme to OxygenUIThemeProvider when useDesign returns undefined', () => {
@@ -178,7 +189,10 @@ describe('withTheme', () => {
     });
 
     render(<WithThemeComponent />);
-    expect(capturedThemeProviderProps?.theme).toBeUndefined();
+    const defaultEntry = (capturedThemeProviderProps?.themes as {key: string; theme: unknown}[])?.find(
+      (t) => t.key === 'default',
+    );
+    expect(defaultEntry?.theme).toEqual({});
   });
 
   it('passes transformedTheme to OxygenUIThemeProvider when available', () => {
@@ -189,7 +203,10 @@ describe('withTheme', () => {
     });
 
     render(<WithThemeComponent />);
-    expect(capturedThemeProviderProps?.theme).toEqual(mockTheme);
+    const defaultEntry = (capturedThemeProviderProps?.themes as {key: string; theme: unknown}[])?.find(
+      (t) => t.key === 'default',
+    );
+    expect(defaultEntry?.theme).toEqual(mockTheme);
   });
 
   it('does not render language switcher button when only one language is available', () => {
@@ -280,6 +297,43 @@ describe('withTheme', () => {
   it('renders Head', () => {
     render(<WithThemeComponent />);
     expect(screen.getByTestId('head')).toBeInTheDocument();
+  });
+
+  it('includes custom object themes from config in the theme list', () => {
+    const objectTheme = {palette: {primary: {main: '#aabbcc'}}};
+    mockUseConfig.mockReturnValue({
+      config: {
+        brand: {
+          design: {
+            themes: [{key: 'custom', label: 'Custom Theme', theme: objectTheme}],
+          },
+        },
+      },
+    });
+
+    render(<WithThemeComponent />);
+    expect(capturedThemeProviderProps?.themes).toEqual(
+      expect.arrayContaining([expect.objectContaining({key: 'custom', label: 'Custom Theme'})]),
+    );
+  });
+
+  it('includes custom string themes from config in the theme list', () => {
+    mockUseConfig.mockReturnValue({
+      config: {
+        brand: {
+          design: {
+            themes: [{key: 'external', label: 'External Theme', theme: 'https://example.com/theme.json'}],
+          },
+        },
+      },
+    });
+
+    render(<WithThemeComponent />);
+    expect(capturedThemeProviderProps?.themes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({key: 'external', label: 'External Theme', theme: 'https://example.com/theme.json'}),
+      ]),
+    );
   });
 
   it('wraps different components correctly', () => {

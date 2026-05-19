@@ -27,10 +27,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/database/provider"
-	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/database/provider"
+	"github.com/thunder-id/thunderid/tests/mocks/database/providermock"
 )
 
 const (
@@ -95,8 +95,8 @@ func (suite *InboundClientStoreTestSuite) TestBuildInboundClientFromRow_Success(
 		LoginConsent: &inboundmodel.LoginConsentConfig{
 			ValidityPeriod: 5400,
 		},
-		AllowedEntityTypes: []string{"admin", "user"},
-		Properties:         map[string]interface{}{"template": "spa"},
+		AllowedUserTypes: []string{"admin", "user"},
+		Properties:       map[string]interface{}{"template": "spa"},
 	}
 	blobBytes, _ := json.Marshal(blob)
 
@@ -105,6 +105,8 @@ func (suite *InboundClientStoreTestSuite) TestBuildInboundClientFromRow_Success(
 		"auth_flow_id":                 "auth_flow_1",
 		"registration_flow_id":         "reg_flow_1",
 		"is_registration_flow_enabled": "1",
+		"recovery_flow_id":             "recovery_flow_1",
+		"is_recovery_flow_enabled":     "1",
 		"theme_id":                     "theme-123",
 		"layout_id":                    "layout-456",
 		"properties":                   string(blobBytes),
@@ -118,13 +120,15 @@ func (suite *InboundClientStoreTestSuite) TestBuildInboundClientFromRow_Success(
 	suite.Equal("auth_flow_1", result.AuthFlowID)
 	suite.Equal("reg_flow_1", result.RegistrationFlowID)
 	suite.True(result.IsRegistrationFlowEnabled)
+	suite.Equal("recovery_flow_1", result.RecoveryFlowID)
+	suite.True(result.IsRecoveryFlowEnabled)
 	suite.Equal("theme-123", result.ThemeID)
 	suite.Equal("layout-456", result.LayoutID)
 	suite.NotNil(result.Assertion)
 	suite.Equal(int64(3600), result.Assertion.ValidityPeriod)
 	suite.NotNil(result.LoginConsent)
 	suite.Equal(int64(5400), result.LoginConsent.ValidityPeriod)
-	suite.Equal([]string{"admin", "user"}, result.AllowedEntityTypes)
+	suite.Equal([]string{"admin", "user"}, result.AllowedUserTypes)
 	suite.NotNil(result.Properties)
 	suite.Equal("spa", result.Properties["template"])
 }
@@ -147,6 +151,8 @@ func (suite *InboundClientStoreTestSuite) TestBuildInboundClientFromRow_MinimalR
 		"auth_flow_id":                 nil,
 		"registration_flow_id":         nil,
 		"is_registration_flow_enabled": nil,
+		"recovery_flow_id":             nil,
+		"is_recovery_flow_enabled":     nil,
 		"theme_id":                     nil,
 		"layout_id":                    nil,
 		"properties":                   nil,
@@ -160,16 +166,18 @@ func (suite *InboundClientStoreTestSuite) TestBuildInboundClientFromRow_MinimalR
 	suite.Equal("", result.AuthFlowID)
 	suite.Equal("", result.RegistrationFlowID)
 	suite.False(result.IsRegistrationFlowEnabled)
+	suite.Equal("", result.RecoveryFlowID)
+	suite.False(result.IsRecoveryFlowEnabled)
 	suite.Nil(result.Assertion)
 	suite.Nil(result.LoginConsent)
-	suite.Nil(result.AllowedEntityTypes)
+	suite.Nil(result.AllowedUserTypes)
 	suite.Nil(result.Properties)
 }
 
 // --- Tests for buildOAuthProfileFromRow ---
 
 func (suite *InboundClientStoreTestSuite) TestBuildOAuthProfileFromRow_Success() {
-	cfg := inboundmodel.OAuthProfileData{
+	cfg := inboundmodel.OAuthProfile{
 		RedirectURIs:            []string{"https://example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -187,23 +195,8 @@ func (suite *InboundClientStoreTestSuite) TestBuildOAuthProfileFromRow_Success()
 
 	suite.NoError(err)
 	suite.NotNil(result)
-	suite.Equal(testEntityID, result.AppID)
-	suite.NotNil(result.OAuthProfile)
-	suite.Equal([]string{"https://example.com/callback"}, result.OAuthProfile.RedirectURIs)
-	suite.True(result.OAuthProfile.PKCERequired)
-}
-
-func (suite *InboundClientStoreTestSuite) TestBuildOAuthProfileFromRow_InvalidEntityID() {
-	row := map[string]interface{}{
-		"entity_id":    123, // Invalid type
-		"oauth_config": "{}",
-	}
-
-	result, err := buildOAuthProfileFromRow(row)
-
-	suite.Error(err)
-	suite.Nil(result)
-	suite.Contains(err.Error(), "failed to parse entity_id as string")
+	suite.Equal([]string{"https://example.com/callback"}, result.RedirectURIs)
+	suite.True(result.PKCERequired)
 }
 
 func (suite *InboundClientStoreTestSuite) TestBuildOAuthProfileFromRow_NilOAuthConfig() {
@@ -215,9 +208,7 @@ func (suite *InboundClientStoreTestSuite) TestBuildOAuthProfileFromRow_NilOAuthC
 	result, err := buildOAuthProfileFromRow(row)
 
 	suite.NoError(err)
-	suite.NotNil(result)
-	suite.Equal(testEntityID, result.AppID)
-	suite.Nil(result.OAuthProfile)
+	suite.Nil(result)
 }
 
 func (suite *InboundClientStoreTestSuite) TestBuildOAuthProfileFromRow_MalformedJSON() {
@@ -233,14 +224,14 @@ func (suite *InboundClientStoreTestSuite) TestBuildOAuthProfileFromRow_Malformed
 	suite.Contains(err.Error(), "failed to unmarshal OAuth profile JSON")
 }
 
-func (suite *InboundClientStoreTestSuite) TestMarshalOAuthProfileData_WithAcrValues() {
-	profile := &inboundmodel.OAuthProfileData{
+func (suite *InboundClientStoreTestSuite) TestMarshalOAuthProfile_WithAcrValues() {
+	profile := &inboundmodel.OAuthProfile{
 		RedirectURIs: []string{"https://example.com/callback"},
 		GrantTypes:   []string{"authorization_code"},
 		AcrValues:    []string{"urn:thunder:acr:password", "urn:thunder:acr:generated-code"},
 	}
 
-	data, err := marshalOAuthProfileData(profile)
+	data, err := marshalOAuthProfile(profile)
 
 	suite.NoError(err)
 	suite.NotNil(data)
@@ -255,14 +246,14 @@ func (suite *InboundClientStoreTestSuite) TestMarshalOAuthProfileData_WithAcrVal
 	suite.Equal("urn:thunder:acr:generated-code", acrRaw[1])
 }
 
-func (suite *InboundClientStoreTestSuite) TestMarshalOAuthProfileData_WithEmptyAcrValues() {
-	profile := &inboundmodel.OAuthProfileData{
+func (suite *InboundClientStoreTestSuite) TestMarshalOAuthProfile_WithEmptyAcrValues() {
+	profile := &inboundmodel.OAuthProfile{
 		RedirectURIs: []string{"https://example.com/callback"},
 		GrantTypes:   []string{"authorization_code"},
 		AcrValues:    []string{},
 	}
 
-	data, err := marshalOAuthProfileData(profile)
+	data, err := marshalOAuthProfile(profile)
 
 	suite.NoError(err)
 	var result map[string]interface{}
@@ -271,13 +262,13 @@ func (suite *InboundClientStoreTestSuite) TestMarshalOAuthProfileData_WithEmptyA
 	suite.Nil(result["acrValues"])
 }
 
-func (suite *InboundClientStoreTestSuite) TestMarshalOAuthProfileData_WithNilAcrValues() {
-	profile := &inboundmodel.OAuthProfileData{
+func (suite *InboundClientStoreTestSuite) TestMarshalOAuthProfile_WithNilAcrValues() {
+	profile := &inboundmodel.OAuthProfile{
 		RedirectURIs: []string{"https://example.com/callback"},
 		AcrValues:    nil,
 	}
 
-	data, err := marshalOAuthProfileData(profile)
+	data, err := marshalOAuthProfile(profile)
 
 	suite.NoError(err)
 	var result map[string]interface{}
@@ -287,7 +278,7 @@ func (suite *InboundClientStoreTestSuite) TestMarshalOAuthProfileData_WithNilAcr
 }
 
 func (suite *InboundClientStoreTestSuite) TestBuildOAuthProfileFromRow_WithAcrValues() {
-	cfg := inboundmodel.OAuthProfileData{
+	cfg := inboundmodel.OAuthProfile{
 		RedirectURIs:            []string{"https://example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -304,15 +295,15 @@ func (suite *InboundClientStoreTestSuite) TestBuildOAuthProfileFromRow_WithAcrVa
 	result, err := buildOAuthProfileFromRow(row)
 
 	suite.NoError(err)
-	suite.Require().NotNil(result.OAuthProfile)
+	suite.Require().NotNil(result)
 	suite.Equal(
 		[]string{"urn:thunder:acr:password", "urn:thunder:acr:generated-code"},
-		result.OAuthProfile.AcrValues,
+		result.AcrValues,
 	)
 }
 
 func (suite *InboundClientStoreTestSuite) TestBuildOAuthProfileFromRow_WithSingleAcrValue() {
-	cfg := inboundmodel.OAuthProfileData{
+	cfg := inboundmodel.OAuthProfile{
 		RedirectURIs: []string{"https://example.com/callback"},
 		GrantTypes:   []string{"authorization_code"},
 		AcrValues:    []string{"urn:thunder:acr:password"},
@@ -327,12 +318,12 @@ func (suite *InboundClientStoreTestSuite) TestBuildOAuthProfileFromRow_WithSingl
 	result, err := buildOAuthProfileFromRow(row)
 
 	suite.NoError(err)
-	suite.Require().NotNil(result.OAuthProfile)
-	suite.Equal([]string{"urn:thunder:acr:password"}, result.OAuthProfile.AcrValues)
+	suite.Require().NotNil(result)
+	suite.Equal([]string{"urn:thunder:acr:password"}, result.AcrValues)
 }
 
 func (suite *InboundClientStoreTestSuite) TestBuildOAuthProfileFromRow_WithoutAcrValues() {
-	cfg := inboundmodel.OAuthProfileData{
+	cfg := inboundmodel.OAuthProfile{
 		RedirectURIs: []string{"https://example.com/callback"},
 		GrantTypes:   []string{"authorization_code"},
 	}
@@ -346,14 +337,14 @@ func (suite *InboundClientStoreTestSuite) TestBuildOAuthProfileFromRow_WithoutAc
 	result, err := buildOAuthProfileFromRow(row)
 
 	suite.NoError(err)
-	suite.Require().NotNil(result.OAuthProfile)
-	suite.Nil(result.OAuthProfile.AcrValues)
+	suite.Require().NotNil(result)
+	suite.Nil(result.AcrValues)
 }
 
 func (suite *InboundClientStoreTestSuite) TestAcrValues_RoundTrip() {
 	acrs := []string{"urn:thunder:acr:password", "urn:thunder:acr:generated-code"}
 
-	profile := &inboundmodel.OAuthProfileData{
+	profile := &inboundmodel.OAuthProfile{
 		RedirectURIs:            []string{"https://example.com/callback"},
 		GrantTypes:              []string{"authorization_code"},
 		ResponseTypes:           []string{"code"},
@@ -361,7 +352,7 @@ func (suite *InboundClientStoreTestSuite) TestAcrValues_RoundTrip() {
 		AcrValues:               acrs,
 	}
 
-	data, err := marshalOAuthProfileData(profile)
+	data, err := marshalOAuthProfile(profile)
 	suite.NoError(err)
 
 	row := map[string]interface{}{
@@ -371,7 +362,7 @@ func (suite *InboundClientStoreTestSuite) TestAcrValues_RoundTrip() {
 
 	result, err := buildOAuthProfileFromRow(row)
 	suite.NoError(err)
-	suite.Equal(acrs, result.OAuthProfile.AcrValues)
+	suite.Equal(acrs, result.AcrValues)
 }
 
 // --- Helper tests ---
@@ -549,7 +540,8 @@ func (suite *InboundClientStoreTestSuite) TestCreateProfile() {
 		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
 		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryCreateInboundClient,
 			mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-			mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+			mock.Anything, mock.Anything).
 			Return(int64(1), nil).Once()
 
 		err := suite.store.CreateInboundClient(context.Background(), client)
@@ -571,7 +563,7 @@ func (suite *InboundClientStoreTestSuite) TestCreateOAuthProfile() {
 		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryCreateOAuthProfile,
 			testEntityID, mock.Anything, testServerID).Return(int64(1), nil).Once()
 
-		err := suite.store.CreateOAuthProfile(context.Background(), testEntityID, &inboundmodel.OAuthProfileData{})
+		err := suite.store.CreateOAuthProfile(context.Background(), testEntityID, &inboundmodel.OAuthProfile{})
 		suite.NoError(err)
 	})
 }
@@ -583,7 +575,8 @@ func (suite *InboundClientStoreTestSuite) TestUpdateProfile() {
 		suite.mockDBProvider.On("GetConfigDBClient").Return(suite.mockDBClient, nil).Once()
 		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryUpdateInboundClientByEntityID,
 			mock.Anything, mock.Anything, mock.Anything, mock.Anything,
-			mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			mock.Anything, mock.Anything, mock.Anything, mock.Anything,
+			mock.Anything, mock.Anything).
 			Return(int64(1), nil).Once()
 
 		err := suite.store.UpdateInboundClient(context.Background(), client)
@@ -597,7 +590,7 @@ func (suite *InboundClientStoreTestSuite) TestUpdateOAuthProfile() {
 		suite.mockDBClient.On("ExecuteContext", mock.Anything, queryUpdateOAuthProfileByEntityID,
 			testEntityID, mock.Anything, testServerID).Return(int64(1), nil).Once()
 
-		err := suite.store.UpdateOAuthProfile(context.Background(), testEntityID, &inboundmodel.OAuthProfileData{})
+		err := suite.store.UpdateOAuthProfile(context.Background(), testEntityID, &inboundmodel.OAuthProfile{})
 		suite.NoError(err)
 	})
 }
@@ -632,6 +625,8 @@ func (suite *InboundClientStoreTestSuite) TestGetInboundClientList() {
 				"auth_flow_id":                 "flow1",
 				"registration_flow_id":         "reg1",
 				"is_registration_flow_enabled": "1",
+				"recovery_flow_id":             "recovery1",
+				"is_recovery_flow_enabled":     "1",
 				"theme_id":                     nil,
 				"layout_id":                    nil,
 				"properties":                   nil,
@@ -645,6 +640,8 @@ func (suite *InboundClientStoreTestSuite) TestGetInboundClientList() {
 		suite.NoError(err)
 		suite.Len(profiles, 1)
 		suite.Equal("app1", profiles[0].ID)
+		suite.Equal("recovery1", profiles[0].RecoveryFlowID)
+		suite.True(profiles[0].IsRecoveryFlowEnabled)
 	})
 }
 
@@ -655,6 +652,8 @@ func (suite *InboundClientStoreTestSuite) TestGetInboundClientByEntityID() {
 			"auth_flow_id":                 "flow1",
 			"registration_flow_id":         "reg1",
 			"is_registration_flow_enabled": "1",
+			"recovery_flow_id":             "recovery1",
+			"is_recovery_flow_enabled":     "1",
 			"theme_id":                     nil,
 			"layout_id":                    nil,
 			"properties":                   nil,
@@ -667,6 +666,8 @@ func (suite *InboundClientStoreTestSuite) TestGetInboundClientByEntityID() {
 		suite.NoError(err)
 		suite.NotNil(p)
 		suite.Equal("app1", p.ID)
+		suite.Equal("recovery1", p.RecoveryFlowID)
+		suite.True(p.IsRecoveryFlowEnabled)
 	})
 
 	suite.Run("returns ErrInboundClientNotFound when not found", func() {
@@ -683,7 +684,7 @@ func (suite *InboundClientStoreTestSuite) TestGetInboundClientByEntityID() {
 
 func (suite *InboundClientStoreTestSuite) TestGetOAuthProfileByEntityID() {
 	suite.Run("returns OAuth config when found", func() {
-		cfg := inboundmodel.OAuthProfileData{RedirectURIs: []string{"https://example.com/cb"}, PKCERequired: true}
+		cfg := inboundmodel.OAuthProfile{RedirectURIs: []string{"https://example.com/cb"}, PKCERequired: true}
 		cfgBytes, _ := json.Marshal(cfg)
 		mockRow := map[string]interface{}{
 			"entity_id":    testEntityID,
@@ -696,8 +697,7 @@ func (suite *InboundClientStoreTestSuite) TestGetOAuthProfileByEntityID() {
 		result, err := suite.store.GetOAuthProfileByEntityID(context.Background(), testEntityID)
 		suite.NoError(err)
 		suite.NotNil(result)
-		suite.Equal(testEntityID, result.AppID)
-		suite.True(result.OAuthProfile.PKCERequired)
+		suite.True(result.PKCERequired)
 	})
 
 	suite.Run("returns ErrInboundClientNotFound when not found", func() {

@@ -29,18 +29,20 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	appmodel "github.com/asgardeo/thunder/internal/application/model"
-	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	consentauthn "github.com/asgardeo/thunder/internal/authn/consent"
-	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
-	"github.com/asgardeo/thunder/internal/consent"
-	"github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/flow/core"
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	i18ncore "github.com/asgardeo/thunder/internal/system/i18n/core"
-	"github.com/asgardeo/thunder/tests/mocks/authn/consentenforcermock"
-	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
+	appmodel "github.com/thunder-id/thunderid/internal/application/model"
+	authncm "github.com/thunder-id/thunderid/internal/authn/common"
+	consentauthn "github.com/thunder-id/thunderid/internal/authn/consent"
+	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
+	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
+	"github.com/thunder-id/thunderid/internal/consent"
+	"github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/internal/flow/core"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	i18ncore "github.com/thunder-id/thunderid/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/tests/mocks/authn/consentenforcermock"
+	"github.com/thunder-id/thunderid/tests/mocks/authnprovider/managermock"
+	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 )
 
 const (
@@ -50,6 +52,7 @@ const (
 type ConsentExecutorTestSuite struct {
 	suite.Suite
 	mockConsentEnforcer *consentenforcermock.ConsentEnforcerServiceInterfaceMock
+	mockAuthnProvider   *managermock.AuthnProviderManagerInterfaceMock
 	mockFlowFactory     *coremock.FlowFactoryInterfaceMock
 	executor            *consentExecutor
 }
@@ -60,13 +63,14 @@ func TestConsentExecutorTestSuite(t *testing.T) {
 
 func (suite *ConsentExecutorTestSuite) SetupTest() {
 	suite.mockConsentEnforcer = consentenforcermock.NewConsentEnforcerServiceInterfaceMock(suite.T())
+	suite.mockAuthnProvider = managermock.NewAuthnProviderManagerInterfaceMock(suite.T())
 	suite.mockFlowFactory = coremock.NewFlowFactoryInterfaceMock(suite.T())
 
 	mockExec := createMockExecutorWithInputs(suite.T())
 	suite.mockFlowFactory.On("CreateExecutor", ExecutorNameConsent, common.ExecutorTypeUtility,
 		mock.AnythingOfType("[]common.Input"), mock.AnythingOfType("[]common.Input")).Return(mockExec)
 
-	suite.executor = newConsentExecutor(suite.mockFlowFactory, suite.mockConsentEnforcer)
+	suite.executor = newConsentExecutor(suite.mockFlowFactory, suite.mockConsentEnforcer, suite.mockAuthnProvider)
 }
 
 // createMockExecutorWithInputs creates a mock executor that supports ValidatePrerequisites and HasRequiredInputs
@@ -90,7 +94,7 @@ func buildConsentNodeContext() *core.NodeContext {
 	return &core.NodeContext{
 		Context:     context.Background(),
 		ExecutionID: "flow-123",
-		AppID:       "app-123",
+		EntityID:    "app-123",
 		AuthenticatedUser: authncm.AuthenticatedUser{
 			IsAuthenticated: true,
 			UserID:          testUserID,
@@ -106,8 +110,10 @@ func buildConsentNodeContext() *core.NodeContext {
 		RuntimeData:    map[string]string{},
 		NodeProperties: map[string]interface{}{},
 		Application: appmodel.Application{
-			Assertion: &inboundmodel.AssertionConfig{
-				UserAttributes: []string{"email", "phone"},
+			InboundAuthProfile: inboundmodel.InboundAuthProfile{
+				Assertion: &inboundmodel.AssertionConfig{
+					UserAttributes: []string{"email", "phone"},
+				},
 			},
 		},
 	}
@@ -1012,8 +1018,8 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_AugmentedAttributes_
 }
 
 func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_AugmentedAttributes_NilBaseWithSpecialClaims() {
-	// Even with a nil AvailableAttributes base, special claim keys from the authenticated
-	// user context must be injected and forwarded to ResolveConsent.
+	// With a nil AvailableAttributes base (local/credential-based auth), nil must be forwarded
+	// to ResolveConsent so profile-presence filtering is skipped entirely.
 	ctx := buildConsentNodeContext()
 	ctx.AuthenticatedUser.AvailableAttributes = nil
 	ctx.AuthenticatedUser.UserType = testUserTypeInternal
@@ -1027,12 +1033,7 @@ func (suite *ConsentExecutorTestSuite) TestExecute_NoInputs_AugmentedAttributes_
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything,
 		mock.Anything, mock.Anything,
 		mock.MatchedBy(func(aa *authnprovidercm.AttributesResponse) bool {
-			if aa == nil {
-				return false
-			}
-			_, hasUserType := aa.Attributes["userType"]
-			_, hasGroups := aa.Attributes["groups"]
-			return hasUserType && hasGroups
+			return aa == nil
 		})).
 		Return(nil, nil)
 
@@ -1158,19 +1159,13 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Nil
 	ctx.AuthenticatedUser.AvailableAttributes = nil
 	ctx.AuthenticatedUser.UserType = testUserTypeInternal
 	ctx.AuthenticatedUser.OUID = "ou-123"
+	// AuthUser is zero-value (not authenticated) — falls through to legacy path which is also nil
 
-	result := buildAugmentedAvailableAttributes(ctx)
+	result := suite.executor.buildAugmentedAvailableAttributes(ctx)
 
-	// Even with a nil base we should still inject the special claim keys that are known
-	// to be present from the authenticated user context.
-	assert.NotNil(suite.T(), result)
-	assert.Contains(suite.T(), result.Attributes, "userType")
-	assert.Contains(suite.T(), result.Attributes, "ouId")
-	assert.Contains(suite.T(), result.Attributes, "ouName")
-	assert.Contains(suite.T(), result.Attributes, "ouHandle")
-	assert.Contains(suite.T(), result.Attributes, "groups")
-	assert.Len(suite.T(), result.Attributes, 5)
-	assert.Nil(suite.T(), result.Verifications)
+	// Both AuthUser and AuthenticatedUser.AvailableAttributes are nil — return nil so
+	// the consent enforcer skips profile-presence filtering entirely.
+	assert.Nil(suite.T(), result)
 }
 
 func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_EmptyAttributes() {
@@ -1180,8 +1175,9 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Emp
 	}
 	ctx.AuthenticatedUser.UserType = testUserTypeInternal
 	ctx.AuthenticatedUser.OUID = "ou-123"
+	// AuthUser is zero-value (not authenticated) — uses legacy path
 
-	result := buildAugmentedAvailableAttributes(ctx)
+	result := suite.executor.buildAugmentedAvailableAttributes(ctx)
 
 	// Even with an empty base we should inject special claim keys so they survive the
 	// consent profile-presence filter.
@@ -1207,8 +1203,9 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_NoS
 			"phone": nil,
 		},
 	}
+	// AuthUser is zero-value (not authenticated) — uses legacy path
 
-	result := buildAugmentedAvailableAttributes(ctx)
+	result := suite.executor.buildAugmentedAvailableAttributes(ctx)
 
 	assert.NotNil(suite.T(), result)
 	// No special keys should be added; only original keys remain
@@ -1256,8 +1253,9 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Wit
 					"email": nil,
 				},
 			}
+			// AuthUser is zero-value (not authenticated) — uses legacy path
 
-			result := buildAugmentedAvailableAttributes(ctx)
+			result := suite.executor.buildAugmentedAvailableAttributes(ctx)
 
 			assert.NotNil(suite.T(), result)
 			for _, key := range tc.expectedContains {
@@ -1280,8 +1278,9 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Wit
 			"email": nil,
 		},
 	}
+	// AuthUser is zero-value (not authenticated) — uses legacy path
 
-	result := buildAugmentedAvailableAttributes(ctx)
+	result := suite.executor.buildAugmentedAvailableAttributes(ctx)
 
 	assert.NotNil(suite.T(), result)
 	assert.Contains(suite.T(), result.Attributes, "groups")
@@ -1300,8 +1299,9 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_All
 			"email": nil,
 		},
 	}
+	// AuthUser is zero-value (not authenticated) — uses legacy path
 
-	result := buildAugmentedAvailableAttributes(ctx)
+	result := suite.executor.buildAugmentedAvailableAttributes(ctx)
 
 	assert.NotNil(suite.T(), result)
 	assert.Contains(suite.T(), result.Attributes, "email")
@@ -1325,9 +1325,10 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Doe
 			"phone": nil,
 		},
 	}
+	// AuthUser is zero-value (not authenticated) — uses legacy path
 
 	originalLen := len(ctx.AuthenticatedUser.AvailableAttributes.Attributes)
-	_ = buildAugmentedAvailableAttributes(ctx)
+	_ = suite.executor.buildAugmentedAvailableAttributes(ctx)
 
 	// The original map must not have been modified
 	assert.Len(suite.T(), ctx.AuthenticatedUser.AvailableAttributes.Attributes, originalLen)
@@ -1347,10 +1348,192 @@ func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_Pre
 			"v-1": {},
 		},
 	}
+	// AuthUser is zero-value (not authenticated) — uses legacy path
 
-	result := buildAugmentedAvailableAttributes(ctx)
+	result := suite.executor.buildAugmentedAvailableAttributes(ctx)
 
 	assert.NotNil(suite.T(), result)
 	// Verifications reference is preserved (shallow copy)
 	assert.Equal(suite.T(), ctx.AuthenticatedUser.AvailableAttributes.Verifications, result.Verifications)
+}
+
+// ----- BasicAuth + Consent integration-style test -----
+
+func (suite *ConsentExecutorTestSuite) TestExecute_BasicAuth_NilAvailableAttributes_PromptsConsent() {
+	// Simulates a BasicAuthExecutor-authenticated user where AuthUser has been populated by the
+	// auth provider (non-zero userID makes IsAuthenticated() true) and GetUserAvailableAttributes
+	// returns the provider's attribute set. ResolveConsent must receive that non-nil map so
+	// profile-presence filtering works correctly.
+	var authUser authnprovidermgr.AuthUser
+	_ = authUser.UnmarshalJSON([]byte(`{"userId":"user-123","userType":"","ouId":""}`))
+
+	ctx := buildConsentNodeContext()
+	ctx.AuthenticatedUser.AvailableAttributes = nil
+	ctx.AuthUser = authUser
+	ctx.Application.Assertion = &inboundmodel.AssertionConfig{
+		UserAttributes: []string{"given_name", "email"},
+	}
+
+	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
+		On("ValidatePrerequisites", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(true)
+	suite.executor.ExecutorInterface.(*coremock.ExecutorInterfaceMock).
+		On("HasRequiredInputs", ctx, mock.AnythingOfType("*common.ExecutorResponse")).Return(false)
+
+	authUserAttrs := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
+			"given_name": {},
+			"email":      {},
+		},
+	}
+	suite.mockAuthnProvider.On("GetUserAvailableAttributes", mock.Anything, authUser).
+		Return(authUserAttrs, (*serviceerror.ServiceError)(nil))
+
+	promptData := &consentauthn.ConsentPromptData{
+		Purposes: []consentauthn.ConsentPurposePrompt{
+			{
+				PurposeName: "app:app-123:attrs",
+				PurposeID:   "purpose-1",
+				Optional:    []string{"given_name", "email"},
+			},
+		},
+	}
+
+	suite.mockConsentEnforcer.On("ResolveConsent",
+		mock.Anything, "default", "app-123", "user-123",
+		[]string{}, []string{"given_name", "email"},
+		mock.MatchedBy(func(aa *authnprovidercm.AttributesResponse) bool {
+			if aa == nil {
+				return false
+			}
+			_, hasGivenName := aa.Attributes["given_name"]
+			_, hasEmail := aa.Attributes["email"]
+			_, hasGroups := aa.Attributes["groups"]
+			return hasGivenName && hasEmail && hasGroups
+		})).
+		Return(promptData, nil)
+
+	resp, err := suite.executor.Execute(ctx)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), resp)
+	assert.Equal(suite.T(), common.ExecUserInputRequired, resp.Status,
+		"Executor must prompt for consent when AuthUser is authenticated (BasicAuth)")
+	assert.NotEmpty(suite.T(), resp.AdditionalData[common.DataConsentPrompt])
+	assert.NotNil(suite.T(), resp.ForwardedData[common.ForwardedDataKeyConsentPrompt])
+}
+
+// ----- buildAugmentedAvailableAttributes: AuthUser path tests -----
+
+func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_AuthUserFallback() {
+	// When AuthenticatedUser.AvailableAttributes is nil but AuthUser is authenticated,
+	// the method should use GetUserAvailableAttributes and return augmented attributes.
+	var authUser authnprovidermgr.AuthUser
+	_ = authUser.UnmarshalJSON([]byte(`{"userId":"user-123","userType":"","ouId":""}`))
+
+	ctx := buildConsentNodeContext()
+	ctx.AuthenticatedUser.AvailableAttributes = nil
+	ctx.AuthenticatedUser.UserID = testUserID
+	ctx.AuthUser = authUser
+
+	authUserAttrs := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
+			"email": {},
+			"phone": {},
+		},
+	}
+	suite.mockAuthnProvider.On("GetUserAvailableAttributes", mock.Anything, authUser).
+		Return(authUserAttrs, (*serviceerror.ServiceError)(nil))
+
+	result := suite.executor.buildAugmentedAvailableAttributes(ctx)
+
+	assert.NotNil(suite.T(), result)
+	assert.Contains(suite.T(), result.Attributes, "email")
+	assert.Contains(suite.T(), result.Attributes, "phone")
+	assert.Contains(suite.T(), result.Attributes, "groups")
+}
+
+func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_MergesBothSources() {
+	// When both AuthUser and AuthenticatedUser.AvailableAttributes are set, the resulting
+	// attribute set should contain entries from both sources, with AuthUser entries taking
+	// priority on key collision.
+	var authUser authnprovidermgr.AuthUser
+	_ = authUser.UnmarshalJSON([]byte(`{"userId":"user-123","userType":"","ouId":""}`))
+
+	ctx := buildConsentNodeContext()
+	ctx.AuthenticatedUser.UserID = "user-123"
+	legacyEmailAttr := &authnprovidercm.AttributeResponse{Value: "legacy@example.com"}
+	ctx.AuthenticatedUser.AvailableAttributes = &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
+			"legacy_attr": {},
+			"email":       legacyEmailAttr,
+		},
+	}
+	ctx.AuthUser = authUser
+
+	authUserEmailAttr := &authnprovidercm.AttributeResponse{Value: "authuser@example.com"}
+	authUserAttrs := &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
+			"email": authUserEmailAttr,
+			"phone": {},
+		},
+	}
+	suite.mockAuthnProvider.On("GetUserAvailableAttributes", mock.Anything, authUser).
+		Return(authUserAttrs, (*serviceerror.ServiceError)(nil))
+
+	result := suite.executor.buildAugmentedAvailableAttributes(ctx)
+
+	assert.NotNil(suite.T(), result)
+	assert.Contains(suite.T(), result.Attributes, "phone", "AuthUser-only attribute should be merged in")
+	assert.Contains(suite.T(), result.Attributes, "legacy_attr",
+		"AuthenticatedUser-only entries should be preserved alongside AuthUser entries")
+	assert.Same(suite.T(), authUserEmailAttr, result.Attributes["email"],
+		"On key collision, AuthUser attribute should take priority over AuthenticatedUser")
+	assert.Contains(suite.T(), result.Attributes, "groups")
+}
+
+func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_AuthUserError_FallsBackToLegacy() {
+	// When GetUserAvailableAttributes fails, should fall back to AuthenticatedUser.AvailableAttributes.
+	var authUser authnprovidermgr.AuthUser
+	_ = authUser.UnmarshalJSON([]byte(`{"userId":"user-123","userType":"","ouId":""}`))
+
+	ctx := buildConsentNodeContext()
+	ctx.AuthenticatedUser.UserID = testUserID
+	ctx.AuthenticatedUser.AvailableAttributes = &authnprovidercm.AttributesResponse{
+		Attributes: map[string]*authnprovidercm.AttributeResponse{
+			"legacy_attr": {},
+		},
+	}
+	ctx.AuthUser = authUser
+
+	suite.mockAuthnProvider.On("GetUserAvailableAttributes", mock.Anything, authUser).
+		Return((*authnprovidercm.AttributesResponse)(nil), &serviceerror.ServiceError{
+			Type: serviceerror.ServerErrorType,
+		})
+
+	result := suite.executor.buildAugmentedAvailableAttributes(ctx)
+
+	assert.NotNil(suite.T(), result)
+	assert.Contains(suite.T(), result.Attributes, "legacy_attr",
+		"Should fall back to AuthenticatedUser.AvailableAttributes on GetUserAvailableAttributes error")
+	assert.Contains(suite.T(), result.Attributes, "groups")
+}
+
+func (suite *ConsentExecutorTestSuite) TestBuildAugmentedAvailableAttributes_AuthUserError_BothNil_ReturnsNil() {
+	// When GetUserAvailableAttributes fails and AuthenticatedUser.AvailableAttributes is also nil,
+	// should return nil so the consent enforcer skips profile-presence filtering.
+	var authUser authnprovidermgr.AuthUser
+	_ = authUser.UnmarshalJSON([]byte(`{"userId":"user-123","userType":"","ouId":""}`))
+
+	ctx := buildConsentNodeContext()
+	ctx.AuthenticatedUser.AvailableAttributes = nil
+	ctx.AuthUser = authUser
+
+	suite.mockAuthnProvider.On("GetUserAvailableAttributes", mock.Anything, authUser).
+		Return((*authnprovidercm.AttributesResponse)(nil), &serviceerror.ServiceError{
+			Type: serviceerror.ServerErrorType,
+		})
+
+	result := suite.executor.buildAugmentedAvailableAttributes(ctx)
+
+	assert.Nil(suite.T(), result)
 }

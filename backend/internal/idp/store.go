@@ -20,14 +20,15 @@ package idp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
-	"github.com/asgardeo/thunder/internal/system/cmodels"
-	"github.com/asgardeo/thunder/internal/system/config"
-	dbmodel "github.com/asgardeo/thunder/internal/system/database/model"
-	"github.com/asgardeo/thunder/internal/system/database/provider"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/transaction"
+	"github.com/thunder-id/thunderid/internal/system/cmodels"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	dbmodel "github.com/thunder-id/thunderid/internal/system/database/model"
+	"github.com/thunder-id/thunderid/internal/system/database/provider"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/transaction"
 )
 
 var getDBProvider = provider.GetDBProvider
@@ -39,6 +40,7 @@ type idpStoreInterface interface {
 	GetIdentityProviderListCount(ctx context.Context) (int, error)
 	GetIdentityProvider(ctx context.Context, idpID string) (*IDPDTO, error)
 	GetIdentityProviderByName(ctx context.Context, idpName string) (*IDPDTO, error)
+	GetIdentityProviderByIssuer(ctx context.Context, issuer string) (*IDPDTO, error)
 	UpdateIdentityProvider(ctx context.Context, idp *IDPDTO) error
 	DeleteIdentityProvider(ctx context.Context, idpID string) error
 }
@@ -156,6 +158,74 @@ func (s *idpStore) GetIdentityProvider(ctx context.Context, id string) (*IDPDTO,
 // GetIdentityProviderByName retrieves a specific idp by its name from the database.
 func (s *idpStore) GetIdentityProviderByName(ctx context.Context, name string) (*IDPDTO, error) {
 	return s.getIDP(ctx, queryGetIdentityProviderByName, name)
+}
+
+// GetIdentityProviderByIssuer retrieves a specific idp by its issuer property from the database.
+func (s *idpStore) GetIdentityProviderByIssuer(ctx context.Context, issuer string) (*IDPDTO, error) {
+	dbClient, err := s.dbProvider.GetConfigDBClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get database client: %w", err)
+	}
+
+	// For Postgres the $1 placeholder expects a JSON fragment; for SQLite it expects the raw string value.
+	// Build the JSON fragment safely via json.Marshal to avoid injection.
+	type issuerEntry struct {
+		Name  string `json:"name"`
+		Value string `json:"value"`
+	}
+	pgParam, err := json.Marshal([]issuerEntry{{Name: "issuer", Value: issuer}})
+	if err != nil {
+		return nil, fmt.Errorf("failed to build issuer query parameter: %w", err)
+	}
+
+	// Select the right argument for the dialect. The DBClient picks the correct query string
+	// internally, but we must supply the matching arg for that query's $1 placeholder.
+	var param string
+	if config.GetServerRuntime().Config.Database.Config.Type == "postgres" {
+		param = string(pgParam)
+	} else {
+		param = issuer
+	}
+
+	results, err := dbClient.QueryContext(ctx, queryGetIdentityProviderByIssuer, param, s.deploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+	if len(results) == 0 {
+		return nil, ErrIDPNotFound
+	}
+
+	row := results[0]
+
+	basicIDP, err := buildIDPFromResultRow(row)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build idp from result row: %w", err)
+	}
+
+	var properties []cmodels.Property
+	var propertiesJSON string
+
+	switch v := row["properties"].(type) {
+	case string:
+		propertiesJSON = v
+	case []byte:
+		propertiesJSON = string(v)
+	}
+
+	if propertiesJSON != "" {
+		properties, err = cmodels.DeserializePropertiesFromJSON(propertiesJSON)
+		if err != nil {
+			return nil, fmt.Errorf("failed to deserialize properties from JSON: %w", err)
+		}
+	}
+
+	return &IDPDTO{
+		ID:          basicIDP.ID,
+		Name:        basicIDP.Name,
+		Description: basicIDP.Description,
+		Type:        basicIDP.Type,
+		Properties:  properties,
+	}, nil
 }
 
 // getIDP retrieves an IDP based on the provided query and identifier.

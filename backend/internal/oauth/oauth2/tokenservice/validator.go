@@ -19,33 +19,38 @@
 package tokenservice
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"time"
 
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	oauth2model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/utils"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/jose/jwt"
+	"github.com/thunder-id/thunderid/internal/idp"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oauth2model "github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/utils"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
 )
 
 // TokenValidatorInterface defines the interface for validating tokens.
 type TokenValidatorInterface interface {
 	ValidateAccessToken(token string) (*AccessTokenClaims, error)
 	ValidateRefreshToken(token string, clientID string) (*RefreshTokenClaims, error)
-	ValidateSubjectToken(token string, oauthApp *inboundmodel.OAuthClient) (*SubjectTokenClaims, error)
+	ValidateSubjectToken(ctx context.Context, token string, oauthApp *inboundmodel.OAuthClient) (
+		*SubjectTokenClaims, error)
 }
 
 // TokenValidator implements TokenValidatorInterface.
 type tokenValidator struct {
 	jwtService jwt.JWTServiceInterface
+	idpService idp.IDPServiceInterface
 }
 
 // NewTokenValidator creates a new TokenValidator instance.
-func newTokenValidator(jwtService jwt.JWTServiceInterface) TokenValidatorInterface {
+func newTokenValidator(jwtService jwt.JWTServiceInterface, idpService idp.IDPServiceInterface) TokenValidatorInterface {
 	return &tokenValidator{
 		jwtService: jwtService,
+		idpService: idpService,
 	}
 }
 
@@ -159,6 +164,7 @@ func (tv *tokenValidator) ValidateRefreshToken(token string, clientID string) (*
 
 // ValidateSubjectToken validates a subject token for token exchange.
 func (tv *tokenValidator) ValidateSubjectToken(
+	ctx context.Context,
 	token string,
 	oauthApp *inboundmodel.OAuthClient,
 ) (*SubjectTokenClaims, error) {
@@ -172,14 +178,79 @@ func (tv *tokenValidator) ValidateSubjectToken(
 		return nil, fmt.Errorf("subject token is missing 'iss' claim: %w", err)
 	}
 
-	if err := validateIssuer(iss, oauthApp); err != nil {
-		return nil, err
+	// Try the server's own issuer first.
+	if isSelfIssuer(iss) {
+		if err := tv.verifyTokenSignatureByIssuer(token, iss); err != nil {
+			return nil, fmt.Errorf("invalid subject token signature: %w", err)
+		}
+		return tv.extractSubjectTokenClaims(token, iss, claims, oauthApp)
 	}
 
-	if err := tv.verifyTokenSignatureByIssuer(token, iss, oauthApp); err != nil {
-		return nil, fmt.Errorf("invalid subject token signature: %w", err)
+	// Not a server-issued token — try external IDP issuers.
+	issuerInfo, resolveErr := tv.resolveExternalIssuer(ctx, iss)
+	if resolveErr != nil {
+		return nil, fmt.Errorf("failed to exchange token for issuer %q: %w", iss, resolveErr)
 	}
 
+	svcErr := tv.jwtService.VerifyJWTSignatureWithJWKS(token, issuerInfo.JWKSURL)
+	if svcErr != nil {
+		return nil, fmt.Errorf("invalid subject token signature: %v", svcErr.Error)
+	}
+
+	// Validate that the external token's audience contains this server's issuer.
+	serverIssuer := config.GetServerRuntime().Config.JWT.Issuer
+	auds, audErr := extractAudiences(claims)
+	if audErr != nil {
+		return nil, fmt.Errorf("failed to extract audience from external token: %w", audErr)
+	}
+	if !slices.Contains(auds, serverIssuer) {
+		return nil, fmt.Errorf(
+			"external token audience does not contain expected server issuer %q", serverIssuer)
+	}
+
+	return tv.extractSubjectTokenClaims(token, iss, claims, oauthApp)
+}
+
+// tokenExchangeIssuerInfo holds the resolved properties needed to validate an external token.
+type tokenExchangeIssuerInfo struct {
+	Issuer  string
+	JWKSURL string
+}
+
+// resolveExternalIssuer looks up an external IDP whose issuer property matches the given issuer.
+func (tv *tokenValidator) resolveExternalIssuer(ctx context.Context, issuer string) (
+	*tokenExchangeIssuerInfo, error) {
+	if tv.idpService == nil {
+		return nil, fmt.Errorf("no external issuers configured")
+	}
+
+	idpDTO, svcErr := tv.idpService.GetIdentityProviderByIssuer(ctx, issuer)
+	if svcErr != nil {
+		return nil, fmt.Errorf("no external issuer configured for '%s'", issuer)
+	}
+
+	if idp.GetPropertyValue(idpDTO.Properties, idp.PropTokenExchangeEnabled) != "true" {
+		return nil, fmt.Errorf("token exchange not enabled for issuer '%s'", issuer)
+	}
+
+	jwksURL := idp.GetPropertyValue(idpDTO.Properties, idp.PropJwksEndpoint)
+	if jwksURL == "" {
+		return nil, fmt.Errorf("no JWKS endpoint configured for issuer '%s'", issuer)
+	}
+
+	return &tokenExchangeIssuerInfo{
+		Issuer:  issuer,
+		JWKSURL: jwksURL,
+	}, nil
+}
+
+// extractSubjectTokenClaims extracts and validates claims from a decoded subject token.
+func (tv *tokenValidator) extractSubjectTokenClaims(
+	_ string,
+	iss string,
+	claims map[string]interface{},
+	oauthApp *inboundmodel.OAuthClient,
+) (*SubjectTokenClaims, error) {
 	sub, err := extractStringClaim(claims, "sub")
 	if err != nil {
 		return nil, fmt.Errorf("missing or invalid 'sub' claim: %w", err)
@@ -190,7 +261,6 @@ func (tv *tokenValidator) ValidateSubjectToken(
 		return nil, err
 	}
 
-	// Determine if this is an auth assertion
 	isAuthAssertion := tv.isAuthAssertion(claims)
 
 	// Extract and validate audience claim
@@ -208,7 +278,7 @@ func (tv *tokenValidator) ValidateSubjectToken(
 		}
 
 		defaultAudience := config.GetServerRuntime().Config.JWT.Audience
-		clientAppID := oauthApp.AppID
+		clientAppID := oauthApp.ID
 
 		if !slices.Contains([]string{defaultAudience, clientAppID}, auds[0]) {
 			return nil, fmt.Errorf("auth assertion audience mismatch")
@@ -245,19 +315,15 @@ func (tv *tokenValidator) ValidateSubjectToken(
 func (tv *tokenValidator) verifyTokenSignatureByIssuer(
 	token string,
 	issuer string,
-	oauthApp *inboundmodel.OAuthClient,
 ) error {
-	issuers := getValidIssuers(oauthApp)
-	if issuers[issuer] {
-		svcErr := tv.jwtService.VerifyJWTSignature(token)
-		if svcErr != nil {
-			return fmt.Errorf("failed to verify token signature: %v", svcErr.Error)
-		}
-		return nil
+	if !isSelfIssuer(issuer) {
+		return fmt.Errorf("no verification method configured for issuer: %s", issuer)
 	}
-
-	// TODO: Implement JWKS-based verification for external federated issuers
-	return fmt.Errorf("no verification method configured for issuer: %s", issuer)
+	svcErr := tv.jwtService.VerifyJWTSignature(token)
+	if svcErr != nil {
+		return fmt.Errorf("failed to verify token signature: %v", svcErr.Error)
+	}
+	return nil
 }
 
 // validateTimeClaims validates time-based claims (exp, nbf).

@@ -140,11 +140,11 @@ export function getPublicClientCaption(flags: OAuth2Flags, config: OAuth2Config)
     return flags.hasClientCredentialsGrant
       ? [
           'applications:edit.advanced.publicClient.incompatibleWithClientCredentials',
-          'Not available for machine-to-machine apps.',
+          'Not available for machine-to-machine clients.',
         ]
       : [
           'applications:edit.advanced.publicClient.requiresAuthorizationCode',
-          'Available only for apps using the authorization code flow.',
+          'Available only for clients using the authorization code flow.',
         ];
   }
   return config.publicClient

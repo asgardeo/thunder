@@ -21,8 +21,8 @@ package resource
 import (
 	"errors"
 
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 )
 
 // Client errors for resource management operations.
@@ -299,6 +299,19 @@ var (
 		ErrorDescription: core.I18nMessage{
 			Key:          "error.resourceservice.result_limit_exceeded_in_composite_mode_description",
 			DefaultValue: "The total number of records exceeds the maximum limit in composite mode",
+		},
+	}
+	// ErrorResourceServerIDConflict is returned when a resource server with the specified ID already exists.
+	ErrorResourceServerIDConflict = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "RES-1023",
+		Error: core.I18nMessage{
+			Key:          "error.resourceservice.resource_server_id_conflict",
+			DefaultValue: "Resource server ID conflict",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.resourceservice.resource_server_id_conflict_description",
+			DefaultValue: "A resource server with the specified ID already exists",
 		},
 	}
 	// ErrorDelimiterInResourceServerHandle is returned when the resource server handle contains the delimiter.

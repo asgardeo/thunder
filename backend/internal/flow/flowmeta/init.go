@@ -21,23 +21,26 @@ package flowmeta
 import (
 	"net/http"
 
-	"github.com/asgardeo/thunder/internal/application"
-	"github.com/asgardeo/thunder/internal/design/resolve"
-	"github.com/asgardeo/thunder/internal/ou"
-	i18nmgt "github.com/asgardeo/thunder/internal/system/i18n/mgt"
-	"github.com/asgardeo/thunder/internal/system/middleware"
+	"github.com/thunder-id/thunderid/internal/design/resolve"
+	"github.com/thunder-id/thunderid/internal/entityprovider"
+	"github.com/thunder-id/thunderid/internal/inboundclient"
+	"github.com/thunder-id/thunderid/internal/ou"
+	i18nmgt "github.com/thunder-id/thunderid/internal/system/i18n/mgt"
+	"github.com/thunder-id/thunderid/internal/system/middleware"
 )
 
 // Initialize creates and configures the flow metadata service components.
 func Initialize(
 	mux *http.ServeMux,
-	applicationService application.ApplicationServiceInterface,
+	inboundClientService inboundclient.InboundClientServiceInterface,
+	entityProvider entityprovider.EntityProviderInterface,
 	ouService ou.OrganizationUnitServiceInterface,
 	designResolve resolve.DesignResolveServiceInterface,
 	i18nService i18nmgt.I18nServiceInterface,
 ) FlowMetaServiceInterface {
 	// Create service instance
-	flowMetaService := newFlowMetaService(applicationService, ouService, designResolve, i18nService)
+	flowMetaService := newFlowMetaService(
+		inboundClientService, entityProvider, ouService, designResolve, i18nService)
 
 	// Create handler and register routes
 	handler := newFlowMetaHandler(flowMetaService)

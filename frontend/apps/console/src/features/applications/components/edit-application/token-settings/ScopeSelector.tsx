@@ -37,6 +37,10 @@ interface ScopeSelectorProps {
    * Callback fired whenever the scope list changes.
    */
   onScopesChange: (scopes: string[]) => void;
+  /**
+   * Singular noun used to refer to the entity in user-visible copy (default: 'application').
+   */
+  entityLabel?: string;
 }
 
 /**
@@ -47,7 +51,7 @@ interface ScopeSelectorProps {
  * - An input + Add button lets users add any custom scope name.
  * All changes are reflected immediately via `onScopesChange`.
  */
-export default function ScopeSelector({scopes, onScopesChange}: ScopeSelectorProps) {
+export default function ScopeSelector({scopes, onScopesChange, entityLabel = 'application'}: ScopeSelectorProps) {
   const {t} = useTranslation();
   const [customScopeInput, setCustomScopeInput] = useState('');
   const [customScopeError, setCustomScopeError] = useState<string | null>(null);
@@ -145,7 +149,9 @@ export default function ScopeSelector({scopes, onScopesChange}: ScopeSelectorPro
         {t('applications:edit.token.scopes.title', 'Scopes')}
       </Typography>
       <Typography variant="body2" color="text.disabled" sx={{mb: 2}}>
-        {t('applications:edit.token.scopes.hint', 'Toggle the OAuth2 scopes available to this application.')}
+        {t('applications:edit.token.scopes.hint', 'Toggle the OAuth2 scopes available to this {{entity}}.', {
+          entity: entityLabel,
+        })}
       </Typography>
 
       <Stack spacing={2}>

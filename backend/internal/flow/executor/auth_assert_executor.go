@@ -27,21 +27,21 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/asgardeo/thunder/internal/attributecache"
-	"github.com/asgardeo/thunder/internal/authn/assert"
-	authncm "github.com/asgardeo/thunder/internal/authn/common"
-	authnprovidercm "github.com/asgardeo/thunder/internal/authnprovider/common"
-	authnprovidermgr "github.com/asgardeo/thunder/internal/authnprovider/manager"
-	"github.com/asgardeo/thunder/internal/entityprovider"
-	"github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/flow/core"
-	oauth2const "github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/ou"
-	"github.com/asgardeo/thunder/internal/role"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/jose/jwt"
-	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/attributecache"
+	"github.com/thunder-id/thunderid/internal/authn/assert"
+	authncm "github.com/thunder-id/thunderid/internal/authn/common"
+	authnprovidercm "github.com/thunder-id/thunderid/internal/authnprovider/common"
+	authnprovidermgr "github.com/thunder-id/thunderid/internal/authnprovider/manager"
+	"github.com/thunder-id/thunderid/internal/entityprovider"
+	"github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/internal/flow/core"
+	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/role"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/jose/jwt"
+	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
 const (
@@ -209,7 +209,7 @@ func (a *authAssertExecutor) generateAuthAssertion(ctx *core.NodeContext, logger
 		}
 	}
 
-	jwtClaims["aud"] = ctx.AppID
+	jwtClaims["aud"] = ctx.EntityID
 	token, _, err := a.jwtService.GenerateJWT(
 		ctx.Context, tokenSub, iss, validityPeriod, jwtClaims, jwt.TokenTypeJWT, "")
 	if err != nil {
@@ -599,8 +599,8 @@ func (a *authAssertExecutor) buildGetAttributesMetadata(ctx *core.NodeContext) *
 	// Extract client IDs from InboundAuthConfig
 	var clientIDs []string
 	for _, inboundConfig := range ctx.Application.InboundAuthConfig {
-		if inboundConfig.OAuthAppConfig != nil && inboundConfig.OAuthAppConfig.ClientID != "" {
-			clientIDs = append(clientIDs, inboundConfig.OAuthAppConfig.ClientID)
+		if inboundConfig.OAuthConfig != nil && inboundConfig.OAuthConfig.ClientID != "" {
+			clientIDs = append(clientIDs, inboundConfig.OAuthConfig.ClientID)
 		}
 	}
 

@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
 type SchemaValidateTestSuite struct {
@@ -272,7 +272,7 @@ func (s *SchemaValidateTestSuite) TestValidate_SkipCredentialRequired() {
 	s.Require().False(ok, "missing required credential should fail when skipCredentialRequired=false")
 }
 
-func (s *SchemaValidateTestSuite) TestGetNonCredentialAttributes_RequiredOnly_ReturnsOnlyRequiredNonCredential() {
+func (s *SchemaValidateTestSuite) TestGetAttributes_NonCredentialRequiredOnly_ReturnsOnlyRequiredNonCredential() {
 	schema, err := CompileSchema(json.RawMessage(`{
 		"email":     {"type": "string", "required": true},
 		"firstName": {"type": "string", "required": true, "displayName": "First Name"},
@@ -281,7 +281,7 @@ func (s *SchemaValidateTestSuite) TestGetNonCredentialAttributes_RequiredOnly_Re
 	}`))
 	s.Require().NoError(err)
 
-	attrs := schema.GetNonCredentialAttributes(true)
+	attrs := schema.GetAttributes(false, true, true)
 
 	// Only email and firstName should be returned — password is credential, age is not required.
 	s.Len(attrs, 2)
@@ -306,27 +306,27 @@ func (s *SchemaValidateTestSuite) TestGetNonCredentialAttributes_RequiredOnly_Re
 	s.False(hasAge, "age is not required and must be excluded")
 }
 
-func (s *SchemaValidateTestSuite) TestGetNonCredentialAttributes_RequiredOnly_EmptySchema() {
+func (s *SchemaValidateTestSuite) TestGetAttributes_NonCredentialRequiredOnly_EmptySchema() {
 	schema := &Schema{properties: map[string]property{}}
 
-	attrs := schema.GetNonCredentialAttributes(true)
+	attrs := schema.GetAttributes(false, true, true)
 
 	s.Empty(attrs, "empty schema should return no required attributes")
 }
 
-func (s *SchemaValidateTestSuite) TestGetNonCredentialAttributes_RequiredOnly_AllCredential() {
+func (s *SchemaValidateTestSuite) TestGetAttributes_NonCredentialRequiredOnly_AllCredential() {
 	schema, err := CompileSchema(json.RawMessage(`{
 		"password": {"type": "string", "required": true, "credential": true},
 		"pin":      {"type": "string", "required": true, "credential": true}
 	}`))
 	s.Require().NoError(err)
 
-	attrs := schema.GetNonCredentialAttributes(true)
+	attrs := schema.GetAttributes(false, true, true)
 
 	s.Empty(attrs, "all required properties are credentials, result should be empty")
 }
 
-func (s *SchemaValidateTestSuite) TestGetNonCredentialAttributes_AllAttrs_IncludesOptional() {
+func (s *SchemaValidateTestSuite) TestGetAttributes_NonCredentialAllAttrs_IncludesOptional() {
 	schema, err := CompileSchema(json.RawMessage(`{
 		"email":     {"type": "string", "required": true},
 		"firstName": {"type": "string", "required": true, "displayName": "First Name"},
@@ -335,7 +335,7 @@ func (s *SchemaValidateTestSuite) TestGetNonCredentialAttributes_AllAttrs_Includ
 	}`))
 	s.Require().NoError(err)
 
-	attrs := schema.GetNonCredentialAttributes(false)
+	attrs := schema.GetAttributes(false, true, false)
 
 	// email, firstName, age — password excluded (credential).
 	s.Len(attrs, 3, "all non-credential attributes should be returned regardless of required flag")
@@ -353,7 +353,7 @@ func (s *SchemaValidateTestSuite) TestGetNonCredentialAttributes_AllAttrs_Includ
 	s.False(hasPassword, "credential must always be excluded")
 }
 
-func (s *SchemaValidateTestSuite) TestGetNonCredentialAttributes_DisplayNameOnNonStringTypes() {
+func (s *SchemaValidateTestSuite) TestGetAttributes_NonCredentialDisplayNameOnNonStringTypes() {
 	schema, err := CompileSchema(json.RawMessage(`{
 		"active":  {"type": "boolean", "displayName": "Active Status"},
 		"score":   {"type": "number",  "displayName": "Score"},
@@ -362,7 +362,7 @@ func (s *SchemaValidateTestSuite) TestGetNonCredentialAttributes_DisplayNameOnNo
 	}`))
 	s.Require().NoError(err)
 
-	attrs := schema.GetNonCredentialAttributes(false)
+	attrs := schema.GetAttributes(false, true, false)
 	s.Len(attrs, 4)
 
 	attrMap := make(map[string]AttributeInfo, len(attrs))
@@ -373,4 +373,66 @@ func (s *SchemaValidateTestSuite) TestGetNonCredentialAttributes_DisplayNameOnNo
 	s.Equal("Score", attrMap["score"].DisplayName)
 	s.Equal("Address", attrMap["address"].DisplayName)
 	s.Equal("Tags", attrMap["tags"].DisplayName)
+}
+
+func (s *SchemaValidateTestSuite) TestGetAttributes_CredentialRequiredOnly_ReturnsOnlyRequiredCredential() {
+	schema, err := CompileSchema(json.RawMessage(`{
+		"password": {"type": "string", "required": true, "credential": true, "displayName": "Password"},
+		"pin":      {"type": "string", "credential": true, "displayName": "PIN"},
+		"email":    {"type": "string", "required": true}
+	}`))
+	s.Require().NoError(err)
+
+	attrs := schema.GetAttributes(true, false, true)
+
+	s.Len(attrs, 1)
+	s.Equal("password", attrs[0].Attribute)
+	s.Equal("Password", attrs[0].DisplayName)
+	s.True(attrs[0].Required)
+	s.True(attrs[0].Credential)
+}
+
+func (s *SchemaValidateTestSuite) TestGetAttributes_CredentialAllAttrs_IncludesOptional() {
+	schema, err := CompileSchema(json.RawMessage(`{
+		"password": {"type": "string", "required": true, "credential": true, "displayName": "Password"},
+		"pin":      {"type": "string", "credential": true, "displayName": "PIN"},
+		"email":    {"type": "string", "required": true}
+	}`))
+	s.Require().NoError(err)
+
+	attrs := schema.GetAttributes(true, false, false)
+
+	s.Len(attrs, 2)
+	attrMap := make(map[string]AttributeInfo, len(attrs))
+	for _, a := range attrs {
+		attrMap[a.Attribute] = a
+	}
+
+	s.True(attrMap["password"].Required)
+	s.True(attrMap["password"].Credential)
+	s.Equal("Password", attrMap["password"].DisplayName)
+	s.False(attrMap["pin"].Required)
+	s.True(attrMap["pin"].Credential)
+	s.Equal("PIN", attrMap["pin"].DisplayName)
+	_, hasEmail := attrMap["email"]
+	s.False(hasEmail, "non-credential attribute must be excluded")
+}
+
+func (s *SchemaValidateTestSuite) TestGetAttributes_AllAttrs_CredentialFieldSet() {
+	schema, err := CompileSchema(json.RawMessage(`{
+		"password": {"type": "string", "required": true, "credential": true},
+		"email":    {"type": "string", "required": true}
+	}`))
+	s.Require().NoError(err)
+
+	attrs := schema.GetAttributes(true, true, false)
+
+	s.Len(attrs, 2)
+	attrMap := make(map[string]AttributeInfo, len(attrs))
+	for _, a := range attrs {
+		attrMap[a.Attribute] = a
+	}
+
+	s.True(attrMap["password"].Credential, "credential attribute must have Credential=true")
+	s.False(attrMap["email"].Credential, "non-credential attribute must have Credential=false")
 }

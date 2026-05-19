@@ -110,6 +110,9 @@ type AccessTokenConfig struct {
 type IDTokenConfig struct {
 	ValidityPeriod int64    `json:"validityPeriod,omitempty"`
 	UserAttributes []string `json:"userAttributes,omitempty"`
+	ResponseType   string   `json:"responseType,omitempty"`
+	EncryptionAlg  string   `json:"encryptionAlg,omitempty"`
+	EncryptionEnc  string   `json:"encryptionEnc,omitempty"`
 }
 
 // ApplicationList represents the response structure for listing applications.

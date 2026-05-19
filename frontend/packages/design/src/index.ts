@@ -23,6 +23,9 @@ export {default as useCreateTheme} from './api/useCreateTheme';
 export {default as useUpdateTheme} from './api/useUpdateTheme';
 export {default as useDeleteTheme} from './api/useDeleteTheme';
 
+// Themes
+export {default as DefaultTheme} from './themes/DefaultTheme';
+
 // Layout API hooks
 export {default as useGetLayouts} from './api/useGetLayouts';
 export {default as useGetLayout} from './api/useGetLayout';

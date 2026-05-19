@@ -22,11 +22,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/asgardeo/thunder/internal/system/config"
-	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	"github.com/asgardeo/thunder/internal/system/database/provider"
-	"github.com/asgardeo/thunder/internal/system/log"
-	"github.com/asgardeo/thunder/internal/system/transaction"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
+	"github.com/thunder-id/thunderid/internal/system/database/provider"
+	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/transaction"
 )
 
 const storeLoggerComponentName = "RoleStore"
@@ -47,6 +47,7 @@ type roleStoreInterface interface {
 	GetRoleAssignmentsCountByType(ctx context.Context, id string, assigneeType string) (int, error)
 	UpdateRole(ctx context.Context, id string, role RoleUpdateDetail) error
 	DeleteRole(ctx context.Context, id string) error
+	DeleteAssignmentsByRoleID(ctx context.Context, id string) error
 	AddAssignments(ctx context.Context, id string, assignments []RoleAssignment) error
 	RemoveAssignments(ctx context.Context, id string, assignments []RoleAssignment) error
 	CheckRoleNameExists(ctx context.Context, ouID, name string) (bool, error)
@@ -337,6 +338,20 @@ func (s *roleStore) DeleteRole(ctx context.Context, id string) error {
 		logger.Debug("Role not found with id: " + id)
 	}
 
+	return nil
+}
+
+// DeleteAssignmentsByRoleID deletes all assignments for a role. Used for cascade delete.
+func (s *roleStore) DeleteAssignmentsByRoleID(ctx context.Context, id string) error {
+	dbClient, err := s.getConfigDBClient()
+	if err != nil {
+		return err
+	}
+
+	_, err = dbClient.ExecuteContext(ctx, queryDeleteAllRoleAssignments, id, s.deploymentID)
+	if err != nil {
+		return fmt.Errorf("failed to delete assignments for role: %w", err)
+	}
 	return nil
 }
 

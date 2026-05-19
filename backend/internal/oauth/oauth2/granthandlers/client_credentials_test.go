@@ -19,7 +19,7 @@
 package granthandlers
 
 import (
-	"github.com/asgardeo/thunder/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 
 	"context"
 	"errors"
@@ -30,22 +30,22 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/internal/authz"
-	"github.com/asgardeo/thunder/internal/entityprovider"
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/tokenservice"
-	"github.com/asgardeo/thunder/internal/ou"
-	"github.com/asgardeo/thunder/internal/resource"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/authzmock"
-	"github.com/asgardeo/thunder/tests/mocks/entityprovidermock"
-	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
-	"github.com/asgardeo/thunder/tests/mocks/oauth/oauth2/tokenservicemock"
-	"github.com/asgardeo/thunder/tests/mocks/oumock"
-	"github.com/asgardeo/thunder/tests/mocks/resourcemock"
+	"github.com/thunder-id/thunderid/internal/authz"
+	"github.com/thunder-id/thunderid/internal/entityprovider"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/tokenservice"
+	"github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/resource"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/tests/mocks/authzmock"
+	"github.com/thunder-id/thunderid/tests/mocks/entityprovidermock"
+	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
+	"github.com/thunder-id/thunderid/tests/mocks/oauth/oauth2/tokenservicemock"
+	"github.com/thunder-id/thunderid/tests/mocks/oumock"
+	"github.com/thunder-id/thunderid/tests/mocks/resourcemock"
 )
 
 // nolint:gosec // Test token, not a real credential
@@ -107,7 +107,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) SetupTest() {
 		Return([]entityprovider.EntityGroup{}, nil).Maybe()
 
 	suite.oauthApp = &inboundmodel.OAuthClient{
-		AppID:                   "app123",
+		ID:                      "app123",
 		ClientID:                testClientID,
 		RedirectURIs:            []string{"https://example.com/callback"},
 		GrantTypes:              []constants.GrantType{constants.GrantTypeClientCredentials},
@@ -193,7 +193,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_Success() {
 			if len(tc.expectedScopes) > 0 {
 				suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
 					authz.GetAuthorizedPermissionsRequest{
-						EntityID:             suite.oauthApp.AppID,
+						EntityID:             suite.oauthApp.ID,
 						RequestedPermissions: tc.expectedScopes,
 					}).Return(&authz.GetAuthorizedPermissionsResponse{
 					AuthorizedPermissions: tc.expectedScopes,
@@ -247,7 +247,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_JWTGenerati
 
 	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
 		authz.GetAuthorizedPermissionsRequest{
-			EntityID:             suite.oauthApp.AppID,
+			EntityID:             suite.oauthApp.ID,
 			RequestedPermissions: []string{"read"},
 		}).Return(&authz.GetAuthorizedPermissionsResponse{
 		AuthorizedPermissions: []string{"read"},
@@ -276,7 +276,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_NilTokenAtt
 
 	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
 		authz.GetAuthorizedPermissionsRequest{
-			EntityID:             suite.oauthApp.AppID,
+			EntityID:             suite.oauthApp.ID,
 			RequestedPermissions: []string{"read"},
 		}).Return(&authz.GetAuthorizedPermissionsResponse{
 		AuthorizedPermissions: []string{"read"},
@@ -320,7 +320,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_TokenTiming
 
 	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
 		authz.GetAuthorizedPermissionsRequest{
-			EntityID:             suite.oauthApp.AppID,
+			EntityID:             suite.oauthApp.ID,
 			RequestedPermissions: []string{"read"},
 		}).Return(&authz.GetAuthorizedPermissionsResponse{
 		AuthorizedPermissions: []string{"read"},
@@ -361,7 +361,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_ClientAttri
 	}
 
 	oauthAppWithOU := &inboundmodel.OAuthClient{
-		AppID:                   "app123",
+		ID:                      "app123",
 		ClientID:                testClientID,
 		OUID:                    "ou-456",
 		GrantTypes:              []constants.GrantType{constants.GrantTypeClientCredentials},
@@ -370,7 +370,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_ClientAttri
 
 	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
 		authz.GetAuthorizedPermissionsRequest{
-			EntityID:             oauthAppWithOU.AppID,
+			EntityID:             oauthAppWithOU.ID,
 			RequestedPermissions: []string{"read"},
 		}).Return(&authz.GetAuthorizedPermissionsResponse{
 		AuthorizedPermissions: []string{"read"},
@@ -405,7 +405,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_WithResourc
 
 	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
 		authz.GetAuthorizedPermissionsRequest{
-			EntityID:             suite.oauthApp.AppID,
+			EntityID:             suite.oauthApp.ID,
 			RequestedPermissions: []string{"read"},
 		}).Return(&authz.GetAuthorizedPermissionsResponse{
 		AuthorizedPermissions: []string{"read"},
@@ -447,7 +447,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_WithoutReso
 
 	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
 		authz.GetAuthorizedPermissionsRequest{
-			EntityID:             suite.oauthApp.AppID,
+			EntityID:             suite.oauthApp.ID,
 			RequestedPermissions: []string{"read"},
 		}).Return(&authz.GetAuthorizedPermissionsResponse{
 		AuthorizedPermissions: []string{"read"},
@@ -495,7 +495,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_PartialScop
 	// App is only authorized for "read" and "write" via its role assignments.
 	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
 		authz.GetAuthorizedPermissionsRequest{
-			EntityID:             suite.oauthApp.AppID,
+			EntityID:             suite.oauthApp.ID,
 			RequestedPermissions: []string{"read", "write", "delete"},
 		}).Return(&authz.GetAuthorizedPermissionsResponse{
 		AuthorizedPermissions: []string{"read", "write"},
@@ -531,7 +531,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_NoAuthorize
 	// App has no role granting "admin:full".
 	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
 		authz.GetAuthorizedPermissionsRequest{
-			EntityID:             suite.oauthApp.AppID,
+			EntityID:             suite.oauthApp.ID,
 			RequestedPermissions: []string{"admin:full"},
 		}).Return(&authz.GetAuthorizedPermissionsResponse{
 		AuthorizedPermissions: []string{},
@@ -566,7 +566,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_AuthzServic
 
 	suite.mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
 		authz.GetAuthorizedPermissionsRequest{
-			EntityID:             suite.oauthApp.AppID,
+			EntityID:             suite.oauthApp.ID,
 			RequestedPermissions: []string{"read"},
 		}).Return((*authz.GetAuthorizedPermissionsResponse)(nil),
 		&serviceerror.ServiceError{
@@ -645,7 +645,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_ImplicitRSD
 
 	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
 		authz.GetAuthorizedPermissionsRequest{
-			EntityID:             suite.oauthApp.AppID,
+			EntityID:             suite.oauthApp.ID,
 			RequestedPermissions: []string{"r1:s1"},
 		}).Return(&authz.GetAuthorizedPermissionsResponse{
 		AuthorizedPermissions: []string{"r1:s1"},
@@ -708,7 +708,7 @@ func (suite *ClientCredentialsGrantHandlerTestSuite) TestHandleGrant_ImplicitRSD
 
 	mockAuthzService.On("GetAuthorizedPermissions", mock.Anything,
 		authz.GetAuthorizedPermissionsRequest{
-			EntityID:             suite.oauthApp.AppID,
+			EntityID:             suite.oauthApp.ID,
 			RequestedPermissions: []string{"r1:s1"},
 		}).Return(&authz.GetAuthorizedPermissionsResponse{
 		AuthorizedPermissions: []string{"r1:s1"},

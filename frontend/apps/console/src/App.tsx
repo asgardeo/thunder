@@ -16,7 +16,8 @@
  * under the License.
  */
 
-import {ProtectedRoute} from '@asgardeo/react-router';
+import {ProtectedRoute} from '@thunderid/react-router';
+import {ViewAgentTypePage} from '@thunderid/configure-agent-types';
 import {
   CreateOrganizationUnitPage,
   OrganizationUnitProvider,
@@ -39,6 +40,10 @@ import {
 import {ToastProvider} from '@thunderid/contexts';
 import type {JSX} from 'react';
 import {BrowserRouter, Route, Routes} from 'react-router';
+import AgentCreateProvider from './features/agents/contexts/AgentCreate/AgentCreateProvider';
+import AgentCreatePage from './features/agents/pages/AgentCreatePage';
+import AgentEditPage from './features/agents/pages/AgentEditPage';
+import AgentsListPage from './features/agents/pages/AgentsListPage';
 import ApplicationCreateProvider from './features/applications/contexts/ApplicationCreate/ApplicationCreateProvider';
 import ApplicationCreatePage from './features/applications/pages/ApplicationCreatePage';
 import ApplicationEditPage from './features/applications/pages/ApplicationEditPage';
@@ -96,6 +101,7 @@ export default function App(): JSX.Element {
             <Route path="users/:userId" element={<UserEditPage />} />
             <Route path="user-types" element={<UserTypesListPage />} />
             <Route path="user-types/:id" element={<ViewUserTypePage />} />
+            <Route path="agent-types/:id" element={<ViewAgentTypePage />} />
             <Route path="integrations" element={<IntegrationsPage />} />
             <Route path="groups" element={<GroupsListPage />} />
             <Route path="groups/:groupId" element={<GroupEditPage />} />
@@ -103,6 +109,8 @@ export default function App(): JSX.Element {
             <Route path="roles/:roleId" element={<RoleEditPage />} />
             <Route path="applications" element={<ApplicationsListPage />} />
             <Route path="applications/:applicationId" element={<ApplicationEditPage />} />
+            <Route path="agents" element={<AgentsListPage />} />
+            <Route path="agents/:agentId" element={<AgentEditPage />} />
             <Route path="flows" element={<FlowsListPage />} />
           </Route>
           {/* Organization Units - wrapped in OrganizationUnitProvider to preserve tree state across navigation */}
@@ -193,6 +201,18 @@ export default function App(): JSX.Element {
             <Route index element={<ApplicationCreatePage />} />
           </Route>
           <Route
+            path="/agents/create"
+            element={
+              <ProtectedRoute>
+                <AgentCreateProvider>
+                  <FullScreenLayout />
+                </AgentCreateProvider>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AgentCreatePage />} />
+          </Route>
+          <Route
             path="/flows/create"
             element={
               <ProtectedRoute>
@@ -214,6 +234,46 @@ export default function App(): JSX.Element {
           </Route>
           <Route
             path="/flows/signin/:flowId"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<LoginFlowBuilderPage />} />
+          </Route>
+          <Route
+            path="/flows/registration"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<LoginFlowBuilderPage />} />
+          </Route>
+          <Route
+            path="/flows/registration/:flowId"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<LoginFlowBuilderPage />} />
+          </Route>
+          <Route
+            path="/flows/recovery"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<LoginFlowBuilderPage />} />
+          </Route>
+          <Route
+            path="/flows/recovery/:flowId"
             element={
               <ProtectedRoute>
                 <DashboardLayout />

@@ -19,21 +19,35 @@
 package tokenservice
 
 import (
+	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"encoding/base64"
+	"encoding/json"
+	"io"
+	"math/big"
+	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/asgardeo/thunder/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	"github.com/asgardeo/thunder/internal/oauth/oauth2/constants"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
+	certmodel "github.com/thunder-id/thunderid/internal/cert"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	"github.com/thunder-id/thunderid/internal/oauth/oauth2/jwksresolver"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/jose/jwe"
+	"github.com/thunder-id/thunderid/tests/mocks/httpmock"
+	"github.com/thunder-id/thunderid/tests/mocks/jose/jwemock"
+	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 )
 
 const (
@@ -84,7 +98,7 @@ func (suite *TokenBuilderTestSuite) SetupTest() {
 
 func (suite *TokenBuilderTestSuite) TestNewTokenBuilder() {
 	jwtService := jwtmock.NewJWTServiceInterfaceMock(suite.T())
-	builder := newTokenBuilder(jwtService)
+	builder := newTokenBuilder(jwtService, nil, nil)
 
 	assert.NotNil(suite.T(), builder)
 	assert.Implements(suite.T(), (*TokenBuilderInterface)(nil), builder)
@@ -1105,4 +1119,403 @@ func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_JWTGenerationFailed()
 	assert.Nil(suite.T(), result)
 	assert.Contains(suite.T(), err.Error(), "failed to generate ID token")
 	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+// ============================================================================
+// BuildIDToken — JWE encryption tests
+// ============================================================================
+
+const testJWKSURIForBuilder = "https://rp.example.com/jwks" //nolint:gosec // test URI
+
+// TestBuildIDToken_Success_WithEncryption_InlineJWKS verifies that BuildIDToken produces a JWE
+// (5 dot-separated parts) when id_token encryption is configured with an inline JWKS cert.
+// It also asserts that the payload passed to Encrypt is the signed JWS (3 dot-separated parts)
+// and that the alg/enc/cty values are forwarded correctly.
+func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithEncryption_InlineJWKS() {
+	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	pubJWKS := testRSAPublicKeyToJWKS(&privateKey.PublicKey, "enc")
+
+	mockJWE := jwemock.NewJWEServiceInterfaceMock(suite.T())
+	const signedJWS = "header.payload.signature"
+	const encryptedJWE = "a.b.c.d.e"
+
+	mockJWE.On("Encrypt",
+		mock.MatchedBy(func(payload []byte) bool {
+			// Payload must be the signed JWS — three dot-separated parts.
+			return strings.Count(string(payload), ".") == 2
+		}),
+		mock.Anything,
+		jwe.KeyEncAlgorithm("RSA-OAEP-256"),
+		jwe.ContentEncAlgorithm("A256GCM"),
+		"JWT",
+		mock.Anything,
+	).Return(encryptedJWE, (*serviceerror.ServiceError)(nil))
+
+	oauthApp := &inboundmodel.OAuthClient{
+		ClientID: "test-client",
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
+				ValidityPeriod: 3600,
+				ResponseType:   inboundmodel.IDTokenResponseTypeJWE,
+				EncryptionAlg:  "RSA-OAEP-256",
+				EncryptionEnc:  "A256GCM",
+			},
+		},
+		Certificate: &inboundmodel.Certificate{
+			Type:  certmodel.CertificateTypeJWKS,
+			Value: pubJWKS,
+		},
+	}
+
+	suite.mockJWTService.On("GenerateJWT",
+		mock.Anything, "user123", "https://thunder.io", int64(3600),
+		mock.Anything, mock.Anything, mock.Anything,
+	).Return(signedJWS, time.Now().Unix(), (*serviceerror.ServiceError)(nil))
+
+	builder := &tokenBuilder{
+		jwtService:   suite.mockJWTService,
+		jweService:   mockJWE,
+		jwksResolver: jwksresolver.Initialize(nil),
+	}
+
+	result, err := builder.BuildIDToken(&IDTokenBuildContext{
+		Context:  context.Background(),
+		Subject:  "user123",
+		Audience: "test-client",
+		Scopes:   []string{"openid"},
+		OAuthApp: oauthApp,
+	})
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), encryptedJWE, result.Token)
+	mockJWE.AssertExpectations(suite.T())
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+// TestBuildIDToken_Error_EncryptionKeyNotFound verifies that when the JWKS contains no enc-capable
+// key (e.g. all keys have use=sig), BuildIDToken returns an error without calling Encrypt.
+func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_EncryptionKeyNotFound() {
+	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	sigOnlyJWKS := testRSAPublicKeyToJWKS(&privateKey.PublicKey, "sig")
+
+	mockJWE := jwemock.NewJWEServiceInterfaceMock(suite.T())
+
+	oauthApp := &inboundmodel.OAuthClient{
+		ClientID: "test-client",
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
+				ValidityPeriod: 3600,
+				ResponseType:   inboundmodel.IDTokenResponseTypeJWE,
+				EncryptionAlg:  "RSA-OAEP-256",
+				EncryptionEnc:  "A256GCM",
+			},
+		},
+		Certificate: &inboundmodel.Certificate{
+			Type:  certmodel.CertificateTypeJWKS,
+			Value: sigOnlyJWKS,
+		},
+	}
+
+	suite.mockJWTService.On("GenerateJWT",
+		mock.Anything, "user123", "https://thunder.io", int64(3600),
+		mock.Anything, mock.Anything, mock.Anything,
+	).Return("header.payload.signature", time.Now().Unix(), (*serviceerror.ServiceError)(nil))
+
+	builder := &tokenBuilder{
+		jwtService:   suite.mockJWTService,
+		jweService:   mockJWE,
+		jwksResolver: jwksresolver.Initialize(nil),
+	}
+
+	result, err := builder.BuildIDToken(&IDTokenBuildContext{
+		Context:  context.Background(),
+		Subject:  "user123",
+		Audience: "test-client",
+		Scopes:   []string{"openid"},
+		OAuthApp: oauthApp,
+	})
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "failed to resolve ID token encryption key")
+	// Encrypt must not be called when key resolution fails.
+	mockJWE.AssertNotCalled(suite.T(), "Encrypt")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+// TestBuildIDToken_Error_EncryptionFailed verifies that a JWE Encrypt failure is propagated.
+func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_EncryptionFailed() {
+	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	pubJWKS := testRSAPublicKeyToJWKS(&privateKey.PublicKey, "enc")
+
+	encErr := &serviceerror.ServiceError{
+		Type: serviceerror.ServerErrorType,
+		Code: "JWE_ENCRYPT_FAILED",
+		Error: core.I18nMessage{
+			Key: "error.jwe.encrypt_failed", DefaultValue: "JWE encryption failed",
+		},
+	}
+	mockJWE := jwemock.NewJWEServiceInterfaceMock(suite.T())
+	mockJWE.On("Encrypt",
+		mock.Anything, mock.Anything,
+		jwe.KeyEncAlgorithm("RSA-OAEP-256"),
+		jwe.ContentEncAlgorithm("A256GCM"),
+		"JWT",
+		mock.Anything,
+	).Return("", encErr)
+
+	oauthApp := &inboundmodel.OAuthClient{
+		ClientID: "test-client",
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
+				ValidityPeriod: 3600,
+				ResponseType:   inboundmodel.IDTokenResponseTypeJWE,
+				EncryptionAlg:  "RSA-OAEP-256",
+				EncryptionEnc:  "A256GCM",
+			},
+		},
+		Certificate: &inboundmodel.Certificate{
+			Type:  certmodel.CertificateTypeJWKS,
+			Value: pubJWKS,
+		},
+	}
+
+	suite.mockJWTService.On("GenerateJWT",
+		mock.Anything, "user123", "https://thunder.io", int64(3600),
+		mock.Anything, mock.Anything, mock.Anything,
+	).Return("header.payload.signature", time.Now().Unix(), (*serviceerror.ServiceError)(nil))
+
+	builder := &tokenBuilder{
+		jwtService:   suite.mockJWTService,
+		jweService:   mockJWE,
+		jwksResolver: jwksresolver.Initialize(nil),
+	}
+
+	result, err := builder.BuildIDToken(&IDTokenBuildContext{
+		Context:  context.Background(),
+		Subject:  "user123",
+		Audience: "test-client",
+		Scopes:   []string{"openid"},
+		OAuthApp: oauthApp,
+	})
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "failed to encrypt ID token")
+	mockJWE.AssertExpectations(suite.T())
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+// TestBuildIDToken_Success_WithEncryption_JWKSURI verifies that the builder fetches the JWKS
+// via the HTTP client when the certificate type is JWKS_URI, then encrypts the ID token.
+func (suite *TokenBuilderTestSuite) TestBuildIDToken_Success_WithEncryption_JWKSURI() {
+	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	pubJWKS := testRSAPublicKeyToJWKS(&privateKey.PublicKey, "enc")
+	const encryptedJWE = "a.b.c.d.e"
+
+	mockHTTP := httpmock.NewHTTPClientInterfaceMock(suite.T())
+	mockHTTP.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+		return req.URL.String() == testJWKSURIForBuilder && req.Method == http.MethodGet
+	})).Return(
+		&http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(pubJWKS)),
+		}, nil,
+	)
+
+	mockJWE := jwemock.NewJWEServiceInterfaceMock(suite.T())
+	mockJWE.On("Encrypt",
+		mock.Anything, mock.Anything,
+		jwe.KeyEncAlgorithm("RSA-OAEP-256"),
+		jwe.ContentEncAlgorithm("A256GCM"),
+		"JWT",
+		mock.Anything,
+	).Return(encryptedJWE, (*serviceerror.ServiceError)(nil))
+
+	oauthApp := &inboundmodel.OAuthClient{
+		ClientID: "test-client",
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
+				ValidityPeriod: 3600,
+				ResponseType:   inboundmodel.IDTokenResponseTypeJWE,
+				EncryptionAlg:  "RSA-OAEP-256",
+				EncryptionEnc:  "A256GCM",
+			},
+		},
+		Certificate: &inboundmodel.Certificate{
+			Type:  certmodel.CertificateTypeJWKSURI,
+			Value: testJWKSURIForBuilder,
+		},
+	}
+
+	suite.mockJWTService.On("GenerateJWT",
+		mock.Anything, "user123", "https://thunder.io", int64(3600),
+		mock.Anything, mock.Anything, mock.Anything,
+	).Return("header.payload.signature", time.Now().Unix(), (*serviceerror.ServiceError)(nil))
+
+	builder := &tokenBuilder{
+		jwtService:   suite.mockJWTService,
+		jweService:   mockJWE,
+		jwksResolver: jwksresolver.Initialize(mockHTTP),
+	}
+
+	result, err := builder.BuildIDToken(&IDTokenBuildContext{
+		Context:  context.Background(),
+		Subject:  "user123",
+		Audience: "test-client",
+		Scopes:   []string{"openid"},
+		OAuthApp: oauthApp,
+	})
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), encryptedJWE, result.Token)
+	mockHTTP.AssertExpectations(suite.T())
+	mockJWE.AssertExpectations(suite.T())
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+// TestBuildIDToken_Error_NilJWEService verifies the nil-jweService guard returns an error
+// instead of panicking when encryption is configured.
+func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_NilJWEService() {
+	privateKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+	pubJWKS := testRSAPublicKeyToJWKS(&privateKey.PublicKey, "enc")
+
+	oauthApp := &inboundmodel.OAuthClient{
+		ClientID: "test-client",
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
+				ValidityPeriod: 3600,
+				ResponseType:   inboundmodel.IDTokenResponseTypeJWE,
+				EncryptionAlg:  "RSA-OAEP-256",
+				EncryptionEnc:  "A256GCM",
+			},
+		},
+		Certificate: &inboundmodel.Certificate{
+			Type:  certmodel.CertificateTypeJWKS,
+			Value: pubJWKS,
+		},
+	}
+
+	suite.mockJWTService.On("GenerateJWT",
+		mock.Anything, "user123", "https://thunder.io", int64(3600),
+		mock.Anything, mock.Anything, mock.Anything,
+	).Return("header.payload.signature", time.Now().Unix(), (*serviceerror.ServiceError)(nil))
+
+	builder := &tokenBuilder{
+		jwtService: suite.mockJWTService,
+		jweService: nil,
+	}
+
+	result, err := builder.BuildIDToken(&IDTokenBuildContext{
+		Context:  context.Background(),
+		Subject:  "user123",
+		Audience: "test-client",
+		Scopes:   []string{"openid"},
+		OAuthApp: oauthApp,
+	})
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "JWE service is not configured")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+// TestBuildIDToken_NoEncryptionAlg verifies that the JWE block is skipped when EncryptionAlg is empty.
+func (suite *TokenBuilderTestSuite) TestBuildIDToken_NoEncryptionAlg() {
+	oauthApp := &inboundmodel.OAuthClient{
+		ClientID: "test-client",
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
+				ValidityPeriod: 3600,
+				EncryptionAlg:  "", // no encryption
+			},
+		},
+	}
+
+	suite.mockJWTService.On("GenerateJWT",
+		mock.Anything, "user123", "https://thunder.io", int64(3600),
+		mock.Anything, mock.Anything, mock.Anything,
+	).Return("header.payload.signature", time.Now().Unix(), (*serviceerror.ServiceError)(nil))
+
+	builder := &tokenBuilder{
+		jwtService: suite.mockJWTService,
+		jweService: nil,
+	}
+
+	result, err := builder.BuildIDToken(&IDTokenBuildContext{
+		Context:  context.Background(),
+		Subject:  "user123",
+		Audience: "test-client",
+		Scopes:   []string{"openid"},
+		OAuthApp: oauthApp,
+	})
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "header.payload.signature", result.Token)
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+// TestBuildIDToken_Error_UnsupportedCertType verifies error propagation when cert type is unsupported.
+func (suite *TokenBuilderTestSuite) TestBuildIDToken_Error_UnsupportedCertType() {
+	oauthApp := &inboundmodel.OAuthClient{
+		ClientID: "test-client",
+		Token: &inboundmodel.OAuthTokenConfig{
+			IDToken: &inboundmodel.IDTokenConfig{
+				ValidityPeriod: 3600,
+				ResponseType:   inboundmodel.IDTokenResponseTypeJWE,
+				EncryptionAlg:  "RSA-OAEP-256",
+				EncryptionEnc:  "A256GCM",
+			},
+		},
+		Certificate: &inboundmodel.Certificate{
+			Type:  "UNKNOWN",
+			Value: "{}",
+		},
+	}
+
+	mockJWE := jwemock.NewJWEServiceInterfaceMock(suite.T())
+
+	suite.mockJWTService.On("GenerateJWT",
+		mock.Anything, "user123", "https://thunder.io", int64(3600),
+		mock.Anything, mock.Anything, mock.Anything,
+	).Return("header.payload.signature", time.Now().Unix(), (*serviceerror.ServiceError)(nil))
+
+	builder := &tokenBuilder{
+		jwtService:   suite.mockJWTService,
+		jweService:   mockJWE,
+		jwksResolver: jwksresolver.Initialize(nil),
+	}
+
+	result, err := builder.BuildIDToken(&IDTokenBuildContext{
+		Context:  context.Background(),
+		Subject:  "user123",
+		Audience: "test-client",
+		Scopes:   []string{"openid"},
+		OAuthApp: oauthApp,
+	})
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "failed to resolve ID token encryption key")
+	mockJWE.AssertNotCalled(suite.T(), "Encrypt")
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+// testRSAPublicKeyToJWKS builds a minimal RSA JWKS JSON string for tests.
+// Pass use="" to omit the 'use' field.
+func testRSAPublicKeyToJWKS(pub *rsa.PublicKey, use string) string {
+	eBytes := big.NewInt(int64(pub.E)).Bytes()
+	key := map[string]interface{}{
+		"kty": "RSA",
+		"n":   base64.RawURLEncoding.EncodeToString(pub.N.Bytes()),
+		"e":   base64.RawURLEncoding.EncodeToString(eBytes),
+	}
+	if use != "" {
+		key["use"] = use
+	}
+	b, _ := json.Marshal(map[string]interface{}{"keys": []interface{}{key}})
+	return string(b)
 }

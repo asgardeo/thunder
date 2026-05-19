@@ -23,17 +23,20 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/asgardeo/thunder/internal/system/config"
-	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
-	"github.com/asgardeo/thunder/internal/system/middleware"
-	"github.com/asgardeo/thunder/internal/system/transaction"
+	"github.com/thunder-id/thunderid/internal/system/cache"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
+	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
+	"github.com/thunder-id/thunderid/internal/system/middleware"
+	"github.com/thunder-id/thunderid/internal/system/transaction"
 )
 
 // Initialize initializes the IDP service and registers its routes.
-func Initialize(mux *http.ServeMux) (IDPServiceInterface, declarativeresource.ResourceExporter, error) {
+func Initialize(
+	cacheManager cache.CacheManagerInterface, mux *http.ServeMux,
+) (IDPServiceInterface, declarativeresource.ResourceExporter, error) {
 	// Create store and transactioner based on store mode
-	idpStore, transactioner, err := initializeStore()
+	idpStore, transactioner, err := initializeStore(cacheManager)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -75,8 +78,11 @@ func Initialize(mux *http.ServeMux) (IDPServiceInterface, declarativeresource.Re
 // - If identity_provider.store is not specified, falls back to global declarative_resources.enabled:
 //   - If declarative_resources.enabled = true: behaves as IMMUTABLE mode
 //   - If declarative_resources.enabled = false: behaves as MUTABLE mode
-func initializeStore() (idpStoreInterface, transaction.Transactioner, error) {
+func initializeStore(cacheManager cache.CacheManagerInterface) (idpStoreInterface, transaction.Transactioner, error) {
 	storeMode := getIdentityProviderStoreMode()
+
+	idpByIDCache := cache.GetCache[*IDPDTO](cacheManager, "IDPByIDCache")
+	idpByIssuerCache := cache.GetCache[*IDPDTO](cacheManager, "IDPByIssuerCache")
 
 	switch storeMode {
 	case serverconst.StoreModeComposite:
@@ -89,17 +95,21 @@ func initializeStore() (idpStoreInterface, transaction.Transactioner, error) {
 		if err := loadDeclarativeResources(fileStore); err != nil {
 			return nil, nil, err
 		}
-		return idpStore, transactioner, nil
+		return newCacheBackedIDPStore(idpByIDCache, idpByIssuerCache, idpStore), transactioner, nil
 
 	case serverconst.StoreModeDeclarative:
 		fileStore, transactioner := newIDPFileBasedStore()
 		if err := loadDeclarativeResources(fileStore); err != nil {
 			return nil, nil, err
 		}
-		return fileStore, transactioner, nil
+		return newCacheBackedIDPStore(idpByIDCache, idpByIssuerCache, fileStore), transactioner, nil
 
 	default:
-		return newIDPStore()
+		store, transactioner, err := newIDPStore()
+		if err != nil {
+			return nil, nil, err
+		}
+		return newCacheBackedIDPStore(idpByIDCache, idpByIssuerCache, store), transactioner, nil
 	}
 }
 

@@ -171,8 +171,8 @@ func (m *MockNotificationServer) handleClearMessages(w http.ResponseWriter, r *h
 
 // GetLastMessage returns the last received message
 func (m *MockNotificationServer) GetLastMessage() *SMSMessage {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
 
 	if len(m.messages) == 0 {
 		return nil

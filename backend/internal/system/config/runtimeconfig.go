@@ -19,10 +19,13 @@
 package config
 
 import (
-	"fmt"
+	"net"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
 // ServerRuntime holds the runtime configuration for the server.
@@ -44,13 +47,27 @@ func InitializeServerRuntime(serverHome string, config *Config) error {
 		if strings.TrimSpace(loginPath) == "" {
 			loginPath = "/signin"
 		}
-		rawURL := fmt.Sprintf("%s://%s:%d%s",
-			config.GateClient.Scheme,
-			config.GateClient.Hostname,
-			config.GateClient.Port,
-			loginPath,
-		)
-		parsedURL, _ := url.Parse(rawURL)
+
+		portStr := strconv.Itoa(config.GateClient.Port)
+		hostWithPort := net.JoinHostPort(config.GateClient.Hostname, portStr)
+
+		baseURL := &url.URL{
+			Scheme: config.GateClient.Scheme,
+			Host:   hostWithPort,
+		}
+
+		parsedPath, err := url.Parse(loginPath)
+		if err != nil || parsedPath == nil {
+			log.GetLogger().Warn(
+				"Invalid gate client login path configured. Falling back to default '/signin'",
+				log.String("configuredPath", loginPath),
+				log.Error(err),
+			)
+			parsedPath = &url.URL{Path: "/signin"}
+		}
+
+		parsedURL := baseURL.ResolveReference(parsedPath)
+
 		runtimeConfig = &ServerRuntime{
 			ServerHome:         serverHome,
 			GateClientLoginURL: parsedURL,

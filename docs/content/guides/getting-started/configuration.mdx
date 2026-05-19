@@ -327,7 +327,7 @@ OAuth 2.0 and OpenID Connect settings.
 | `oauth.refresh_token.validity_period` | `86400` | Refresh token validity period in seconds (24 hours) |
 | `oauth.authorization_code.validity_period` | `600` | Authorization code validity period in seconds (10 minutes) |
 | `oauth.dcr.insecure` | `false` | If `true`, allows insecure dynamic client registration (development only) |
-| `oauth.allow_wildcard_redirect_uri` | `false` | If `true`, allows wildcard patterns (`*`, `**`) in the path component of registered redirect URIs. When `false`, only exact redirect URI matching is performed and registering a wildcard URI returns a `400 Bad Request` error. |
+| `oauth.allow_wildcard_redirect_uri` | `false` | If `true`, allows wildcard patterns in registered redirect URIs: `*` and `**` in the path component, and `*` in the host component (label-internal, alphanumeric only). When `false`, only exact redirect URI matching is performed and registering a wildcard URI returns a `400 Bad Request` error. |
 
 :::note
 Enabling `oauth.allow_wildcard_redirect_uri` affects all applications in the deployment. See [Use Wildcard Redirect URIs](/docs/next/guides/guides/applications/application-settings#use-wildcard-redirect-uris) for pattern syntax and matching rules.
@@ -411,7 +411,7 @@ Authorization resource settings.
 
 ### System Resource Server
 
-The system resource server controls administrative permissions for Thunder Console operations such as managing users, groups, organization units, and user types. You can customize the handle and identifier to fit your deployment requirements.
+The system resource server controls administrative permissions for <ProductName /> Console operations such as managing users, groups, organization units, and user types. You can customize the handle and identifier to fit your deployment requirements.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
@@ -442,7 +442,7 @@ With the handle set to `mgmt`, all system permissions change as follows:
 
 #### Update Console Scopes
 
-When you change the system resource server handle, you must also update the Thunder Console scopes to match the new permission strings. The scopes tell the Console which permissions to request during sign-in.
+When you change the system resource server handle, you must also update the <ProductName /> Console scopes to match the new permission strings. The scopes tell the Console which permissions to request during sign-in.
 
 Update the `scopes` array in the Console configuration file for your deployment mode:
 

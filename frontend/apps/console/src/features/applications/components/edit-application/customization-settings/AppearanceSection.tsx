@@ -40,6 +40,10 @@ interface AppearanceSectionProps {
    * @param value - The new value for the field
    */
   onFieldChange: (field: keyof Application, value: unknown) => void;
+  /**
+   * Singular noun used to refer to the entity in user-visible copy (default: 'application').
+   */
+  entityLabel?: string;
 }
 
 /**
@@ -51,7 +55,12 @@ interface AppearanceSectionProps {
  * @param props - Component props
  * @returns Appearance configuration UI within a SettingsCard
  */
-export default function AppearanceSection({application, editedApp, onFieldChange}: AppearanceSectionProps) {
+export default function AppearanceSection({
+  application,
+  editedApp,
+  onFieldChange,
+  entityLabel = 'application',
+}: AppearanceSectionProps) {
   const {t} = useTranslation();
   const {data: themesData, isLoading: loadingThemes} = useGetThemes();
   const {data: layoutsData, isLoading: loadingLayouts} = useGetLayouts();
@@ -62,7 +71,11 @@ export default function AppearanceSection({application, editedApp, onFieldChange
   return (
     <SettingsCard
       title={t('applications:edit.customization.sections.appearance')}
-      description={t('applications:edit.customization.sections.appearance.description')}
+      description={t(
+        'applications:edit.customization.sections.appearance.description',
+        'Customize the visual appearance of your {{entity}}.',
+        {entity: entityLabel},
+      )}
     >
       <Box>
         <Typography variant="subtitle2" gutterBottom>

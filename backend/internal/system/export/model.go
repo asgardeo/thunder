@@ -18,7 +18,7 @@
 
 package export
 
-import declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+import declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 
 // ExportRequest represents the request structure for exporting resources.
 type ExportRequest struct {
@@ -28,6 +28,7 @@ type ExportRequest struct {
 	UserTypes           []string `json:"userTypes,omitempty"`
 	OrganizationUnits   []string `json:"organizationUnits,omitempty"`
 	Users               []string `json:"users,omitempty"`
+	Groups              []string `json:"groups,omitempty"`
 	ResourceServers     []string `json:"resourceServers,omitempty"`
 	Roles               []string `json:"roles,omitempty"`
 	Flows               []string `json:"flows,omitempty"`

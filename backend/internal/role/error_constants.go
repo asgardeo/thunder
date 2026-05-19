@@ -21,8 +21,8 @@ package role
 import (
 	"errors"
 
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 )
 
 // Client errors for role management operations.
@@ -237,6 +237,19 @@ var (
 		ErrorDescription: core.I18nMessage{
 			Key:          "error.roleservice.invalid_assignee_type_description",
 			DefaultValue: "The type parameter must be 'user', 'group', or 'app'",
+		},
+	}
+	// ErrorRoleIDConflict is the error returned when a role with the specified ID already exists.
+	ErrorRoleIDConflict = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "ROL-1018",
+		Error: core.I18nMessage{
+			Key:          "error.roleservice.role_id_conflict",
+			DefaultValue: "Role ID conflict",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.roleservice.role_id_conflict_description",
+			DefaultValue: "A role with the specified ID already exists",
 		},
 	}
 	// ResultLimitExceededInCompositeMode is the error returned when the total number of records exceeds

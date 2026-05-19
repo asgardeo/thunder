@@ -25,10 +25,10 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/internal/system/cmodels"
-	"github.com/asgardeo/thunder/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/cmodels"
+	"github.com/thunder-id/thunderid/internal/system/config"
 
-	"github.com/asgardeo/thunder/tests/mocks/database/providermock"
+	"github.com/thunder-id/thunderid/tests/mocks/database/providermock"
 )
 
 const testDeploymentID = "test-deployment-id"
@@ -695,6 +695,76 @@ func (s *IDPStoreTestSuite) TestGetIdentityProvider_BuildRowError() {
 	s.Error(err)
 	s.Nil(idp)
 	s.Contains(err.Error(), "failed to build idp from result row")
+	s.mockDBProvider.AssertExpectations(s.T())
+	s.mockDBClient.AssertExpectations(s.T())
+}
+
+// TestGetIdentityProviderByIssuer_Success tests successful IDP retrieval by issuer.
+func (s *IDPStoreTestSuite) TestGetIdentityProviderByIssuer_Success() {
+	results := []map[string]interface{}{
+		{
+			"id":          "idp-1",
+			"name":        "IDP 1",
+			"description": "Desc 1",
+			"type":        "OIDC",
+			"properties":  `[{"name":"issuer","value":"https://idp.example.com","isSecret":false}]`,
+		},
+	}
+
+	s.mockDBProvider.On("GetConfigDBClient").Return(s.mockDBClient, nil)
+	s.mockDBClient.On("QueryContext", context.Background(), queryGetIdentityProviderByIssuer,
+		"https://idp.example.com", testDeploymentID).Return(results, nil)
+
+	idp, err := s.store.GetIdentityProviderByIssuer(context.Background(), "https://idp.example.com")
+
+	s.NoError(err)
+	s.NotNil(idp)
+	s.Equal("idp-1", idp.ID)
+	s.Equal("IDP 1", idp.Name)
+	s.Len(idp.Properties, 1)
+	s.Equal("issuer", idp.Properties[0].GetName())
+	s.mockDBProvider.AssertExpectations(s.T())
+	s.mockDBClient.AssertExpectations(s.T())
+}
+
+// TestGetIdentityProviderByIssuer_NotFound tests IDP not found by issuer.
+func (s *IDPStoreTestSuite) TestGetIdentityProviderByIssuer_NotFound() {
+	s.mockDBProvider.On("GetConfigDBClient").Return(s.mockDBClient, nil)
+	s.mockDBClient.On("QueryContext", context.Background(), queryGetIdentityProviderByIssuer,
+		"https://unknown.example.com", testDeploymentID).Return([]map[string]interface{}{}, nil)
+
+	idp, err := s.store.GetIdentityProviderByIssuer(context.Background(), "https://unknown.example.com")
+
+	s.Error(err)
+	s.Nil(idp)
+	s.ErrorIs(err, ErrIDPNotFound)
+	s.mockDBProvider.AssertExpectations(s.T())
+	s.mockDBClient.AssertExpectations(s.T())
+}
+
+// TestGetIdentityProviderByIssuer_DBClientError tests DB client error.
+func (s *IDPStoreTestSuite) TestGetIdentityProviderByIssuer_DBClientError() {
+	s.mockDBProvider.On("GetConfigDBClient").Return(nil, errors.New("db error"))
+
+	idp, err := s.store.GetIdentityProviderByIssuer(context.Background(), "https://idp.example.com")
+
+	s.Error(err)
+	s.Nil(idp)
+	s.Contains(err.Error(), "failed to get database client")
+	s.mockDBProvider.AssertExpectations(s.T())
+}
+
+// TestGetIdentityProviderByIssuer_QueryError tests query execution error.
+func (s *IDPStoreTestSuite) TestGetIdentityProviderByIssuer_QueryError() {
+	s.mockDBProvider.On("GetConfigDBClient").Return(s.mockDBClient, nil)
+	s.mockDBClient.On("QueryContext", context.Background(), queryGetIdentityProviderByIssuer,
+		"https://idp.example.com", testDeploymentID).Return(nil, errors.New("query error"))
+
+	idp, err := s.store.GetIdentityProviderByIssuer(context.Background(), "https://idp.example.com")
+
+	s.Error(err)
+	s.Nil(idp)
+	s.Contains(err.Error(), "failed to execute query")
 	s.mockDBProvider.AssertExpectations(s.T())
 	s.mockDBClient.AssertExpectations(s.T())
 }

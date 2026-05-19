@@ -23,7 +23,17 @@ import TokenUserAttributesSection from '../TokenUserAttributesSection';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({t: (_key: string, fallback?: string) => fallback ?? _key}),
+  useTranslation: () => ({
+    t: (_key: string, fallback?: string, options?: Record<string, string>) => {
+      let result = fallback ?? _key;
+      if (options) {
+        Object.entries(options).forEach(([k, v]) => {
+          result = result.replace(new RegExp(`{{${k}}}`, 'g'), v);
+        });
+      }
+      return result;
+    },
+  }),
 }));
 
 // Mock Components

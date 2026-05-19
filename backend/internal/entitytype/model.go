@@ -32,6 +32,10 @@ const (
 	TypeCategoryAgent TypeCategory = "agent"
 )
 
+// DefaultAgentTypeName is the only agent type name allowed; agent types are restricted
+// to a single 'default' schema.
+const DefaultAgentTypeName = "default"
+
 // IsValid reports whether the category is one of the known fixed values.
 func (c TypeCategory) IsValid() bool {
 	return c == TypeCategoryUser || c == TypeCategoryAgent
@@ -83,7 +87,7 @@ type EntityTypeListResponse struct {
 	TotalResults int                  `json:"totalResults"`
 	StartIndex   int                  `json:"startIndex"`
 	Count        int                  `json:"count"`
-	Schemas      []EntityTypeListItem `json:"schemas"`
+	Types        []EntityTypeListItem `json:"types"`
 	Links        []Link               `json:"links"`
 }
 
@@ -125,5 +129,5 @@ type EntityTypeRequestWithID struct {
 	OUID                  string            `yaml:"organization_unit_id"`
 	AllowSelfRegistration bool              `yaml:"allow_self_registration,omitempty"`
 	SystemAttributes      *SystemAttributes `yaml:"system_attributes,omitempty"`
-	Schema                string            `yaml:"schema"`
+	Schema                interface{}       `yaml:"schema"`
 }

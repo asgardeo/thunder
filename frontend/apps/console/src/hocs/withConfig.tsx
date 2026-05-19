@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {AsgardeoProvider} from '@asgardeo/react';
+import {ThunderIDProvider} from '@thunderid/react';
 import {useConfig} from '@thunderid/contexts';
 import type {JSX, ComponentType} from 'react';
 
@@ -40,7 +40,7 @@ export default function withConfig<P extends object>(WrappedComponent: Component
     // product specific bootstrap calls that would otherwise 404 / be CORS-blocked
     // at the external authorization server: flow metadata (`{baseUrl}/flow/meta`)
     // and branding preferences. The user profile is already derived from ID token
-    // claims under the AsgardeoV2 platform, so no additional profile configuration
+    // claims under the ThunderID platform, so no additional profile configuration
     // is required.
     const genericOidc = isTrustedIssuerGenericOidc();
     const preferences = genericOidc
@@ -62,20 +62,19 @@ export default function withConfig<P extends object>(WrappedComponent: Component
     // requests and therefore CORS-safe against any compliant OIDC provider.
     //
     // The field is declared on the SDK's legacy auth client config and read at
-    // runtime (see @asgardeo/javascript DefaultConfig and requestAccessToken),
-    // but it is not surfaced on the v2 `AsgardeoProvider` prop type. The
+    // runtime (see @thunderid/browser DefaultConfig and requestAccessToken),
+    // but it is not surfaced on the v2 `ThunderIDProvider` prop type. The
     // provider spreads unknown props through to the underlying client via
     // `...rest`, so passing it here is the SDK-supported escape hatch.
     const genericOidcExtraProps: {sendCookiesInRequests?: boolean} = genericOidc ? {sendCookiesInRequests: false} : {};
 
     return (
-      <AsgardeoProvider
+      <ThunderIDProvider
         baseUrl={getTrustedIssuerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string)}
         clientId={getTrustedIssuerClientId() ?? (import.meta.env.VITE_ASGARDEO_CLIENT_ID as string)}
         afterSignInUrl={getClientUrl() ?? (import.meta.env.VITE_ASGARDEO_AFTER_SIGN_IN_URL as string)}
         scopes={getTrustedIssuerScopes().length > 0 ? getTrustedIssuerScopes() : undefined}
         signInOptions={signInOptions}
-        platform="AsgardeoV2"
         discovery={{
           wellKnown: {
             enabled: true,
@@ -85,7 +84,7 @@ export default function withConfig<P extends object>(WrappedComponent: Component
         {...genericOidcExtraProps}
       >
         <WrappedComponent {...props} />
-      </AsgardeoProvider>
+      </ThunderIDProvider>
     );
   };
 }

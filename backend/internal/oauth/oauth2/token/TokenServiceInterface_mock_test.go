@@ -4,9 +4,10 @@ package token
 
 import (
 	context "context"
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
 
-	model "github.com/asgardeo/thunder/internal/oauth/oauth2/model"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+
+	model "github.com/thunder-id/thunderid/internal/oauth/oauth2/model"
 	mock "github.com/stretchr/testify/mock"
 )
 

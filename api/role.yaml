@@ -1127,7 +1127,7 @@ components:
       properties:
         code:
           type: string
-          description: Error code
+          description: "Error code. Codes follow the ROL-XXXX convention."
           example: "ROL-1001"
         message:
           $ref: '#/components/schemas/I18nMessage'

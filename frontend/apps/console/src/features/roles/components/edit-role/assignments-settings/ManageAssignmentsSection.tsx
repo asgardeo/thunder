@@ -19,7 +19,7 @@
 import {SettingsCard} from '@thunderid/components';
 import {useDataGridLocaleText} from '@thunderid/hooks';
 import {Box, Avatar, DataGrid, IconButton, Tabs, Tab} from '@wso2/oxygen-ui';
-import {AppWindow, Trash2, User, Users} from '@wso2/oxygen-ui-icons-react';
+import {AppWindow, Bot, Trash2, User, Users} from '@wso2/oxygen-ui-icons-react';
 import {useState, useMemo, type JSX, type ReactNode, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
 import useGetRoleAssignments from '../../../api/useGetRoleAssignments';
@@ -56,6 +56,10 @@ export default function ManageAssignmentsSection({
     pageSize: 10,
     page: 0,
   });
+  const [agentPaginationModel, setAgentPaginationModel] = useState<DataGrid.GridPaginationModel>({
+    pageSize: 10,
+    page: 0,
+  });
 
   const userAssignmentsParams = useMemo(
     () => ({
@@ -88,10 +92,21 @@ export default function ManageAssignmentsSection({
     }),
     [roleId, appPaginationModel],
   );
+  const agentAssignmentsParams = useMemo(
+    () => ({
+      roleId,
+      limit: agentPaginationModel.pageSize,
+      offset: agentPaginationModel.page * agentPaginationModel.pageSize,
+      include: 'display' as const,
+      type: 'agent' as const,
+    }),
+    [roleId, agentPaginationModel],
+  );
 
   const {data: userAssignmentsData, isLoading: isUsersLoading} = useGetRoleAssignments(userAssignmentsParams);
   const {data: groupAssignmentsData, isLoading: isGroupsLoading} = useGetRoleAssignments(groupAssignmentsParams);
   const {data: appAssignmentsData, isLoading: isAppsLoading} = useGetRoleAssignments(appAssignmentsParams);
+  const {data: agentAssignmentsData, isLoading: isAgentsLoading} = useGetRoleAssignments(agentAssignmentsParams);
 
   const baseColumns: DataGrid.GridColDef<RoleAssignment>[] = useMemo(
     () => [
@@ -193,6 +208,26 @@ export default function ManageAssignmentsSection({
     ],
     [baseColumns],
   );
+  const agentColumns: DataGrid.GridColDef<RoleAssignment>[] = useMemo(
+    () => [
+      {
+        field: 'avatar',
+        headerName: '',
+        width: 70,
+        sortable: false,
+        filterable: false,
+        renderCell: (): JSX.Element => (
+          <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%'}}>
+            <Avatar sx={{width: 30, height: 30, bgcolor: 'primary.main', fontSize: '0.875rem'}}>
+              <Bot size={14} />
+            </Avatar>
+          </Box>
+        ),
+      },
+      ...baseColumns,
+    ],
+    [baseColumns],
+  );
 
   const handleTabChange = (_event: SyntheticEvent, newValue: number): void => {
     onAssignmentTabChange(newValue);
@@ -223,6 +258,12 @@ export default function ManageAssignmentsSection({
             icon={<AppWindow size={16} />}
             iconPosition="start"
             label={t('roles:edit.assignments.sections.manage.tabs.apps')}
+            sx={{textTransform: 'none'}}
+          />
+          <Tab
+            icon={<Bot size={16} />}
+            iconPosition="start"
+            label={t('roles:edit.assignments.sections.manage.tabs.agents', 'Agents')}
             sx={{textTransform: 'none'}}
           />
         </Tabs>
@@ -277,6 +318,25 @@ export default function ManageAssignmentsSection({
             rowCount={appAssignmentsData?.totalResults ?? 0}
             paginationModel={appPaginationModel}
             onPaginationModelChange={setAppPaginationModel}
+            pageSizeOptions={[5, 10, 25]}
+            disableRowSelectionOnClick
+            localeText={dataGridLocaleText}
+            sx={{'--oxygen-shape-borderRadius': '0px', border: 'none'}}
+          />
+        </Box>
+      )}
+
+      {activeAssignmentTab === 3 && (
+        <Box sx={{height: 400, width: '100%'}}>
+          <DataGrid.DataGrid
+            rows={agentAssignmentsData?.assignments ?? []}
+            columns={agentColumns}
+            loading={isAgentsLoading}
+            getRowId={(row): string => `agent:${row.id}`}
+            paginationMode="server"
+            rowCount={agentAssignmentsData?.totalResults ?? 0}
+            paginationModel={agentPaginationModel}
+            onPaginationModelChange={setAgentPaginationModel}
             pageSizeOptions={[5, 10, 25]}
             disableRowSelectionOnClick
             localeText={dataGridLocaleText}

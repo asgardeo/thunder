@@ -17,6 +17,7 @@
  */
 
 import type {JSX} from 'react';
+import type {CreationFlow} from './creation-flow';
 import type {InboundAuthConfig} from './inbound-auth';
 import type {OAuth2Config} from './oauth';
 
@@ -165,6 +166,11 @@ export interface ApplicationTemplate {
    * @example 'React', 'Next.js', 'Browser'
    */
   displayName?: string;
+  /**
+   * Inline creation flow declaring the wizard step sequence for this template.
+   * Templates without a `creationFlow` use the default user-facing flow.
+   */
+  creationFlow?: CreationFlow;
   /**
    * Description of the template
    */

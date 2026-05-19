@@ -39,7 +39,10 @@ import (
 //     Returns nil, CryptoDetails{EPK, CEK}, nil. params.ECDHES.ContentEncryptionAlgorithm must be set.
 //   - AlgorithmECDHESA128KW / AlgorithmECDHESA256KW: key must be *ecdsa.PublicKey. content is ignored.
 //     Returns wrappedCEK, CryptoDetails{EPK, CEK}, nil. params.ECDHES.ContentEncryptionAlgorithm must be set.
-func Encrypt(key any, params AlgorithmParams, content []byte) ([]byte, *CryptoDetails, error) {
+func Encrypt(key any, params *AlgorithmParams, content []byte) ([]byte, *CryptoDetails, error) {
+	if params == nil {
+		return nil, nil, errors.New("algorithm params required")
+	}
 	switch params.Algorithm {
 	case AlgorithmAESGCM:
 		aesKey, ok := key.([]byte)
@@ -53,19 +56,19 @@ func Encrypt(key any, params AlgorithmParams, content []byte) ([]byte, *CryptoDe
 		if !ok {
 			return nil, nil, errors.New("RSA-OAEP-256 requires a *rsa.PublicKey")
 		}
-		return encryptRSAOAEP256(rsaPub, params)
+		return encryptRSAOAEP256(rsaPub, *params)
 	case AlgorithmECDHES:
 		ecPub, ok := key.(*ecdsa.PublicKey)
 		if !ok {
 			return nil, nil, errors.New("ECDH-ES requires a *ecdsa.PublicKey")
 		}
-		return encryptECDHES(ecPub, params)
+		return encryptECDHES(ecPub, *params)
 	case AlgorithmECDHESA128KW, AlgorithmECDHESA256KW:
 		ecPub, ok := key.(*ecdsa.PublicKey)
 		if !ok {
 			return nil, nil, fmt.Errorf("%s requires a *ecdsa.PublicKey", params.Algorithm)
 		}
-		return encryptECDHESKW(ecPub, params)
+		return encryptECDHESKW(ecPub, *params)
 	default:
 		return nil, nil, fmt.Errorf("unsupported algorithm: %s", params.Algorithm)
 	}

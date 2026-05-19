@@ -53,7 +53,7 @@ func TestAESGCMEncryptDecryptRoundTrip(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ciphertext, details, err := Encrypt(key, params, tc.plaintext)
+			ciphertext, details, err := Encrypt(key, &params, tc.plaintext)
 			require.NoError(t, err)
 			assert.Nil(t, details)
 			assert.NotEmpty(t, ciphertext)
@@ -77,10 +77,10 @@ func TestAESGCMProducesUniqueCiphertexts(t *testing.T) {
 	plaintext := []byte("same plaintext")
 	params := AlgorithmParams{Algorithm: AlgorithmAESGCM}
 
-	ct1, _, err := Encrypt(key, params, plaintext)
+	ct1, _, err := Encrypt(key, &params, plaintext)
 	require.NoError(t, err)
 
-	ct2, _, err := Encrypt(key, params, plaintext)
+	ct2, _, err := Encrypt(key, &params, plaintext)
 	require.NoError(t, err)
 
 	assert.NotEqual(t, ct1, ct2, "Each encryption should produce a unique ciphertext due to random nonce")
@@ -94,7 +94,7 @@ func TestAESGCMTamperDetection(t *testing.T) {
 	plaintext := []byte("tamper test")
 	params := AlgorithmParams{Algorithm: AlgorithmAESGCM}
 
-	ciphertext, _, err := Encrypt(key, params, plaintext)
+	ciphertext, _, err := Encrypt(key, &params, plaintext)
 	require.NoError(t, err)
 
 	// Flip a byte in the ciphertext portion (after nonce)
@@ -129,7 +129,7 @@ func TestAESGCMWrongKeyFails(t *testing.T) {
 
 	params := AlgorithmParams{Algorithm: AlgorithmAESGCM}
 
-	ciphertext, _, err := Encrypt(key1, params, []byte("secret"))
+	ciphertext, _, err := Encrypt(key1, &params, []byte("secret"))
 	require.NoError(t, err)
 
 	_, err = Decrypt(key2, params, ciphertext)
@@ -139,7 +139,7 @@ func TestAESGCMWrongKeyFails(t *testing.T) {
 func TestAESGCMWrongKeyTypeFails(t *testing.T) {
 	params := AlgorithmParams{Algorithm: AlgorithmAESGCM}
 
-	_, _, err := Encrypt("not-a-byte-slice", params, []byte("secret"))
+	_, _, err := Encrypt("not-a-byte-slice", &params, []byte("secret"))
 	assert.Error(t, err, "Encrypt with wrong key type should fail")
 
 	_, err = Decrypt("not-a-byte-slice", params, []byte("some ciphertext"))
@@ -161,7 +161,7 @@ func TestRSAOAEP256EncryptDecryptRoundTrip(t *testing.T) {
 		},
 	}
 
-	wrappedCEK, details, err := Encrypt(&privKey.PublicKey, params, nil)
+	wrappedCEK, details, err := Encrypt(&privKey.PublicKey, &params, nil)
 	require.NoError(t, err)
 	require.NotNil(t, details)
 	assert.NotEmpty(t, wrappedCEK, "Wrapped CEK should not be empty")
@@ -184,14 +184,14 @@ func TestRSAOAEP256MissingContentEncryptionAlgorithmFails(t *testing.T) {
 		RSAOAEP256: RSAOAEP256Params{},
 	}
 
-	_, _, err = Encrypt(&privKey.PublicKey, params, nil)
+	_, _, err = Encrypt(&privKey.PublicKey, &params, nil)
 	assert.Error(t, err, "Encrypt without ContentEncryptionAlgorithm should fail")
 }
 
 func TestRSAOAEP256WrongKeyTypeFails(t *testing.T) {
 	params := AlgorithmParams{Algorithm: AlgorithmRSAOAEP256}
 
-	_, _, err := Encrypt("not-an-rsa-key", params, nil)
+	_, _, err := Encrypt("not-an-rsa-key", &params, nil)
 	assert.Error(t, err, "Encrypt with wrong key type should fail")
 
 	_, err = Decrypt("not-an-rsa-key", params, []byte("wrapped"))
@@ -213,7 +213,7 @@ func TestECDHESEncryptDecryptRoundTrip(t *testing.T) {
 		},
 	}
 
-	ciphertext, details, err := Encrypt(&receiverKey.PublicKey, encParams, nil)
+	ciphertext, details, err := Encrypt(&receiverKey.PublicKey, &encParams, nil)
 	require.NoError(t, err)
 	require.NotNil(t, details)
 	assert.Nil(t, ciphertext, "ECDH-ES direct agreement returns nil ciphertext")
@@ -255,7 +255,7 @@ func TestECDHESWrongKeyTypeFails(t *testing.T) {
 		ECDHES:    ECDHESParams{ContentEncryptionAlgorithm: "A128GCM"},
 	}
 
-	_, _, err := Encrypt("not-an-ec-key", params, nil)
+	_, _, err := Encrypt("not-an-ec-key", &params, nil)
 	assert.Error(t, err, "Encrypt with wrong key type should fail")
 
 	_, err = Decrypt("not-an-ec-key", params, nil)
@@ -277,7 +277,7 @@ func TestECDHESA128KWEncryptDecryptRoundTrip(t *testing.T) {
 		},
 	}
 
-	wrappedCEK, details, err := Encrypt(&receiverKey.PublicKey, encParams, nil)
+	wrappedCEK, details, err := Encrypt(&receiverKey.PublicKey, &encParams, nil)
 	require.NoError(t, err)
 	require.NotNil(t, details)
 	assert.NotEmpty(t, wrappedCEK, "ECDH-ES+A128KW should return a wrapped CEK")
@@ -308,7 +308,7 @@ func TestECDHESA256KWEncryptDecryptRoundTrip(t *testing.T) {
 		},
 	}
 
-	wrappedCEK, details, err := Encrypt(&receiverKey.PublicKey, encParams, nil)
+	wrappedCEK, details, err := Encrypt(&receiverKey.PublicKey, &encParams, nil)
 	require.NoError(t, err)
 	require.NotNil(t, details)
 	assert.NotEmpty(t, wrappedCEK, "ECDH-ES+A256KW should return a wrapped CEK")
@@ -329,13 +329,41 @@ func TestECDHESA256KWEncryptDecryptRoundTrip(t *testing.T) {
 }
 
 // ----------------------------------------------------------------------------
+// Nil params tests
+// ----------------------------------------------------------------------------
+
+func TestEncryptNilParamsFails(t *testing.T) {
+	_, _, err := Encrypt([]byte("key"), nil, []byte("content"))
+	assert.Error(t, err, "Encrypt with nil params should fail")
+	assert.Contains(t, err.Error(), "algorithm params required")
+}
+
+// ----------------------------------------------------------------------------
+// ECDH-ES+KW wrong key type tests
+// ----------------------------------------------------------------------------
+
+func TestECDHESKWWrongKeyTypeFails(t *testing.T) {
+	for _, alg := range []Algorithm{AlgorithmECDHESA128KW, AlgorithmECDHESA256KW} {
+		t.Run(string(alg), func(t *testing.T) {
+			params := AlgorithmParams{
+				Algorithm: alg,
+				ECDHES:    ECDHESParams{ContentEncryptionAlgorithm: "A128GCM"},
+			}
+			_, _, err := Encrypt("not-an-ec-key", &params, nil)
+			assert.Error(t, err, "Encrypt with wrong key type should fail")
+			assert.Contains(t, err.Error(), "*ecdsa.PublicKey")
+		})
+	}
+}
+
+// ----------------------------------------------------------------------------
 // Unsupported algorithm tests
 // ----------------------------------------------------------------------------
 
 func TestEncryptUnsupportedAlgorithmFails(t *testing.T) {
 	params := AlgorithmParams{Algorithm: "UNSUPPORTED"}
 
-	_, _, err := Encrypt([]byte("key"), params, []byte("content"))
+	_, _, err := Encrypt([]byte("key"), &params, []byte("content"))
 	assert.Error(t, err)
 }
 

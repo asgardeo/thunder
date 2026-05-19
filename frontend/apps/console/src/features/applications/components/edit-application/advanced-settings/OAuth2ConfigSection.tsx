@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useAsgardeo} from '@asgardeo/react';
+import {useThunderID} from '@thunderid/react';
 import {SettingsCard} from '@thunderid/components';
 import {
   Box,
@@ -148,7 +148,7 @@ export default function OAuth2ConfigSection({
   onOAuth2ConfigChange = undefined,
 }: OAuth2ConfigSectionProps) {
   const {t} = useTranslation();
-  const {discovery} = useAsgardeo();
+  const {discovery} = useThunderID();
 
   if (!oauth2Config) return null;
 
@@ -180,7 +180,11 @@ export default function OAuth2ConfigSection({
   return (
     <SettingsCard
       title={t('applications:edit.advanced.labels.oauth2Config')}
-      description={t('applications:edit.advanced.oauth2Config.intro')}
+      description={t(
+        'applications:edit.advanced.oauth2Config.intro',
+        'Configure OAuth 2.0 settings for this {{entity}}.',
+        {entity: 'application'},
+      )}
       titleIcon={<OAuth2Logo />}
     >
       <Stack spacing={3}>
@@ -216,7 +220,11 @@ export default function OAuth2ConfigSection({
             ))}
           </Select>
           <Typography variant="caption" color="text.secondary" sx={{mt: 0.5}}>
-            {t('applications:edit.advanced.grantTypes.hint')}
+            {t(
+              'applications:edit.advanced.grantTypes.hint',
+              'OAuth 2.0 flows this {{entity}} can use (e.g., authorization_code, client_credentials, refresh_token).',
+              {entity: 'application'},
+            )}
           </Typography>
         </FormControl>
 

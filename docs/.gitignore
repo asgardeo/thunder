@@ -18,7 +18,3 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-
-# Generated release notes
-/content/releases.md

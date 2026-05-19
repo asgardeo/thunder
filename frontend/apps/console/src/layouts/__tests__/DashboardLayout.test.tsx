@@ -46,8 +46,8 @@ vi.mock('../../features/applications/api/useGetApplications', () => ({
 }));
 
 // Mock Asgardeo
-vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: () => ({
+vi.mock('@thunderid/react', () => ({
+  useThunderID: () => ({
     signIn: mockSignIn,
     clearSession: mockClearSession,
     discovery: mockDiscovery,

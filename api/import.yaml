@@ -145,6 +145,8 @@ paths:
                     description:
                       key: "error.import.adapterNotConfigured.description"
                       defaultValue: "The required resource adapter is not configured"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
         "500":
           description: Internal server error
           content:
@@ -202,6 +204,8 @@ paths:
                 description:
                   key: "error.import.invalidRequest.description"
                   defaultValue: "The provided import request is invalid or malformed"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
         "500":
           description: Internal server error
           content:
@@ -226,6 +230,22 @@ components:
           tokenUrl: /oauth2/token
           scopes:
             system: Full system access
+
+  responses:
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: "AUTH-4010"
+            message:
+              key: "error.unauthorized"
+              defaultValue: "Unauthorized"
+            description:
+              key: "error.unauthorized_description"
+              defaultValue: "Authentication is required to access this resource"
 
   schemas:
     ImportRequest:
@@ -415,7 +435,7 @@ components:
       properties:
         code:
           type: string
-          description: Machine-readable error code.
+          description: "Error code. Codes follow the IMP-XXXX convention."
           example: "IMP-1001"
         message:
           $ref: '#/components/schemas/I18nMessage'

@@ -20,16 +20,19 @@ package authz
 
 import (
 	"bytes"
+	"crypto/rand"
+	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
 	"net/url"
 	"strings"
 	"testing"
 
-	"github.com/asgardeo/thunder/tests/integration/testutils"
+	"github.com/thunder-id/thunderid/tests/integration/testutils"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -1394,4 +1397,142 @@ func (ts *AuthzTestSuite) TestNonceIgnoredWithoutOpenIDScope() {
 		_, exists := claims["nonce"]
 		ts.False(exists, "Nonce must not be included when openid scope is absent")
 	}
+}
+
+// TestAuthorizationCodeFlow_IDToken_JWE verifies that when an application is configured with
+// ID token encryption (RSA-OAEP-256 / A256GCM), the id_token returned from the token endpoint
+// is a JWE compact serialisation (five dot-separated parts) rather than a plain JWT.
+func (ts *AuthzTestSuite) TestAuthorizationCodeFlow_IDToken_JWE() {
+	// Generate RSA key pair and build inline JWKS with use=enc.
+	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	ts.Require().NoError(err)
+
+	eBytes := big.NewInt(int64(privKey.PublicKey.E)).Bytes()
+	jwksKey := map[string]interface{}{
+		"kty": "RSA",
+		"use": "enc",
+		"alg": "RSA-OAEP-256",
+		"n":   base64.RawURLEncoding.EncodeToString(privKey.PublicKey.N.Bytes()),
+		"e":   base64.RawURLEncoding.EncodeToString(eBytes),
+	}
+	jwksBytes, err := json.Marshal(map[string]interface{}{"keys": []interface{}{jwksKey}})
+	ts.Require().NoError(err)
+	jwksJSON := string(jwksBytes)
+
+	const (
+		jweClientID     = "authz_idtoken_jwe_client"
+		jweClientSecret = "authz_idtoken_jwe_secret" //nolint:gosec // test credential
+	)
+
+	// Create an application with ID token encryption configured.
+	app := map[string]interface{}{
+		"name":                      "AuthzIDTokenJWETestApp",
+		"description":               "Test app for ID token JWE integration",
+		"ouId":                      testOUID,
+		"authFlowId":                ts.authFlowID,
+		"isRegistrationFlowEnabled": false,
+		"allowedUserTypes":          []string{"authz-test-person"},
+		"inboundAuthConfig": []map[string]interface{}{
+			{
+				"type": "oauth2",
+				"config": map[string]interface{}{
+					"clientId":                jweClientID,
+					"clientSecret":            jweClientSecret,
+					"redirectUris":            []string{redirectURI},
+					"grantTypes":              []string{"authorization_code"},
+					"responseTypes":           []string{"code"},
+					"tokenEndpointAuthMethod": "client_secret_basic",
+					"scopes":                  []string{"openid"},
+					"token": map[string]interface{}{
+						"idToken": map[string]interface{}{
+							"responseType":  "JWE",
+							"encryptionAlg": "RSA-OAEP-256",
+							"encryptionEnc": "A256GCM",
+						},
+					},
+					"certificate": map[string]interface{}{
+						"type":  "JWKS",
+						"value": jwksJSON,
+					},
+				},
+			},
+		},
+	}
+
+	jsonData, err := json.Marshal(app)
+	ts.Require().NoError(err)
+
+	req, err := http.NewRequest("POST", testutils.TestServerURL+"/applications", bytes.NewBuffer(jsonData))
+	ts.Require().NoError(err)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := ts.client.Do(req)
+	ts.Require().NoError(err)
+	defer resp.Body.Close()
+	ts.Require().Equal(http.StatusCreated, resp.StatusCode, "Failed to create JWE test application")
+
+	var appRespData map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&appRespData)
+	ts.Require().NoError(err)
+	jweAppID := appRespData["id"].(string)
+	defer func() {
+		delReq, _ := http.NewRequest("DELETE",
+			fmt.Sprintf("%s/applications/%s", testutils.TestServerURL, jweAppID), nil)
+		delResp, _ := ts.client.Do(delReq)
+		if delResp != nil {
+			_ = delResp.Body.Close()
+		}
+	}()
+
+	// Create a test user.
+	user := testutils.User{
+		OUID: testOUID,
+		Type: "authz-test-person",
+		Attributes: json.RawMessage(`{
+			"username": "idtoken_jwe_user",
+			"password": "testpass123",
+			"email": "idtoken_jwe_user@example.com",
+			"given_name": "JWE",
+			"family_name": "User"
+		}`),
+	}
+	userID, err := testutils.CreateUser(user)
+	ts.Require().NoError(err)
+	defer func() { _ = testutils.DeleteUser(userID) }()
+
+	// Run the full authorization code flow.
+	authzResp, err := testutils.InitiateAuthorizationFlow(jweClientID, redirectURI, "code", "openid", "jwe_state")
+	ts.Require().NoError(err)
+	defer authzResp.Body.Close()
+	ts.Require().Equal(http.StatusFound, authzResp.StatusCode)
+
+	authID, executionID, err := testutils.ExtractAuthData(authzResp.Header.Get("Location"))
+	ts.Require().NoError(err)
+
+	initialStep, err := testutils.ExecuteAuthenticationFlow(executionID, nil, "")
+	ts.Require().NoError(err)
+
+	flowStep, err := testutils.ExecuteAuthenticationFlow(executionID, map[string]string{
+		"username": "idtoken_jwe_user",
+		"password": "testpass123",
+	}, "action_001", initialStep.ChallengeToken)
+	ts.Require().NoError(err)
+	ts.Require().Equal("COMPLETE", flowStep.FlowStatus)
+
+	authzResponse, err := testutils.CompleteAuthorization(authID, flowStep.Assertion)
+	ts.Require().NoError(err)
+
+	authzCode, err := testutils.ExtractAuthorizationCode(authzResponse.RedirectURI)
+	ts.Require().NoError(err)
+
+	result, err := testutils.RequestToken(jweClientID, jweClientSecret, authzCode, redirectURI, "authorization_code")
+	ts.Require().NoError(err)
+	ts.Require().Equal(http.StatusOK, result.StatusCode)
+
+	idToken := result.Token.IDToken
+	ts.Require().NotEmpty(idToken, "ID token must be present")
+
+	// A JWE compact serialisation has exactly 5 dot-separated parts.
+	parts := strings.Split(idToken, ".")
+	ts.Len(parts, 5, "Encrypted ID token must be a JWE compact serialisation (5 parts)")
 }

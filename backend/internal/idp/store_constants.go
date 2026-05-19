@@ -18,7 +18,7 @@
 
 package idp
 
-import "github.com/asgardeo/thunder/internal/system/database/model"
+import "github.com/thunder-id/thunderid/internal/system/database/model"
 
 var (
 	// queryCreateIdentityProvider is the query to create a new IdP.
@@ -57,5 +57,16 @@ var (
 	queryGetIdentityProviderListCount = model.DBQuery{
 		ID:    "IPQ-IDP_MGT-07",
 		Query: `SELECT COUNT(*) AS count FROM "IDP" WHERE DEPLOYMENT_ID = $1`,
+	}
+	// queryGetIdentityProviderByIssuer is the query to get an IDP by its issuer property value.
+	queryGetIdentityProviderByIssuer = model.DBQuery{
+		ID: "IPQ-IDP_MGT-08",
+		PostgresQuery: "SELECT ID, NAME, DESCRIPTION, TYPE, PROPERTIES FROM IDP " +
+			"WHERE PROPERTIES @> $1::jsonb AND DEPLOYMENT_ID = $2 LIMIT 1",
+		SQLiteQuery: "SELECT ID, NAME, DESCRIPTION, TYPE, PROPERTIES FROM IDP " +
+			"WHERE EXISTS (SELECT 1 FROM json_each(PROPERTIES) " +
+			"WHERE json_extract(value, '$.name') = 'issuer' " +
+			"AND json_extract(value, '$.value') = $1) " +
+			"AND DEPLOYMENT_ID = $2 LIMIT 1",
 	}
 )

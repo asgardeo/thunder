@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useAsgardeo} from '@asgardeo/react';
+import {useThunderID} from '@thunderid/react';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useConfig} from '@thunderid/contexts';
 import {useLogger} from '@thunderid/logger';
@@ -52,6 +52,10 @@ interface EditTokenSettingsProps {
    */
   onFieldChange: (field: keyof Application, value: unknown) => void;
   onValidationChange?: (hasErrors: boolean) => void;
+  /**
+   * Singular noun used to refer to the entity in user-visible copy (default: 'application').
+   */
+  entityLabel?: string;
 }
 
 const createTokenConfigSchema = (t: (key: string) => string) => {
@@ -116,10 +120,11 @@ export default function EditTokenSettings({
   oauth2Config = undefined,
   onFieldChange,
   onValidationChange = undefined,
+  entityLabel = 'application',
 }: EditTokenSettingsProps) {
   const logger = useLogger('EditTokenSettings');
   const {t} = useTranslation();
-  const {http} = useAsgardeo();
+  const {http} = useThunderID();
   const {getServerUrl} = useConfig();
 
   const [userTypes, setUserTypes] = useState<ApiUserType[]>([]);
@@ -141,11 +146,11 @@ export default function EditTokenSettings({
 
   // Get schema IDs for allowed user types
   const schemaIds = useMemo(() => {
-    if (!userTypesData?.schemas || allowedUserTypes.length === 0) {
+    if (!userTypesData?.types || allowedUserTypes.length === 0) {
       return [];
     }
 
-    return userTypesData.schemas.filter((schema) => allowedUserTypes.includes(schema.name)).map((schema) => schema.id);
+    return userTypesData.types.filter((schema) => allowedUserTypes.includes(schema.name)).map((schema) => schema.id);
   }, [userTypesData, allowedUserTypes]);
 
   // Determine if this is OAuth/OIDC mode (has separate token configs) or Native mode
@@ -621,6 +626,7 @@ export default function EditTokenSettings({
             pendingRemovals={visiblePendingRemovals}
             highlightedAttributes={visibleHighlightedAttributes}
             onAttributeClick={handleAttributeClick}
+            entityLabel={entityLabel}
           />
 
           {/* Scopes & Attribute Mapping */}
@@ -631,6 +637,7 @@ export default function EditTokenSettings({
             isLoadingUserAttributes={isLoadingUserAttributes}
             onScopesChange={handleScopesChange}
             onScopeClaimsChange={handleScopeClaimsChange}
+            entityLabel={entityLabel}
           />
 
           {/* Merged Token Validation (Access Token / ID Token tabs) */}
@@ -647,6 +654,7 @@ export default function EditTokenSettings({
             pendingRemovals={visiblePendingRemovals}
             highlightedAttributes={visibleHighlightedAttributes}
             onAttributeClick={handleAttributeClick}
+            entityLabel={entityLabel}
           />
 
           {/* Token Validation */}

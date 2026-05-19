@@ -152,6 +152,118 @@ configuration:
 | JWKS fetch fails | `trusted_issuer.jwks_url` cannot be reached from <ProductName />, or the authorization server uses a certificate <ProductName /> does not trust | Check that the network allows the request, and install the authorization server's CA certificate on <ProductName /> if needed. |
 | Console never redirects to the external authorization server | `consoleClient.trustedIssuer` not set, or `publicUrl`/`hostname` still point at <ProductName /> | Verify the `consoleClient.trustedIssuer` block and re-render the chart. |
 
+## Token Exchange with External Identity Providers
+
+In addition to accepting external tokens for API authentication (above), <ProductName /> supports exchanging external IDP tokens for <ProductName />-issued access tokens via [RFC 8693 Token Exchange](https://datatracker.ietf.org/doc/html/rfc8693). This is useful when:
+
+- A client authenticates users via an external OIDC provider (Asgardeo, Google, Azure AD, Keycloak) and needs a <ProductName />-scoped access token.
+- You want to consolidate token issuance through <ProductName /> while delegating authentication to an upstream IDP.
+
+### How It Works
+
+1. Register the external IDP in <ProductName /> with token exchange properties (`issuer`, `jwks_endpoint`, `token_exchange_enabled`).
+2. A client sends the external token to <ProductName />'s token endpoint with `grant_type=urn:ietf:params:oauth:grant-type:token-exchange`.
+3. <ProductName /> resolves the token's `iss` claim to a registered IDP, verifies the signature via the IDP's JWKS endpoint, and validates the audience.
+4. <ProductName /> issues a new access token with the external user's `sub` claim passed through.
+
+### Setup
+
+#### 1. Register an OIDC Identity Provider
+
+Create an IDP via the `/identity-providers` API with the following properties:
+
+| Property | Required | Description |
+|----------|----------|-------------|
+| `issuer` | Yes | The exact `iss` claim value in tokens from this IDP (e.g., `https://api.asgardeo.io/t/myorg/oauth2/token`). |
+| `jwks_endpoint` | Yes | The IDP's JWKS URL for signature verification. |
+| `token_exchange_enabled` | Yes | Set to `"true"` to enable this IDP for token exchange. |
+
+For token-exchange-only IDPs, only the three properties above are required. The redirect-flow OIDC
+properties (`client_secret`, `redirect_uri`, `authorization_endpoint`, `token_endpoint`) are **not**
+required. They are only needed when the same IDP is also used for redirect-based login.
+
+Example:
+
+```bash
+curl -X POST https://thunder.example.com/identity-providers \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Asgardeo",
+    "type": "OIDC",
+    "properties": [
+      {"name": "issuer", "value": "https://api.asgardeo.io/t/myorg/oauth2/token"},
+      {"name": "jwks_endpoint", "value": "https://api.asgardeo.io/t/myorg/oauth2/jwks"},
+      {"name": "token_exchange_enabled", "value": "true"}
+    ]
+  }'
+```
+
+#### 2. Create an OAuth Application with Token Exchange Grant
+
+The application must include `urn:ietf:params:oauth:grant-type:token-exchange` in its allowed grant types:
+
+```bash
+curl -X POST https://thunder.example.com/applications \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Token Exchange Client",
+    "inboundAuthConfig": [{
+      "type": "oauth2",
+      "config": {
+        "clientId": "te_client",
+        "clientSecret": "te_secret",
+        "grantTypes": ["urn:ietf:params:oauth:grant-type:token-exchange"],
+        "tokenEndpointAuthMethod": "client_secret_basic"
+      }
+    }]
+  }'
+```
+
+#### 3. Exchange the External Token
+
+```bash
+curl -X POST https://thunder.example.com/oauth2/token \
+  -u 'te_client:te_secret' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'grant_type=urn:ietf:params:oauth:grant-type:token-exchange' \
+  -d 'subject_token=<JWT_FROM_EXTERNAL_IDP>' \
+  -d 'subject_token_type=urn:ietf:params:oauth:token-type:jwt'
+```
+
+Response:
+
+```json
+{
+  "access_token": "eyJ...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "issued_token_type": "urn:ietf:params:oauth:token-type:access_token"
+}
+```
+
+The issued token's `sub` claim contains the external user's subject identifier from the original token.
+
+### Validation Rules
+
+When processing an external token for exchange, <ProductName />:
+
+1. Extracts the `iss` claim and matches it against IDPs with `token_exchange_enabled=true`.
+2. Fetches the IDP's JWKS and verifies the token signature.
+3. Checks that the token's `aud` claim contains this server's own issuer.
+4. Validates `exp` (and `nbf` if present) with the configured clock-skew leeway.
+5. Extracts `sub` and non-standard claims as user attributes.
+
+If any step fails, the exchange returns HTTP 400 with `error=invalid_request` and a generic `"Invalid subject_token"` message.
+
+### Limitations
+
+- Only JWT tokens are supported for external exchange. Opaque tokens from providers like GitHub cannot be exchanged.
+- The external user's `sub` is passed through as-is — no local user lookup or JIT provisioning is performed.
+- No scope or claim mapping is applied. External token scopes use the existing intersection logic; external claims pass through filtered by the app's `userAttributes` configuration.
+- Trust is global: all token-exchange-enabled IDPs are available to all applications that have the `token-exchange` grant type.
+
 ## Reference
 
 - Configuration reference: [Trusted Issuer Configuration](/docs/next/guides/getting-started/configuration#trusted-issuer-configuration)

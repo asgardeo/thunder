@@ -25,10 +25,11 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/asgardeo/thunder/internal/flow/common"
-	"github.com/asgardeo/thunder/internal/flow/core"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/tests/mocks/flow/coremock"
+	appmodel "github.com/thunder-id/thunderid/internal/application/model"
+	"github.com/thunder-id/thunderid/internal/flow/common"
+	"github.com/thunder-id/thunderid/internal/flow/core"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/tests/mocks/flow/coremock"
 )
 
 type InviteExecutorTestSuite struct {
@@ -75,7 +76,7 @@ func (suite *InviteExecutorTestSuite) TearDownTest() {
 func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode() {
 	ctx := &core.NodeContext{
 		ExecutionID:  "test-flow-id",
-		AppID:        "test-app-id",
+		EntityID:     "test-app-id",
 		ExecutorMode: ExecutorModeGenerate,
 		UserInputs:   make(map[string]string),
 		RuntimeData:  make(map[string]string),
@@ -96,7 +97,7 @@ func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode() {
 func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_UserOnboarding_ExposesInviteLink() {
 	ctx := &core.NodeContext{
 		ExecutionID:  "test-flow-id",
-		AppID:        "test-app-id",
+		EntityID:     "test-app-id",
 		FlowType:     common.FlowTypeUserOnboarding,
 		ExecutorMode: ExecutorModeGenerate,
 		UserInputs:   make(map[string]string),
@@ -235,6 +236,9 @@ func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_PopulatesTemplate
 		ExecutorMode: ExecutorModeGenerate,
 		FlowType:     common.FlowTypeRegistration,
 		RuntimeData:  make(map[string]string),
+		Application: appmodel.Application{
+			Name: "Test App",
+		},
 	}
 
 	resp, err := suite.executor.Execute(ctx)
@@ -250,10 +254,7 @@ func (suite *InviteExecutorTestSuite) TestExecute_GenerateMode_PopulatesTemplate
 	templateData, ok := resp.ForwardedData[common.ForwardedDataKeyTemplateData].(map[string]interface{})
 	suite.True(ok, "Expected template data to be map[string]interface{}")
 	suite.NotEmpty(templateData["inviteLink"], "inviteLink must be present")
-
-	// 3. Ensure appName was removed
-	_, hasAppName := templateData["appName"]
-	suite.False(hasAppName, "appName should not be present")
+	suite.Equal("Test App", templateData["appName"])
 }
 
 func (suite *InviteExecutorTestSuite) TestGetExecutionPolicy_GenerateMode_ReturnsNil() {

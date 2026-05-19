@@ -21,8 +21,9 @@ package role
 import (
 	"context"
 
-	serverconst "github.com/asgardeo/thunder/internal/system/constants"
-	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+	serverconst "github.com/thunder-id/thunderid/internal/system/constants"
+	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
+	"github.com/thunder-id/thunderid/internal/system/log"
 )
 
 // compositeRoleStore implements a composite store that combines file-based (immutable) and
@@ -271,7 +272,14 @@ func (c *compositeRoleStore) getCompositeAssignmentsCount(
 		return 0, errResultLimitExceededInCompositeMode
 	}
 
-	return len(assignments), nil
+	count := len(assignments)
+	if count > serverconst.MaxCompositeStoreRecords*9/10 {
+		log.GetLogger().Warn("Role assignment count approaches composite store limit; consider API pagination",
+			log.String("id", id),
+			log.Int("count", count),
+			log.Int("limit", serverconst.MaxCompositeStoreRecords))
+	}
+	return count, nil
 }
 
 // UpdateRole updates a role in the database store only.
@@ -284,6 +292,11 @@ func (c *compositeRoleStore) UpdateRole(ctx context.Context, id string, role Rol
 // Immutability checks are handled at the service layer.
 func (c *compositeRoleStore) DeleteRole(ctx context.Context, id string) error {
 	return c.dbStore.DeleteRole(ctx, id)
+}
+
+// DeleteAssignmentsByRoleID deletes all assignments for a role from the database store only.
+func (c *compositeRoleStore) DeleteAssignmentsByRoleID(ctx context.Context, id string) error {
+	return c.dbStore.DeleteAssignmentsByRoleID(ctx, id)
 }
 
 // AddAssignments adds assignments to a role in the database store only.

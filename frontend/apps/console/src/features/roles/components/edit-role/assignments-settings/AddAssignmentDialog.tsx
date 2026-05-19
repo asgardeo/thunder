@@ -35,9 +35,11 @@ import {
   Tab,
   useTheme,
 } from '@wso2/oxygen-ui';
-import {AppWindow, User as UserIcon, Users} from '@wso2/oxygen-ui-icons-react';
+import {AppWindow, Bot, User as UserIcon, Users} from '@wso2/oxygen-ui-icons-react';
 import {useState, useMemo, useCallback, type JSX, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
+import useGetAgents from '../../../../agents/api/useGetAgents';
+import type {BasicAgent} from '../../../../agents/models/agent';
 import useGetApplications from '../../../../applications/api/useGetApplications';
 import type {BasicApplication} from '../../../../applications/models/application';
 import useGetGroups from '../../../../groups/api/useGetGroups';
@@ -80,12 +82,20 @@ export default function AddAssignmentDialog({
     type: 'include',
     ids: new Set(),
   });
+  const [agentSelectionModel, setAgentSelectionModel] = useState<DataGrid.GridRowSelectionModel>({
+    type: 'include',
+    ids: new Set(),
+  });
   const [userPaginationModel, setUserPaginationModel] = useState<DataGrid.GridPaginationModel>({pageSize: 10, page: 0});
   const [groupPaginationModel, setGroupPaginationModel] = useState<DataGrid.GridPaginationModel>({
     pageSize: 10,
     page: 0,
   });
   const [appPaginationModel, setAppPaginationModel] = useState<DataGrid.GridPaginationModel>({pageSize: 10, page: 0});
+  const [agentPaginationModel, setAgentPaginationModel] = useState<DataGrid.GridPaginationModel>({
+    pageSize: 10,
+    page: 0,
+  });
 
   const usersParams = useMemo(
     () => ({limit: userPaginationModel.pageSize, offset: userPaginationModel.page * userPaginationModel.pageSize}),
@@ -99,10 +109,15 @@ export default function AddAssignmentDialog({
     () => ({limit: appPaginationModel.pageSize, offset: appPaginationModel.page * appPaginationModel.pageSize}),
     [appPaginationModel],
   );
+  const agentsParams = useMemo(
+    () => ({limit: agentPaginationModel.pageSize, offset: agentPaginationModel.page * agentPaginationModel.pageSize}),
+    [agentPaginationModel],
+  );
 
   const {data: usersData, isLoading: usersLoading, error: usersError} = useGetUsers(usersParams);
   const {data: groupsData, isLoading: groupsLoading, error: groupsError} = useGetGroups(groupsParams);
   const {data: applicationsData, isLoading: appsLoading, error: appsError} = useGetApplications(applicationsParams);
+  const {data: agentsData, isLoading: agentsLoading, error: agentsError} = useGetAgents(agentsParams);
 
   const {data: initialUserAssignments} = useGetRoleAssignments({roleId, type: 'user', limit: 1, offset: 0});
   const {data: existingUserAssignments} = useGetRoleAssignments({
@@ -128,6 +143,14 @@ export default function AddAssignmentDialog({
     offset: 0,
     enabled: (initialAppAssignments?.totalResults ?? 0) > 0,
   });
+  const {data: initialAgentAssignments} = useGetRoleAssignments({roleId, type: 'agent', limit: 1, offset: 0});
+  const {data: existingAgentAssignments} = useGetRoleAssignments({
+    roleId,
+    type: 'agent',
+    limit: initialAgentAssignments?.totalResults ?? 0,
+    offset: 0,
+    enabled: (initialAgentAssignments?.totalResults ?? 0) > 0,
+  });
 
   const assignedUserIds = useMemo(
     () => new Set(existingUserAssignments?.assignments.map((a) => a.id) ?? []),
@@ -141,6 +164,10 @@ export default function AddAssignmentDialog({
     () => new Set(existingAppAssignments?.assignments.map((a) => a.id) ?? []),
     [existingAppAssignments],
   );
+  const assignedAgentIds = useMemo(
+    () => new Set(existingAgentAssignments?.assignments.map((a) => a.id) ?? []),
+    [existingAgentAssignments],
+  );
 
   const filteredUsers = useMemo(
     () => (usersData?.users ?? []).filter((u) => !assignedUserIds.has(u.id)),
@@ -153,6 +180,10 @@ export default function AddAssignmentDialog({
   const filteredApplications = useMemo(
     () => (applicationsData?.applications ?? []).filter((app) => !assignedAppIds.has(app.id)),
     [applicationsData, assignedAppIds],
+  );
+  const filteredAgents = useMemo(
+    () => (agentsData?.agents ?? []).filter((a) => !assignedAgentIds.has(a.id)),
+    [agentsData, assignedAgentIds],
   );
 
   const userColumns: DataGrid.GridColDef<User>[] = useMemo(
@@ -265,6 +296,48 @@ export default function AddAssignmentDialog({
     ],
     [theme, t],
   );
+  const agentColumns: DataGrid.GridColDef<BasicAgent>[] = useMemo(
+    () => [
+      {
+        field: 'avatar',
+        headerName: '',
+        width: 70,
+        sortable: false,
+        filterable: false,
+        renderCell: (): JSX.Element => (
+          <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%'}}>
+            <Avatar
+              sx={{
+                p: 0.5,
+                backgroundColor: theme.vars?.palette.grey[500],
+                width: 30,
+                height: 30,
+                fontSize: '0.875rem',
+                ...theme.applyStyles('dark', {backgroundColor: theme.vars?.palette.grey[900]}),
+              }}
+            >
+              <Bot size={14} />
+            </Avatar>
+          </Box>
+        ),
+      },
+      {
+        field: 'name',
+        headerName: t('roles:assignments.dialog.columns.name'),
+        flex: 1,
+        minWidth: 200,
+      },
+      {
+        field: 'description',
+        headerName: t('roles:assignments.dialog.columns.description'),
+        flex: 1,
+        minWidth: 200,
+        valueGetter: (_value, row): string => row.description ?? '-',
+      },
+    ],
+    [theme, t],
+  );
+
   const appColumns: DataGrid.GridColDef<BasicApplication>[] = useMemo(
     () => [
       {
@@ -320,20 +393,30 @@ export default function AddAssignmentDialog({
       id: String(id),
       type: 'app' as const,
     }));
-    onAdd([...userAssignments, ...groupAssignments, ...appAssignments]);
+    const agentAssignments: RoleAssignment[] = [...agentSelectionModel.ids].map((id) => ({
+      id: String(id),
+      type: 'agent' as const,
+    }));
+    onAdd([...userAssignments, ...groupAssignments, ...appAssignments, ...agentAssignments]);
     setUserSelectionModel({type: 'include', ids: new Set()});
     setGroupSelectionModel({type: 'include', ids: new Set()});
     setAppSelectionModel({type: 'include', ids: new Set()});
-  }, [userSelectionModel, groupSelectionModel, appSelectionModel, onAdd]);
+    setAgentSelectionModel({type: 'include', ids: new Set()});
+  }, [userSelectionModel, groupSelectionModel, appSelectionModel, agentSelectionModel, onAdd]);
 
   const handleClose = (): void => {
     setUserSelectionModel({type: 'include', ids: new Set()});
     setGroupSelectionModel({type: 'include', ids: new Set()});
     setAppSelectionModel({type: 'include', ids: new Set()});
+    setAgentSelectionModel({type: 'include', ids: new Set()});
     onClose();
   };
 
-  const totalSelected = userSelectionModel.ids.size + groupSelectionModel.ids.size + appSelectionModel.ids.size;
+  const totalSelected =
+    userSelectionModel.ids.size +
+    groupSelectionModel.ids.size +
+    appSelectionModel.ids.size +
+    agentSelectionModel.ids.size;
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
@@ -343,6 +426,7 @@ export default function AddAssignmentDialog({
           <Tab label={t('roles:assignments.dialog.tabs.users')} />
           <Tab label={t('roles:assignments.dialog.tabs.groups')} />
           <Tab label={t('roles:assignments.dialog.tabs.apps')} />
+          <Tab label={t('roles:assignments.dialog.tabs.agents', 'Agents')} />
         </Tabs>
 
         {activeTab === 0 && (
@@ -421,6 +505,34 @@ export default function AddAssignmentDialog({
                 rowCount={applicationsData?.totalResults ?? 0}
                 paginationModel={appPaginationModel}
                 onPaginationModelChange={setAppPaginationModel}
+                pageSizeOptions={[5, 10]}
+                disableRowSelectionOnClick
+                localeText={dataGridLocaleText}
+              />
+            </Box>
+          </>
+        )}
+
+        {activeTab === 3 && (
+          <>
+            {agentsError && !agentsLoading && (
+              <Alert severity="error" sx={{mb: 2}}>
+                {agentsError.message ?? t('roles:assignments.dialog.fetchError')}
+              </Alert>
+            )}
+            <Box sx={{height: 400, width: '100%'}}>
+              <DataGrid.DataGrid
+                rows={filteredAgents}
+                columns={agentColumns}
+                loading={agentsLoading}
+                getRowId={(row): string => row.id}
+                checkboxSelection
+                rowSelectionModel={agentSelectionModel}
+                onRowSelectionModelChange={setAgentSelectionModel}
+                paginationMode="server"
+                rowCount={agentsData?.totalResults ?? 0}
+                paginationModel={agentPaginationModel}
+                onPaginationModelChange={setAgentPaginationModel}
                 pageSizeOptions={[5, 10]}
                 disableRowSelectionOnClick
                 localeText={dataGridLocaleText}

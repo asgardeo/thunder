@@ -4,36 +4,78 @@ description: Build secure and low-friction customer sign-in and sign-up flows.
 sidebar_position: 1
 ---
 
+
 # Customer Identity for B2C Applications
 
-Choose this pattern when your users are individual consumers who expect fast onboarding and simple sign-in across web and mobile applications.
+ThunderID enables seamless customer identity for B2C apps—fast onboarding, simple sign-in, and secure recovery across web and mobile. This page highlights what’s possible for consumer products, now and in the future.
 
-## Typical Requirements
+## At a Glance
 
-- Support social, password, and passwordless sign-in options.
-- Keep registration short and progressively collect profile data.
-- Add step-up authentication only for high-risk actions.
-- Provide reliable account recovery paths.
+<div className="uc-fact-grid uc-fact-grid--b2c">
+	<article className="uc-fact-card">
+		<h3>Best Fit</h3>
+		<p>Consumer web and mobile products that need simple entry.</p>
+	</article>
+	<article className="uc-fact-card">
+		<h3>Primary Goals</h3>
+		<p>Fast onboarding, low-friction sign-in, and reliable account recovery.</p>
+	</article>
+	<article className="uc-fact-card">
+		<h3>Common Methods</h3>
+		<p>Social login, password, passwordless, and passkeys.</p>
+	</article>
+	<article className="uc-fact-card">
+		<h3>Watch For</h3>
+		<p>Step-up authentication only when a high-risk action appears.</p>
+	</article>
+</div>
 
-## Recommended Baseline Flow
+## What B2C Needs
 
-1. Start with email or social registration.
-2. Add passkey registration during onboarding or first successful sign-in.
-3. Use passkey-first sign-in with fallback to password or magic link.
-4. Trigger step-up authentication for sensitive operations.
-5. Offer recovery through verified email channels.
+<ul className="uc-checklist">
+	<li>Support social, password, and passwordless sign-in.</li>
+	<li>Keep registration short and collect profile data progressively.</li>
+	<li>Add step-up authentication only for high-risk actions.</li>
+	<li>Provide reliable account recovery paths.</li>
+</ul>
 
-## <ProductName /> Capabilities to Use
+## Example Customer Journey
 
-- **Flow engine** to orchestrate sign-up and sign-in journeys.
-- **Passkeys** for phishing-resistant authentication in the [Passkeys Guide](../../guides/key-concepts/authentication/passwordless/passkeys).
-- **Hosted or custom UI** depending on your product control needs.
-- **SDK integration** for frontend applications with the [React SDK Overview](../../sdks/react/overview).
+<ol className="uc-stage-list">
+	<li><strong>Start registration:</strong> use email or social sign-up.</li>
+	<li><strong>Introduce passkeys:</strong> register passkeys during onboarding or after first sign-in.</li>
+	<li><strong>Prefer passkeys:</strong> keep password or magic link as fallback.</li>
+	<li><strong>Step up only when needed:</strong> challenge sensitive operations with stronger verification.</li>
+	<li><strong>Close the loop:</strong> provide secure recovery through verified email channels.</li>
+</ol>
 
-## Implementation Checklist
+## ThunderID Capabilities for B2C
 
-1. Install and run <ProductName /> using the [Installation Guide](../../guides/getting-started/get-thunderid).
-2. Define your sign-up and sign-in flows.
-3. Enable passkeys and validate your relying party configuration.
-4. Integrate your frontend with <ProductName /> APIs or SDK.
-5. Test onboarding, step-up, and recovery paths end-to-end.
+<div className="uc-cap-grid">
+	<article className="uc-cap-card">
+		<h3>Flow Engine</h3>
+		<p>Orchestrate sign-up and sign-in journeys with one predictable path.</p>
+	</article>
+	<article className="uc-cap-card">
+		<h3>Passkeys</h3>
+		<p>Use phishing-resistant sign-in patterns from the [Passkeys Guide](../../guides/key-concepts/authentication/passwordless/passkeys).</p>
+	</article>
+	<article className="uc-cap-card">
+		<h3>UI Flexibility</h3>
+		<p>Choose hosted pages or custom UI based on your product control needs.</p>
+	</article>
+	<article className="uc-cap-card">
+		<h3>Frontend SDKs</h3>
+		<p>Integrate quickly with the [React SDK Overview](../../sdks/react/overview).</p>
+	</article>
+</div>
+
+## Key Considerations
+
+<ol className="uc-action-list">
+	<li>Install and run <ProductName /> with the [Installation Guide](../../guides/getting-started/get-thunderid).</li>
+	<li>Define the sign-up and sign-in flows.</li>
+	<li>Enable passkeys and validate relying party configuration.</li>
+	<li>Integrate your frontend with APIs or SDKs.</li>
+	<li>Validate onboarding, step-up, and recovery paths end to end.</li>
+</ol>

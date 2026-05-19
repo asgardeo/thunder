@@ -19,8 +19,9 @@
 package tokenservice
 
 import (
-	"github.com/asgardeo/thunder/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
 
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -30,10 +31,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	inboundmodel "github.com/asgardeo/thunder/internal/inboundclient/model"
-	"github.com/asgardeo/thunder/internal/system/config"
-	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
-	"github.com/asgardeo/thunder/tests/mocks/jose/jwtmock"
+	"github.com/thunder-id/thunderid/internal/idp"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	"github.com/thunder-id/thunderid/internal/system/cmodels"
+	"github.com/thunder-id/thunderid/internal/system/config"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/tests/mocks/idp/idpmock"
+	"github.com/thunder-id/thunderid/tests/mocks/jose/jwtmock"
 )
 
 const (
@@ -128,7 +132,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_BasicToke
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -155,7 +159,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithToken
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, customOAuthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, customOAuthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -178,7 +182,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithoutNb
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -200,7 +204,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithEmpty
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -211,7 +215,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Success_WithEmpty
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidJWTFormat() {
 	token := invalidJWTFormat
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -221,7 +225,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidJWTF
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_MalformedJWT() {
 	token := "not-a-jwt-at-all" //nolint:gosec // Test token, not a real credential
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -239,7 +243,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_MissingIssu
 	}
 	token := suite.createTestJWT(claims)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -253,7 +257,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidIssu
 	}
 	token := suite.createTestJWT(claims)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -269,11 +273,11 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_UntrustedIs
 	}
 	token := suite.createTestJWT(claims)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
-	assert.Contains(suite.T(), err.Error(), "not supported")
+	assert.Contains(suite.T(), err.Error(), "failed to exchange token for issuer")
 }
 
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidSignature() {
@@ -298,7 +302,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidSign
 			},
 		})
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -321,7 +325,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_MissingSubC
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -340,7 +344,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_InvalidSubT
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -360,7 +364,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_ExpiredToke
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -380,7 +384,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Error_NotYetValid
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -393,25 +397,19 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Success_S
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://thunder.io", suite.oauthApp)
+	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://thunder.io")
 
 	assert.NoError(suite.T(), err)
 	suite.mockJWTService.AssertExpectations(suite.T())
 }
 
 func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Success_WithTokenConfig() {
-	// App with token config should still use server-level issuer for signature verification
-	customApp := &inboundmodel.OAuthClient{
-		ClientID: "test-client",
-		Token: &inboundmodel.OAuthTokenConfig{
-			AccessToken: &inboundmodel.AccessTokenConfig{},
-		},
-	}
+	// Server-level issuer is used for signature verification regardless of app token config
 	token := testJWTTokenString
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://thunder.io", customApp)
+	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://thunder.io")
 
 	assert.NoError(suite.T(), err)
 	suite.mockJWTService.AssertExpectations(suite.T())
@@ -432,7 +430,7 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Error_Sig
 			},
 		})
 
-	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://thunder.io", suite.oauthApp)
+	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://thunder.io")
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "failed to verify token signature")
@@ -443,7 +441,7 @@ func (suite *TokenValidatorTestSuite) TestVerifyTokenSignatureByIssuer_Error_Ext
 	// External issuer (not in trusted server issuers)
 	token := testJWTTokenString
 
-	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://external-idp.com", suite.oauthApp)
+	err := suite.validator.verifyTokenSignatureByIssuer(token, "https://external-idp.com")
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "no verification method configured for issuer")
@@ -466,7 +464,7 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_DecodeBeforeVerify(
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -485,11 +483,11 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_FailFastOnUntrusted
 	token := suite.createTestJWT(claims)
 
 	// Should not call VerifyJWTSignature because issuer check fails first
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
-	assert.Contains(suite.T(), err.Error(), "not supported")
+	assert.Contains(suite.T(), err.Error(), "failed to exchange token for issuer")
 	// VerifyJWTSignature should NOT have been called
 	suite.mockJWTService.AssertNotCalled(suite.T(), "VerifyJWTSignature")
 }
@@ -515,7 +513,7 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_OnlyServerIssuerIsV
 	suite.mockJWTService.On("VerifyJWTSignature", tokenValid).Return(nil)
 
 	resultValid, errValid := suite.validator.ValidateSubjectToken(
-		tokenValid, appWithTokenConfig)
+		context.Background(), tokenValid, appWithTokenConfig)
 	assert.NoError(suite.T(), errValid)
 	assert.NotNil(suite.T(), resultValid)
 
@@ -528,10 +526,10 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_OnlyServerIssuerIsV
 	tokenInvalid := suite.createTestJWT(claimsInvalid)
 
 	resultInvalid, errInvalid := suite.validator.ValidateSubjectToken(
-		tokenInvalid, appWithTokenConfig)
+		context.Background(), tokenInvalid, appWithTokenConfig)
 	assert.Error(suite.T(), errInvalid)
 	assert.Nil(suite.T(), resultInvalid)
-	assert.Contains(suite.T(), errInvalid.Error(), "not supported")
+	assert.Contains(suite.T(), errInvalid.Error(), "failed to exchange token for issuer")
 	// VerifyJWTSignature should NOT have been called for untrusted issuer
 	suite.mockJWTService.AssertNotCalled(suite.T(), "VerifyJWTSignature", tokenInvalid)
 
@@ -546,7 +544,7 @@ func (suite *TokenValidatorTestSuite) TestFederationScenario_FutureExternalIssue
 	externalIssuer := "https://external-idp.com"
 
 	// Currently returns error because no JWKS support yet
-	err := suite.validator.verifyTokenSignatureByIssuer(token, externalIssuer, suite.oauthApp)
+	err := suite.validator.verifyTokenSignatureByIssuer(token, externalIssuer)
 
 	assert.Error(suite.T(), err)
 	assert.Contains(suite.T(), err.Error(), "no verification method configured")
@@ -567,7 +565,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Security_RejectsT
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -601,7 +599,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_EdgeCase_VeryLong
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -627,7 +625,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_AuthAssertion_Rej
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -641,7 +639,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_AuthAssertion_Rej
 
 func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_NonAssertion_AcceptsMultiAud() {
 	// Non-assertion subject tokens with a multi-value aud are accepted when at least one element
-	// matches the requesting app's AppID or the configured default audience.
+	// matches the requesting app's EntityID or the configured default audience.
 	now := time.Now().Unix()
 	claims := map[string]interface{}{
 		"sub": "user123",
@@ -653,12 +651,12 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_NonAssertion_Acce
 
 	oauthAppWithID := &inboundmodel.OAuthClient{
 		ClientID: "test-client",
-		AppID:    "x", // Matches one element of the aud array.
+		ID:       "x", // Matches one element of the aud array.
 	}
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, oauthAppWithID)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, oauthAppWithID)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -681,7 +679,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_NonAssertion_Tole
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1110,12 +1108,12 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithAppI
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.oauthApp.AppID = testAppID
+	suite.oauthApp.ID = testAppID
 	suite.oauthApp.ClientID = testClientID
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1141,11 +1139,11 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithEmpt
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.oauthApp.AppID = testAppID
+	suite.oauthApp.ID = testAppID
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1169,11 +1167,11 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithScop
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.oauthApp.AppID = testAppID
+	suite.oauthApp.ID = testAppID
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1198,11 +1196,11 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithUser
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.oauthApp.AppID = testAppID
+	suite.oauthApp.ID = testAppID
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1228,11 +1226,11 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_MissingAud
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.oauthApp.AppID = testAppID
+	suite.oauthApp.ID = testAppID
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1252,12 +1250,12 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_AudienceMi
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.oauthApp.AppID = testAppID
+	suite.oauthApp.ID = testAppID
 	suite.oauthApp.ClientID = testClientID
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1278,12 +1276,12 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithDefa
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.oauthApp.AppID = testAppID // Different from audience
+	suite.oauthApp.ID = testAppID // Different from audience
 	suite.oauthApp.ClientID = testClientID
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1296,7 +1294,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithDefa
 func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidJWTFormat() {
 	token := invalidJWTFormat
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1313,7 +1311,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_MissingIss
 	}
 	token := suite.createTestJWT(claims)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1331,11 +1329,11 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_ExpiredTok
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.oauthApp.AppID = testAppID
+	suite.oauthApp.ID = testAppID
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1354,13 +1352,13 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidIss
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.oauthApp.AppID = testAppID
+	suite.oauthApp.ID = testAppID
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
-	assert.Contains(suite.T(), err.Error(), "is not supported")
+	assert.Contains(suite.T(), err.Error(), "failed to exchange token for issuer")
 }
 
 func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidSignature() {
@@ -1374,7 +1372,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidSig
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.oauthApp.AppID = testAppID
+	suite.oauthApp.ID = testAppID
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(&serviceerror.ServiceError{
 		Type:  serviceerror.ServerErrorType,
@@ -1385,7 +1383,7 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidSig
 		},
 	})
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1404,11 +1402,11 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidSub
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.oauthApp.AppID = testAppID
+	suite.oauthApp.ID = testAppID
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1427,11 +1425,11 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_TokenNotYe
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.oauthApp.AppID = testAppID
+	suite.oauthApp.ID = testAppID
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1450,11 +1448,11 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_MissingExp
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.oauthApp.AppID = testAppID
+	suite.oauthApp.ID = testAppID
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1474,11 +1472,11 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Error_InvalidAud
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.oauthApp.AppID = testAppID
+	suite.oauthApp.ID = testAppID
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1500,11 +1498,11 @@ func (suite *TokenValidatorTestSuite) TestValidateAuthAssertion_Success_WithEmpt
 	}
 	token := suite.createTestJWT(claims)
 
-	suite.oauthApp.AppID = testAppID
+	suite.oauthApp.ID = testAppID
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1532,7 +1530,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_ExpiredWit
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1553,7 +1551,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_ExpiredBey
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1577,7 +1575,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_NbfInFutur
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1598,7 +1596,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_NbfInFutur
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), result)
@@ -1651,7 +1649,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_Expiration
 
 			suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil).Once()
 
-			result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+			result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 			assert.Error(suite.T(), err, tc.desc)
 			assert.Nil(suite.T(), result)
@@ -1690,7 +1688,7 @@ func (suite *TokenValidatorTestSuite) TestValidateSubjectToken_Leeway_ExpJustIns
 
 	suite.mockJWTService.On("VerifyJWTSignature", token).Return(nil)
 
-	result, err := suite.validator.ValidateSubjectToken(token, suite.oauthApp)
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
 
 	assert.NoError(suite.T(), err)
 	assert.NotNil(suite.T(), result)
@@ -1939,4 +1937,285 @@ func (suite *TokenValidatorTestSuite) TestValidateAccessToken_Error_EmptyClientI
 	assert.Nil(suite.T(), result)
 	assert.Contains(suite.T(), err.Error(), "missing required 'client_id' claim")
 	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+// ============================================================================
+// External IDP Token Exchange Tests — audience validates against server issuer
+// ============================================================================
+
+const (
+	testExternalIssuer = "https://external-idp.example.com"
+	testExternalJWKS   = "https://external-idp.example.com/.well-known/jwks.json"
+)
+
+type ExternalIDPValidatorTestSuite struct {
+	suite.Suite
+	mockJWTService *jwtmock.JWTServiceInterfaceMock
+	mockIDPService *idpmock.IDPServiceInterfaceMock
+	validator      *tokenValidator
+	oauthApp       *inboundmodel.OAuthClient
+}
+
+func TestExternalIDPValidatorTestSuite(t *testing.T) {
+	suite.Run(t, new(ExternalIDPValidatorTestSuite))
+}
+
+func (suite *ExternalIDPValidatorTestSuite) SetupTest() {
+	config.ResetServerRuntime()
+	testConfig := &config.Config{
+		JWT: config.JWTConfig{
+			Issuer:         "https://thunder.io",
+			ValidityPeriod: 3600,
+			Audience:       "application",
+			Leeway:         30,
+		},
+	}
+	_ = config.InitializeServerRuntime("test", testConfig)
+
+	suite.mockJWTService = jwtmock.NewJWTServiceInterfaceMock(suite.T())
+	suite.mockIDPService = idpmock.NewIDPServiceInterfaceMock(suite.T())
+	suite.validator = &tokenValidator{
+		jwtService: suite.mockJWTService,
+		idpService: suite.mockIDPService,
+	}
+	suite.oauthApp = &inboundmodel.OAuthClient{
+		ClientID: "test-client",
+	}
+}
+
+// buildExternalIDPDTO builds a minimal idp.IDPDTO for the standard test external IDP.
+func buildExternalIDPDTO() *idp.IDPDTO {
+	propTokenExchange, _ := cmodels.NewProperty(idp.PropTokenExchangeEnabled, "true", false)
+	propJWKS, _ := cmodels.NewProperty(idp.PropJwksEndpoint, testExternalJWKS, false)
+	propIssuer, _ := cmodels.NewProperty(idp.PropIssuer, testExternalIssuer, false)
+	return &idp.IDPDTO{
+		Properties: []cmodels.Property{*propTokenExchange, *propJWKS, *propIssuer},
+	}
+}
+
+// createExternalJWT creates a signed-looking JWT for an external IDP test.
+func (suite *ExternalIDPValidatorTestSuite) createExternalJWT(claims map[string]interface{}) string {
+	header := map[string]interface{}{"alg": "RS256", "typ": "JWT"}
+	headerJSON, _ := json.Marshal(header)
+	claimsJSON, _ := json.Marshal(claims)
+	headerB64 := base64.RawURLEncoding.EncodeToString(headerJSON)
+	claimsB64 := base64.RawURLEncoding.EncodeToString(claimsJSON)
+	return fmt.Sprintf("%s.%s.signature", headerB64, claimsB64)
+}
+
+func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP_Success_AudIsServerIssuer() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "ext-user-123",
+		"iss": testExternalIssuer,
+		"aud": "https://thunder.io", // audience is this server's own issuer
+		"exp": float64(now + 3600),
+		"nbf": float64(now - 60),
+	}
+	token := suite.createExternalJWT(claims)
+	idpDTO := buildExternalIDPDTO()
+
+	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
+		Return(idpDTO, nil)
+	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "ext-user-123", result.Sub)
+	assert.Equal(suite.T(), testExternalIssuer, result.Iss)
+	suite.mockIDPService.AssertExpectations(suite.T())
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP_Success_AudArrayHasServerIssuer() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "ext-user-123",
+		"iss": testExternalIssuer,
+		"aud": []interface{}{"https://thunder.io", "other-audience"}, // array including server issuer
+		"exp": float64(now + 3600),
+		"nbf": float64(now - 60),
+	}
+	token := suite.createExternalJWT(claims)
+	idpDTO := buildExternalIDPDTO()
+
+	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
+		Return(idpDTO, nil)
+	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
+
+	assert.NoError(suite.T(), err)
+	assert.NotNil(suite.T(), result)
+	assert.Equal(suite.T(), "ext-user-123", result.Sub)
+	suite.mockIDPService.AssertExpectations(suite.T())
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP_Error_AudNotServerIssuer() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "ext-user-123",
+		"iss": testExternalIssuer,
+		"aud": "some-client-id", // audience is a client_id, not the server issuer
+		"exp": float64(now + 3600),
+		"nbf": float64(now - 60),
+	}
+	token := suite.createExternalJWT(claims)
+	idpDTO := buildExternalIDPDTO()
+
+	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
+		Return(idpDTO, nil)
+	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "external token audience does not contain expected server issuer")
+	suite.mockIDPService.AssertExpectations(suite.T())
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP_Error_MissingAudClaim() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "ext-user-123",
+		"iss": testExternalIssuer,
+		// no aud claim
+		"exp": float64(now + 3600),
+	}
+	token := suite.createExternalJWT(claims)
+	idpDTO := buildExternalIDPDTO()
+
+	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
+		Return(idpDTO, nil)
+	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).Return(nil)
+
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "failed to extract audience from external token")
+	suite.mockIDPService.AssertExpectations(suite.T())
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP_Error_InvalidSignature() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "ext-user-123",
+		"iss": testExternalIssuer,
+		"aud": "https://thunder.io",
+		"exp": float64(now + 3600),
+	}
+	token := suite.createExternalJWT(claims)
+	idpDTO := buildExternalIDPDTO()
+
+	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
+		Return(idpDTO, nil)
+	suite.mockJWTService.On("VerifyJWTSignatureWithJWKS", token, testExternalJWKS).
+		Return(&serviceerror.ServiceError{
+			Type:  serviceerror.ServerErrorType,
+			Code:  "SIGNATURE_VERIFICATION_FAILED",
+			Error: core.I18nMessage{Key: "error.test.sig_failed", DefaultValue: "Signature verification failed"},
+			ErrorDescription: core.I18nMessage{
+				Key: "error.test.sig_failed_desc", DefaultValue: "JWT signature verification failed",
+			},
+		})
+
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "invalid subject token signature")
+	suite.mockIDPService.AssertExpectations(suite.T())
+	suite.mockJWTService.AssertExpectations(suite.T())
+}
+
+func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP_Error_TokenExchangeNotEnabled() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "ext-user-123",
+		"iss": testExternalIssuer,
+		"aud": "https://thunder.io",
+		"exp": float64(now + 3600),
+	}
+	token := suite.createExternalJWT(claims)
+
+	propTokenExchange, _ := cmodels.NewProperty(idp.PropTokenExchangeEnabled, "false", false)
+	propJWKS, _ := cmodels.NewProperty(idp.PropJwksEndpoint, testExternalJWKS, false)
+	propIssuer, _ := cmodels.NewProperty(idp.PropIssuer, testExternalIssuer, false)
+	idpDTO := &idp.IDPDTO{
+		Properties: []cmodels.Property{*propTokenExchange, *propJWKS, *propIssuer},
+	}
+
+	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
+		Return(idpDTO, nil)
+
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "token exchange not enabled")
+	suite.mockIDPService.AssertExpectations(suite.T())
+}
+
+func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP_Error_NoJWKSEndpoint() {
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "ext-user-123",
+		"iss": testExternalIssuer,
+		"aud": "https://thunder.io",
+		"exp": float64(now + 3600),
+	}
+	token := suite.createExternalJWT(claims)
+
+	propTokenExchange, _ := cmodels.NewProperty(idp.PropTokenExchangeEnabled, "true", false)
+	propIssuer, _ := cmodels.NewProperty(idp.PropIssuer, testExternalIssuer, false)
+	idpDTO := &idp.IDPDTO{
+		Properties: []cmodels.Property{*propTokenExchange, *propIssuer},
+	}
+
+	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), testExternalIssuer).
+		Return(idpDTO, nil)
+
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "no JWKS endpoint configured")
+	suite.mockIDPService.AssertExpectations(suite.T())
+}
+
+func (suite *ExternalIDPValidatorTestSuite) TestValidateSubjectToken_ExternalIDP_Error_IDPNotFound() {
+	unknownIssuer := "https://unknown-idp.example.com"
+
+	now := time.Now().Unix()
+	claims := map[string]interface{}{
+		"sub": "ext-user-123",
+		"iss": unknownIssuer,
+		"aud": "https://thunder.io",
+		"exp": float64(now + 3600),
+	}
+	token := suite.createExternalJWT(claims)
+
+	suite.mockIDPService.On("GetIdentityProviderByIssuer", context.Background(), unknownIssuer).
+		Return(nil, &serviceerror.ServiceError{
+			Type:  serviceerror.ClientErrorType,
+			Code:  "IDP_NOT_FOUND",
+			Error: core.I18nMessage{Key: "error.test.idp_not_found", DefaultValue: "IDP not found"},
+			ErrorDescription: core.I18nMessage{
+				Key: "error.test.idp_not_found_desc", DefaultValue: "No IDP found for the given issuer",
+			},
+		})
+
+	result, err := suite.validator.ValidateSubjectToken(context.Background(), token, suite.oauthApp)
+
+	assert.Error(suite.T(), err)
+	assert.Nil(suite.T(), result)
+	assert.Contains(suite.T(), err.Error(), "failed to exchange token for issuer")
+	suite.mockIDPService.AssertExpectations(suite.T())
 }

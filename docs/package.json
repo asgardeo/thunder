@@ -5,31 +5,31 @@
   "description": "Documentation for ⚡️ ThunderID",
   "author": "WSO2",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/asgardeo/thunder/tree/main/docs#readme",
+  "homepage": "https://github.com/thunder-id/thunderid/tree/main/docs#readme",
   "bugs": {
-    "url": "https://github.com/asgardeo/thunder/issues"
+    "url": "https://github.com/thunder-id/thunderid/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/asgardeo/thunder"
+    "url": "https://github.com/thunder-id/thunderid"
   },
   "keywords": [
-    "asgardeo",
+    "thunderid",
     "thunderid",
     "docs",
     "documentation",
     "wso2"
   ],
   "scripts": {
-    "build": "pnpm prebuild && docusaurus build",
-    "clear": "docusaurus clear",
+    "build": "pnpm setup && docusaurus build",
+    "clean": "docusaurus clear",
     "deploy": "docusaurus deploy",
-    "dev": "pnpm prebuild && docusaurus start --port 5180",
+    "dev": "pnpm setup && docusaurus start --port 5180",
     "docusaurus": "docusaurus",
     "generate:api-specs": "node ./scripts/merge-openapi-specs.mjs",
     "generate:changelog": "node ./scripts/generate-changelog.mjs",
     "generate:postman-collections": "node ./scripts/generate-postman-collections.mjs",
-    "prebuild": "node ./scripts/prebuild.mjs",
+    "setup": "node ./scripts/prebuild.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "serve": "docusaurus serve",
@@ -43,25 +43,26 @@
     "@docusaurus/plugin-content-docs": "3.9.2",
     "@docusaurus/preset-classic": "3.9.2",
     "@mdx-js/react": "3.0.0",
+    "docusaurus-plugin-copy-page-button": "0.5.0",
+    "@thunderid/design": "workspace:^",
     "@thunderid/eslint-plugin": "workspace:^",
     "@thunderid/logger": "workspace:^",
     "@thunderid/prettier-config": "workspace:^",
-    "@wso2/oxygen-ui": "catalog:",
-    "@wso2/oxygen-ui-icons-react": "catalog:",
+    "@wso2/oxygen-ui": "0.10.1",
+    "@wso2/oxygen-ui-icons-react": "0.10.1",
     "@scalar/api-reference-react": "0.9.15",
-    "clsx": "catalog:",
-    "eslint": "catalog:",
-    "prettier": "catalog:",
+    "clsx": "2.1.1",
+    "eslint": "9.39.4",
     "prism-react-renderer": "2.3.0",
-    "react": "catalog:",
-    "react-dom": "catalog:"
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "3.9.2",
     "@docusaurus/tsconfig": "3.9.2",
     "@docusaurus/types": "3.9.2",
     "openapi-to-postmanv2": "4.23.0",
-    "typescript": "catalog:",
+    "typescript": "5.9.3",
     "yaml": "2.8.2"
   },
   "browserslist": {

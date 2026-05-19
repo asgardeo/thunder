@@ -35,9 +35,11 @@ import {
   Tab,
   useTheme,
 } from '@wso2/oxygen-ui';
-import {AppWindow, User as UserIcon} from '@wso2/oxygen-ui-icons-react';
+import {AppWindow, Bot, User as UserIcon} from '@wso2/oxygen-ui-icons-react';
 import {useState, useMemo, useCallback, type JSX, type SyntheticEvent} from 'react';
 import {useTranslation} from 'react-i18next';
+import useGetAgents from '../../../../agents/api/useGetAgents';
+import type {BasicAgent} from '../../../../agents/models/agent';
 import useGetApplications from '../../../../applications/api/useGetApplications';
 import type {BasicApplication} from '../../../../applications/models/application';
 import type {Member} from '../../../models/group';
@@ -65,8 +67,16 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
     type: 'include',
     ids: new Set(),
   });
+  const [agentSelectionModel, setAgentSelectionModel] = useState<DataGrid.GridRowSelectionModel>({
+    type: 'include',
+    ids: new Set(),
+  });
   const [userPaginationModel, setUserPaginationModel] = useState<DataGrid.GridPaginationModel>({pageSize: 10, page: 0});
   const [appPaginationModel, setAppPaginationModel] = useState<DataGrid.GridPaginationModel>({pageSize: 10, page: 0});
+  const [agentPaginationModel, setAgentPaginationModel] = useState<DataGrid.GridPaginationModel>({
+    pageSize: 10,
+    page: 0,
+  });
 
   const usersParams = useMemo(
     () => ({
@@ -82,11 +92,20 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
     }),
     [appPaginationModel],
   );
+  const agentsParams = useMemo(
+    () => ({
+      limit: agentPaginationModel.pageSize,
+      offset: agentPaginationModel.page * agentPaginationModel.pageSize,
+    }),
+    [agentPaginationModel],
+  );
   const {data: usersData, isLoading: usersLoading, error: usersError} = useGetUsers(usersParams);
   const {data: appsData, isLoading: appsLoading, error: appsError} = useGetApplications(appsParams);
+  const {data: agentsData, isLoading: agentsLoading, error: agentsError} = useGetAgents(agentsParams);
 
   const users: User[] = useMemo(() => usersData?.users ?? [], [usersData]);
   const applications: BasicApplication[] = useMemo(() => appsData?.applications ?? [], [appsData]);
+  const agents: BasicAgent[] = useMemo(() => agentsData?.agents ?? [], [agentsData]);
 
   const userColumns: DataGrid.GridColDef<User>[] = useMemo(
     () => [
@@ -163,6 +182,56 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
     [theme, t],
   );
 
+  const agentColumns: DataGrid.GridColDef<BasicAgent>[] = useMemo(
+    () => [
+      {
+        field: 'avatar',
+        headerName: '',
+        width: 70,
+        sortable: false,
+        filterable: false,
+        renderCell: (): JSX.Element => (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+            }}
+          >
+            <Avatar
+              sx={{
+                p: 0.5,
+                backgroundColor: theme.vars?.palette.grey[500],
+                width: 30,
+                height: 30,
+                fontSize: '0.875rem',
+                ...theme.applyStyles('dark', {
+                  backgroundColor: theme.vars?.palette.grey[900],
+                }),
+              }}
+            >
+              <Bot size={14} />
+            </Avatar>
+          </Box>
+        ),
+      },
+      {
+        field: 'name',
+        headerName: t('groups:addMember.columns.displayName'),
+        flex: 1,
+        minWidth: 200,
+      },
+      {
+        field: 'id',
+        headerName: t('groups:edit.members.sections.manage.listing.columns.id'),
+        flex: 1,
+        minWidth: 250,
+      },
+    ],
+    [theme, t],
+  );
+
   const appColumns: DataGrid.GridColDef<BasicApplication>[] = useMemo(
     () => [
       {
@@ -217,19 +286,22 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
     const newMembers: Member[] = [
       ...[...userSelectionModel.ids].map((id) => ({id: String(id), type: 'user' as const})),
       ...[...appSelectionModel.ids].map((id) => ({id: String(id), type: 'app' as const})),
+      ...[...agentSelectionModel.ids].map((id) => ({id: String(id), type: 'agent' as const})),
     ];
     onAdd(newMembers);
     setUserSelectionModel({type: 'include', ids: new Set()});
     setAppSelectionModel({type: 'include', ids: new Set()});
-  }, [userSelectionModel, appSelectionModel, onAdd]);
+    setAgentSelectionModel({type: 'include', ids: new Set()});
+  }, [userSelectionModel, appSelectionModel, agentSelectionModel, onAdd]);
 
   const handleClose = (): void => {
     setUserSelectionModel({type: 'include', ids: new Set()});
     setAppSelectionModel({type: 'include', ids: new Set()});
+    setAgentSelectionModel({type: 'include', ids: new Set()});
     onClose();
   };
 
-  const totalSelected = userSelectionModel.ids.size + appSelectionModel.ids.size;
+  const totalSelected = userSelectionModel.ids.size + appSelectionModel.ids.size + agentSelectionModel.ids.size;
 
   const handleTabChange = (_event: SyntheticEvent, tab: number): void => {
     setActiveTab(tab);
@@ -242,6 +314,7 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
         <Tabs value={activeTab} onChange={handleTabChange} sx={{mb: 2}}>
           <Tab icon={<UserIcon size={16} />} iconPosition="start" label={t('groups:addMember.tabs.users')} />
           <Tab icon={<AppWindow size={16} />} iconPosition="start" label={t('groups:addMember.tabs.apps')} />
+          <Tab icon={<Bot size={16} />} iconPosition="start" label={t('groups:addMember.tabs.agents', 'Agents')} />
         </Tabs>
 
         {activeTab === 0 && (
@@ -308,6 +381,42 @@ export default function AddMemberDialog({open, onClose, onAdd}: AddMemberDialogP
                 rowCount={appsData?.totalResults ?? 0}
                 paginationModel={appPaginationModel}
                 onPaginationModelChange={setAppPaginationModel}
+                pageSizeOptions={[5, 10]}
+                disableRowSelectionOnClick
+                localeText={dataGridLocaleText}
+              />
+            </Box>
+          </>
+        )}
+
+        {activeTab === 2 && (
+          <>
+            {agentsError && !agentsLoading && (
+              <Alert severity="error" sx={{mb: 2}}>
+                {agentsError.message ?? t('groups:addMember.fetchAgentsError', 'Failed to load agents')}
+              </Alert>
+            )}
+            {!agentsError && agents.length === 0 && !agentsLoading && (
+              <Alert severity="info" sx={{mb: 2}}>
+                {t('groups:addMember.noResultsAgents', 'No agents found')}
+              </Alert>
+            )}
+
+            <Box sx={{height: 400, width: '100%'}}>
+              <DataGrid.DataGrid
+                rows={agents}
+                columns={agentColumns}
+                loading={agentsLoading}
+                getRowId={(row): string => row.id}
+                checkboxSelection
+                rowSelectionModel={agentSelectionModel}
+                onRowSelectionModelChange={(newSelection) => {
+                  setAgentSelectionModel(newSelection);
+                }}
+                paginationMode="server"
+                rowCount={agentsData?.totalResults ?? 0}
+                paginationModel={agentPaginationModel}
+                onPaginationModelChange={setAgentPaginationModel}
                 pageSizeOptions={[5, 10]}
                 disableRowSelectionOnClick
                 localeText={dataGridLocaleText}

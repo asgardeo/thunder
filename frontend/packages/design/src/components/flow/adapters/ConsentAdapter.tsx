@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {Consent, ConsentCheckboxList, type ConsentPurpose, type ConsentRenderProps} from '@asgardeo/react';
+import {Consent, ConsentCheckboxList, type ConsentPurpose, type ConsentRenderProps} from '@thunderid/react';
 import {cn} from '@thunderid/utils';
 import {Box, Divider, FormControlLabel, Switch, Typography} from '@wso2/oxygen-ui';
 import type {JSX} from 'react';
