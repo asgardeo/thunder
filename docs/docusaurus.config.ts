@@ -227,6 +227,10 @@ const config: Config = {
           label: 'Community',
         },
         {
+          type: 'custom-GitHubStarButton',
+          position: 'right',
+        },
+        {
           href: `https://github.com/${productConfig.project.source.github.fullName}`,
           position: 'right',
           className: 'navbar__github--link',
