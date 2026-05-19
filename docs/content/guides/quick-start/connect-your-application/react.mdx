@@ -45,51 +45,6 @@ Check out the complete <RepoLink path="/tree/main/samples/apps/react-sdk-sample"
 
 <Stepper stepNode="h2" as="h2">
 
-## Create an Application in <ProductName />
-
-Before integrating <ProductName /> with your React app, you need to create an application in <ProductName />.
-
-### Using the <ProductName /> Console
-
-1. Sign into the <ProductName /> Console at [https://localhost:8090/console](https://localhost:8090/console)
-2. Navigate to **Applications** → **New Application**
-3. Provide the following details:
-   - **Name**: `my-react-app`
-   - **Type**: Single Page Application (SPA)
-   - **Authorized Redirect URL**: `http://localhost:5173`
-
-:::info
-The authorized redirect URL determines where <ProductName /> should send users after they successfully log in. For this guide, we'll use `http://localhost:5173`, as the Vite development server runs at this URL by default.
-:::
-
-### Using the <ProductName /> API
-
-You can also create an application using the <ProductName /> API. First, [obtain a system API token](/docs/next/guides/getting-started/get-thunderid#obtain-system-api-token), then:
-
-```bash
-curl -kL -X POST https://localhost:8090/applications \
-  -H 'Authorization: Bearer <your-system-token>' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "name": "my-react-app",
-    "inboundAuthConfig": [{
-      "type": "oauth2",
-      "config": {
-        "grantTypes": ["authorization_code", "refresh_token"],
-        "responseTypes": ["code"],
-        "redirectUris": ["http://localhost:5173"],
-        "tokenEndpointAuthMethod": "none",
-        "publicClient": true,
-        "pkceRequired": true
-      }
-    }]
-  }'
-```
-
-:::warning Important
-Note down the **Client ID** from the response. You'll need it to configure your React app.
-:::
-
 ## Create a React App
 
 Create your new React app using Vite:
@@ -294,7 +249,7 @@ Start the development server:
 Visit your app at [http://localhost:5173](http://localhost:5173)
 
 :::tip Success
-You should see the sign-in button. Click it — you'll be redirected to the <ProductName />-hosted sign-in page, authenticate with the test user you created in step 2, and land back in your app with the user profile displayed.
+You should see the sign-in button. Click it, you'll be redirected to the <ProductName />-hosted sign-in page. Authenticate with the test user you created in step 2 and you'll land back in your app with the user profile displayed.
 :::
 
 </Stepper>
@@ -315,7 +270,7 @@ You have completed the full getting started sequence:
   <a href="../../../guides/flows/build-a-flow#go-further" style={{textDecoration: 'none', color: 'inherit'}}>
     <div style={{border: '1px solid var(--ifm-color-emphasis-300)', borderRadius: '10px', padding: '1.25rem', cursor: 'pointer'}}>
       <div style={{fontSize: '1rem', fontWeight: '700', marginBottom: '0.4rem'}}>Upgrade the sign-in flow</div>
-      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-700)', marginBottom: '0.75rem'}}>Add MFA, passkeys, or social login to your flow — no app code changes required.</div>
+      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-700)', marginBottom: '0.75rem'}}>Add MFA, passkeys, or social login to your flow, no app code changes required.</div>
       <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-primary)', fontWeight: 600}}>Flow Designer →</div>
     </div>
   </a>

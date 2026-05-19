@@ -7,6 +7,7 @@ description: Download and run using the release artifact or Docker Compose
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import Stepper from '../../../src/components/Stepper';
+import {NextSteps, NextStepsCard} from '../../../src/components/NextSteps';
 
 # Get <ProductName />
 
@@ -148,14 +149,12 @@ Note the sample app ID from the setup logs: `[INFO] Sample App ID: <id>`. You'll
 </TabItem>
 </Tabs>
 
-## Next Steps
-
-Now that <ProductName /> is running, you can:
-
-- **[Access the <ProductName /> Console](https://localhost:8090/console)** - Log in with the default admin credentials (`admin` / `admin`)
-- **Try the Sample Apps** - Test <ProductName />'s authentication flows with our pre-built React samples
-- **[Explore the APIs](/docs/next/apis)** - Learn about <ProductName />'s RESTful APIs for user management, authentication, and more
-
-:::info Need Help?
-Check out our <RepoLink path="/discussions">troubleshooting guide</RepoLink> or [join our community](/docs/next/community/overview).
-:::
+<NextSteps>
+  <NextStepsCard
+    step={2}
+    title="Register an Application"
+    description="Create your first application in ThunderID and get your Client ID."
+    href="../quick-start/register-an-application"
+    cta="Register your app"
+  />
+</NextSteps>

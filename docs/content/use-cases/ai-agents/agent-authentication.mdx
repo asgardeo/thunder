@@ -4,78 +4,78 @@ description: Protect agent calls and user-delegated actions.
 sidebar_position: 1
 ---
 
+import {AgentIdentityModel} from '../../../src/components/AgentIdentityModel';
 
-# Secure Access for AI Agents
+# Identity for the Agentic Era
 
-ThunderID enables secure, auditable access for AI agents—whether calling APIs, acting on behalf of users, or automating organization workflows. This page highlights what’s possible for agent-centric identity, now and in the future.
+AI agents are not users. They are not applications. They are a new class of identity that behaves as all three simultaneously, and the systems that govern them must be built to account for that reality.
 
-## At a Glance
-
-<div className="uc-fact-grid uc-fact-grid--ai">
-	<article className="uc-fact-card">
-		<h3>Best Fit</h3>
-		<p>Agents that call protected APIs or user-owned resources.</p>
-	</article>
-	<article className="uc-fact-card">
-		<h3>Primary Goals</h3>
-		<p>Tight scopes, delegated access, and auditable activity.</p>
-	</article>
-	<article className="uc-fact-card">
-		<h3>Common Methods</h3>
-		<p>Client credentials, authorization code, and short-lived access tokens.</p>
-	</article>
-	<article className="uc-fact-card">
-		<h3>Watch For</h3>
-		<p>Strict scope validation and predictable token rotation.</p>
-	</article>
+<div className="uc-b2b-intro-panel">
+  <div className="uc-b2b-intro-kicker">When to use this pattern</div>
+  <div className="uc-b2b-intro-text">
+    Use this pattern when AI agents need access to protected APIs, user data, or organization resources, whether acting autonomously or on behalf of a user.
+  </div>
 </div>
 
-## What AI Agents Need
+## How the Model Works
 
-<ul className="uc-checklist">
-	<li>Authenticate machine-to-machine agent calls.</li>
-	<li>Support user-delegated actions from agent workflows.</li>
-	<li>Scope tokens tightly to the minimum required permissions.</li>
-	<li>Audit agent activity and token usage.</li>
-</ul>
+- **Agent**: The autonomous entity. Simultaneously acts as a subject (initiating actions), a client (delegating on behalf of users or systems), and a resource (receiving calls from other agents or systems).
+- **Principal**: The human, system, or other agent that authorized the current agent to act.
+- **Target resource**: The tool, API, or data store the agent is accessing in a given action.
+- **Authority chain**: The traceable record of who authorized what, on whose behalf, and with what scope.
 
-## Example Agent Journey
+## The Agent Identity Model
 
-<ol className="uc-stage-list">
-	<li><strong>Register identity:</strong> register each agent or agent platform as an application.</li>
-	<li><strong>Handle background work:</strong> use client credentials for non-user operations.</li>
-	<li><strong>Handle delegated work:</strong> use authorization code when user consent is required.</li>
-	<li><strong>Constrain token lifetime:</strong> use short-lived access tokens and rotate secrets.</li>
-	<li><strong>Guard every call:</strong> enforce scope and audience checks on all APIs.</li>
-</ol>
+<AgentIdentityModel />
 
-## ThunderID Capabilities for AI Agents
+## Agent Administration {#administration}
 
-<div className="uc-cap-grid">
-	<article className="uc-cap-card">
-		<h3>OAuth 2.0</h3>
-		<p>Issue tokens for both service access and delegated user access.</p>
-	</article>
-	<article className="uc-cap-card">
-		<h3>Flow Orchestration</h3>
-		<p>Run interaction steps when the agent needs user participation.</p>
-	</article>
-	<article className="uc-cap-card">
-		<h3>MCP Integration</h3>
-		<p>Use agent-centric identity patterns in the [MCP Server Guide](/docs/next/guides/working-with-ai/mcp-server).</p>
-	</article>
-	<article className="uc-cap-card">
-		<h3>Automation APIs</h3>
-		<p>Automate application registration and token lifecycle tasks through REST APIs.</p>
-	</article>
-</div>
+Every AI agent that operates in your environment must be a managed identity from the moment it is provisioned. Without this, you have no visibility into what agents exist, what they can access, or who is accountable for their behavior. Shadow AI is not a future risk. An unregistered agent is an ungoverned agent today.
 
-## Key Considerations
+For example, a development team deploys a new agent to assist with customer support queries. Before it runs in production, a registered identity is created with defined ownership, a declared purpose, and an explicitly scoped set of permitted actions. When the agent is decommissioned, the identity is revoked and the audit record is preserved.
 
-<ol className="uc-action-list">
-	<li>Define which agent actions require user delegation.</li>
-	<li>Separate machine scopes from user scopes.</li>
-	<li>Configure token lifetime and rotation policies.</li>
-	<li>Add API-side scope and audience checks.</li>
-	<li>Capture authentication and authorization events for auditing.</li>
-</ol>
+#### How ThunderID Helps
+
+- Supports registration of agent identities with metadata, ownership, purpose, and scope.
+- Manages agent lifecycle operations including suspension and decommissioning.
+- Provides inventory visibility across all registered agents in your environment.
+- Supports credential rotation policies for agent identities.
+
+## Agent Authentication {#authentication}
+
+Agent authentication is more complex than application authentication because an agent operates in multiple postures simultaneously. As a subject, it must prove its identity to the systems it calls. As a resource, it must authenticate its callers. As a client, it must authenticate users or systems on whose behalf it is acting, at whatever assurance level the downstream resource requires.
+
+For example, an agent acting on behalf of a user calls an internal API that requires the agent to present both its own credential and a delegated token proving the user authorized the action. The API verifies both and grants access only if both are valid.
+
+#### How ThunderID Helps
+
+- Supports client credentials flow for machine-to-machine agent authentication.
+- Supports OAuth 2.0 token delegation patterns for user-authorized agent actions.
+- Lets you configure audience and scope constraints on agent-issued tokens.
+- Supports token introspection so downstream APIs can verify agent credentials at the point of access.
+
+## Agent Authorization {#authorization}
+
+Authorization for agents cannot be static. An agent discovers and invokes tools at runtime, and the scope of what it needs changes with each task. Broad, standing permissions are a risk: an agent that can always access everything is an agent that will eventually access something it should not.
+
+The right model is just-in-time access requested at the moment a tool call is required, just-enough access bounded by the declared task, and automatic expiration when the task concludes.
+
+For example, an agent performing a financial reconciliation task is granted read access to a specific ledger API for the duration of the task. When the task completes, the token expires and the agent cannot reuse it for a different task without re-requesting access.
+
+#### How ThunderID Helps
+
+- Supports scoped token issuance with explicit audience, scope, and expiry per agent action.
+- Lets you define permission boundaries that prevent agents from acquiring more authority than the principal that delegated to them.
+- Supports policy-based authorization so access decisions are evaluated at token request time, not at deployment time.
+
+## Agent Audit {#audit}
+
+Auditability is the mechanism by which organizations build trust in autonomous systems over time. Without a traceable record, you cannot answer the most important question in agentic deployments: on whose authority did this happen?
+
+For example, an agent modifies a resource in a downstream system. The audit record captures not just the agent identity, but the full authority chain: the user who initiated the session, the delegation that authorized the agent to act, and the specific token used for the action. If the modification is questioned, the lineage is complete.
+
+#### How ThunderID Helps
+
+- Logs authentication and authorization events for all agent actions.
+- Captures the full authority chain, including the user, delegation, and agent credential, in each event.
+- Provides audit records that support both internal review and regulatory compliance requirements.

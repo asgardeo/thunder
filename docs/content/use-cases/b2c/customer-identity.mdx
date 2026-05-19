@@ -4,78 +4,85 @@ description: Build secure and low-friction customer sign-in and sign-up flows.
 sidebar_position: 1
 ---
 
-
 # Customer Identity for B2C Applications
 
-ThunderID enables seamless customer identity for B2C apps—fast onboarding, simple sign-in, and secure recovery across web and mobile. This page highlights what’s possible for consumer products, now and in the future.
+Build consumer-facing identity that keeps onboarding fast, sign-in frictionless, and account recovery self-service, across web and mobile.
 
-## At a Glance
-
-<div className="uc-fact-grid uc-fact-grid--b2c">
-	<article className="uc-fact-card">
-		<h3>Best Fit</h3>
-		<p>Consumer web and mobile products that need simple entry.</p>
-	</article>
-	<article className="uc-fact-card">
-		<h3>Primary Goals</h3>
-		<p>Fast onboarding, low-friction sign-in, and reliable account recovery.</p>
-	</article>
-	<article className="uc-fact-card">
-		<h3>Common Methods</h3>
-		<p>Social login, password, passwordless, and passkeys.</p>
-	</article>
-	<article className="uc-fact-card">
-		<h3>Watch For</h3>
-		<p>Step-up authentication only when a high-risk action appears.</p>
-	</article>
+<div className="uc-b2b-intro-panel">
+  <div className="uc-b2b-intro-kicker">When to use this pattern</div>
+  <div className="uc-b2b-intro-text">
+    Use this pattern when your users are individual consumers who expect fast onboarding, low-friction sign-in, and reliable account recovery across web and mobile applications.
+  </div>
 </div>
 
-## What B2C Needs
+## How the Model Works
 
-<ul className="uc-checklist">
-	<li>Support social, password, and passwordless sign-in.</li>
-	<li>Keep registration short and collect profile data progressively.</li>
-	<li>Add step-up authentication only for high-risk actions.</li>
-	<li>Provide reliable account recovery paths.</li>
-</ul>
+- **Application**: Your web or mobile product. Delegates authentication entirely to ThunderID.
+- **Consumer**: An individual user who registers, signs in, and manages their own account.
+- **Identity provider**: Optional third-party providers (Google, GitHub, Apple) that consumers can use instead of a direct credential.
+- **Session**: A verified sign-in session scoped to the application, with configurable lifetime and step-up rules.
 
-## Example Customer Journey
+## Registration and Onboarding
 
-<ol className="uc-stage-list">
-	<li><strong>Start registration:</strong> use email or social sign-up.</li>
-	<li><strong>Introduce passkeys:</strong> register passkeys during onboarding or after first sign-in.</li>
-	<li><strong>Prefer passkeys:</strong> keep password or magic link as fallback.</li>
-	<li><strong>Step up only when needed:</strong> challenge sensitive operations with stronger verification.</li>
-	<li><strong>Close the loop:</strong> provide secure recovery through verified email channels.</li>
-</ol>
+When a consumer first discovers your product, the sign-up experience is your first impression. You need onboarding that is fast, with as few required fields as possible, and flexible enough to support multiple registration methods. You also need to close the loop: after sign-up, the user should be in an active, verified session without being asked to sign in again.
 
-## ThunderID Capabilities for B2C
+For example, a user lands on your product page, clicks Sign Up, chooses to continue with Google, and is inside the app within seconds, no password required, no email verification step.
 
-<div className="uc-cap-grid">
-	<article className="uc-cap-card">
-		<h3>Flow Engine</h3>
-		<p>Orchestrate sign-up and sign-in journeys with one predictable path.</p>
-	</article>
-	<article className="uc-cap-card">
-		<h3>Passkeys</h3>
-		<p>Use phishing-resistant sign-in patterns from the [Passkeys Guide](../../guides/key-concepts/authentication/passwordless/passkeys).</p>
-	</article>
-	<article className="uc-cap-card">
-		<h3>UI Flexibility</h3>
-		<p>Choose hosted pages or custom UI based on your product control needs.</p>
-	</article>
-	<article className="uc-cap-card">
-		<h3>Frontend SDKs</h3>
-		<p>Integrate quickly with the [React SDK Overview](../../sdks/react/overview).</p>
-	</article>
-</div>
+#### How ThunderID Helps
 
-## Key Considerations
+- Supports email and password registration.
+- Supports email OTP (passwordless) registration.
+- Supports social sign-up via Google, GitHub, and other OIDC-compatible providers.
+- Transitions directly from sign-up into an active session so users are never forced to sign in again after registering.
+- Lets you build and customize registration journeys with a no-code flow designer.
 
-<ol className="uc-action-list">
-	<li>Install and run <ProductName /> with the [Installation Guide](../../guides/getting-started/get-thunderid).</li>
-	<li>Define the sign-up and sign-in flows.</li>
-	<li>Enable passkeys and validate relying party configuration.</li>
-	<li>Integrate your frontend with APIs or SDKs.</li>
-	<li>Validate onboarding, step-up, and recovery paths end to end.</li>
-</ol>
+## Sign-In Experience
+
+After onboarding, your users expect to sign in quickly on any device. You need sign-in to be consistent regardless of method, whether password, passkey, social, or magic link, and you should be able to offer passkeys as the default path to reduce both friction and phishing risk.
+
+For example, a returning user opens your mobile app, is prompted to use a passkey, and authenticates in one tap without typing a password.
+
+#### How ThunderID Helps
+
+- Supports password sign-in with brute-force and lockout protection.
+- Supports passkey sign-in (FIDO2/WebAuthn) as a phishing-resistant default.
+- Supports magic link and email OTP as fallback or alternative methods.
+- Supports social sign-in with account linking to prevent duplicate identities when a user switches methods.
+- Lets you configure which sign-in methods are available and in which order.
+
+## Step-Up Authentication
+
+Not every action in your application carries the same risk. Viewing a profile is low-stakes. Changing a payment method or deleting an account is not. You need step-up authentication that triggers additional verification only at those sensitive moments, not on every request.
+
+For example, a user is already signed in and navigates to change their billing information. Before the change is applied, ThunderID triggers an OTP challenge on the user's verified email address.
+
+#### How ThunderID Helps
+
+- Supports step-up flows that can be triggered at any point in an active user session.
+- Lets you configure the verification method required for step-up (OTP, passkey, and others).
+- Preserves the existing session after step-up succeeds, without logging the user out or forcing re-authentication.
+
+## Account Recovery
+
+When a user loses access, your support team feels it. Recovery journeys that require manual intervention create cost and delay. You need automated, policy-driven recovery that works across different user contexts, including email-first users, mobile-first users, and users who may not have set up a secondary method.
+
+For example, a user who forgot their password requests recovery, receives an OTP on their verified email, completes verification, and resets their credential, all without contacting support.
+
+#### How ThunderID Helps
+
+- Supports email magic link recovery.
+- Supports email OTP recovery.
+- Supports SMS OTP recovery.
+- Lets you configure which recovery methods are available per application.
+
+## Privacy and Consent
+
+Consumer applications must handle personal data responsibly. Depending on your market, regulations require explicit consent before optional data processing. You need consent flows integrated into the sign-up and sign-in journey rather than bolted on as an afterthought.
+
+For example, a user registering in a GDPR-regulated market sees a consent prompt for optional marketing communications before completing sign-up. Their choice is recorded and enforced downstream.
+
+#### How ThunderID Helps
+
+- Supports consent capture during sign-up and sign-in flows.
+- Lets you define which consents are required and which are optional.
+- Records consent decisions so you can enforce them in downstream processing.

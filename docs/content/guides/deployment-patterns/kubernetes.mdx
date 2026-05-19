@@ -5,13 +5,16 @@ persona: iam
 description: Deploy to a Kubernetes cluster using Helm, with support for SQLite for development and PostgreSQL for production.
 ---
 
+import {NextSteps, NextStepsCard} from '../../../src/components/NextSteps';
+import {K8sArchDiagram} from '../../../src/components/K8sArchDiagram';
+
 # Deploy <ProductName /> on Kubernetes
 
 This guide walks you through deploying <ProductName /> to a Kubernetes cluster using Helm charts. It covers a quick single-command install for development and a production-ready setup with external PostgreSQL.
 
 ## Architecture Overview
 
-![<ProductName /> Kubernetes Architecture](/assets/images/product-kubernetes-diagram.png)
+<K8sArchDiagram />
 
 The diagram above shows the <ProductName /> deployment in Kubernetes, including the application pods, ingress controller, and database configuration.
 
@@ -247,6 +250,11 @@ helm rollback {{productSlug}} 1
 
 ## Next Steps
 
-- [Production Deployment Guidelines](./production-guidelines) — Apply security hardening for production: replace TLS certificates, generate a unique encryption key, configure a CORS allowlist, and set up Redis caching for multi-pod deployments.
-- [Deploy <ProductName /> on OpenChoreo](./openchoreo) — Deploy <ProductName /> on the OpenChoreo platform.
-- [Deploy <ProductName /> with Docker](./docker) — Run <ProductName /> locally using Docker.
+<NextSteps>
+  <NextStepsCard
+    title="Production Deployment Guidelines"
+    description="Apply security hardening for production: replace TLS certificates, generate a unique encryption key, configure a CORS allowlist, and set up Redis caching for multi-pod deployments."
+    href="./production-guidelines"
+    cta="Go to production guidelines"
+  />
+</NextSteps>

@@ -2,8 +2,10 @@
 title: Build a Sign-In Flow
 sidebar_position: 2
 persona: iam
-description: Build a working username and password sign-in flow with the ThunderID Flow Designer — step by step.
+description: Build a working username and password sign-in flow with the ThunderID Flow Designer, step by step.
 ---
+
+import {NextSteps, NextStepsCard} from '../../../../src/components/NextSteps';
 
 # Build a Sign-in Flow
 
@@ -12,36 +14,39 @@ By the end of this guide you will have a working username and password sign-in f
 ## Prerequisites
 
 - <ProductName /> is running. See [Get Started](../../getting-started/get-thunderid).
-- You have created an application. See [Quickstart](../../quick-start/quickstart).
+- You have created an application. See [Register an Application](../../quick-start/register-an-application).
 
 <Stepper>
 
 ## Open the Flow Designer
 
 1. Sign in to the <ProductName /> Console at [https://localhost:8090/console](https://localhost:8090/console).
-2. Go to **Flows** → **+ Create New Flow**.
-3. Give your flow a name — for example, `Sign In`.
+2. Go to **Flows** and click **+ Create New Flow**.
+3. Select **Sign-in** as the flow type and click **Continue**.
+4. Choose the **Basic** template (username and password authentication) and click **Continue**.
+5. Enter a flow name, for example `Sign In`, then click **Create**.
 
-The canvas opens with a default starter flow already wired: a **Sign In** view node → **Identifier + Password** executor → **Auth Assertion Generator** executor → **END**. This is exactly the flow you need for username and password authentication.
+The canvas opens with the Basic template already wired.
 
 :::tip You're almost done
-The default flow is a complete, working username and password sign-in flow. If that's all you need, skip to [Assign the flow to your application](#assign-the-flow-to-your-application).
+The Basic template is a complete, working username and password sign-in flow. If that's all you need, skip to [Assign the flow to your application](#assign-the-flow-to-your-application).
 :::
 
 ## Review the Canvas
 
-The default flow has three nodes:
+The Basic template has four nodes:
 
 | Node | What it does |
 |---|---|
 | **Sign In** (View) | Renders the sign-in form with username and password fields |
 | **Identifier + Password** (Executor) | Validates the submitted credentials against the user store |
+| **Authorization** (Executor) | Checks whether the authenticated user is authorized to access the application |
 | **Auth Assertion Generator** (Executor) | Issues the authentication assertion on success |
 
 Each node connects to the next via its **green (success) output**. The final executor connects to **END**.
 
 :::note
-Every executor also has a **red (failure) output**. In the default flow this loops back to the Sign In view, so users see an error and can retry. Don't leave failure paths unconnected — an unconnected failure path stops the flow with an error.
+Every executor also has a **red (failure) output**. In the Basic template the failure path from **Identifier + Password** loops back to the Sign In view so users can retry. Don't leave failure paths unconnected, an unconnected failure path stops the flow with an error.
 :::
 
 ## Save the Flow
@@ -67,11 +72,11 @@ Your sign-in flow is live. The next step is connecting your app so it can redire
 
 <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginTop: '1.5rem'}}>
 
-  <a href="../../../quick-start/connect-your-application/react" style={{textDecoration: 'none', color: 'inherit'}}>
+  <a href="../../quick-start/connect-your-application" style={{textDecoration: 'none', color: 'inherit'}}>
     <div style={{border: '1px solid var(--ifm-color-emphasis-300)', borderRadius: '10px', padding: '1.25rem', cursor: 'pointer'}}>
-      <div style={{fontSize: '1rem', fontWeight: '700', marginBottom: '0.4rem'}}>Step 4 → Connect your React app</div>
-      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-700)', marginBottom: '0.75rem'}}>Install the Asgardeo React SDK, configure your Client ID, and add working sign-in in minutes.</div>
-      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-primary)', fontWeight: 600}}>React quickstart →</div>
+      <div style={{fontSize: '1rem', fontWeight: '700', marginBottom: '0.4rem'}}>Step 4 → Connect your application</div>
+      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-emphasis-700)', marginBottom: '0.75rem'}}>Choose a framework quickstart and integrate sign-in with ThunderID SDK packages.</div>
+      <div style={{fontSize: '0.875rem', color: 'var(--ifm-color-primary)', fontWeight: 600}}>Open connect guides →</div>
     </div>
   </a>
 
@@ -110,7 +115,7 @@ For **Recovery Flow**, toggle the switch to enable password recovery before sele
 <details>
   <summary>Add social login</summary>
 
-  1. Configure a social identity provider first — go to **Integrations** → **Identity Providers** and add Google, GitHub, or another provider.
+  1. Configure a social identity provider first. Create it through the `/identity-providers` API. See [API Reference](/docs/next/apis).
   2. In the Flow Designer, add a **Social Login** executor from the left panel.
   3. Wire it in parallel with or as an alternative to the **Identifier + Password** executor.
   4. Save.
@@ -132,5 +137,15 @@ For **Recovery Flow**, toggle the switch to enable password recovery before sele
 
 ## Reference
 
-- [Flow Concepts](./flow-concepts) — Node types, left panel sections, and canvas connection rules.
-- [Flow Reference](./flow-reference) — Every executor, its required inputs, and its outputs.
+- [Flow Concepts](./flow-concepts): Node types, left panel sections, and canvas connection rules.
+- [Flow Reference](./flow-reference): Every executor, its required inputs, and its outputs.
+
+<NextSteps>
+  <NextStepsCard
+    step={4}
+    title="Connect Your Application"
+    description="Pick a framework quickstart and integrate sign-in with ThunderID SDK packages."
+    href="../../quick-start/connect-your-application"
+    cta="Open connect guides"
+  />
+</NextSteps>
