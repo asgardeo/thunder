@@ -113,7 +113,9 @@ const ConsentCheckboxList: FC<ConsentCheckboxListProps> = ({
   const {theme, colorScheme}: ReturnType<typeof useTheme> = useTheme();
   const styles: Record<string, string> = useStyles(theme, colorScheme);
 
-  const attributes: string[] = variant === 'ESSENTIAL' ? purpose.essential : purpose.optional;
+  const attributes: string[] = (variant === 'ESSENTIAL' ? purpose.essential : purpose.optional).map(
+    (e): string => e.name,
+  );
 
   if (!attributes || attributes.length === 0) {
     return null;

@@ -469,6 +469,15 @@ export interface EmbeddedFlowResponseData {
 }
 
 /**
+ * Discriminator identifying the kind of consent a purpose represents. The same
+ * `ConsentPurposeData` envelope is used for both attribute and permission consent;
+ * the populated fields differ based on this discriminator.
+ *
+ * @experimental This type may change in future versions
+ */
+export type ConsentPurposeType = 'attributes' | 'permissions';
+
+/**
  * Individual consent attribute/element decision.
  *
  * @experimental This interface may change in future versions
@@ -478,6 +487,24 @@ export interface ConsentAttributeElement {
   approved: boolean;
   /** The name of the attribute being consented */
   name: string;
+}
+
+/**
+ * A single element presented for consent within a consent purpose. For attribute purposes
+ * the element is an attribute name. For permission purposes the element is a permission
+ * string and `parent` may carry rollup linkage supplied by the server: when set, the UI
+ * may render this permission as a child of `parent` and offer a single rollup toggle.
+ *
+ * @experimental This interface may change in future versions
+ */
+export interface PromptElement {
+  /** Canonical element name (attribute name or permission string) */
+  name: string;
+  /**
+   * Canonical name of the rollup parent, permission-purpose only. Undefined for attribute
+   * elements and for top-level permissions.
+   */
+  parent?: string;
 }
 
 /**
@@ -506,20 +533,32 @@ export interface ConsentDecisions {
 
 /**
  * Single consent purpose data returned by the backend in additionalData.consent_prompt.
+ * The same envelope carries both attribute and permission purposes, distinguished by `type`.
  *
  * @experimental This interface may change in future versions
  */
 export interface ConsentPurposeData {
   /** Optional human-readable description of the purpose */
   description?: string;
-  /** Attributes that are always required and cannot be declined */
-  essential: string[];
-  /** Attributes that the user can optionally decline */
-  optional: string[];
+  /**
+   * Elements that are mandatory and cannot be declined. Used by attribute purposes;
+   * permission purposes today have no essential elements.
+   */
+  essential: PromptElement[];
+  /**
+   * Elements the user can opt in or out of. For attribute purposes these are optional
+   * attribute names. For permission purposes these are permission elements (which may
+   * carry rollup parent linkage).
+   */
+  optional: PromptElement[];
   /** Unique identifier for the purpose */
   purposeId: string;
   /** Human-readable purpose name */
   purposeName?: string;
+  /**
+   * Discriminator selecting between attribute and permission consent semantics.
+   */
+  type?: ConsentPurposeType;
 }
 
 /**

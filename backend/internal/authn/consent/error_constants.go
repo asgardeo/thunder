@@ -113,4 +113,34 @@ var (
 			DefaultValue: "One or more essential consent attributes were denied",
 		},
 	}
+
+	// ErrorConsentPurposeCreateFailed is returned when the consent service rejects the
+	// request to create a consent purpose with a client error.
+	ErrorConsentPurposeCreateFailed = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "AUTH-CES-1007",
+		Error: core.I18nMessage{
+			Key:          "error.consentenforcerservice.purpose_create_failed",
+			DefaultValue: "Failed to create consent purpose",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.consentenforcerservice.purpose_create_failed_description",
+			DefaultValue: "Error while creating consent purpose in the consent service",
+		},
+	}
+
+	// ErrorConsentPurposeUpdateFailed is returned when the consent service rejects the
+	// request to update an existing consent purpose with a client error.
+	ErrorConsentPurposeUpdateFailed = serviceerror.ServiceError{
+		Type: serviceerror.ClientErrorType,
+		Code: "AUTH-CES-1008",
+		Error: core.I18nMessage{
+			Key:          "error.consentenforcerservice.purpose_update_failed",
+			DefaultValue: "Failed to update consent purpose",
+		},
+		ErrorDescription: core.I18nMessage{
+			Key:          "error.consentenforcerservice.purpose_update_failed_description",
+			DefaultValue: "Error while updating consent purpose in the consent service",
+		},
+	}
 )

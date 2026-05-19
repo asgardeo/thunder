@@ -130,11 +130,15 @@ func (e *consentExecutor) checkConsent(ctx *core.NodeContext, execResp *common.E
 	logger.Debug("Checking if user consent is required")
 
 	essentialAttributes, optionalAttributes := e.getRequiredAttributes(ctx)
+	authorizedPermissions := strings.Fields(ctx.RuntimeData["authorized_permissions"])
 	availableAttributes := e.buildAugmentedAvailableAttributes(ctx)
+	appName := ctx.Application.Name
 
 	// Resolve consent to determine if any required consents are missing and need to be prompted
 	promptData, svcErr := e.consentEnforcer.ResolveConsent(
-		ctx.Context, ouID, appID, userID, essentialAttributes, optionalAttributes, availableAttributes)
+		ctx.Context, ouID, appID, appName, userID,
+		essentialAttributes, optionalAttributes, authorizedPermissions,
+		availableAttributes)
 	if svcErr != nil {
 		if svcErr.Type == serviceerror.ClientErrorType {
 			logger.Debug("Client error while resolving user consent", log.Any("error", svcErr))
@@ -262,12 +266,14 @@ func (e *consentExecutor) handleConsentDecisions(ctx *core.NodeContext, execResp
 	// Store the consent ID in RuntimeData for downstream usage
 	execResp.RuntimeData[common.RuntimeKeyConsentID] = consentRecord.ID
 
-	// Derive approved attribute names from the full (merged) consent record so that
-	// downstream executors can easily restrict to only consented attributes without needing
-	// to understand the full consent data structure.
-	// Always set the key (even if empty) so auth assert knows consent was collected
+	// Derive approved attribute and permission names from the full (merged) consent record so
+	// downstream executors can easily restrict to only consented values without needing to
+	// understand the full consent data structure. Both keys are always set (even if empty) so
+	// auth assert knows that the consent step ran and can apply the appropriate precedence chain.
 	consentedAttrs := collectConsentedAttributes(consentRecord)
 	execResp.RuntimeData[common.RuntimeKeyConsentedAttributes] = strings.Join(consentedAttrs, " ")
+	consentedPerms := collectConsentedPermissions(consentRecord)
+	execResp.RuntimeData[common.RuntimeKeyConsentedPermissions] = strings.Join(consentedPerms, " ")
 
 	logger.Debug("Consent recorded successfully", log.String("consentID", consentRecord.ID))
 	execResp.Status = common.ExecComplete
@@ -369,14 +375,28 @@ func (e *consentExecutor) buildAugmentedAvailableAttributes(ctx *core.NodeContex
 
 // collectConsentedAttributes extracts all approved attribute names from a consent record.
 func collectConsentedAttributes(c *consent.Consent) []string {
-	var attrs []string
+	return collectApprovedByPurposeType(c, consent.PurposeTypeAttributes)
+}
+
+// collectConsentedPermissions extracts all approved permission names from a consent record.
+func collectConsentedPermissions(c *consent.Consent) []string {
+	return collectApprovedByPurposeType(c, consent.PurposeTypePermissions)
+}
+
+// collectApprovedByPurposeType returns the deduped approved element names across all consent
+// purposes of the given type. The upstream consent service does not round-trip the purpose type
+// on reads, so the type is derived from the purpose name via consent.PurposeTypeFromName.
+func collectApprovedByPurposeType(c *consent.Consent, t consent.PurposeType) []string {
+	var out []string
 	for _, p := range c.Purposes {
+		if consent.PurposeTypeFromName(p.Name) != t {
+			continue
+		}
 		for _, e := range p.Elements {
-			if e.IsUserApproved && !slices.Contains(attrs, e.Name) {
-				attrs = append(attrs, e.Name)
+			if e.IsUserApproved && !slices.Contains(out, e.Name) {
+				out = append(out, e.Name)
 			}
 		}
 	}
-
-	return attrs
+	return out
 }

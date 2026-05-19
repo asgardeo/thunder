@@ -310,10 +310,10 @@ const SignIn: Component = defineComponent({
             purposes: purposes.map((p: any) => ({
               approved: !isDeny,
               elements: [
-                ...(p.essential || []).map((attr: string) => ({approved: !isDeny, name: attr})),
-                ...(p.optional || []).map((attr: string) => {
-                  const key = `__consent_opt__${p.purpose_id}__${attr}`;
-                  return {approved: isDeny ? false : processedInputs[key] !== 'false', name: attr};
+                ...(p.essential || []).map((e: any) => ({approved: !isDeny, name: e.name})),
+                ...(p.optional || []).map((e: any) => {
+                  const key = `__consent_opt__${p.purpose_id}__${e.name}`;
+                  return {approved: isDeny ? false : processedInputs[key] !== 'false', name: e.name};
                 }),
               ],
               purpose_name: p.purpose_name,

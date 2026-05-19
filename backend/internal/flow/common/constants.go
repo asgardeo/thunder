@@ -185,6 +185,9 @@ const (
 	RuntimeKeyClientID = "clientId"
 	// RuntimeKeyRequestedPermissions holds the space-separated permission scopes requested by the OAuth client.
 	RuntimeKeyRequestedPermissions = "requested_permissions"
+	// RuntimeKeyConsentedPermissions holds the space-separated permission scopes the user has consented to
+	// release to the client, as produced by the ConsentExecutor.
+	RuntimeKeyConsentedPermissions = "consented_permissions"
 	// RuntimeKeyRequiredEssentialAttributes holds the space-separated essential user attributes required for the flow.
 	RuntimeKeyRequiredEssentialAttributes = "required_essential_attributes"
 	// RuntimeKeyRequiredOptionalAttributes holds the space-separated optional user attributes required for the flow.

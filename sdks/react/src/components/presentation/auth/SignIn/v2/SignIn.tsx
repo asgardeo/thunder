@@ -606,15 +606,15 @@ const SignIn: FC<SignInProps> = ({
           purposes: purposes.map((p: any) => ({
             approved: !isDeny,
             elements: [
-              ...(p.essential || []).map((attr: string) => ({
+              ...(p.essential || []).map((e: any) => ({
                 approved: !isDeny,
-                name: attr,
+                name: e.name,
               })),
-              ...(p.optional || []).map((attr: string) => {
-                const key = `__consent_opt__${p.purposeId}__${attr}`;
+              ...(p.optional || []).map((e: any) => {
+                const key = `__consent_opt__${p.purposeId}__${e.name}`;
                 return {
                   approved: isDeny ? false : processedInputs[key] !== 'false',
-                  name: attr,
+                  name: e.name,
                 };
               }),
             ],
