@@ -1,4 +1,4 @@
-import { useAsgardeo } from "@asgardeo/react";
+import { useThunderID } from "@thunderid/react";
 import {
   ArrowRight,
   Clock3,
@@ -30,7 +30,7 @@ const pageDetails = {
       {
         icon: <ShieldCheck size={22} />,
         title: "Protected bookings",
-        copy: "Keep booked trips connected to secure Asgardeo sign-in."
+        copy: "Keep booked trips connected to secure ThunderID sign-in."
       },
       {
         icon: <Clock3 size={22} />,
@@ -307,7 +307,7 @@ export function HomePage({
               <span>
                 <ShieldCheck size={18} />
               </span>
-              <strong>Asgardeo</strong>
+              <strong>ThunderID</strong>
             </div>
           </article>
           <article className="stay-card">
@@ -358,7 +358,7 @@ export function HomePage({
 }
 
 export function SignedInHomePage({ category = "flights", locations, onSearch }) {
-  const { isSignedIn, user } = useAsgardeo();
+  const { isSignedIn, user } = useThunderID();
 
   if (!isSignedIn) {
     return <HomePage category={category} locations={locations} onSearch={onSearch} />;

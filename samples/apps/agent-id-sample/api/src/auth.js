@@ -48,7 +48,7 @@ async function getJwks() {
   const response = await fetch(`${process.env.THUNDER_BASE_URL}/oauth2/jwks`);
 
   if (!response.ok) {
-    throw new Error("Unable to load Asgardeo JWKS");
+    throw new Error("Unable to load ThunderID JWKS");
   }
 
   jwksCache = await response.json();

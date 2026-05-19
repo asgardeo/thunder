@@ -1,5 +1,5 @@
 {
-  "name": "asgardeo-b2c-sample-app",
+  "name": "thunderid-agent-id-sample",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -9,7 +9,7 @@
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
-    "@asgardeo/react": "^0.23.6",
+    "@thunderid/react": "0.0.5",
     "@vitejs/plugin-react": "^4.4.1",
     "lucide-react": "^0.511.0",
     "react": "^19.1.0",

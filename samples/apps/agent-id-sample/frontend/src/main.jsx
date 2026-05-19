@@ -1,13 +1,13 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { AsgardeoProvider } from "@asgardeo/react";
+import { ThunderIDProvider } from "@thunderid/react";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
 import "./styles.css";
 
 const clientId = import.meta.env.VITE_THUNDER_CLIENT_ID;
 const baseUrl = import.meta.env.VITE_THUNDER_BASE_URL;
-const asgardeoReady = Boolean(clientId && baseUrl);
+const thunderidReady = Boolean(clientId && baseUrl);
 
 // Scopes requested at sign-in. The trailing `system:*` scopes power the in-app
 // Agent Portal: when an admin user signs in, the issued access token carries
@@ -29,18 +29,17 @@ const SCOPES = [
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
-      {asgardeoReady ? (
-        <AsgardeoProvider
+      {thunderidReady ? (
+        <ThunderIDProvider
           clientId={clientId}
           baseUrl={baseUrl}
-          platform="AsgardeoV2"
           afterSignInUrl={window.location.origin}
           afterSignOutUrl={window.location.origin}
           scopes={SCOPES}
           discovery={{ wellKnown: { enabled: true } }}
         >
           <App authReady />
-        </AsgardeoProvider>
+        </ThunderIDProvider>
       ) : (
         <App authReady={false} />
       )}

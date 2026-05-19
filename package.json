@@ -6,16 +6,15 @@
   "author": "WSO2",
   "license": "Apache-2.0",
   "type": "module",
-  "homepage": "https://github.com/asgardeo/thunder/tree/main",
+  "homepage": "https://github.com/thunder-id/thunderid/tree/main",
   "bugs": {
-    "url": "https://github.com/asgardeo/thunder/issues"
+    "url": "https://github.com/thunder-id/thunderid/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/asgardeo/thunder"
+    "url": "https://github.com/thunder-id/thunderid"
   },
   "keywords": [
-    "asgardeo",
     "thunderid",
     "workspace",
     "wso2"
