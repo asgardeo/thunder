@@ -363,13 +363,11 @@ jobs:
           cd frontend/apps/gate
           pnpm test:coverage
 
-      # TODO: Enable package tests in CI once the broken tests are fixed
-
-      # - name: 🧪 Run Packages Tests with Coverage
-      #   if: matrix.shard == 1
-      #   run: |
-      #     cd frontend/packages
-      #     pnpm test:coverage
+      - name: 🧪 Run Package Tests
+        if: matrix.shard == 1
+        run: |
+          cd frontend
+          pnpm --filter './packages/*' test
 
       # Strip branch data (BRDA/BRF/BRH) from frontend LCOV reports before uploading.
       # React Compiler (babel-plugin-react-compiler) generates phantom branch points in compiled
@@ -378,7 +376,7 @@ jobs:
       # Line and function coverage remain unaffected and accurately reflect test quality.
       - name: 🧹 Strip branch data from frontend LCOV reports
         run: |
-          for lcov_file in frontend/apps/console/coverage/lcov.info frontend/packages/coverage/lcov.info; do
+          for lcov_file in frontend/apps/console/coverage/lcov.info frontend/apps/gate/coverage/lcov.info; do
             if [ -f "$lcov_file" ]; then
               sed -i '/^BRDA:/d;/^BRF:/d;/^BRH:/d' "$lcov_file"
             fi
@@ -398,6 +396,7 @@ jobs:
           name: gate-coverage
           path: frontend/apps/gate/coverage/lcov.info
           if-no-files-found: error
+
 
   upload-frontend-coverage:
     name: 📊 Upload Frontend Coverage
