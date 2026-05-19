@@ -1,0 +1,44 @@
+---
+title: generateSessionId()
+description: Generate a unique session identifier for user session management
+---
+
+# `generateSessionId()`
+
+`generateSessionId` generates a unique session identifier string. Use this utility to create a new session ID when a user signs in and store the value in a cookie or server-side session store.
+
+## Signature
+
+```ts
+generateSessionId(): string
+```
+
+## Returns
+
+`string` — A unique session identifier composed of a timestamp-based prefix and a random suffix, encoded in base-36.
+
+## Usage
+
+```ts title="src/routes/sign-in.ts" showLineNumbers
+import { generateSessionId, CookieConfig, getSessionCookieOptions } from '@thunderid/node'
+
+app.get('/sign-in', (req, res) => {
+  const sessionId = generateSessionId()
+
+  res.cookie(
+    CookieConfig.SESSION_COOKIE_NAME,
+    sessionId,
+    getSessionCookieOptions({ maxAge: 3600 }),
+  )
+
+  auth.signIn(
+    (authUrl) => res.redirect(authUrl),
+    sessionId,
+  )
+})
+```
+
+## Related
+
+- [`CookieConfig`](/docs/next/sdks/node/apis/utilities/cookie-config) — Cookie name constants
+- [`getSessionCookieOptions()`](/docs/next/sdks/node/apis/utilities/get-session-cookie-options) — Build cookie options with defaults applied
