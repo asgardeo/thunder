@@ -126,7 +126,8 @@ type EntityTypeRequestWithID struct {
 	ID                    string            `yaml:"id"`
 	Category              TypeCategory      `yaml:"category,omitempty"`
 	Name                  string            `yaml:"name"`
-	OUID                  string            `yaml:"organization_unit_id"`
+	OUID                  string            `yaml:"organization_unit_id,omitempty"`
+	OUHandle              string            `yaml:"ou_handle,omitempty"`
 	AllowSelfRegistration bool              `yaml:"allow_self_registration,omitempty"`
 	SystemAttributes      *SystemAttributes `yaml:"system_attributes,omitempty"`
 	Schema                interface{}       `yaml:"schema"`

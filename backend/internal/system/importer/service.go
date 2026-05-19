@@ -86,6 +86,7 @@ type ouAdapter interface {
 		*serviceerror.ServiceError,
 	)
 	GetOrganizationUnit(ctx context.Context, id string) (ou.OrganizationUnit, *serviceerror.ServiceError)
+	GetOrganizationUnitByPath(ctx context.Context, handlePath string) (ou.OrganizationUnit, *serviceerror.ServiceError)
 	UpdateOrganizationUnit(ctx context.Context, id string, request ou.OrganizationUnitRequestWithID) (
 		ou.OrganizationUnit,
 		*serviceerror.ServiceError)
@@ -684,6 +685,12 @@ func (s *importService) importApplication(
 		}
 	}
 
+	if !dryRun {
+		if errOutcome := s.resolveApplicationHandles(ctx, &req); errOutcome != nil {
+			return *errOutcome
+		}
+	}
+
 	if mappedFlowID, ok := flowIDAliases[req.AuthFlowID]; ok {
 		req.AuthFlowID = mappedFlowID
 	}
@@ -797,6 +804,8 @@ func applicationRequestToDTO(req *appmodel.ApplicationRequestWithID) *appmodel.A
 			AuthFlowID:                req.AuthFlowID,
 			RegistrationFlowID:        req.RegistrationFlowID,
 			IsRegistrationFlowEnabled: req.IsRegistrationFlowEnabled,
+			RecoveryFlowID:            req.RecoveryFlowID,
+			IsRecoveryFlowEnabled:     req.IsRecoveryFlowEnabled,
 			ThemeID:                   req.ThemeID,
 			LayoutID:                  req.LayoutID,
 			Assertion:                 req.Assertion,

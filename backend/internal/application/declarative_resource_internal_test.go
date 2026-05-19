@@ -21,18 +21,19 @@ package application
 import (
 	"context"
 	"encoding/json"
-
-	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
-
-	"github.com/stretchr/testify/mock"
-
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/thunder-id/thunderid/internal/application/model"
+	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
 	oauth2const "github.com/thunder-id/thunderid/internal/oauth/oauth2/constants"
+	oupkg "github.com/thunder-id/thunderid/internal/ou"
+	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
+	"github.com/thunder-id/thunderid/internal/system/i18n/core"
+	"github.com/thunder-id/thunderid/tests/mocks/oumock"
 )
 
 // ValidateApplicationWrapperTestSuite tests the validateApplicationWrapper function.
@@ -80,7 +81,7 @@ allowed_user_types:
   - external
 `
 
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	assert.Nil(s.T(), err)
 	assert.NotNil(s.T(), appDTO)
@@ -112,7 +113,7 @@ id: minimal-app
 name: Minimal App
 `
 
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	assert.Nil(s.T(), err)
 	assert.NotNil(s.T(), appDTO)
@@ -136,7 +137,7 @@ theme_id: modern-theme
 layout_id: two-column
 `
 
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), "themed-app", appDTO.ID)
@@ -153,7 +154,7 @@ tos_uri: https://example.com/terms-of-service
 policy_uri: https://example.com/privacy-policy
 `
 
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), "legal-app", appDTO.ID)
@@ -172,7 +173,7 @@ contacts:
   - tertiary@example.com
 `
 
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), 3, len(appDTO.Contacts))
@@ -189,7 +190,7 @@ name: Test App
 invalid yaml: [unclosed bracket
 `
 
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	assert.NotNil(s.T(), err)
 	assert.Nil(s.T(), appDTO)
@@ -223,7 +224,7 @@ inbound_auth_config:
         - profile
 `
 
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), "oauth-app", appDTO.ID)
@@ -259,7 +260,7 @@ contacts:
   - admin@example.com
 `
 
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), "template-app", appDTO.ID)
@@ -280,7 +281,7 @@ name: No Contact App
 contacts: []
 `
 
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), 0, len(appDTO.Contacts))
@@ -302,7 +303,7 @@ allowed_user_types:
   - guest
 `
 
-	appDTO, err := parseToApplicationDTO([]byte(yamlData))
+	appDTO, err := parseToApplicationDTO([]byte(yamlData), nil)
 
 	assert.Nil(s.T(), err)
 	assert.False(s.T(), appDTO.IsRegistrationFlowEnabled)
@@ -321,7 +322,7 @@ metadata:
   team: platform
 `)
 
-	dto, err := parseToApplicationDTO(yamlData)
+	dto, err := parseToApplicationDTO(yamlData, nil)
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), dto)
 	assert.Equal(s.T(), "app-123", dto.ID)
@@ -355,7 +356,7 @@ inbound_auth_config:
 		nil,
 	)
 
-	parser := makeAppEntityParser(mockAppService)
+	parser := makeAppEntityParser(mockAppService, nil)
 	entityObj, _, sysCredsJSON, err := parser(yamlData)
 
 	assert.NoError(s.T(), err)
@@ -393,7 +394,7 @@ inbound_auth_config:
 		nil,
 	)
 
-	parser := makeAppEntityParser(mockAppService)
+	parser := makeAppEntityParser(mockAppService, nil)
 	entityObj, _, sysCredsJSON, err := parser(yamlData)
 
 	assert.NoError(s.T(), err)
@@ -440,7 +441,7 @@ inbound_auth_config:
 		nil,
 	)
 
-	parser := makeAppEntityParser(mockAppService)
+	parser := makeAppEntityParser(mockAppService, nil)
 	entityObj, _, sysCredsJSON, err := parser(yamlData)
 
 	assert.NoError(s.T(), err)
@@ -490,7 +491,7 @@ inbound_auth_config:
 		nil,
 	)
 
-	parser := makeAppEntityParser(mockAppService)
+	parser := makeAppEntityParser(mockAppService, nil)
 	entityObj, _, sysCredsJSON, err := parser(yamlData)
 
 	assert.NoError(s.T(), err)
@@ -506,4 +507,43 @@ inbound_auth_config:
 	err = json.Unmarshal(sysCredsJSON, &sysCreds)
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), "oauth-client-secret", sysCreds[fieldClientSecret])
+}
+
+func (s *ParseToApplicationDTOTestSuite) TestParseToApplicationDTO_OUHandleResolvesToOUID() {
+	mockOUSvc := oumock.NewOrganizationUnitServiceInterfaceMock(s.T())
+	mockOUSvc.EXPECT().GetOrganizationUnitByPath(mock.Anything, "default").
+		Return(oupkg.OrganizationUnit{ID: "ou-resolved-id"}, nil).Once()
+
+	yamlData := []byte("id: app-1\nname: My App\nou_handle: default\n")
+
+	appDTO, err := parseToApplicationDTO(yamlData, mockOUSvc)
+
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), "ou-resolved-id", appDTO.OUID)
+}
+
+func (s *ParseToApplicationDTOTestSuite) TestParseToApplicationDTO_OUHandleNilService() {
+	yamlData := []byte("id: app-1\nname: My App\nou_handle: default\n")
+
+	appDTO, err := parseToApplicationDTO(yamlData, nil)
+
+	assert.Error(s.T(), err)
+	assert.Contains(s.T(), err.Error(), "OU service is unavailable")
+	assert.Nil(s.T(), appDTO)
+}
+
+func (s *ParseToApplicationDTOTestSuite) TestParseToApplicationDTO_OUHandleNotFound() {
+	mockOUSvc := oumock.NewOrganizationUnitServiceInterfaceMock(s.T())
+	mockOUSvc.EXPECT().GetOrganizationUnitByPath(mock.Anything, "nonexistent").
+		Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{
+			Error: core.I18nMessage{DefaultValue: "not found"},
+		}).Once()
+
+	yamlData := []byte("id: app-1\nname: My App\nou_handle: nonexistent\n")
+
+	appDTO, err := parseToApplicationDTO(yamlData, mockOUSvc)
+
+	assert.Error(s.T(), err)
+	assert.Contains(s.T(), err.Error(), "nonexistent")
+	assert.Nil(s.T(), appDTO)
 }

@@ -113,7 +113,7 @@ func TestValidateEntityType(t *testing.T) {
 			},
 			setupMock: func() {},
 			wantErr:   true,
-			errMsg:    "organization unit ID is required",
+			errMsg:    "organization_unit_id or ou_handle is required",
 		},
 		{
 			name: "whitespace only organization unit ID",
@@ -124,7 +124,7 @@ func TestValidateEntityType(t *testing.T) {
 			},
 			setupMock: func() {},
 			wantErr:   true,
-			errMsg:    "organization unit ID is required",
+			errMsg:    "organization_unit_id or ou_handle is required",
 		},
 		{
 			name: "organization unit not found",
@@ -141,6 +141,37 @@ func TestValidateEntityType(t *testing.T) {
 			},
 			wantErr: true,
 			errMsg:  "organization unit 'nonexistent' not found",
+		},
+		{
+			name: "ou_handle resolves to OU ID",
+			schema: &EntityType{
+				ID:       "schema-1",
+				Name:     "Valid Schema",
+				OUHandle: "default",
+				Schema:   json.RawMessage(`{"email":{"type":"string"}}`),
+			},
+			setupMock: func() {
+				mockOUService.EXPECT().GetOrganizationUnitByPath(mock.Anything, "default").
+					Return(oupkg.OrganizationUnit{ID: "ou-resolved"}, nil).
+					Once()
+			},
+			wantErr: false,
+		},
+		{
+			name: "ou_handle not found",
+			schema: &EntityType{
+				ID:       "schema-1",
+				Name:     "Valid Schema",
+				OUHandle: "missing",
+				Schema:   json.RawMessage(`{"email":{"type":"string"}}`),
+			},
+			setupMock: func() {
+				mockOUService.EXPECT().GetOrganizationUnitByPath(mock.Anything, "missing").
+					Return(oupkg.OrganizationUnit{}, &serviceerror.ServiceError{Code: "NOT_FOUND"}).
+					Once()
+			},
+			wantErr: true,
+			errMsg:  `organization unit with handle "missing" not found`,
 		},
 		{
 			name: "invalid schema JSON",

@@ -55,11 +55,11 @@ func Initialize(
 
 	storeMode := getApplicationStoreMode()
 	if storeMode == serverconst.StoreModeComposite || storeMode == serverconst.StoreModeDeclarative {
-		if err := entityService.LoadDeclarativeResources(makeAppDeclarativeConfig(appService)); err != nil {
+		if err := entityService.LoadDeclarativeResources(makeAppDeclarativeConfig(appService, ouService)); err != nil {
 			return nil, nil, err
 		}
 		if err := inboundClient.LoadDeclarativeResources(
-			context.Background(), makeAppInboundConfig(appService)); err != nil {
+			context.Background(), makeAppInboundConfig(appService, ouService)); err != nil {
 			return nil, nil, err
 		}
 	}

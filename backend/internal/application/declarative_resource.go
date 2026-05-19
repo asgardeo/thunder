@@ -29,9 +29,11 @@ import (
 	"github.com/thunder-id/thunderid/internal/entity"
 	"github.com/thunder-id/thunderid/internal/inboundclient"
 	inboundmodel "github.com/thunder-id/thunderid/internal/inboundclient/model"
+	oupkg "github.com/thunder-id/thunderid/internal/ou"
 	declarativeresource "github.com/thunder-id/thunderid/internal/system/declarative_resource"
 	"github.com/thunder-id/thunderid/internal/system/error/serviceerror"
 	"github.com/thunder-id/thunderid/internal/system/log"
+	"github.com/thunder-id/thunderid/internal/system/security"
 
 	"gopkg.in/yaml.v3"
 )
@@ -115,11 +117,13 @@ func (e *applicationExporter) ValidateResource(
 }
 
 // makeAppInboundConfig creates the inbound client declarative loader config for applications.
-func makeAppInboundConfig(appService ApplicationServiceInterface) inboundmodel.DeclarativeLoaderConfig {
+func makeAppInboundConfig(
+	appService ApplicationServiceInterface, ouService oupkg.OrganizationUnitServiceInterface,
+) inboundmodel.DeclarativeLoaderConfig {
 	return inboundmodel.DeclarativeLoaderConfig{
 		ResourceType:  "Application",
 		DirectoryName: "applications",
-		Parser:        makeAppInboundParser(appService),
+		Parser:        makeAppInboundParser(appService, ouService),
 		Validator: func(p *inboundmodel.InboundClient) error {
 			if p == nil {
 				return fmt.Errorf("parsed profile is nil")
@@ -130,9 +134,11 @@ func makeAppInboundConfig(appService ApplicationServiceInterface) inboundmodel.D
 }
 
 // makeAppInboundParser returns a parser that converts application YAML bytes into an InboundClient.
-func makeAppInboundParser(appService ApplicationServiceInterface) func([]byte) (*inboundmodel.InboundClient, error) {
+func makeAppInboundParser(
+	appService ApplicationServiceInterface, ouService oupkg.OrganizationUnitServiceInterface,
+) func([]byte) (*inboundmodel.InboundClient, error) {
 	return func(data []byte) (*inboundmodel.InboundClient, error) {
-		appDTO, err := parseToApplicationDTO(data)
+		appDTO, err := parseToApplicationDTO(data, ouService)
 		if err != nil {
 			return nil, err
 		}
@@ -157,11 +163,26 @@ func makeAppInboundParser(appService ApplicationServiceInterface) func([]byte) (
 }
 
 // parseToApplicationDTO unmarshals YAML bytes into an ApplicationDTO.
-func parseToApplicationDTO(data []byte) (*model.ApplicationDTO, error) {
+// If ou_id is absent but ou_handle is set, the handle is resolved to an ID via ouService.
+func parseToApplicationDTO(
+	data []byte, ouService oupkg.OrganizationUnitServiceInterface,
+) (*model.ApplicationDTO, error) {
 	var appRequest model.ApplicationRequestWithID
 	err := yaml.Unmarshal(data, &appRequest)
 	if err != nil {
 		return nil, err
+	}
+
+	if appRequest.OUID == "" && appRequest.OUHandle != "" {
+		if ouService == nil {
+			return nil, fmt.Errorf("ou_handle %q provided but OU service is unavailable", appRequest.OUHandle)
+		}
+		ou, svcErr := ouService.GetOrganizationUnitByPath(
+			security.WithRuntimeContext(context.Background()), appRequest.OUHandle)
+		if svcErr != nil {
+			return nil, fmt.Errorf("organization unit with handle %q not found", appRequest.OUHandle)
+		}
+		appRequest.OUID = ou.ID
 	}
 
 	appDTO := model.ApplicationDTO{
@@ -263,24 +284,27 @@ func (e *applicationExporter) GetResourceRulesForResource(resource interface{}) 
 
 // makeAppDeclarativeConfig creates the declarative loader config for loading application
 // identity data into the entity file store.
-func makeAppDeclarativeConfig(appService ApplicationServiceInterface) entity.DeclarativeLoaderConfig {
+func makeAppDeclarativeConfig(
+	appService ApplicationServiceInterface, ouService oupkg.OrganizationUnitServiceInterface,
+) entity.DeclarativeLoaderConfig {
 	return entity.DeclarativeLoaderConfig{
 		Directory: "applications",
 		Category:  entity.EntityCategoryApp,
-		Parser:    makeAppEntityParser(appService),
+		Parser:    makeAppEntityParser(appService, ouService),
 	}
 }
 
 // makeAppEntityParser creates a parser that converts application YAML into an entity.
 func makeAppEntityParser(
 	appService ApplicationServiceInterface,
+	ouService oupkg.OrganizationUnitServiceInterface,
 ) func(data []byte) (*entity.Entity, json.RawMessage, json.RawMessage, error) {
 	return func(data []byte) (*entity.Entity, json.RawMessage, json.RawMessage, error) {
 		if appService == nil {
 			return nil, nil, nil, fmt.Errorf("application service is required for declarative entity parsing")
 		}
 
-		appDTO, err := parseToApplicationDTO(data)
+		appDTO, err := parseToApplicationDTO(data, ouService)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("failed to parse application YAML: %w", err)
 		}
