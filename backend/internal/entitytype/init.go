@@ -21,6 +21,8 @@ package entitytype
 import (
 	"net/http"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+
 	"github.com/thunder-id/thunderid/internal/consent"
 	oupkg "github.com/thunder-id/thunderid/internal/ou"
 	"github.com/thunder-id/thunderid/internal/system/cache"
@@ -34,6 +36,7 @@ import (
 // Initialize initializes the entity type service and registers its routes.
 func Initialize(
 	mux *http.ServeMux,
+	mcpServer *mcp.Server,
 	cacheManager cache.CacheManagerInterface,
 	ouService oupkg.OrganizationUnitServiceInterface,
 	authzService sysauthz.SystemAuthorizationServiceInterface,
@@ -61,6 +64,10 @@ func Initialize(
 	agentTypeHandler := newEntityTypeHandler(entityTypeService, TypeCategoryAgent)
 	registerUserTypeRoutes(mux, userTypeHandler)
 	registerAgentTypeRoutes(mux, agentTypeHandler)
+
+	if mcpServer != nil {
+		registerMCPTools(mcpServer, entityTypeService)
+	}
 
 	exporter := newEntityTypeExporter(entityTypeService)
 	return entityTypeService, exporter, nil

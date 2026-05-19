@@ -110,6 +110,9 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	observabilitySvc = observability.Initialize()
 
+	// Initialize MCP server early so packages initializing below can register tools.
+	mcpServer := mcp.Initialize(mux, jwtService)
+
 	// List to collect exporters from each package
 	var exporters []declarativeresource.ResourceExporter
 
@@ -126,7 +129,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 		logger.Fatal("Failed to initialize system authorization service", log.Error(err))
 	}
 
-	ouService, ouHierarchyResolver, ouExporter, err := ou.Initialize(mux, ouAuthzService)
+	ouService, ouHierarchyResolver, ouExporter, err := ou.Initialize(mux, mcpServer, ouAuthzService)
 	if err != nil {
 		logger.Fatal("Failed to initialize OrganizationUnitService", log.Error(err))
 	}
@@ -151,7 +154,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 
 	// Initialize user type service
 	entityTypeService, entityTypeExporter, err := entitytype.Initialize(
-		mux, cacheManager, ouService, ouAuthzService, consentService)
+		mux, mcpServer, cacheManager, ouService, ouAuthzService, consentService)
 	if err != nil {
 		logger.Fatal("Failed to initialize EntityTypeService", log.Error(err))
 	}
@@ -218,9 +221,6 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 	exporters = append(exporters, notificationExporter)
 
-	// Initialize MCP server
-	mcpServer := mcp.Initialize(mux, jwtService)
-
 	// Initialize passkey service
 	passkeyService := passkey.Initialize(entityService)
 
@@ -283,7 +283,7 @@ func registerServices(mux *http.ServeMux, cacheManager cache.CacheManagerInterfa
 	}
 
 	// Initialize theme and layout services
-	themeMgtService, themeExporter, err := thememgt.Initialize(mux)
+	themeMgtService, themeExporter, err := thememgt.Initialize(mux, mcpServer)
 	if err != nil {
 		logger.Fatal("Failed to initialize ThemeMgtService", log.Error(err))
 	}
