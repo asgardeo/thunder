@@ -601,7 +601,6 @@ async function createAgent() {
     console.log("##########################################################################################################");
 
     // Call Thunder's /oauth2/token directly with the client_credentials grant.
-    // Call Thunder's /oauth2/token directly with the client_credentials grant.
     const agentAccessToken = await getAgentTokenViaClientCredentials();
 
     const client = new MultiServerMCPClient({
