@@ -1,0 +1,1608 @@
+---
+title: Executors
+sidebar_position: 5
+persona: iam
+description: Complete reference for every executor in the <ProductName /> Flow Builder — inputs, outputs, failure conditions, and configuration options.
+---
+
+# Executors
+
+Executors are backend operation nodes. Each Executor performs one specific operation and exposes up to three outcome paths: success (green dot), failure (red dot), and incomplete (yellow dot).
+
+## Executor Overview
+
+| Executor | Description |
+|----------|-------------|
+| **Identifier + Password** | Verifies a username (or email) and password against the user store. |
+| **OAuth** | Authenticates via generic OAuth 2.0 provider. |
+| **OIDC Auth** | Authenticates via generic OIDC provider. |
+| **Google** | Authenticates the user via Google sign-in. |
+| **GitHub** | Authenticates the user via GitHub sign-in. |
+| **Request Passkey** | Initiates a passkey authentication challenge. |
+| **Verify Passkey** | Verifies the user's passkey response. |
+| **Start Passkey Registration** | Begins the passkey registration ceremony. |
+| **Finish Passkey Registration** | Completes the passkey registration ceremony. |
+| **Send SMS OTP** | Sends an OTP to the user's registered mobile number. |
+| **Verify SMS OTP** | Verifies the OTP code the user entered. |
+| **Magic Link** | Generates and verifies magic link authentication tokens. |
+| **Identify User** | Looks up a user by identifier in the user store. |
+| **Resolve User** | Handles disambiguation when multiple users match an identifier. |
+| **Resolve Federated User** | Resolves ambiguous federated user after social login. |
+| **User Type Resolver** | Resolves the user type based on configured rules. |
+| **Provisioning** | Creates or updates the user record in the store. |
+| **Attribute Collector** | Collects additional user attributes defined in the user type. |
+| **Validate Attribute Uniqueness** | Checks that unique attributes are not already registered. |
+| **Set Credentials** | Sets credentials (e.g., password) for an existing user. |
+| **Authorization** | Evaluates authorization policies for the current user. |
+| **User Consent** | Records explicit user consent for defined scopes or terms. |
+| **Validate Permission** | Checks that the request has required scope/permissions. |
+| **OU Creation** | Creates an organizational unit for the user. |
+| **Resolve OU** | Resolves or selects an organizational unit based on strategy. |
+| **Generate Invite** | Generates an invite link for user registration. |
+| **Verify Invite** | Verifies an invite token before completing registration. |
+| **Send Email** | Sends email using configured templates. |
+| **Send SMS** | Sends SMS using configured templates and sender. |
+| **Auth Assertion Generator** | Generates the final authentication assertion on successful flow completion. |
+| **HTTP Request** | Makes HTTP requests to external endpoints. |
+
+
+## Executor Details and Configuration
+
+Expand each executor below for a full reference including when to use it, prerequisites, inputs and outputs, failure conditions, and node property configuration.
+
+---
+
+### Credential Verification
+
+<details>
+<summary>**Identifier + Password**</summary>
+
+Verifies a username and password against the <ProductName /> user store. This is the standard executor for password-based authentication.
+
+**When to use:** Any flow that collects a username and password from the user. Pair with the **Username + Password** View or Widget.
+
+**Prerequisites:** None. Works without any prior executor.
+
+**View pairing:** Requires the **Username + Password** View (Step or Widget) to collect credentials.
+
+**How it works in registration flows:** When used in a registration flow, the executor checks whether the user already exists. If found, it fails with "User already exists." If not found, it returns complete with `isAuthenticated: false`, allowing the flow to proceed to provisioning. If a user ID was pre-resolved earlier in the flow, the executor skips the identifier prompt and only requests the password. Pre-resolution can happen, for example, via the **Resolve User** executor.
+
+**Inputs (required):**
+- `username` — the identifier submitted by the View
+- `password` — the credential submitted by the View
+
+**Outputs to flow context:**
+- Authenticated user object (ID, OU ID, user type, attributes) on success
+
+**Failure conditions:**
+- Incorrect username or password
+- User not found
+- Authentication service error
+
+</details>
+
+---
+
+### Federated Authentication
+
+Federated authentication executors are redirect-based. The user is sent to an external provider, authenticates there, and returns with credentials that the executor exchanges for identity claims. Supports both generic OAuth/OIDC and pre-configured social login providers (Google, GitHub).
+
+:::note
+All OAuth/OIDC executors require the corresponding application to be configured in <ProductName /> identity provider settings (client ID, client secret, redirect URI) before the executor will function. HTTPS is required by all major OAuth providers.
+:::
+
+<details>
+<summary>**OAuth**</summary>
+
+Authenticates users via a generic OAuth 2.0 provider. After the OAuth redirect, <ProductName /> exchanges the authorization code for an access token and user profile information.
+
+**When to use:** Any flow offering single sign-on via a custom OAuth provider not covered by pre-built executors.
+
+**Prerequisites:** An OAuth identity provider must be configured in <ProductName /> with a valid client ID, client secret, and redirect URI.
+
+**View pairing:** Pair with a **Continue with [Provider Name]** Widget. No user input is needed beyond the redirect — the Widget initiates the redirect and the executor reads the returned `code`.
+
+**Configuration:**
+
+| Property | Required | Description |
+|---|---|---|
+| `idpId` | Yes | The identity provider ID configured in <ProductName /> |
+| `allowAuthenticationWithoutLocalUser` | No | Allow authentication when no local user exists (creates federated link) |
+| `allowRegistrationWithExistingUser` | No | Allow registration if the account already exists |
+| `allowCrossOUProvisioning` | No | Allow creating user in a different OU from the default |
+
+**Inputs:**
+- `code` (required) — the authorization code returned by the OAuth provider
+
+**Outputs to flow context:**
+- Authenticated user object with profile claims from OAuth provider
+- Identity provider set to the configured IdP
+- In registration flows, returns `isAuthenticated: false` if the user does not exist and `allowAuthenticationWithoutLocalUser` is enabled
+
+**Failure conditions:**
+- User denied consent on the OAuth provider's authorization screen
+- Authorization code expired or already used
+- Client credentials or redirect URI mismatch
+- OAuth identity provider not configured in <ProductName />
+
+</details>
+
+<details>
+<summary>**OIDC Auth**</summary>
+
+Authenticates users via a generic OIDC provider. After the OAuth redirect, <ProductName /> exchanges the authorization code for an ID token and extracts identity claims.
+
+**When to use:** Any flow offering single sign-on via a custom OIDC provider (Enterprise IdP, custom authorization server, etc.).
+
+**Prerequisites:** An OIDC identity provider must be configured in <ProductName /> with a valid client ID, client secret, and redirect URI.
+
+**View pairing:** Pair with a **Continue with [Provider Name]** Widget.
+
+**Configuration:**
+
+| Property | Required | Description |
+|---|---|---|
+| `idpId` | Yes | The identity provider ID configured in <ProductName /> |
+| `allowAuthenticationWithoutLocalUser` | No | Allow authentication when no local user exists |
+| `allowRegistrationWithExistingUser` | No | Allow registration if the account already exists |
+| `allowCrossOUProvisioning` | No | Allow creating user in a different OU from the default |
+
+**Inputs:**
+- `code` (required) — the authorization code returned by the OIDC provider
+- `nonce` (optional) — the nonce value for OIDC replay protection
+
+**Outputs to flow context:**
+- Authenticated user object populated from the OIDC ID token claims (sub, email, name, picture, etc.)
+- Identity provider set to the configured IdP
+
+**Failure conditions:**
+- User denied consent on the provider's authorization screen
+- Authorization code expired or already used
+- Client credentials or redirect URI mismatch
+- OIDC identity provider not configured in <ProductName />
+
+</details>
+
+<details>
+<summary>**Google**</summary>
+
+Authenticates users via Google OIDC. After the OAuth redirect, <ProductName /> exchanges the authorization code for an ID token and extracts identity claims.
+
+**When to use:** Any flow offering "Sign in with Google."
+
+**Prerequisites:** A Google identity provider must be configured in <ProductName /> with a valid client ID, client secret, and redirect URI.
+
+**View pairing:** Pair with the **Continue with Google** Widget. No user input is needed beyond the redirect — the Widget initiates the redirect and the executor reads the returned `code`.
+
+**Configuration:**
+
+| Property | Required | Description |
+|---|---|---|
+| `idpId` | Yes | The identity provider ID configured in <ProductName /> |
+| `allowAuthenticationWithoutLocalUser` | No | Allow authentication when no local user exists (creates federated link) |
+| `allowRegistrationWithExistingUser` | No | Allow registration if the account already exists |
+| `allowCrossOUProvisioning` | No | Allow creating user in a different OU from the default |
+
+**Inputs:**
+- `code` (required) — the authorization code returned by Google after user consent
+- `nonce` (optional) — the nonce value for OIDC replay protection
+
+**Outputs to flow context:**
+- Authenticated user object populated from the Google ID token claims (sub, email, name, picture, etc.)
+- Identity provider set to configured `google` IdP connection
+
+**Failure conditions:**
+- User denied consent on Google's authorization screen
+- Authorization code expired or already used
+- Client credentials or redirect URI mismatch in the Google OAuth application
+- Google identity provider not configured in <ProductName />
+
+</details>
+
+<details>
+<summary>**GitHub**</summary>
+
+Authenticates users via GitHub OAuth 2.0. After the redirect, <ProductName /> exchanges the authorization code for an access token and fetches the user's profile.
+
+**When to use:** Developer-facing applications where GitHub is the preferred sign-in option.
+
+**Prerequisites:** A GitHub identity provider must be configured in <ProductName /> with a valid client ID, client secret, and redirect URI.
+
+**View pairing:** Pair with the **Continue with GitHub** Widget. No user input is needed beyond the redirect — the Widget initiates the redirect and the executor reads the returned `code`.
+
+**Configuration:**
+
+| Property | Required | Description |
+|---|---|---|
+| `idpId` | Yes | The identity provider ID configured in <ProductName /> |
+| `allowAuthenticationWithoutLocalUser` | No | Allow authentication when no local user exists (creates federated link) |
+| `allowRegistrationWithExistingUser` | No | Allow registration if the account already exists |
+| `allowCrossOUProvisioning` | No | Allow creating user in a different OU from the default |
+
+**Inputs:**
+- `code` (required) — the authorization code returned by GitHub after user authorization
+
+**Outputs to flow context:**
+- Authenticated user object populated from the GitHub profile (id, login, email, avatar URL)
+- Identity provider set to configured `github` IdP connection
+
+**Failure conditions:**
+- User denied authorization on GitHub
+- Redirect URI not registered in the GitHub OAuth application
+- Authorization code expired
+- GitHub identity provider not configured in <ProductName />
+
+</details>
+
+---
+
+### Passkeys (WebAuthn)
+
+Passkey executors operate in explicit modes that map to distinct flow nodes. A single `PasskeyAuthExecutor` implementation backs all four passkey nodes — **Request Passkey**, **Verify Passkey**, **Start Passkey Registration**, and **Finish Passkey Registration** — with the active mode set per node.
+
+:::note
+Every passkey node requires a `relyingPartyId` node property (the domain of your application, for example `app.example.com`). The executor will hard-fail at runtime if this property is absent.
+:::
+
+<details>
+<summary>**Request Passkey**</summary>
+
+Issues a WebAuthn authentication challenge. The browser forwards it to the user's authenticator (device biometric, hardware key, etc.), which signs the challenge.
+
+**When to use:** First executor in a passkey sign-in step, immediately before the Passkey View. Always paired with **Verify Passkey**.
+
+**Prerequisites:**
+- **The node property `relyingPartyId` must be set** — this is the domain where the passkey will be used (e.g., `app.example.com`). The executor hard-fails if missing.
+- **Optionally, `userID` can be in flow context** — if provided, the challenge targets only passkeys for that user. If absent, usernameless mode is used (any registered passkey can respond).
+
+**Setup:**
+- **For user-identified flows:** Place an authentication executor (Identifier + Password, etc.) before this executor to populate `userID`. Then this executor issues a challenge for that user's passkeys.
+- **For usernameless flows:** No prior executor is needed. The challenge is issued without a target user, allowing any passkey to respond (user selects their credential on the device).
+- **Always set `relyingPartyId` in node properties** — copy the domain where your application runs (e.g., `app.example.com`).
+
+**View pairing:** Must be followed by the **Passkey View**, which collects the signed authenticator response.
+
+**Inputs from flow context:**
+- `userID` (optional) — if present, the challenge targets only credentials registered for that user; if absent, usernameless mode is used
+
+**Outputs to flow context (runtime data):**
+- `passkeyChallenge` — the `PublicKeyCredentialRequestOptions` JSON, forwarded to the browser via additional data
+- `passkeySessionToken` — internal session token consumed by Verify Passkey
+
+**Failure conditions:**
+- `relyingPartyId` node property missing or empty
+- No passkeys registered for the user (when userID is provided)
+- Passkey service error
+
+**Configuration:**
+
+| Property | Required | Description |
+|---|---|---|
+| `relyingPartyId` | Yes | The relying party domain (e.g. `app.example.com`) |
+| `relyingPartyName` | No | Display name of the relying party (e.g. `ThunderID`) |
+
+**Node properties:**
+
+| Property | Required | Description |
+|---|---|---|
+| `authenticatorSelection` | No | Authenticator selection criteria object with fields: `authenticatorAttachment`, `requireResidentKey`, `residentKey`, `userVerification` |
+| `attestation` | No | Attestation conveyance preference (e.g. `none`, `direct`, `indirect`). Defaults to `none`. |
+
+</details>
+
+<details>
+<summary>**Verify Passkey**</summary>
+
+Validates the cryptographic response returned by the user's authenticator against the session token issued by Request Passkey.
+
+**When to use:** Immediately after the Passkey View, always paired with **Request Passkey**.
+
+**Prerequisites:** 
+- **Request Passkey must have run first** — it generates the `passkeySessionToken` that this executor consumes
+- **The `passkeySessionToken` must be in context** — automatically set by Request Passkey. The executor fails if missing.
+- **The Passkey View must have collected the authenticator response** — the executor reads the signed response fields from the View
+
+**Setup:**
+1. **Place Request Passkey before the Passkey View** — in the same flow, to issue the challenge and create the session token
+2. **Add a **Passkey View** immediately after Request Passkey** — to display the passkey UI where the user interacts with their authenticator
+3. **Connect this executor (Verify Passkey) immediately after the Passkey View** — to validate the signed response
+4. The flow structure should be: Request Passkey → Passkey View → Verify Passkey → (Continue flow or Auth Assertion Generator)
+
+**Example flow structure:**
+1. **Request Passkey** — generates challenge and session token
+2. **Passkey View** — user authenticates with passkey (biometric, hardware key, etc.)
+3. **Verify Passkey** (this executor) — validates the signed response
+4. **Auth Assertion Generator or next step** — continues with authenticated user
+
+**Inputs (from the Passkey View):**
+- `credentialId` (required) — the public credential ID
+- `clientDataJSON` (required) — JSON data from the client
+- `authenticatorData` (required) — data from the authenticator
+- `signature` (required) — the cryptographic signature
+- `userHandle` (optional) — provided by the authenticator in usernameless flows
+
+**Outputs to flow context:**
+- Authenticated user object (ID, OU ID, user type, attributes) — on success
+- `userID` written to runtime data
+- `Authentication Success` is set
+
+**Failure conditions:**
+- Signature verification failed (invalid or tampered response)
+- Session token missing (Request Passkey did not run)
+- User not found after successful verification
+
+**Retry behavior:** If the passkey response is invalid (client error), the executor returns `INCOMPLETE` instead of failing the flow, allowing the user to retry by providing the required inputs again.
+
+</details>
+
+<details>
+<summary>**Start Passkey Registration**</summary>
+
+Begins the WebAuthn credential registration ceremony and returns `PublicKeyCredentialCreationOptions` to the browser.
+
+**When to use:** Registration flows that include passkey enrollment, or within an authenticated session when adding a passkey to an existing account. Always paired with **Finish Passkey Registration**.
+
+**Prerequisites:**
+- **`userID` must be in the flow context** — the executor hard-fails if missing. The user must either be authenticated or already provisioned.
+- **`relyingPartyId` must be set in node properties** — this is the domain where passkeys will be used (e.g., `app.example.com`).
+
+**Setup:**
+1. **For authenticated users adding a passkey:** Place an authentication executor before this one (Identifier + Password, OAuth, etc.) to populate `userID`.
+2. **For new users during registration:** Place **Provisioning** before this executor. After the user account is created, Provisioning sets `userID` in runtime data.
+3. **Always set `relyingPartyId` in node properties** — the domain where the application runs.
+4. **The flow should then be:** Provisioning (or authentication) → **Start Passkey Registration** → **Passkey View** → **Finish Passkey Registration**
+
+**Example registration flow with passkey enrollment:**
+1. **Username + Password View** — collects credentials
+2. **Provisioning** — creates the user account (sets `userID`)
+3. **Start Passkey Registration** (this executor) — begins passkey enrollment ceremony
+4. **Passkey View** — user's device registers a new passkey
+5. **Finish Passkey Registration** — completes the registration and stores the credential
+
+**Inputs from flow context:**
+- `userID` (required) — the user for whom the passkey is being registered
+
+**Outputs to flow context (runtime data):**
+- `passkeyCreationOptions` — the `PublicKeyCredentialCreationOptions` JSON, forwarded to the browser via additional data
+- `passkeySessionToken` — internal session token consumed by Finish Passkey Registration
+
+**Failure conditions:**
+- `userID` missing from flow context
+- `relyingPartyId` node property missing or empty
+- Passkey service error
+
+**Configuration:**
+
+| Property | Required | Description |
+|---|---|---|
+| `relyingPartyId` | Yes | The relying party domain (e.g. `app.example.com`) |
+| `relyingPartyName` | No | Display name of the relying party (e.g. `ThunderID`) |
+
+**Node properties:**
+
+| Property | Required | Description |
+|---|---|---|
+| `authenticatorSelection` | No | Authenticator selection criteria object with fields: `authenticatorAttachment`, `requireResidentKey`, `residentKey`, `userVerification` |
+| `attestation` | No | Attestation conveyance preference (e.g. `none`, `direct`, `indirect`). Defaults to `none`. |
+
+</details>
+
+<details>
+<summary>**Finish Passkey Registration**</summary>
+
+Completes the WebAuthn registration ceremony and stores the new credential in the user's passkey list.
+
+**When to use:** Immediately after the user's device returns the newly created credential. Always follows **Start Passkey Registration**.
+
+**Prerequisites:** 
+- **Start Passkey Registration must have run first** — it creates the `passkeySessionToken` and registration options
+- **The `passkeySessionToken` must be in context** — automatically set by Start Passkey Registration
+- **The Passkey View must have collected the credential** — the executor reads the user's newly created credential from the View
+
+**Setup:**
+1. **Flow structure:** Start Passkey Registration → **Passkey View** → **Finish Passkey Registration** (this executor)
+2. **Start Passkey Registration** creates the session token and options
+3. **Passkey View** displays the registration UI where the user creates a new passkey
+4. **This executor (Finish Passkey Registration)** immediately follows to complete and store the credential
+
+**Example complete enrollment flow:**
+1. **Provisioning** — creates user (sets `userID`)
+2. **Start Passkey Registration** — generates registration ceremony options
+3. **Passkey View** — user creates passkey on their device
+4. **Finish Passkey Registration** (this executor) — stores the new credential
+5. **Auth Assertion Generator** — completes registration and returns token
+
+**Inputs:**
+- `credentialId` (required)
+- `clientDataJSON` (required)
+- `attestationObject` (required)
+- `credentialName` (optional) — user-friendly label for the passkey; defaults to `"Passkey"` if omitted
+
+**Outputs to flow context:**
+- `passkeyCredentialID` — ID of the newly stored credential
+- `passkeyCredentialName` — label of the credential
+- `credentialCreatedAt` — creation timestamp
+
+**Failure conditions:**
+- Session token missing (Start Passkey Registration did not run)
+- Credential already registered
+- Invalid credential — allow the user to retry by providing the required inputs
+
+</details>
+
+---
+
+### OTP and Passwordless
+
+<details>
+<summary>**Send SMS OTP**</summary>
+
+Generates a time-limited OTP and sends it to the user's mobile number via SMS. Runs in the background — no user interaction at this step.
+
+**When to use:** Any step requiring SMS-based verification. Place this executor *before* the OTP input View. Always paired with **Verify SMS OTP**.
+
+**Prerequisites:**
+- **An SMS sender must be configured** in <ProductName /> API
+- **The sender ID must be set in the node's `senderId` property** — the executor hard-fails if `senderId` is not configured
+- **A mobile number must be resolvable** — from the following sources (see resolution order below)
+- **This executor must be immediately followed by the SMS OTP View and then Verify SMS OTP** — to validate the OTP the user enters
+
+**Setup:**
+1. **Configure SMS service in Console** — set up an SMS provider (e.g., Twilio) with credentials
+2. **Set the `senderId` node property** — copy the configured sender ID from the Console
+3. **Make the mobile number available:**
+   - Add a **Blank View** with a phone input before this executor (if the user is not yet identified)
+   - OR have the phone already available from a prior executor/authentication
+   - OR set it in runtime data from a prior step
+4. **Add a **SMS OTP View** immediately after this executor** — to display the OTP input form
+5. **Add **Verify SMS OTP** immediately after the SMS OTP View** — to validate the OTP code
+
+**Example flow sequence:**
+1. **Blank View** — collects phone number (optional, if not already available)
+2. **Send SMS OTP** — generates and sends OTP (sets `otpSessionToken`)
+3. **SMS OTP View** — collects OTP input from user
+4. **Verify SMS OTP** — validates the OTP using the session token
+
+**Phone number resolution order:**
+1. A phone-type input from the node's configured inputs (from View)
+2. `mobile_number` from user inputs or runtime data
+3. The user's stored phone attribute (looked up by username or email first, then fetched from the user store)
+
+In registration flows, the executor prompts for the mobile number if not already in context and checks for uniqueness — failing with `USER_INPUT_REQUIRED` if the number is already registered.
+
+**Inputs from flow context:**
+- Mobile number (from user inputs, runtime data, or user store lookup)
+- `userID` (optional) — if authenticated, used directly; otherwise resolved from the mobile number, username, or email in context
+
+**Outputs to flow context (runtime data):**
+- `otpSessionToken` — session token consumed by Verify SMS OTP
+- `attemptCount` — current resend attempt count (max 3)
+- `smsOTPMobileNumber` — the mobile number the OTP was sent to
+- `smsOTPPhoneAttr` — the attribute key used to store the phone number
+
+**Failure conditions:**
+- `senderId` node property missing or empty
+- Mobile number not found in context or user store
+- Maximum resend attempts (3) exceeded
+- SMS service error
+
+**Configuration:**
+
+| Property | Required | Description |
+|---|---|---|
+| `Notification Sender` | Yes | The notification sender configured with the SMS provider. |
+
+**Node properties:**
+
+| Property | Required | Description |
+|---|---|---|
+| `senderId` | Yes | The notification sender ID configured in <ProductName /> |
+
+</details>
+
+<details>
+<summary>**Verify SMS OTP**</summary>
+
+Validates the OTP code the user entered against the code dispatched by Send SMS OTP.
+
+**When to use:** Immediately after the SMS OTP View. Always follows **Send SMS OTP** in the same flow.
+
+**Prerequisites:** 
+- **An SMS sender must be configured** in <ProductName /> via API
+- **Send SMS OTP must have run first** — this executor generates the `otpSessionToken` that Verify SMS OTP consumes
+- **The `otpSessionToken` must be in runtime data** — automatically set by Send SMS OTP
+- **The user must provide the OTP code** — from the SMS OTP View input
+- **The OTP must not be expired** — OTP codes are time-limited (typically 5-10 minutes)
+
+**Setup:**
+1. **Place Send SMS OTP before this executor** — in the same flow, with no intervening steps that could invalidate the session
+2. **Add an SMS OTP View immediately after Send SMS OTP** — to collect the OTP code the user received in the SMS
+3. **Connect this executor right after the View** — to validate the code immediately
+4. If the OTP is incorrect, the executor returns `USER_INPUT_REQUIRED`, re-showing the SMS OTP View to allow retry
+
+**Flow structure:**
+1. **Send SMS OTP** — generates OTP and session token
+2. **SMS OTP View** — user enters the OTP code they received
+3. **Verify SMS OTP** (this executor) — validates the code against the session token
+
+**Inputs:**
+- `otp` (required) — the code entered by the user in the OTP input View
+
+**Outputs to flow context:**
+- Authenticated user object on success (sets `isAuthenticated: true`)
+- In registration flows, returns `isAuthenticated: false` with the mobile number attribute, allowing provisioning to proceed
+
+**Failure conditions:**
+- OTP code incorrect — allow the user to retry (limit: 3 attempts)
+- OTP session token missing (Send SMS OTP did not run)
+- OTP expired (user waited too long to enter it)
+- Authentication service error
+
+**Configuration:**
+
+| Property | Required | Description |
+|---|---|---|
+| `Notification Sender` | Yes | The notification sender configured with the SMS provider. |
+
+
+**Retry limit:** The maximum number of incorrect OTP attempts before the flow fails is 3 (fixed).
+
+</details>
+
+<details>
+<summary>**Magic Link**</summary>
+
+Generates a time-limited magic link token that authenticates a user when visited. Runs in two modes: `generate` creates and delivers the token, `verify` validates it on completion.
+
+**When to use:** Passwordless authentication flows where users sign in by clicking an emailed or SMS-delivered link. Pairs with Email Executor (for generation) and Magic Link View (for verification).
+
+**Prerequisites:** Email or SMS service must be configured. The executor supports both email and SMS destination attributes.
+
+**Modes:**
+
+| Mode | Behavior |
+|---|---|
+| `generate` | Creates a magic link token and stores it in runtime data. Output via ForwardedData for delivery executor (Email or SMS). |
+| `verify` | Validates the user-provided token against the stored token and authenticates the user. |
+
+**Generate Mode:**
+
+**When to use:** Before an Email Executor or SMS Executor. Generates the token that the delivery executor will send.
+
+**Prerequisites:** 
+- **A destination email or phone must be available** — from user input, runtime data, or user store lookup
+- **A Send Email or Send SMS executor must follow this executor** — to deliver the generated magic link to the user
+
+**Setup:**
+1. **Add a Blank View (optional)** — to collect the destination email/phone if not already available
+2. **Place this executor in generate mode** — in the flow
+3. **Add Send Email or Send SMS immediately after** — to deliver the magic link
+   - The generated link is automatically forwarded via `ForwardedData`
+   - The delivery executor sends the link to the user's email or phone
+4. The user clicks the link in the email/SMS to access the verify flow
+
+**Inputs from flow context:**
+- Destination attribute (email or phone number) resolved from user inputs, runtime data, or user store lookup
+
+**Outputs to flow context (runtime data):**
+- `magicLinkToken` — the generated token (for Verify Magic Link to consume)
+- `magicLinkDestinationAttribute` — the attribute name (email or phone) the link was generated for
+- `inviteLink` or similar — forwarded via `ForwardedData` to the Email/SMS delivery executor
+- In registration flows, `skipDelivery` is set to prevent enumeration attacks if the account already exists
+
+**Failure conditions:**
+- In registration flows, if the user already exists (token generation skipped silently to prevent enumeration)
+- Invalid destination attribute configuration
+
+**Verify Mode:**
+
+**When to use:** After a user clicks the magic link and needs to be authenticated. Runs in a separate flow from generate mode.
+
+**Prerequisites:** 
+- **The magic link token must be provided** — typically from a URL query parameter when the user clicks the link (e.g., `/?token=abc123`)
+- **The token must be validated** — this executor checks if the token matches what was originally generated and if it hasn't expired
+
+**Setup:**
+1. **The user clicks the magic link** — from the email/SMS generated by the generate mode
+2. **A new flow is initiated** — with the token in the URL (e.g., `registration?token=abc123`)
+3. **A Blank View (optional)** — extracts the token from the URL parameter if needed
+4. **This executor (in verify mode)** — receives the token and validates it
+5. **If valid, the user is authenticated** — and the flow continues to registration or account access
+
+**Inputs:**
+- `magicLinkToken` (required) — the token the user received in the email/SMS (from URL parameter)
+
+**Outputs to flow context:**
+- Authenticated user object (ID, OU ID, user type, attributes) on success
+- `isAuthenticated: true` is set on successful verification
+
+**Failure conditions:**
+- Token mismatch (wrong token provided)
+- Token expired (user waited too long to click the link)
+- No token provided
+- Token not found in runtime data (Generate mode did not run)
+- User lookup failed after token validation
+
+**Node properties:**
+
+| Property | Required | Description |
+|---|---|---|
+| `tokenExpiry` | No | Token validity period in seconds. Defaults to the magic link service default if absent. |
+| `magicLinkURL` | No | URL prefix for the generated magic link. Defaults to the service-configured URL if absent. |
+
+</details>
+---
+
+### User Provisioning and Attributes
+
+<details>
+<summary>**Provisioning**</summary>
+
+Creates a new user record in the user store. This executor persists the user's identity during registration flows. The executor follows the user type schema — required attributes are determined by the user type resolved earlier in the flow.
+
+**When to use:** Registration flows, after the User Type Resolver has set the user type and default OU ID in runtime data.
+
+**Prerequisites:**
+- **`userType` must be present in runtime data** — set by User Type Resolver. This defines which attributes are required for the user.
+- **`defaultOUID` or `ouId` must be present in runtime data** — set by User Type Resolver or OU Resolver. This determines which OU the new user will belong to.
+- **Required user attributes must be available** — either from user inputs (Views), runtime data (prior executors), or the authenticated user (federated accounts).
+
+**Setup:**
+1. **Place User Type Resolver first** in registration flows — it sets `userType` and `defaultOUID` in runtime data, required for Provisioning.
+2. **Optionally place OU Resolver or OU Creation before Provisioning** if you want to override the default OU or allow the user to select an OU.
+3. **Collect required attributes before Provisioning:**
+   - If the user type requires `email`, `phone`, etc., add a **Blank View** to collect them.
+   - The executor automatically checks which attributes are missing and only prompts for those.
+   - If all required attributes are already satisfied (from prior inputs or federated claims), the executor skips the prompt and creates the user directly.
+4. **Optionally enable optional attributes** — set `includeOptional: true` in node properties to also prompt for optional attributes defined in the user type schema.
+
+**How attribute collection works:** The executor fetches required and optional attributes from the user type schema. Attributes already present in user inputs, runtime data, or the authenticated user context are considered satisfied. Only missing required attributes are prompted. Optional attributes are only prompted if `includeOptional` is enabled in node properties.
+
+**Prompt batching:** If `maxPerPrompt` is set, the executor forwards only that many missing inputs per prompt cycle, cycling through them across multiple flow iterations.
+
+**Cross-OU provisioning:** When `Allow Cross-OU Provisioning` is set and the user exists in a different OU, the executor creates the user in the target OU instead of failing.
+
+**Inputs from flow context:**
+- User attributes resolved against the user type schema (from user inputs, runtime data, or authenticated user attributes)
+- `userType` from runtime data
+- `ouId` or `defaultOUID` from runtime data
+
+**Outputs to flow context:**
+- Authenticated user object with the newly created user's ID, OU ID, type, and attributes
+- `userID` written to runtime data
+
+**Failure conditions:**
+- `userType` or OU ID missing from runtime data
+- User already exists with a conflicting unique attribute (in registration flows, prompts for a different value)
+- Required attribute validation failure
+- User store error
+
+**Configuration:**
+
+| Property | Required | Default | Description |
+|---|---|---|---|
+| `allowCrossOUProvisioning` | No | `false` | Allow creating the user in a different OU from the default when the user already exists in another OU |
+| `assignGroup` | No | — | Group ID to automatically assign the new user to |
+| `assignRole` | No | — | Role ID to automatically assign the new user to |
+
+**Node properties:**
+
+| Property | Required | Default | Description |
+|---|---|---|---|
+| `includeOptional` | No | `false` | Whether to prompt for optional (non-credential) schema attributes |
+| `includeOptionalCredentials` | No | `false` | Whether to prompt for optional credential attributes |
+| `maxPerPrompt` | No | `0` (all at once) | Maximum number of missing inputs to forward per prompt cycle |
+
+</details>
+
+<details>
+<summary>**Attribute Collector**</summary>
+
+Checks the authenticated user's existing profile attributes against the node's configured required inputs, then prompts only for what is missing. Skips automatically in registration flows.
+
+**When to use:** Authentication flows where you want to progressively collect profile attributes from returning users without re-prompting for data they have already provided.
+
+**Prerequisites:**
+- **User must be authenticated** — place this executor after an authentication executor (Identifier + Password, OAuth, OIDC, SMS OTP, Passkey, Magic Link, etc.). These executors populate `isAuthenticated: true` and `userID`.
+- **`userID` must be present in the flow context** — automatically set by any authentication executor. The executor fails immediately if missing.
+- **Only runs in authentication flows** — automatically skips (returns complete immediately) in registration flows.
+
+**Setup:**
+1. Place an authentication executor before this one (Identifier + Password, Google, GitHub, OAuth, OIDC, SMS OTP, Passkey, or Magic Link).
+2. Add a **Blank View** immediately after the authentication executor, configured with input components for the missing attributes.
+3. This executor will automatically prompt for only the attributes the user has not yet provided.
+
+**View pairing:** Connect a **Blank View** (with the required attribute fields) to receive the incomplete path. The executor routes back to the View only for attributes the user has not yet provided.
+
+**How missing-input resolution works:**
+1. Checks `AuthenticatedUser.Attributes` in the flow context.
+2. Falls back to the user's stored profile in the user store.
+3. Only attributes absent from both sources are added to the prompt.
+
+**Inputs:**
+- Configured via node inputs — any attribute identifiers listed there are checked and collected.
+
+**Outputs to flow context:**
+- Writes newly collected attributes to the user's profile in the user store.
+
+**Failure conditions:**
+- User not authenticated
+- `userID` missing from context
+- User not found in the user store
+- User store update error
+
+</details>
+
+<details>
+<summary>**Validate Attribute Uniqueness**</summary>
+
+Checks that unique schema attributes supplied in user inputs are not already held by an existing user. Returns `USER_INPUT_REQUIRED` if a conflict is detected, allowing the user to change the value.
+
+**When to use:** After a form View that collects unique attributes (email, username, phone, etc.), before any creation executor. Early detection prevents conflicts at provisioning time.
+
+**Prerequisites:** 
+- **`userType` must be in runtime data** — set by placing User Type Resolver earlier in the flow, typically as the first executor.
+- **Unique attribute values must be provided** — either from user inputs (via a View) or from runtime data.
+- The executor fetches the schema definition of unique attributes from the resolved user type.
+
+**Setup:**
+1. Place **User Type Resolver** as the first executor in registration flows. This populates `userType` and `defaultOUID` in runtime data.
+2. Add a **Blank View** immediately before this executor that collects the unique attributes (email, username, phone, etc.).
+3. Connect the View's output to this executor — it will validate uniqueness against the user store.
+4. If validation fails (attribute already exists), the View is re-displayed to allow the user to change it.
+
+**View pairing:** Pair with a **Blank View** that collects the unique attributes (email, username, phone, etc.).
+
+**How it works:**
+1. Reads the user type from runtime data
+2. Fetches the unique attributes defined in that user type's schema
+3. Checks each unique attribute value provided in user inputs
+4. Queries the user store to see if any other user already holds that value
+5. Returns `USER_INPUT_REQUIRED` if a conflict is found, naming the attribute
+6. Returns `COMPLETE` if all values are free to use
+
+**Inputs from flow context:**
+- User-supplied values for unique attributes (email, username, phone, etc.)
+
+**Outputs to flow context:**
+- `FailureReason` set to attribute name if conflict detected (e.g., "A user with this email already exists. Please use a different value.")
+
+**Failure conditions:**
+- `userType` not found in runtime data
+- User type schema not found
+- User store lookup error
+
+</details>
+
+<details>
+<summary>**Set Credentials**</summary>
+
+Sets credentials (password, certificate, etc.) for an authenticated user. Typically used after Provisioning to allow the new user to set their own password.
+
+**When to use:** Registration flows after the user account is created (Provisioning), or account management flows where an authenticated user is changing their credentials.
+
+**Prerequisites:** 
+- **`userID` must be in flow context** — populated by:
+  - **In registration flows:** Provisioning executor (which creates the user and sets `userID`)
+  - **In account management flows:** Any authentication executor (Identifier + Password, OAuth, SMS OTP, etc.)
+- **User authentication status** — in registration flows, `isAuthenticated` can be false; in account flows, the user must be authenticated.
+
+**Setup:**
+- **Registration flows:** Place Provisioning executor before this executor. After the user account is created, Provisioning populates `userID` in runtime data. Then add a **Blank View** with password/credential fields and connect to this executor.
+- **Authentication/account flows:** Place an authentication executor before this executor to populate `userID` and `isAuthenticated: true`. Then add a **Blank View** with credential fields.
+
+**View pairing:** Pair with a **Blank View** configured with credential input fields (e.g., Password field).
+
+**Inputs (required):**
+- `password` — the new credential value (from the View)
+
+**Outputs to flow context:**
+- Credential stored in the user's profile in the user store
+
+**Failure conditions:**
+- `userID` missing from flow context
+- Credential input not provided when requested
+- User not found in user store
+- Credential update failed
+
+</details>
+
+---
+
+### Identity and User Type Resolution
+
+<details>
+<summary>**Identify User**</summary>
+
+Looks up an existing user in the store by a submitted identifier (email, username, phone, etc.) and writes the resolved `userID` to runtime data. Operates in strict single-match mode — fails if multiple users match the identifier.
+
+**When to use:**
+- Early in authentication flows to resolve the user before credential verification
+- In social login flows to check whether a federated account is already linked
+- In registration flows to detect duplicate identifiers
+
+**Prerequisites:** The identifier attribute must be available in the flow context. This can come from:
+- **User input** — collected by a View before this executor runs
+- **Runtime data** — set by a prior executor (e.g., federated auth executors provide email/sub)
+- **User store lookup** — if a mobile number or email is already known
+
+**Setup:**
+- **In authentication flows:** Add a **Blank View** (or **Username + Password** View) immediately before this executor to collect identifier input (email, username, phone, etc.).
+- **In federated flows:** No View is needed — the OAuth/OIDC executor outputs the federated email/subject directly to runtime data, which Identify User consumes.
+- **Node configuration:** Configure the node's inputs to specify which attributes are required for lookup (email, username, phone). These become the search fields.
+
+**View pairing:** Typically follows a View that collects an identifier (email, username, etc.). In federated flows, no View is needed — the identifier comes from the social executor's output.
+
+**Inputs from flow context:**
+- Attributes configured as required inputs on the node (email, username, phone, etc.)
+
+**Outputs to flow context (runtime data):**
+- `userID` — the resolved user's unique ID (on success)
+
+**Failure conditions:**
+- No user found matching the submitted identifier (routes to **incomplete** — use this path to branch to registration)
+- Multiple users match (ambiguous match — hard failure, routes to failure)
+- User store lookup error
+
+</details>
+
+<details>
+<summary>**Resolve User**</summary>
+
+Resolves an ambiguous user match by presenting disambiguation options to the user, then re-filtering until exactly one user is identified. Operates in resolve mode with support for multi-step disambiguation.
+
+**When to use:**
+- When **Identify User** found multiple candidates and the flow needs to disambiguate
+- When different OUs, user types, or other attributes need to be selected to narrow down matches
+- In multi-tenant scenarios where the same email may exist under different organizations
+
+**Prerequisites:** 
+- **Candidate users must be available in runtime data** — automatically stored when an Identify User node fails with an ambiguous match (multiple users found for the submitted identifier).
+- **A prior Identify User executor must have failed with ambiguity** — this signals that multiple candidates are available and stored in `candidateUsers` runtime data.
+
+**Setup:**
+1. Place **Identify User** executor before this one in your flow (typically early in authentication or resolution steps).
+2. Configure the Identify User's failure path to connect to this executor — when Identify User finds multiple candidates, it stores them in runtime data.
+3. Add a **Blank View** immediately before this executor configured with disambiguation inputs (e.g., OU handle selector, user type selector, department, etc.).
+4. The View collects the user's selections, which this executor uses to filter candidates down to exactly one.
+
+**View pairing:** Pair with a **Blank View** configured with disambiguation inputs (e.g., OU handle selector, user type selector).
+
+**How disambiguation works:**
+1. Reads stored candidate users from `RuntimeKeyCandidateUsers` in runtime data
+2. Builds a filter from the user's selected attributes (from View inputs)
+3. Re-filters candidates against the selected attributes
+4. If multiple candidates remain, extracts new disambiguation options and prompts again
+5. If exactly one candidate matches, returns that user as authenticated
+
+**Inputs from flow context:**
+- User-selected disambiguation attributes (e.g., `ouHandle`, `userType`, custom attributes) from the disambiguation View
+
+**Outputs to flow context (runtime data):**
+- `userID` — the disambiguated user's ID (on success)
+
+**Failure conditions:**
+- No candidates stored in runtime data
+- User selection does not match any candidate
+- Candidates are indistinguishable (no further disambiguation options available)
+
+</details>
+
+<details>
+<summary>**Resolve Federated User**</summary>
+
+Resolves an ambiguous user after federated authentication (OAuth/OIDC). Reads candidate users stored by Identify User and filters them based on user-selected attributes, then authenticates the matched user.
+
+**When to use:** After federated auth (Google, GitHub, OAuth, OIDC) when Identify User found multiple candidates. This executor reuses the federated identity verified by the auth step rather than re-authenticating.
+
+**Prerequisites:** 
+- **A federated auth executor must have completed** (OAuth, OIDC, Google, GitHub) — this provides the verified federated subject (email, sub) in runtime data
+- **Identify User must have found multiple candidate users** — stored in `candidateUsers` in runtime data
+- **User must provide disambiguation input** — to select which candidate matches their federated identity
+
+**Setup:**
+1. Place a federated auth executor first (OAuth, OIDC, Google, or GitHub) — this verifies the user's federated identity and provides claims like email.
+2. Place **Identify User** immediately after, configured to look up users by the federated email — it will find multiple candidates if that email is used by multiple local users.
+3. On Identify User's ambiguous match path (failure), add a **Blank View** with disambiguation inputs (e.g., OU selector, user type selector).
+4. Connect this executor after the View — it reads the disambiguation input and filters candidates to find the matching local user.
+5. This executor then links the verified federated identity to the matched local user without re-authenticating.
+
+**View pairing:** Pair with a **Blank View** configured with disambiguation inputs (e.g., OU handle, user type).
+
+**How it works:**
+1. Reads the stored federated subject from flow context (set by OAuth/OIDC executor)
+2. Reads candidate users from runtime data
+3. Filters candidates using user-provided selection criteria (from View)
+4. On successful match, links the federated identity to the resolved user without re-authenticating
+
+**Inputs from flow context:**
+- `sub` — the federated subject (verified by prior OAuth/OIDC executor)
+- User-selected disambiguation attributes from the View
+
+**Outputs to flow context:**
+- Authenticated user object linked to the federated identity
+
+**Failure conditions:**
+- No federated subject found in flow context
+- No candidate users in runtime data
+- User selection does not match any candidate
+- User found but federated identity cannot be linked
+
+</details>
+
+<details>
+<summary>**User Type Resolver**</summary>
+
+Determines the user type and default OU for the flow. Writes `userType` and `defaultOUID` to runtime data for use by Provisioning and other downstream executors. Behavior differs by flow type.
+
+**When to use:** At the start of registration and user onboarding flows, before Provisioning. Also used in authentication flows to validate that the application allows the resolved user type.
+
+**Prerequisites:** 
+- **The application must have at least one user type configured** — in the <ProductName /> Console, navigate to Applications and ensure allowed user types are set for the application.
+- **In registration flows, at least one user type must have self-registration enabled** — check the user type's "Self Registration" setting in the Console.
+
+**How to place in flows:**
+- **Registration flows:** Place this as the **first executor** in the flow. It populates `userType` and `defaultOUID` in runtime data, which are required by Provisioning and Attribute Collector.
+- **Authentication flows:** Place this early (after authentication) if you need to validate that the application allows the user's type.
+- **User onboarding flows:** Use this to let the admin select a user type before provisioning the new user.
+
+**Behavior by flow type:**
+
+| Flow type | Behavior |
+|---|---|
+| Registration | Resolves from the application's allowed user types, checking self-registration eligibility. Auto-selects if only one eligible type; prompts with a SELECT input if multiple are available. |
+| Authentication | Validates that the application has at least one allowed user type configured; completes without further action. |
+| User Onboarding | Lists all user types in the system, optionally filtered by node properties or by a prior resolved OU. |
+
+**Inputs:**
+- `userType` (optional) — if already in user inputs, validated against the allowed list; otherwise resolved automatically or prompted.
+
+**Outputs to flow context (runtime data):**
+- `userType` — the resolved user type name
+- `defaultOUID` — the default OU ID associated with the resolved user type
+
+**Failure conditions:**
+- No allowed user types configured for the application
+- No user types with self-registration enabled (registration flows)
+- User-selected type is not in the allowed list
+- User type not found in the system
+
+**Configuration:**
+
+| Property | Required | Description |
+|---|---|---|
+| `allowedUserTypes` | No | Array of user type names to restrict the eligible set to a subset of the application's allowed types |
+
+</details>
+
+---
+
+### Authorization and Consent
+
+<details>
+<summary>**Authorization**</summary>
+
+Evaluates whether the authenticated user holds the required permissions, then writes the authorized set to runtime data. Downstream executors (typically Auth Assertion Generator) can include these permissions in the token.
+
+**When to use:** After authentication and before Auth Assertion Generator, when the application restricts access based on permissions or roles.
+
+**Prerequisites:** 
+- **User must be authenticated** — place this executor after any authentication executor (Identifier + Password, OAuth, OIDC, SMS OTP, Passkey, Magic Link, etc.).
+- **`userID` must be in flow context** — automatically set by authentication executors.
+- **Permissions/scopes must be requested** — either from runtime data (set by prior executors) or from the OIDC/OAuth request scope parameter.
+- **In registration flows, this executor completes immediately** — skipping all authorization checks (since the new user has no group assignments yet).
+
+**Setup:**
+1. Place an authentication executor before this one to populate `userID`.
+2. If the flow needs to check specific permissions, populate `requested_permissions` in runtime data (typically from OIDC scope parameter or application settings).
+3. Place this executor before **Auth Assertion Generator** so authorized permissions can be included in the token.
+
+**How permission resolution works:**
+1. Reads `requested_permissions` from runtime data or user inputs (space-separated permission strings).
+2. Resolves the user's group memberships — from `AuthenticatedUser.Attributes`, runtime data, or by fetching transitive groups from the entity provider.
+3. Calls the authorization service with the user ID, group IDs, and requested permissions.
+4. Writes the authorized permission set to `authorized_permissions` in runtime data.
+
+If no permissions are configured in the context, the executor completes immediately with an empty permission set.
+
+**Inputs from flow context:**
+- `requested_permissions` (from runtime data or user inputs) — space-separated list of permission strings to check
+
+**Outputs to flow context (runtime data):**
+- `authorized_permissions` — space-separated list of permissions the user has been granted
+
+**Failure conditions:**
+- User not authenticated (in non-registration flows)
+- Authorization service error
+
+</details>
+
+<details>
+<summary>**User Consent**</summary>
+
+Checks whether the authenticated user has active consent records for the required attributes, prompts if any are missing, and records the user's decisions. Auth Assertion Generator automatically filters token claims to consented attributes when this executor has run.
+
+**When to use:** OAuth flows where the application requests access to specific user data. Required for privacy regulation compliance in many jurisdictions.
+
+**Prerequisites:**
+- **User must be authenticated** — place this executor after any authentication executor (Identifier + Password, OAuth, OIDC, SMS OTP, Passkey, Magic Link, etc.).
+- **`userID` must be in the flow context** — automatically set by authentication executors. The executor fails if `userID` is missing.
+- **The application must have consent scopes or claims configured** — check the application's OAuth/OIDC settings to ensure required and optional scopes are defined.
+
+**Setup:**
+1. Place an authentication executor before this one to populate `userID` and `isAuthenticated: true`.
+2. Add a **Consent View** immediately before or after this executor — the executor forwards consent requirements to the View via `ForwardedData`, and the View collects the user's consent decisions.
+3. The executor automatically checks if the user already has active consent records — if so, it completes immediately. If not, it prompts via the Consent View.
+
+**View pairing:** Pair with the **Consent View** (Step). The executor forwards consent prompt data to the View via `ForwardedData`; the View returns `consent_decisions` as a JSON payload.
+
+**How consent resolution works:**
+1. Reads `required_essential_attributes` and `required_optional_attributes` from runtime data; falls back to the application's assertion user attributes.
+2. Calls the consent enforcer to check existing consent records.
+3. If all consents are active, completes immediately — no prompt is needed.
+4. If any consents are missing, forwards the prompt data to the Consent View and awaits the user's decisions.
+5. After decisions are received, records them and writes `consentId` and `consented_attributes` to runtime data.
+
+**Inputs:**
+- `consent_decisions` (required, from the Consent View) — JSON-encoded consent decisions per purpose
+
+**Outputs to flow context (runtime data):**
+- `consentId` — ID of the recorded consent record
+- `consented_attributes` — space-separated list of approved attribute names
+
+**Failure conditions:**
+- `userID` missing from flow context
+- User denied one or more essential (required) attributes — hard failure
+- Consent prompt timed out (if `timeout` is configured)
+- Consent service error
+
+**Configuration:**
+
+| Property | Required | Description |
+|---|---|---|
+| `timeout` | No | Seconds before the consent prompt expires. If the user does not respond in time, the executor fails. |
+
+</details>
+
+<details>
+<summary>**Validate Permission**</summary>
+
+Validates that the incoming API request has the required permission/scope to proceed. This is a **request-level guard** distinct from user-level authorization. Used to enforce scope-based access control on administrative or sensitive operations.
+
+**When to use:** At the start of user onboarding or administrative flows, to prevent unauthorized callers from executing sensitive operations. For example, only admins with `user:write` scope can start user registration flows.
+
+**Prerequisites:** 
+- **The request must include an authorization context** — typically from an OAuth token or security context header.
+- **The required scopes must be set in node properties** — if omitted, defaults to the system root scope.
+
+**Setup:**
+- **Set `requiredScopes` in node properties** — list the permission/scope strings required to access this flow. For example: `["user:write", "admin:manage"]` requires the caller to have at least one of these scopes.
+- **The caller's OAuth token must include the required scope** — the permission is extracted from the request's security context (typically from an Authorization header or identity context).
+- This executor runs **before any user authentication** — it validates the API caller's permissions, not the end user's.
+
+**How it works:**
+1. Extracts required scopes from the `requiredScopes` node property (if configured)
+2. Reads permissions from the incoming request's security context
+3. Checks if the request has at least one of the required permissions
+4. Returns `COMPLETE` if authorized, `FAILURE` if not
+
+**Inputs:**
+- Permissions extracted automatically from the request context/security context
+
+**Outputs:**
+- None (passes or fails the request)
+
+**Failure conditions:**
+- Request lacks one of the required permissions — returns `FAILURE` with "Insufficient permissions"
+- Request context unavailable — returns `FAILURE`
+
+**Configuration:**
+
+| Property | Required | Default | Description |
+|---|---|---|---|
+| `requiredScopes` | No | System root | Array of permission/scope strings required for access. If omitted, defaults to system root scope. Set to `[]` to allow any authenticated caller. |
+
+</details>
+
+---
+
+### Organization Management
+
+<details>
+<summary>**OU Creation**</summary>
+
+Creates a new Organizational Unit and stores its ID in runtime data for use by Provisioning and other downstream executors.
+
+**When to use:** B2B self-registration flows — place after Provisioning, once the user account exists.
+
+**Prerequisites:** 
+- **The user must exist** — Provisioning must run before this executor and must successfully create the user.
+- **OU name and handle must be provided** — typically from user input via a View.
+- **A parent OU must be specified** — either via the `parentOuId` node property or via the default OU from User Type Resolver.
+
+**Setup:**
+1. Place **Provisioning** before this executor — it creates the user and sets up the context.
+2. Add a **Blank View** before this executor configured with:
+   - A **Text Input** for `ouName` (display name for the OU)
+   - A **Text Input** for `ouHandle` (URL-safe identifier)
+   - Optionally, a **Text Input** for `ouDescription`
+3. Set the `parentOuId` node property to specify the parent OU:
+   - Leave it empty to use the default OU from User Type Resolver
+   - Set it to `""` (empty string) to create at root level
+   - Set it to a specific UUID to create as a child of that OU
+
+**Inputs (required):**
+- `ouName` — the display name of the new OU (collected from a View)
+- `ouHandle` — the unique URL-safe handle (collected from a View)
+
+**Inputs (optional):**
+- `ouDescription` — a description for the OU
+
+**Outputs to flow context (runtime data):**
+- `ouId` — the ID of the newly created OU
+
+**Failure conditions:**
+- An OU with the same name already exists at the target parent — returns `USER_INPUT_REQUIRED` to re-prompt
+- An OU with the same handle already exists — returns `USER_INPUT_REQUIRED` to re-prompt
+- Specified `parentOuId` does not exist
+- OU service error
+
+**Configuration:**
+
+The `parentOuId` property controls where the new OU is created in the hierarchy. Set in the node definition, not collected from the user.
+
+| `parentOuId` Value | Behavior |
+|---|---|
+| A valid UUID | Creates the OU as a child of the specified parent OU |
+| `""` (empty string) | Creates the OU at root level with no parent |
+| Omitted | Falls back to the default OU in runtime data (from User Type Resolver) |
+
+```json title="Example: OU Creation Node with parentOuId"
+{
+  "id": "ou_creation",
+  "type": "TASK_EXECUTION",
+  "properties": {
+    "parentOuId": "019d94ff-072c-7d7f-a5c5-0a638c1f62bc"
+  },
+  "executor": {
+    "name": "OUExecutor"
+  },
+  "onSuccess": "next_node",
+  "onFailure": "error_prompt"
+}
+```
+
+</details>
+
+<details>
+<summary>**Resolve OU**</summary>
+
+Resolves or selects an organizational unit based on a configured strategy. Overwrites the default OU set by User Type Resolver when applicable.
+
+**When to use:** User onboarding flows where the target OU must be determined dynamically based on the caller, administrative selection, or system hierarchy.
+
+**Prerequisites:** Depends on the resolution strategy (see table below).
+
+**Configuration:**
+
+| Property | Required | Default | Behavior |
+|---|---|---|---|
+| `resolveFrom` | Yes | — | Strategy for OU resolution: `caller`, `prompt`, or `promptAll` |
+
+**Resolution Strategies:**
+
+**`caller` strategy:**
+- Extracts the caller's OU from the security context
+- Overwrites the default OU in runtime data with the caller's OU
+- **When to use:** B2B flows where the administrator's OU determines where the new user is created
+- **Prerequisites:** The caller must have an OU in their security context (automatically extracted from the incoming request)
+- **Setup:** No special setup needed — the OU is read from the calling account's security context
+- **Failure conditions:** Caller's OU not found in security context
+
+**`prompt` strategy:**
+- Prompts the user to select a child OU if the default OU has children
+- **When to use:** Delegated onboarding where an admin selects which sub-organization to create the user in
+- **Prerequisites:** 
+  - **User Type Resolver must have run first** — sets `defaultOUID` in runtime data
+  - **A Blank View with OU selection input must follow this executor** — to collect the user's OU selection
+- **Setup:**
+  1. Place **User Type Resolver** before this executor in registration flows
+  2. Add a **Blank View** immediately after this executor with an OU selection component
+  3. This executor will prompt only if the default OU has child OUs — otherwise, it completes silently
+- **Failure conditions:** Default OU not found; selected OU is not a child of the default
+
+**`promptAll` strategy:**
+- Shows the full OU tree from root, independent of User Type Resolver
+- **When to use:** Advanced onboarding with full OU tree visibility
+- **Prerequisites:** A Blank View with OU selection component must follow this executor
+- **Setup:**
+  1. No need to run User Type Resolver first (unlike `prompt` strategy)
+  2. Add a **Blank View** immediately after this executor with an OU selection component
+  3. The executor will display the complete OU tree starting from root
+- **Failure conditions:** OU service error
+
+**Inputs from flow context:**
+- `ouId` (for `prompt` and `promptAll` strategies) — the user's selected OU
+
+**Outputs to flow context (runtime data):**
+- `ouId` — the resolved OU ID (overwrites default OU if present)
+
+**Failure conditions:**
+- Caller's OU not found in security context (for `caller` strategy)
+- Selected OU does not exist
+- OU service error
+
+</details>
+
+---
+
+### Notifications
+
+<details>
+<summary>**Send Email**</summary>
+
+Sends a transactional email using a configured template. Runs in the background — no user interaction. Supports invite, registration, and recovery scenarios.
+
+**When to use:**
+- **Invite flows:** Send an invitation link to a user being added by an administrator.
+- **Registration flows:** Send a welcome or email-verification message after account creation.
+- **Recovery flows:** Send a password reset link to the user's registered email.
+
+**Prerequisites:**
+- **An email service must be configured** in <ProductName /> (check Console > Settings > Notifications > Email). The executor returns failure status if no email client is configured.
+- **A recipient email must be resolvable** — from the following sources (see resolution order below)
+- **The email template must be available** — specified in the node's `emailTemplate` property
+
+**Setup:**
+1. Ensure the email service is configured in <ProductName /> Console (with SMTP or email provider credentials)
+2. Make sure a recipient email is available via one of these sources:
+   - From a prior executor that generates a link (e.g., Generate Invite, Magic Link, Password Recovery) — typically forwarded via `ForwardedData`
+   - From user input (e.g., a **Blank View** with email input)
+   - From the authenticated user's stored email attribute
+3. Set the `emailTemplate` node property to the appropriate template (e.g., `user_invite`, `user_welcome`, `password_reset`)
+4. If using Generate Invite or Magic Link, that executor forwards the recipient and link via `ForwardedData`; Send Email consumes it
+
+**Recipient resolution order:**
+1. An email-type input from the node's configured inputs (forwarded via `ForwardedData` from prior executors)
+2. The email attribute from runtime data (set by prior executors)
+3. The email attribute from user inputs (from a View)
+4. Fallback: the email stored on the user entity (looked up by `userID` from runtime data)
+
+If none of these resolve to a non-empty address, the executor fails.
+
+**Skip delivery:** If `skipDelivery` is set to `true` in runtime data, the executor returns complete immediately without sending anything. Use this in test environments to skip real email delivery while keeping the flow logic intact.
+
+**Inputs from flow context:**
+- Recipient email (resolved as described above)
+- Template data forwarded via `ForwardedData` (e.g. invite link, reset link, user name)
+
+**Outputs to flow context:**
+- `emailSent` — `"true"` in additional data on success
+
+**Failure conditions:**
+- No email client configured
+- Recipient email address not resolvable from context or user entity
+- Template rendering error
+- SMTP or mail provider error
+
+**Configuration:**
+
+| Property | Required | Default | Description |
+|---|---|---|---|
+| `emailTemplate` | No | `user_invite` | The template scenario to use. If absent or empty, defaults to the user invite template. |
+
+</details>
+
+<details>
+<summary>**Send SMS**</summary>
+
+Sends a transactional SMS using a configured template and sender. Runs in the background — no user interaction. Uses template-based message body rendering.
+
+**When to use:**
+- **Notification flows:** Send an SMS reminder, confirmation, or one-time code to the user.
+- **Alert flows:** Notify the user of account activity or status changes.
+- **Registration flows:** Send welcome or verification SMS after account creation.
+
+**Prerequisites:**
+- **An SMS sender must be configured** in <ProductName /> (check Console > Settings > Notifications > SMS)
+- **The sender ID must be set in the node's `senderId` property** — this is the notification sender configured in the Console
+- **A recipient phone number must be resolvable** — from user inputs, runtime data, or user store
+- **An SMS template must be specified** in the node's `smsTemplate` property
+
+**Setup:**
+1. **Configure SMS service in Console** — set up an SMS provider (e.g., Twilio) with API credentials
+2. **Create a notification sender** — in Console > Notifications, create an SMS sender with the provider credentials
+3. **Set the `senderId` node property** — copy the sender ID from the Console and configure it in the node
+4. **Set the `smsTemplate` node property** — specify which template to use (e.g., `magic_link`, `invite`, `otp`, etc.)
+5. **Make the phone number available** via one of these sources:
+   - From a prior executor (e.g., Magic Link provides phone)
+   - From user input (add a **Blank View** with phone field)
+   - From the authenticated user's stored phone attribute
+6. If this executor follows Magic Link or another link generator, that executor forwards data via `ForwardedData`
+
+**Recipient resolution order:**
+1. A phone-type input from the node's configured inputs (from `ForwardedData`)
+2. `mobile_number` from user inputs or runtime data (set by prior executors)
+3. Phone attribute from user store (looked up by userID if available)
+
+**Phone number validation:** Accepts phone numbers in E.164 format and common variations with parentheses, spaces, dashes.
+
+**Inputs from flow context:**
+- Phone number (from user inputs, runtime data, or user store lookup)
+- Template data for SMS body rendering
+
+**Outputs to flow context:**
+- SMS message sent (completes with `ExecComplete` status)
+
+**Failure conditions:**
+- Phone number not found in context or user store
+- `senderId` not configured in node properties
+- Phone number invalid or undeliverable format
+- SMS service error
+
+**Configuration:**
+
+| Property | Required | Description |
+|---|---|---|
+| `senderId` | Yes | The notification sender ID configured in <ProductName /> |
+| `smsTemplate` | Yes | The template name to use for rendering the SMS body |
+
+</details>
+
+---
+
+### Invitations and User Onboarding
+
+<details>
+<summary>**Generate Invite**</summary>
+
+Generates an invite token and link for user registration. Typically paired with Email or SMS Executor to deliver the invite link.
+
+**When to use:** 
+- **Administrative onboarding:** Admin invites external users to sign up
+- **Self-service with email confirmation:** User provides email, receives invite link
+- **B2B workflows:** Partner organization users invited to create accounts
+
+**Prerequisites:**
+- **A recipient email or phone must be available** — typically from a prior View or input
+- **This executor must be followed by Email Executor or Send SMS** — to deliver the generated invite link to the user
+
+**Setup:**
+1. Place a **Blank View** before this executor (or just before an Email Executor) to collect the invitee's email or phone number
+2. The View inputs populate the recipient field
+3. Add this executor after the View
+4. Place **Send Email** or **Send SMS** immediately after to deliver the generated invite link
+5. The executor automatically forwards the link via `ForwardedData` to the delivery executor
+
+**Example flow sequence:**
+1. **Blank View** — collects `email` input (invitee's email)
+2. **Generate Invite** — creates token and link
+3. **Send Email** — receives link from `ForwardedData` and sends it
+4. **Verify Invite** — validates token when user clicks the link
+
+**How it works:**
+1. Generates a cryptographically secure invite token
+2. Stores the token in runtime data for Verify Invite to consume
+3. Generates a full invite link (with token embedded)
+4. Forwards the link to downstream Email or SMS executors via ForwardedData
+
+**Inputs from flow context:**
+- Recipient email or phone (for delivery executor to use)
+
+**Outputs to flow context (runtime data):**
+- `StoredInviteToken` — the token for Verify Invite to validate
+- `InviteLink` — the full URL including embedded token
+- ForwardedData contains template variables for Email/SMS delivery
+
+**Failure conditions:**
+- Token generation service error
+
+</details>
+
+<details>
+<summary>**Verify Invite**</summary>
+
+Validates an invite token provided by the user and completes the invite verification step.
+
+**When to use:** After a user receives an invite link and clicks it, verifying the invite token before allowing registration to proceed.
+
+**Prerequisites:**
+- **The invite flow must be initiated by a separate flow execution** — Generate Invite runs once to create and deliver the token. Verify Invite runs in a separate flow execution when the user clicks the invite link.
+- **The invite token must be stored** — typically in persistent storage (database) between the two flow executions
+- **The user must provide the token** — either from a URL query parameter (when clicking the invite link) or from a View input
+
+**Setup:**
+1. **Invite generation flow (backend/admin-initiated):**
+   - View collects recipient email
+   - Generate Invite creates the token and link
+   - Email Executor delivers the invite link to the recipient
+2. **Token verification flow (user-initiated, when clicking the link):**
+   - The user clicks the invite link from the email
+   - A separate registration flow is initiated with the invite token in the URL (e.g., `registration?token=abc123`)
+   - Add a **Blank View** (if needed) or configure the node inputs to capture the token from the URL parameter
+   - This executor validates the token
+   - If valid, the user proceeds to registration (Provision, etc.)
+
+**View pairing:** The invite link includes the token as a query parameter; the View (if present) extracts it and passes it to the executor as `inviteToken`.
+
+**How it works:**
+1. Reads the user-provided invite token from user inputs
+2. Compares it against the stored token in runtime data
+3. Returns `COMPLETE` if tokens match, `FAILURE` if they do not
+
+**Inputs:**
+- `inviteToken` (required) — the token provided by the user (from the invite link)
+
+**Outputs:**
+- None (acts as a gate — passes or fails the flow)
+
+**Failure conditions:**
+- Stored invite token not found in runtime data (Generate Invite did not run)
+- User-provided token does not match stored token
+- Token validation error
+
+</details>
+
+---
+
+### Advanced Integration
+
+<details>
+<summary>**HTTP Request**</summary>
+
+Executes an HTTP request to an external endpoint, optionally retries on failure, maps response data to runtime data, and continues the flow.
+
+**When to use:**
+- **Webhook integration:** Notify external systems when a user registers
+- **Data enrichment:** Call an external service to fetch additional user attributes
+- **Policy evaluation:** Check an external policy engine before allowing flow continuation
+- **Custom business logic:** Delegate decision-making to a specialized service
+
+**Prerequisites:**
+- **The external endpoint must be accessible** — ensure the server is reachable and allows requests from <ProductName /> instances
+- **Any required data must be available in the flow context** — for use in URL/body placeholders (e.g., `{{userId}}`, `{{email}}`)
+- **HTTPS is recommended** for security, especially when sending sensitive data
+
+**Setup:**
+1. **Configure the endpoint:** Set the `url` property to point to your external API
+2. **Provide any required context data:**
+   - If you need `userId`, ensure an authentication executor has run before (populates `userId`)
+   - If you need user attributes, ensure Identify User or authentication has provided them
+   - Use placeholder syntax `{{fieldName}}` to reference runtime data in the URL and body
+3. **Set up authentication (if required):** Use the `headers` property to add Authorization tokens (e.g., Bearer tokens)
+4. **Map response data back:** Use `responseMapping` to store interesting response fields in runtime data for downstream executors
+5. **Configure error handling:** Set `failOnError: true` if the flow should fail if the endpoint returns an error; set retry options if the endpoint is occasionally slow
+
+**How it works:**
+1. Parses HTTP configuration from node properties (URL, method, headers, body, timeout)
+2. Resolves template placeholders in the URL and body using runtime context data (e.g., `{{userId}}`, `{{email}}`)
+3. Sends the HTTP request with optional retry logic based on `errorHandling` config
+4. Maps response fields to runtime data based on `responseMapping` configuration
+5. Continues the flow (or fails based on error handling configuration)
+
+**Configuration:**
+
+| Property | Required | Default | Description |
+|---|---|---|---|
+| `url` | Yes | — | The endpoint URL (supports runtime data placeholders like `{{userId}}`) |
+| `method` | No | `GET` | HTTP method: GET, POST, PUT, DELETE, or PATCH |
+| `headers` | No | — | HTTP headers as a map of strings |
+| `body` | No | — | Request body (JSON object, only for POST/PUT/PATCH) |
+| `timeout` | No | 10s | Request timeout in seconds (max 20s) |
+| `responseMapping` | No | — | Map response JSON fields to runtime data keys |
+| `errorHandling.failOnError` | No | `false` | Whether HTTP error status codes cause flow failure |
+| `errorHandling.retryCount` | No | 0 | Number of retries on failure (max 5) |
+| `errorHandling.retryDelay` | No | 0 | Delay between retries in milliseconds (max 5000ms) |
+
+**Inputs from flow context:**
+- None directly (configuration-driven)
+
+**Outputs to flow context (runtime data):**
+- Response fields mapped according to `responseMapping` configuration
+- Response status code available in flow logs
+
+**Failure conditions:**
+- URL not configured or invalid
+- HTTP request timeout
+- HTTP error status code (4xx, 5xx) when `failOnError: true`
+- Retries exhausted
+- Response body cannot be parsed as JSON
+- Response mapping references non-existent fields
+
+**Example Configuration:**
+
+```json
+{
+  "url": "https://api.example.com/users/{{userId}}/enrich",
+  "method": "POST",
+  "headers": {
+    "Authorization": "Bearer secret_token",
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "email": "{{email}}",
+    "locale": "en-US"
+  },
+  "timeout": 5,
+  "responseMapping": {
+    "department": "userDepartment",
+    "manager": "userManager"
+  },
+  "errorHandling": {
+    "failOnError": false,
+    "retryCount": 2,
+    "retryDelay": 1000
+  }
+}
+```
+
+</details>
+
+---
+
+### Flow Completion
+
+<details>
+<summary>**Auth Assertion Generator**</summary>
+
+Generates the final authentication assertion — a signed JWT — that <ProductName /> returns to the client on successful flow completion. This must be the last executor before every END node in an authentication flow.
+
+**When to use:** Every authentication flow, immediately before the END node. This is the final step that returns the signed JWT to the client. Do not place in registration-only or recovery-only flows unless those flows also complete with a sign-in.
+
+**Prerequisites:** 
+- **User must be authenticated** — one or more authentication executors must have run and set `isAuthenticated: true`. Examples: Identifier + Password, OAuth, OIDC, SMS OTP, Passkey, Magic Link, etc.
+- **The executor hard-fails if no authenticated user is in the flow context** — always ensure at least one authentication executor before this one.
+- **Application must be configured with assertion settings** — assertion lifetime, user attributes to include, etc. (configured in Console)
+
+**Setup:**
+1. **Place authentication executors before this executor:**
+   - For password-based flows: Identifier + Password
+   - For social/federated: OAuth, OIDC, Google, GitHub, or Resolve Federated User
+   - For OTP/passwordless: SMS OTP, Passkey, Magic Link
+   - In multi-step flows, ensure the final authentication executor precedes this one
+2. **Optionally place authorization/consent executors before this executor** (in that order):
+   - **Authorization** — to check and include user permissions in the assertion
+   - **User Consent** — to filter user attributes to only consented claims
+   - These are optional but commonly used in OAuth flows
+3. **Place this executor immediately before the END node** — it generates the final JWT and returns to the client
+
+**Example flow structure:**
+1. Username + Password View + Executor
+2. Authorization Executor (optional)
+3. User Consent Executor (optional)
+4. **Auth Assertion Generator** (this executor)
+5. END node
+
+**How the assertion is built:**
+- **Subject (`sub`):** Set to the authenticated user's ID.
+- **Audience (`aud`):** Set to the application (entity) ID.
+- **Assurance:** Extracted from the flow execution history — lists which authenticators ran, in which step, and at what time.
+- **Authorized permissions:** Included if the Authorization executor ran and wrote `authorized_permissions` to runtime data.
+- **User attributes:** Resolved from the following sources in priority order: consented attributes (if User Consent ran) → essential/optional attribute lists from runtime data → application assertion configuration. Computed attributes (`groups`, `roles`, `userType`, `ouId`, `ouName`, `ouHandle`) are derived at assertion time and included only if configured.
+- **Token lifetime:** Uses the application's assertion validity period; falls back to the system JWT default.
+
+**Outputs:**
+- Signed JWT assertion returned to the client
+
+**Failure conditions:**
+- No authenticated user in flow context
+- JWT signing failure (key configuration error)
+- User attribute or group resolution error
+
+</details>
+
+---
+
+:::tip
+Use the **Add Input** option on an executor node in the Flow Builder to declare which inputs the executor expects. The builder will help ensure those inputs are reachable from the flow's preceding Views and executors.
+:::
+
+:::note
+These inputs, along with any default or prerequisite inputs, must already exist in the flow context before the executor runs; the executor does not collect them directly.
+
+Required inputs can come from:
+- **A View earlier in the flow** (e.g., user-provided data like email)
+- **A previous executor output** (e.g., authentication producing a user ID)
+
+If a required input is missing, the executor may either trigger an `OnIncomplete` handler node, prompt the user via a connected View, or fail if no View is available.
+:::

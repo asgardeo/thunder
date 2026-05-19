@@ -1,6 +1,6 @@
 ---
 title: Flow Concepts
-sidebar_position: 1
+sidebar_position: 2
 persona: iam
 description: Learn the building blocks of the Console Flow Builder — the canvas, node types, and the left panel sections.
 ---
@@ -8,13 +8,6 @@ description: Learn the building blocks of the Console Flow Builder — the canva
 # Flow Concepts
 
 This page explains the core building blocks of the Flow Builder in the <ProductName /> Console. Understanding these concepts will help you design and configure flows confidently.
-
-## Flow Builder Layout
-
-The Flow Builder opens when you create or edit a flow. It presents two areas:
-
-- **Canvas** - the main workspace where the flow graph lives. You place nodes here and draw connections between them.
-- **Left panel** - a library organized into five sections: **Starter Templates**, **Widgets**, **Steps**, **Components**, and **Executors**.
 
 ## Node Types
 
@@ -42,15 +35,9 @@ After an Executor node runs, it can take one of three paths:
 
 The **END** node marks a successful completion of the flow. When the flow reaches an END node, <ProductName /> issues an assertion confirming the user authenticated or registered successfully. A flow can have multiple END nodes if different paths each lead to a valid completion.
 
-## Left Panel Sections
+## Building Blocks
 
 The following are the building blocks you can add to the canvas from the left panel to construct your flow.
-
-### Starter Templates
-
-Starter Templates are complete, ready-to-use flow blueprints. Apply a template to populate the canvas with a working flow that you can then customize.
-
-See the [flow reference](./flow-reference#starter-templates) for the complete list of available templates.
 
 ### Widgets
 
@@ -88,9 +75,10 @@ Connections between nodes control how the flow progresses:
 
 ## Flow Versioning
 
-Every time you save a flow, <ProductName /> creates a new version. The version number appears in the **Version** column on the Flows list page. You can view version history and restore any earlier version from the flow settings.
+Every time you save a flow, <ProductName /> creates a new version. The version number appears in the **Version** column on the Flows list page. You can view version history and restore any earlier version via API.
 
 ## Related Guides
 
-- [Flow Reference](./flow-reference) - Complete list of all Starter Templates, Widgets, Steps, Components, and Executors.
+- [Flow Builder Overview](./flow-builder-overview) - Get familiar with the canvas and building blocks.
 - [Build a Flow](./build-a-flow) - Step-by-step guide to creating a flow in the <ProductName /> Console.
+- [Flow Reference](./flow-reference) - Complete list of all Widgets, Steps, Components, and Executors.

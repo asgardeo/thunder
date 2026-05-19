@@ -1,0 +1,27 @@
+---
+title: What Are Flows?
+sidebar_position: 1
+persona: iam
+description: Learn how flows define the step-by-step journeys users take when signing-in, registering, or recovering access to your application.
+---
+
+# What Are Flows?
+
+A **flow** defines the step-by-step journey a user takes during a specific interaction with your application — signing in, creating an account, or resetting a password. <ProductName /> executes the assigned flow whenever a user initiates that action.
+
+<ProductName /> supports three flow types:
+
+| Type | Purpose | Assigned To |
+|------|---------|-------------|
+| **Authentication** | Controls how users sign in, including Multi-Factor Authentication (MFA) and social login | Application → Authentication Flow |
+| **Registration** | Controls how new users create accounts and provide profile data | Application → Registration Flow (toggle must be enabled) |
+| **Recovery** | Controls how users reset a forgotten password | Application → Recovery Flow (toggle must be enabled) |
+
+Each flow is a **named, versioned definition**. One flow can be assigned to multiple applications. Every time you save a flow, <ProductName /> creates a new version. The version number appears in the Version column on the Flows list page; previous versions are preserved and can be restored via API.
+
+
+## Start Building Flows
+
+- Understand the fundamentals — Learn about executors, steps, and conditions in [Flow Concepts](./flow-concepts).
+- Explore the builder — Get familiar with the canvas and building blocks in [Flow Builder Overview](./flow-builder-overview).
+- Start building — Follow a step-by-step walkthrough in [Build a Flow](./build-a-flow).
