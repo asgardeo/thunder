@@ -162,9 +162,9 @@ paths:
       tags:
         - Bookings
       summary: Create a booking
-      description: Requires an Asgardeo bearer token when `API_REQUIRE_AUTH=true`.
+      description: Requires a ThunderID bearer token when `API_REQUIRE_AUTH=true`.
       security:
-        - AsgardeoBearerAuth: []
+        - ThunderIDBearerAuth: []
         - {}
       requestBody:
         required: true
@@ -209,9 +209,9 @@ paths:
       tags:
         - Bookings
       summary: List booked flights for the current user
-      description: Requires an Asgardeo bearer token when `API_REQUIRE_AUTH=true`.
+      description: Requires a ThunderID bearer token when `API_REQUIRE_AUTH=true`.
       security:
-        - AsgardeoBearerAuth: []
+        - ThunderIDBearerAuth: []
         - {}
       responses:
         "200":
@@ -243,9 +243,9 @@ paths:
       tags:
         - Bookings
       summary: Delete all booked flights for the current user
-      description: Requires an Asgardeo bearer token when `API_REQUIRE_AUTH=true`.
+      description: Requires a ThunderID bearer token when `API_REQUIRE_AUTH=true`.
       security:
-        - AsgardeoBearerAuth: []
+        - ThunderIDBearerAuth: []
         - {}
       responses:
         "200":
@@ -281,9 +281,9 @@ paths:
       tags:
         - User
       summary: Get current user profile
-      description: Requires an Asgardeo bearer token when `API_REQUIRE_AUTH=true`.
+      description: Requires a ThunderID bearer token when `API_REQUIRE_AUTH=true`.
       security:
-        - AsgardeoBearerAuth: []
+        - ThunderIDBearerAuth: []
         - {}
       responses:
         "200":
@@ -305,11 +305,11 @@ paths:
                 $ref: "#/components/schemas/Error"
 components:
   securitySchemes:
-    AsgardeoBearerAuth:
+    ThunderIDBearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Asgardeo access token.
+      description: ThunderID access token.
   schemas:
     Flight:
       type: object

@@ -55,7 +55,7 @@ export default function withConfig<P extends object>(WrappedComponent: Component
     // Generic OIDC authorization servers typically respond to the `/oauth/token`
     // endpoint with `access-control-allow-credentials:
     // false`, so a credentialed fetch from the browser is blocked by CORS and the
-    // SDK never sees the issued token. The Asgardeo SDK defaults
+    // SDK never sees the issued token. The ThunderID SDK defaults
     // `sendCookiesInRequests` to `true`, which makes it issue the token request
     // with `credentials: 'include'`. Forcing it to `false` switches the request
     // to `credentials: 'same-origin'`, which is uncredentialed for cross-origin
@@ -70,9 +70,9 @@ export default function withConfig<P extends object>(WrappedComponent: Component
 
     return (
       <ThunderIDProvider
-        baseUrl={getTrustedIssuerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string)}
-        clientId={getTrustedIssuerClientId() ?? (import.meta.env.VITE_ASGARDEO_CLIENT_ID as string)}
-        afterSignInUrl={getClientUrl() ?? (import.meta.env.VITE_ASGARDEO_AFTER_SIGN_IN_URL as string)}
+        baseUrl={getTrustedIssuerUrl() ?? (import.meta.env.VITE_THUNDER_BASE_URL as string)}
+        clientId={getTrustedIssuerClientId() ?? (import.meta.env.VITE_THUNDER_CLIENT_ID as string)}
+        afterSignInUrl={getClientUrl() ?? (import.meta.env.VITE_THUNDER_AFTER_SIGN_IN_URL as string)}
         scopes={getTrustedIssuerScopes().length > 0 ? getTrustedIssuerScopes() : undefined}
         signInOptions={signInOptions}
         discovery={{

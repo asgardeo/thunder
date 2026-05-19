@@ -84,7 +84,7 @@ vi.mock('@thunderid/react', () => ({
     };
     return (
       <div
-        data-testid="asgardeo-provider"
+        data-testid="thunderid-provider"
         data-base-url={baseUrl}
         data-client-id={clientId}
         data-after-sign-in-url={afterSignInUrl}
@@ -101,9 +101,9 @@ describe('withConfig (console)', () => {
     vi.clearAllMocks();
     capturedProviderProps = {};
     Object.keys(mockConfig).forEach((key) => delete mockConfig[key]);
-    import.meta.env.VITE_ASGARDEO_BASE_URL = 'https://env-base.example.com';
-    import.meta.env.VITE_ASGARDEO_CLIENT_ID = 'env-client-id';
-    import.meta.env.VITE_ASGARDEO_AFTER_SIGN_IN_URL = 'https://env-signin.example.com';
+    import.meta.env.VITE_THUNDER_BASE_URL = 'https://env-base.example.com';
+    import.meta.env.VITE_THUNDER_CLIENT_ID = 'env-client-id';
+    import.meta.env.VITE_THUNDER_AFTER_SIGN_IN_URL = 'https://env-signin.example.com';
     mockGetScopes.mockReturnValue([]);
     mockGetTrustedIssuerUrl.mockReturnValue('https://server.example.com');
     mockGetTrustedIssuerClientId.mockReturnValue('client-id');
@@ -135,7 +135,7 @@ describe('withConfig (console)', () => {
     mockGetClientUrl.mockReturnValue('https://client.example.com');
 
     render(<WithConfigComponent />);
-    expect(screen.getByTestId('asgardeo-provider')).toBeInTheDocument();
+    expect(screen.getByTestId('thunderid-provider')).toBeInTheDocument();
   });
 
   it('passes baseUrl from getTrustedIssuerUrl to ThunderIDProvider', () => {
@@ -165,7 +165,7 @@ describe('withConfig (console)', () => {
     expect(capturedProviderProps.afterSignInUrl).toBe('https://custom-client.example.com');
   });
 
-  it('falls back to env VITE_ASGARDEO_BASE_URL when getTrustedIssuerUrl returns null', () => {
+  it('falls back to env VITE_THUNDER_BASE_URL when getTrustedIssuerUrl returns null', () => {
     mockGetTrustedIssuerUrl.mockReturnValue(null);
     mockGetTrustedIssuerClientId.mockReturnValue('client-id');
     mockGetClientUrl.mockReturnValue('https://client.example.com');
@@ -174,7 +174,7 @@ describe('withConfig (console)', () => {
     expect(capturedProviderProps.baseUrl).toBe('https://env-base.example.com');
   });
 
-  it('falls back to env VITE_ASGARDEO_CLIENT_ID when getTrustedIssuerClientId returns null', () => {
+  it('falls back to env VITE_THUNDER_CLIENT_ID when getTrustedIssuerClientId returns null', () => {
     mockGetTrustedIssuerClientId.mockReturnValue(null);
     mockGetTrustedIssuerUrl.mockReturnValue('https://server.example.com');
     mockGetClientUrl.mockReturnValue('https://client.example.com');
@@ -183,7 +183,7 @@ describe('withConfig (console)', () => {
     expect(capturedProviderProps.clientId).toBe('env-client-id');
   });
 
-  it('falls back to env VITE_ASGARDEO_AFTER_SIGN_IN_URL when getClientUrl returns null', () => {
+  it('falls back to env VITE_THUNDER_AFTER_SIGN_IN_URL when getClientUrl returns null', () => {
     mockGetClientUrl.mockReturnValue(null);
     mockGetServerUrl.mockReturnValue('https://server.example.com');
     mockGetClientId.mockReturnValue('client-id');
@@ -302,7 +302,7 @@ describe('withConfig (console)', () => {
       expect(capturedProviderProps.preferences).toBeUndefined();
     });
 
-    it('disables Asgardeo vendor-specific bootstrap calls for generic OIDC trusted issuers', () => {
+    it('disables ThunderID vendor-specific bootstrap calls for generic OIDC trusted issuers', () => {
       mockConfig.trusted_issuer = {hostname: 'tenant.auth0.com', port: 443, http_only: false, type: 'generic'};
       mockIsTrustedIssuerGenericOidc.mockReturnValue(true);
       mockGetServerUrl.mockReturnValue('https://tenant.example.com:9443');

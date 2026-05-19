@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useAsgardeo } from "@asgardeo/react";
+import { useThunderID } from "@thunderid/react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, Plane, ShieldCheck } from "lucide-react";
 import { getBookedFlights } from "../api";
@@ -8,7 +8,7 @@ import { formatPrice, getBookingReference } from "../utils/bookings";
 const walletCredentialOffer = import.meta.env.VITE_WALLET_CREDENTIAL_OFFER || "";
 
 export function BookingDetailsPageWithAuth({ bookingId }) {
-  const { getAccessToken, isSignedIn, signIn, user } = useAsgardeo();
+  const { getAccessToken, isSignedIn, signIn, user } = useThunderID();
   const [booking, setBooking] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");

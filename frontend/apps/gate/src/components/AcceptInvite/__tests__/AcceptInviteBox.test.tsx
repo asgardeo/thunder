@@ -91,7 +91,7 @@ vi.mock('react-router', () => ({
   useNavigate: () => mockNavigate,
 }));
 
-// Mock Asgardeo AcceptInvite component
+// Mock ThunderID AcceptInvite component
 const mockHandleSubmit = vi.fn().mockResolvedValue(undefined);
 const mockHandleInputChange = vi.fn();
 
@@ -135,7 +135,7 @@ let mockAcceptInviteRenderProps: MockAcceptInviteRenderProps = createMockAcceptI
 let capturedOnGoToSignIn: (() => void) | undefined;
 let capturedOnComplete: (() => void) | undefined;
 let capturedOnError: ((error: Error) => void) | undefined;
-const mockUseAsgardeo = vi.fn().mockReturnValue({
+const mockUseThunderID = vi.fn().mockReturnValue({
   resolveFlowTemplateLiterals: (template: string) => template,
 });
 
@@ -143,7 +143,7 @@ vi.mock('@thunderid/react', async () => {
   const actual = await vi.importActual('@thunderid/react');
   return {
     ...actual,
-    useThunderID: () => mockUseAsgardeo() as {resolveFlowTemplateLiterals: (t: string) => string; meta: unknown},
+    useThunderID: () => mockUseThunderID() as {resolveFlowTemplateLiterals: (t: string) => string; meta: unknown},
     AcceptInvite: ({
       children,
       onGoToSignIn = undefined,
@@ -158,7 +158,7 @@ vi.mock('@thunderid/react', async () => {
       capturedOnGoToSignIn = onGoToSignIn;
       capturedOnComplete = onComplete;
       capturedOnError = onError;
-      return <div data-testid="asgardeo-accept-invite">{children(mockAcceptInviteRenderProps)}</div>;
+      return <div data-testid="thunderid-accept-invite">{children(mockAcceptInviteRenderProps)}</div>;
     },
     EmbeddedFlowComponentType: {
       Text: 'TEXT',
@@ -177,7 +177,7 @@ vi.mock('@thunderid/react', async () => {
 describe('AcceptInviteBox', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseAsgardeo.mockReturnValue({
+    mockUseThunderID.mockReturnValue({
       resolveFlowTemplateLiterals: (template: string) => template,
     });
     mockUseDesign.mockReturnValue({
@@ -214,7 +214,7 @@ describe('AcceptInviteBox', () => {
       components: [],
     });
     render(<AcceptInviteBox />);
-    expect(screen.getByTestId('asgardeo-accept-invite')).toBeInTheDocument();
+    expect(screen.getByTestId('thunderid-accept-invite')).toBeInTheDocument();
   });
 
   it('renders without error when sdk has not produced a branch yet', () => {
@@ -226,7 +226,7 @@ describe('AcceptInviteBox', () => {
       isTokenInvalid: false,
     });
     render(<AcceptInviteBox />);
-    expect(screen.getByTestId('asgardeo-accept-invite')).toBeInTheDocument();
+    expect(screen.getByTestId('thunderid-accept-invite')).toBeInTheDocument();
   });
 
   it('does not pass onComplete to AcceptInvite', () => {
@@ -511,7 +511,7 @@ describe('AcceptInviteBox', () => {
       components: [{id: 'block', type: 'BLOCK', components: []}],
     });
     render(<AcceptInviteBox />);
-    expect(screen.getByTestId('asgardeo-accept-invite')).toBeInTheDocument();
+    expect(screen.getByTestId('thunderid-accept-invite')).toBeInTheDocument();
   });
 
   it('shows validation error for SELECT component', () => {
@@ -1396,12 +1396,12 @@ describe('AcceptInviteBox', () => {
 
   it('renders branded logo with alt fallback', () => {
     render(<AcceptInviteBox />);
-    expect(screen.getByTestId('asgardeo-accept-invite')).toBeInTheDocument();
+    expect(screen.getByTestId('thunderid-accept-invite')).toBeInTheDocument();
   });
 
   it('renders branded logo with custom alt, height, and width', () => {
     render(<AcceptInviteBox />);
-    expect(screen.getByTestId('asgardeo-accept-invite')).toBeInTheDocument();
+    expect(screen.getByTestId('thunderid-accept-invite')).toBeInTheDocument();
   });
 
   it('renders block without components property', () => {
@@ -1414,6 +1414,6 @@ describe('AcceptInviteBox', () => {
       ],
     });
     render(<AcceptInviteBox />);
-    expect(screen.getByTestId('asgardeo-accept-invite')).toBeInTheDocument();
+    expect(screen.getByTestId('thunderid-accept-invite')).toBeInTheDocument();
   });
 });

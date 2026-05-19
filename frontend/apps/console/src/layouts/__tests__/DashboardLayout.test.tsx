@@ -45,7 +45,7 @@ vi.mock('../../features/applications/api/useGetApplications', () => ({
   default: (params: unknown) => mockUseGetApplications(params),
 }));
 
-// Mock Asgardeo
+// Mock ThunderID
 vi.mock('@thunderid/react', () => ({
   useThunderID: () => ({
     signIn: mockSignIn,

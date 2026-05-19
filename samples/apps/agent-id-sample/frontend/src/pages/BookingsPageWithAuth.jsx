@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { useAsgardeo } from "@asgardeo/react";
+import { useThunderID } from "@thunderid/react";
 import { Link } from "react-router-dom";
 import { getBookedFlights } from "../api";
 import { formatPrice, getBookingReference } from "../utils/bookings";
 
 export function BookingsPageWithAuth() {
-  const { getAccessToken, isSignedIn, signIn, user } = useAsgardeo();
+  const { getAccessToken, isSignedIn, signIn, user } = useThunderID();
   const [bookings, setBookings] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");

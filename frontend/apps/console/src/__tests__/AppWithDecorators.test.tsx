@@ -60,7 +60,7 @@ vi.mock('@thunderid/react', () => ({
     scopes = undefined,
   }: MockThunderIDProviderProps) => (
     <div
-      data-testid="asgardeo-provider"
+      data-testid="thunderid-provider"
       data-base-url={baseUrl}
       data-client-id={clientId}
       data-after-sign-in-url={afterSignInUrl}
@@ -116,9 +116,9 @@ describe('AppWithDecorators', () => {
     Object.keys(mockConfig).forEach((key) => delete mockConfig[key]);
     mockConfig.brand = {favicon: {light: 'assets/images/favicon.ico', dark: 'assets/images/favicon-inverted.ico'}};
     // Set up default environment variables
-    import.meta.env.VITE_ASGARDEO_BASE_URL = 'https://default-base.example.com';
-    import.meta.env.VITE_ASGARDEO_CLIENT_ID = 'default-client-id';
-    import.meta.env.VITE_ASGARDEO_AFTER_SIGN_IN_URL = 'https://default-signin.example.com';
+    import.meta.env.VITE_THUNDER_BASE_URL = 'https://default-base.example.com';
+    import.meta.env.VITE_THUNDER_CLIENT_ID = 'default-client-id';
+    import.meta.env.VITE_THUNDER_AFTER_SIGN_IN_URL = 'https://default-signin.example.com';
     // Default to empty scopes
     mockGetTrustedIssuerScopes.mockReturnValue([]);
   });
@@ -130,7 +130,7 @@ describe('AppWithDecorators', () => {
 
     render(<AppWithDecorators />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
+    const provider = screen.getByTestId('thunderid-provider');
     expect(provider).toHaveAttribute('data-base-url', 'https://test-server.example.com');
     expect(provider).toHaveAttribute('data-client-id', 'test-client-id');
     expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://test-client.example.com');
@@ -143,7 +143,7 @@ describe('AppWithDecorators', () => {
 
     render(<AppWithDecorators />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
+    const provider = screen.getByTestId('thunderid-provider');
     expect(provider).toHaveAttribute('data-base-url', 'https://default-base.example.com');
     expect(provider).toHaveAttribute('data-client-id', 'default-client-id');
     expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://default-signin.example.com');
@@ -166,7 +166,7 @@ describe('AppWithDecorators', () => {
 
     render(<AppWithDecorators />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
+    const provider = screen.getByTestId('thunderid-provider');
     expect(provider).toHaveAttribute('data-base-url', 'https://config-server.example.com');
   });
 
@@ -177,7 +177,7 @@ describe('AppWithDecorators', () => {
 
     render(<AppWithDecorators />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
+    const provider = screen.getByTestId('thunderid-provider');
     expect(provider).toHaveAttribute('data-client-id', 'config-client-id');
   });
 
@@ -188,7 +188,7 @@ describe('AppWithDecorators', () => {
 
     render(<AppWithDecorators />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
+    const provider = screen.getByTestId('thunderid-provider');
     expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://config-client.example.com');
   });
 
@@ -199,7 +199,7 @@ describe('AppWithDecorators', () => {
 
     render(<AppWithDecorators />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
+    const provider = screen.getByTestId('thunderid-provider');
     expect(provider).toHaveAttribute('data-base-url', 'https://default-base.example.com');
     expect(provider).toHaveAttribute('data-client-id', 'default-client-id');
     expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://default-signin.example.com');
@@ -212,7 +212,7 @@ describe('AppWithDecorators', () => {
 
     render(<AppWithDecorators />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
+    const provider = screen.getByTestId('thunderid-provider');
     expect(provider).toHaveAttribute('data-base-url', 'https://config-server.example.com');
     expect(provider).toHaveAttribute('data-client-id', 'default-client-id');
     expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://config-client.example.com');
@@ -225,7 +225,7 @@ describe('AppWithDecorators', () => {
 
     render(<AppWithDecorators />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
+    const provider = screen.getByTestId('thunderid-provider');
     expect(provider).toHaveAttribute('data-base-url', 'https://default-base.example.com');
     expect(provider).toHaveAttribute('data-client-id', 'config-client-id');
     expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://default-signin.example.com');
@@ -239,7 +239,7 @@ describe('AppWithDecorators', () => {
 
     render(<AppWithDecorators />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
+    const provider = screen.getByTestId('thunderid-provider');
     expect(provider).toHaveAttribute('data-scopes', '["openid","profile","email","system"]');
   });
 
@@ -251,7 +251,7 @@ describe('AppWithDecorators', () => {
 
     render(<AppWithDecorators />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
+    const provider = screen.getByTestId('thunderid-provider');
     expect(provider).not.toHaveAttribute('data-scopes');
   });
 
@@ -263,7 +263,7 @@ describe('AppWithDecorators', () => {
 
     render(<AppWithDecorators />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
+    const provider = screen.getByTestId('thunderid-provider');
     expect(provider).toHaveAttribute('data-scopes', '["openid","profile"]');
   });
 
@@ -275,7 +275,7 @@ describe('AppWithDecorators', () => {
 
     render(<AppWithDecorators />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
+    const provider = screen.getByTestId('thunderid-provider');
     expect(provider).toHaveAttribute('data-base-url', 'https://default-base.example.com');
     expect(provider).toHaveAttribute('data-client-id', 'default-client-id');
     expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://default-signin.example.com');
@@ -292,7 +292,7 @@ describe('AppWithDecorators', () => {
 
     render(<AppWithDecorators />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
+    const provider = screen.getByTestId('thunderid-provider');
     // Empty strings are truthy, so they will be passed through (not fallback to env vars)
     expect(provider).toHaveAttribute('data-base-url', '');
     expect(provider).toHaveAttribute('data-client-id', '');
@@ -308,7 +308,7 @@ describe('AppWithDecorators', () => {
 
     render(<AppWithDecorators />);
 
-    const provider = screen.getByTestId('asgardeo-provider');
+    const provider = screen.getByTestId('thunderid-provider');
     expect(provider).toHaveAttribute('data-base-url', 'https://server.test');
     expect(provider).toHaveAttribute('data-client-id', 'client-123');
     expect(provider).toHaveAttribute('data-after-sign-in-url', 'https://client.test');

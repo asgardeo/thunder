@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useAsgardeo } from "@asgardeo/react";
+import { useThunderID } from "@thunderid/react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeft, CreditCard } from "lucide-react";
 import { createBooking, getBookedFlights, getFlight } from "../api";
@@ -8,7 +8,7 @@ import { buildFlightDetailsPath } from "../utils/routes";
 
 export function PaymentPageWithAuth({ criteria, flightId }) {
   const navigate = useNavigate();
-  const { getAccessToken, isSignedIn, signIn, user } = useAsgardeo();
+  const { getAccessToken, isSignedIn, signIn, user } = useThunderID();
   const [flight, setFlight] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [paymentState, setPaymentState] = useState("idle");

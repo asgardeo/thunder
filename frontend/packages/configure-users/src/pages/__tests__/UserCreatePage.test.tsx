@@ -112,12 +112,12 @@ vi.mock('../../../organization-units/api/useGetChildOrganizationUnits', () => ({
 }));
 
 // Mock useThunderID
-const mockUseAsgardeo = vi.fn();
+const mockUseThunderID = vi.fn();
 vi.mock('@thunderid/react', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...(actual as object),
-    useThunderID: () => mockUseAsgardeo() as {user: {ouId?: string} | null | undefined},
+    useThunderID: () => mockUseThunderID() as {user: {ouId?: string} | null | undefined},
   };
 });
 
@@ -331,7 +331,7 @@ describe('UserCreatePage', () => {
       error: null,
     });
     // Default: user object has no ouId
-    mockUseAsgardeo.mockReturnValue({
+    mockUseThunderID.mockReturnValue({
       user: {ouId: undefined},
     });
   });

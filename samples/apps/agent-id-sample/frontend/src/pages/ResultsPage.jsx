@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAsgardeo } from "@asgardeo/react";
+import { useThunderID } from "@thunderid/react";
 import { useNavigate } from "react-router-dom";
 import { SearchPanel } from "../components/SearchPanel";
 import {
@@ -255,7 +255,7 @@ export function ResultsPage({ criteria, getAccessToken, locations, onSearch }) {
 }
 
 export function ResultsPageWithAuth(props) {
-  const { getAccessToken } = useAsgardeo();
+  const { getAccessToken } = useThunderID();
 
   return <ResultsPage {...props} getAccessToken={getAccessToken} />;
 }
