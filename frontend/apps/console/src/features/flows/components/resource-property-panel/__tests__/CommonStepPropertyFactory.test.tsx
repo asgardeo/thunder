@@ -287,6 +287,95 @@ describe('CommonStepPropertyFactory', () => {
     });
   });
 
+  describe('Number Properties', () => {
+    it('should render TextField for number values', () => {
+      const resource: Resource = {
+        id: 'resource-1',
+        type: 'VIEW',
+        config: {},
+      } as Resource;
+
+      render(
+        <CommonStepPropertyFactory
+          resource={resource}
+          propertyKey="data.properties.maxPerPrompt"
+          propertyValue={5}
+          onChange={mockOnChange}
+        />,
+      );
+
+      const numberField = screen.getByRole('spinbutton');
+      expect(numberField).toBeInTheDocument();
+      expect(screen.getByText('Max Per Prompt')).toBeInTheDocument();
+    });
+
+    it('should call onChange with a numeric value when number field changes', () => {
+      const resource: Resource = {
+        id: 'resource-1',
+        type: 'VIEW',
+        config: {},
+      } as Resource;
+
+      render(
+        <CommonStepPropertyFactory
+          resource={resource}
+          propertyKey="data.properties.maxPerPrompt"
+          propertyValue={5}
+          onChange={mockOnChange}
+        />,
+      );
+
+      const numberField = screen.getByRole('spinbutton');
+      fireEvent.change(numberField, {target: {value: '3'}});
+
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.maxPerPrompt', 3, resource, true);
+    });
+
+    it('should not call onChange when number field receives an empty string', () => {
+      const resource: Resource = {
+        id: 'resource-1',
+        type: 'VIEW',
+        config: {},
+      } as Resource;
+
+      render(
+        <CommonStepPropertyFactory
+          resource={resource}
+          propertyKey="data.properties.maxPerPrompt"
+          propertyValue={5}
+          onChange={mockOnChange}
+        />,
+      );
+
+      const numberField = screen.getByRole('spinbutton');
+      fireEvent.change(numberField, {target: {value: ''}});
+
+      expect(mockOnChange).not.toHaveBeenCalled();
+    });
+
+    it('should not call onChange when number field receives a non-numeric string', () => {
+      const resource: Resource = {
+        id: 'resource-1',
+        type: 'VIEW',
+        config: {},
+      } as Resource;
+
+      render(
+        <CommonStepPropertyFactory
+          resource={resource}
+          propertyKey="data.properties.maxPerPrompt"
+          propertyValue={5}
+          onChange={mockOnChange}
+        />,
+      );
+
+      const numberField = screen.getByRole('spinbutton');
+      fireEvent.change(numberField, {target: {value: 'abc'}});
+
+      expect(mockOnChange).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Null Cases', () => {
     it('should return null for object property values', () => {
       const resource: Resource = {
@@ -300,25 +389,6 @@ describe('CommonStepPropertyFactory', () => {
           resource={resource}
           propertyKey="config"
           propertyValue={{nested: 'value'}}
-          onChange={mockOnChange}
-        />,
-      );
-
-      expect(container.firstChild).toBeNull();
-    });
-
-    it('should return null for number property values', () => {
-      const resource: Resource = {
-        id: 'resource-1',
-        type: 'VIEW',
-        config: {},
-      } as Resource;
-
-      const {container} = render(
-        <CommonStepPropertyFactory
-          resource={resource}
-          propertyKey="order"
-          propertyValue={123}
           onChange={mockOnChange}
         />,
       );

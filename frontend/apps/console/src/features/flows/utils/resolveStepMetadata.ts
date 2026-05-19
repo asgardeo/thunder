@@ -64,6 +64,53 @@ const resolveStepMetadata = (resources: Resources, steps: Step[]): Step[] => {
       });
 
       if (executorWithMeta) {
+        const defaultProps = (executorWithMeta.data as StepData & {properties?: Record<string, unknown>})?.properties;
+        const existingProps = (updatedStep.data as StepData & {properties?: Record<string, unknown>})?.properties;
+
+        if (defaultProps && existingProps) {
+          const coercedProps = Object.fromEntries(
+            Object.entries(existingProps).map(([key, value]) => {
+              const defaultValue = defaultProps[key];
+
+              if (typeof defaultValue === 'number' && typeof value === 'string') {
+                const trimmedValue = value.trim();
+
+                if (trimmedValue === '') {
+                  return [key, defaultValue];
+                }
+
+                const numericValue = Number(trimmedValue);
+
+                return [key, Number.isFinite(numericValue) ? numericValue : defaultValue];
+              }
+
+              if (typeof defaultValue === 'boolean' && typeof value === 'string') {
+                const normalizedValue = value.trim().toLowerCase();
+
+                if (normalizedValue === 'true') {
+                  return [key, true];
+                }
+
+                if (normalizedValue === 'false') {
+                  return [key, false];
+                }
+
+                return [key, defaultValue];
+              }
+
+              return [key, value];
+            }),
+          );
+
+          updatedStep = {
+            ...updatedStep,
+            data: {
+              ...updatedStep.data,
+              properties: coercedProps,
+            },
+          };
+        }
+
         // Merge executor display metadata into the step (at root level and in data for React Flow access)
         updatedStep = {
           ...updatedStep,

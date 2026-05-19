@@ -25,7 +25,7 @@ import Droppable from '../../../dnd/Droppable';
 import ReorderableFlowElement from '../../steps/view/ReorderableElement';
 import VisualFlowConstants from '@/features/flows/constants/VisualFlowConstants';
 import useFlowPlugins from '@/features/flows/hooks/useFlowPlugins';
-import {ElementCategories, type Element as FlowElement} from '@/features/flows/models/elements';
+import {ElementCategories, ElementTypes, type Element as FlowElement} from '@/features/flows/models/elements';
 import generateResourceId from '@/features/flows/utils/generateResourceId';
 import './FormAdapter.scss';
 
@@ -74,7 +74,8 @@ function FormAdapter({
   const {emitElementFilter} = useFlowPlugins();
 
   const hasInputFields = resource?.components?.some(
-    (element: FlowElement) => element.category === ElementCategories.Field,
+    (element: FlowElement) =>
+      element.category === ElementCategories.Field || element.type === ElementTypes.DynamicInputPlaceholder,
   );
 
   const shouldShowFormFieldsPlaceholder = !hasInputFields && !resource?.components?.length;

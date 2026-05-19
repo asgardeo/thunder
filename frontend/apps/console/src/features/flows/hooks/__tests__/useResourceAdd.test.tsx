@@ -100,6 +100,15 @@ vi.mock('../../utils/autoAssignConnections', () => ({
   default: vi.fn(),
 }));
 
+// Mock widgetUtils
+const {mockWidgetNeedsViewContainer} = vi.hoisted(() => ({
+  mockWidgetNeedsViewContainer: vi.fn().mockReturnValue(true),
+}));
+
+vi.mock('../../utils/widgetUtils', () => ({
+  widgetNeedsViewContainer: mockWidgetNeedsViewContainer,
+}));
+
 vi.mock('../useFlowEvents', () => ({
   default: () => ({
     notifyElementAdded: vi.fn(),
@@ -144,6 +153,7 @@ describe('useResourceAdd', () => {
     // Reset fitView to return a resolved promise by default after clearAllMocks
     // Use mockReturnValue to ensure it always returns a promise
     mockFitView.mockReturnValue(Promise.resolve(undefined));
+    mockWidgetNeedsViewContainer.mockReturnValue(true);
   });
 
   afterEach(async () => {
@@ -633,6 +643,33 @@ describe('useResourceAdd', () => {
       expect(mockFitView).toHaveBeenCalledWith({padding: 0.2, duration: 300});
 
       vi.useRealTimers();
+    });
+
+    it('should use widget itself as target when widget does not need a view container', () => {
+      mockWidgetNeedsViewContainer.mockReturnValue(false);
+      mockGetNodes.mockReturnValue([]);
+
+      const {result} = renderHook(() => useResourceAdd(defaultProps), {
+        wrapper: createWrapper(),
+      });
+
+      const widget = {
+        id: 'widget-1',
+        type: 'STANDALONE_WIDGET',
+        resourceType: ResourceTypes.Widget,
+      } as Widget;
+
+      act(() => {
+        result.current(widget);
+      });
+
+      expect(mockOnWidgetLoad).toHaveBeenCalledWith(
+        expect.objectContaining({id: 'widget-1'}),
+        expect.objectContaining({id: 'widget-1'}),
+        expect.any(Array),
+        expect.any(Array),
+      );
+      expect(mockScreenToFlowPosition).not.toHaveBeenCalled();
     });
   });
 

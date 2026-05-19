@@ -2333,13 +2333,22 @@ const translations = {
 
     // Provisioning executor
     'core.executions.provisioning.description': 'Configure the provisioning executor settings.',
+    'core.executions.provisioning.includeOptional.label': 'Allow Optional Non-Credential Attributes',
+    'core.executions.provisioning.includeOptional.hint':
+      'Prompt for optional non-credential attributes during dynamic input collection.',
     'core.executions.provisioning.includeOptionalCredentials.label': 'Include Optional Credentials',
     'core.executions.provisioning.includeOptionalCredentials.hint':
       'Prompt for optional credential attributes during dynamic input collection.',
+    'core.executions.provisioning.maxPerPrompt.label': 'Max Per Prompt',
+    'core.executions.provisioning.maxPerPrompt.placeholder': '0',
+    'core.executions.provisioning.maxPerPrompt.hint':
+      'Number of dynamic inputs to show per prompt when connected to this provisioning executor.',
     'core.executions.provisioning.assignGroup.label': 'Assign Group',
     'core.executions.provisioning.assignGroup.placeholder': 'Group ID to assign',
     'core.executions.provisioning.assignRole.label': 'Assign Role',
     'core.executions.provisioning.assignRole.placeholder': 'Role ID to assign',
+    'core.placeholders.dynamicInputPlaceholder.title': 'Dynamic Input',
+    'core.placeholders.dynamicInputPlaceholder.hint': 'Resolves input fields passed from runtime.',
 
     // OU executor
     'core.executions.ouExecutor.description': 'Configure the OU creation executor settings.',

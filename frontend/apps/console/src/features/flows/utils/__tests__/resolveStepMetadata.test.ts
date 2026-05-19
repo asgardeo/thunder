@@ -207,6 +207,213 @@ describe('resolveStepMetadata', () => {
       expect(result[0].display.image).toBe('/images/google.svg');
     });
 
+    it('should coerce persisted executor property strings based on executor defaults', () => {
+      const steps: Step[] = [
+        createMockStep({
+          id: 'provisioning-step',
+          type: 'TASK_EXECUTION',
+          data: {
+            action: {
+              executor: {name: 'ProvisioningExecutor'},
+            },
+            properties: {
+              includeOptional: 'true',
+              maxPerPrompt: '5',
+            },
+          },
+        }),
+      ];
+
+      const resources = createMockResources({
+        executors: [
+          createMockStep({
+            type: 'TASK_EXECUTION',
+            data: {
+              action: {
+                executor: {name: 'ProvisioningExecutor'},
+              },
+              properties: {
+                includeOptional: false,
+                maxPerPrompt: 0,
+              },
+            },
+          }),
+        ],
+      });
+
+      const result = resolveStepMetadata(resources, steps);
+      const properties = result[0].data?.properties as Record<string, unknown>;
+
+      expect(properties.includeOptional).toBe(true);
+      expect(properties.maxPerPrompt).toBe(5);
+    });
+
+    it('should fall back to executor defaults for invalid numeric strings in persisted executor properties', () => {
+      const steps: Step[] = [
+        createMockStep({
+          id: 'provisioning-step',
+          type: 'TASK_EXECUTION',
+          data: {
+            action: {
+              executor: {name: 'ProvisioningExecutor'},
+            },
+            properties: {
+              maxPerPrompt: 'Infinity',
+            },
+          },
+        }),
+      ];
+
+      const resources = createMockResources({
+        executors: [
+          createMockStep({
+            type: 'TASK_EXECUTION',
+            data: {
+              action: {
+                executor: {name: 'ProvisioningExecutor'},
+              },
+              properties: {
+                maxPerPrompt: 0,
+              },
+            },
+          }),
+        ],
+      });
+
+      const result = resolveStepMetadata(resources, steps);
+      const properties = result[0].data?.properties as Record<string, unknown>;
+
+      expect(properties.maxPerPrompt).toBe(0);
+    });
+
+    it('should fall back to executor defaults for invalid boolean strings in persisted executor properties', () => {
+      const steps: Step[] = [
+        createMockStep({
+          id: 'provisioning-step',
+          type: 'TASK_EXECUTION',
+          data: {
+            action: {
+              executor: {name: 'ProvisioningExecutor'},
+            },
+            properties: {
+              includeOptional: 'maybe',
+            },
+          },
+        }),
+      ];
+
+      const resources = createMockResources({
+        executors: [
+          createMockStep({
+            type: 'TASK_EXECUTION',
+            data: {
+              action: {
+                executor: {name: 'ProvisioningExecutor'},
+              },
+              properties: {
+                includeOptional: false,
+              },
+            },
+          }),
+        ],
+      });
+
+      const result = resolveStepMetadata(resources, steps);
+      const properties = result[0].data?.properties as Record<string, unknown>;
+
+      expect(properties.includeOptional).toBe(false);
+    });
+
+    it('should fall back to executor default for empty string numeric value in persisted executor properties', () => {
+      const steps: Step[] = [
+        createMockStep({
+          id: 'provisioning-step',
+          type: 'TASK_EXECUTION',
+          data: {
+            action: {executor: {name: 'ProvisioningExecutor'}},
+            properties: {maxPerPrompt: ''},
+          },
+        }),
+      ];
+
+      const resources = createMockResources({
+        executors: [
+          createMockStep({
+            type: 'TASK_EXECUTION',
+            data: {
+              action: {executor: {name: 'ProvisioningExecutor'}},
+              properties: {maxPerPrompt: 3},
+            },
+          }),
+        ],
+      });
+
+      const result = resolveStepMetadata(resources, steps);
+      const properties = result[0].data?.properties as Record<string, unknown>;
+
+      expect(properties.maxPerPrompt).toBe(3);
+    });
+
+    it('should coerce "false" string to boolean false in persisted executor properties', () => {
+      const steps: Step[] = [
+        createMockStep({
+          id: 'provisioning-step',
+          type: 'TASK_EXECUTION',
+          data: {
+            action: {executor: {name: 'ProvisioningExecutor'}},
+            properties: {includeOptional: 'false'},
+          },
+        }),
+      ];
+
+      const resources = createMockResources({
+        executors: [
+          createMockStep({
+            type: 'TASK_EXECUTION',
+            data: {
+              action: {executor: {name: 'ProvisioningExecutor'}},
+              properties: {includeOptional: true},
+            },
+          }),
+        ],
+      });
+
+      const result = resolveStepMetadata(resources, steps);
+      const properties = result[0].data?.properties as Record<string, unknown>;
+
+      expect(properties.includeOptional).toBe(false);
+    });
+
+    it('should pass through string values when default is also a string', () => {
+      const steps: Step[] = [
+        createMockStep({
+          id: 'provisioning-step',
+          type: 'TASK_EXECUTION',
+          data: {
+            action: {executor: {name: 'ProvisioningExecutor'}},
+            properties: {assignGroup: 'my-group'},
+          },
+        }),
+      ];
+
+      const resources = createMockResources({
+        executors: [
+          createMockStep({
+            type: 'TASK_EXECUTION',
+            data: {
+              action: {executor: {name: 'ProvisioningExecutor'}},
+              properties: {assignGroup: ''},
+            },
+          }),
+        ],
+      });
+
+      const result = resolveStepMetadata(resources, steps);
+      const properties = result[0].data?.properties as Record<string, unknown>;
+
+      expect(properties.assignGroup).toBe('my-group');
+    });
+
     it('should resolve executor metadata with mode matching', () => {
       const steps: Step[] = [
         createMockStep({

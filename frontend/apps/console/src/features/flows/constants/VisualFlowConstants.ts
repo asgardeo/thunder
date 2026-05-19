@@ -79,6 +79,7 @@ class VisualFlowConstants {
     WidgetTypes.SMSOTP,
     WidgetTypes.GithubFederation,
     WidgetTypes.PasskeyAuthentication,
+    WidgetTypes.Provisioning,
     WidgetTypes.SelfSignUpLink,
     ElementTypes.Timer,
   ];
@@ -139,6 +140,7 @@ class VisualFlowConstants {
     ElementTypes.RichText,
     ElementTypes.Divider,
     ElementTypes.Image,
+    ElementTypes.DynamicInputPlaceholder,
     ElementTypes.Timer,
     ElementTypes.Custom,
   ];

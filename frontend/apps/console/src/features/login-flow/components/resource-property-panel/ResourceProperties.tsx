@@ -38,14 +38,17 @@ import {StepCategories, StepTypes} from '@/features/flows/models/steps';
  * @param props - Props injected to the component.
  * @returns The ResourceProperties component.
  */
-const coerceValue = (newValue: unknown): string | boolean | object => {
+const coerceValue = (newValue: unknown): string | boolean | number | object => {
   if (typeof newValue === 'boolean') {
+    return newValue;
+  }
+  if (typeof newValue === 'number') {
     return newValue;
   }
   if (typeof newValue === 'object' && newValue !== null) {
     return newValue;
   }
-  if (typeof newValue === 'string' || typeof newValue === 'number') {
+  if (typeof newValue === 'string') {
     return String(newValue);
   }
   return '';

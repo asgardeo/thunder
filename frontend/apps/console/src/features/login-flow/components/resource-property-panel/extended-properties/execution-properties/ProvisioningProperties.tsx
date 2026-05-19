@@ -44,6 +44,31 @@ function ProvisioningProperties({resource, onChange}: CommonResourcePropertiesPr
     [resource, onChange],
   );
 
+  const handleNumberPropertyChange = useCallback(
+    (propertyName: string, value: string): void => {
+      if (value === '') {
+        onChange(`data.properties.${propertyName}`, 0, resource, true);
+        return;
+      }
+
+      const numericValue = Number(value);
+
+      if (!Number.isFinite(numericValue)) {
+        return;
+      }
+
+      onChange(`data.properties.${propertyName}`, Math.max(0, Math.floor(numericValue)), resource, true);
+    },
+    [resource, onChange],
+  );
+
+  const maxPerPromptValue = useMemo(() => {
+    const rawValue = properties.maxPerPrompt;
+    const numericValue = typeof rawValue === 'number' ? rawValue : Number(rawValue ?? 0);
+
+    return Number.isFinite(numericValue) ? numericValue : 0;
+  }, [properties.maxPerPrompt]);
+
   return (
     <Stack gap={2}>
       <Typography variant="body2" color="text.secondary">
@@ -65,6 +90,18 @@ function ProvisioningProperties({resource, onChange}: CommonResourcePropertiesPr
       <FormControlLabel
         control={
           <Checkbox
+            checked={!!properties.includeOptional}
+            onChange={(e) => handleBooleanPropertyChange('includeOptional', e.target.checked)}
+            size="small"
+          />
+        }
+        label={t('flows:core.executions.provisioning.includeOptional.label')}
+      />
+      <FormHelperText>{t('flows:core.executions.provisioning.includeOptional.hint')}</FormHelperText>
+
+      <FormControlLabel
+        control={
+          <Checkbox
             checked={!!properties.includeOptionalCredentials}
             onChange={(e) => handleBooleanPropertyChange('includeOptionalCredentials', e.target.checked)}
             size="small"
@@ -73,6 +110,25 @@ function ProvisioningProperties({resource, onChange}: CommonResourcePropertiesPr
         label={t('flows:core.executions.provisioning.includeOptionalCredentials.label')}
       />
       <FormHelperText>{t('flows:core.executions.provisioning.includeOptionalCredentials.hint')}</FormHelperText>
+
+      <div>
+        <FormLabel htmlFor="max-per-prompt">{t('flows:core.executions.provisioning.maxPerPrompt.label')}</FormLabel>
+        <TextField
+          id="max-per-prompt"
+          type="number"
+          value={maxPerPromptValue}
+          onChange={(e) => handleNumberPropertyChange('maxPerPrompt', e.target.value)}
+          placeholder={t('flows:core.executions.provisioning.maxPerPrompt.placeholder')}
+          fullWidth
+          size="small"
+          slotProps={{
+            htmlInput: {
+              min: 0,
+            },
+          }}
+        />
+        <FormHelperText>{t('flows:core.executions.provisioning.maxPerPrompt.hint')}</FormHelperText>
+      </div>
 
       <div>
         <FormLabel htmlFor="assign-group">{t('flows:core.executions.provisioning.assignGroup.label')}</FormLabel>

@@ -60,6 +60,7 @@ export const ElementTypes = {
   RichText: 'RICH_TEXT',
   Stack: 'STACK',
   Text: 'TEXT',
+  DynamicInputPlaceholder: 'DYNAMIC_INPUT_PLACEHOLDER',
   Resend: 'RESEND',
   Timer: 'TIMER',
   Consent: 'CONSENT',

@@ -917,6 +917,124 @@
   },
   {
     "resourceType": "WIDGET",
+    "category": "FLOW",
+    "type": "PROVISIONING",
+    "display": {
+      "label": "Provisioning",
+      "description": "Provision a user and prompt for missing schema attributes using dynamic inputs",
+      "image": "assets/images/icons/user.svg",
+      "showOnResourcePanel": true
+    },
+    "config": {
+      "data": {
+        "__generationMeta__": {
+          "defaultPropertySelectorId": "{{PROVISIONING_EXECUTOR_STEP_ID}}",
+          "replacers": [
+            {
+              "key": "PROVISIONING_EXECUTOR_STEP_ID",
+              "type": "ID"
+            },
+            {
+              "key": "PROVISIONING_PROMPT_STEP_ID",
+              "type": "ID"
+            }
+          ]
+        },
+        "steps": [
+          {
+            "id": "{{PROVISIONING_EXECUTOR_STEP_ID}}",
+            "type": "TASK_EXECUTION",
+            "size": {
+              "width": 200,
+              "height": 113
+            },
+            "position": {
+              "x": 760,
+              "y": 360
+            },
+            "data": {
+              "action": {
+                "type": "EXECUTOR",
+                "executor": {
+                  "name": "ProvisioningExecutor"
+                },
+                "onSuccess": "",
+                "onFailure": "",
+                "onIncomplete": "{{PROVISIONING_PROMPT_STEP_ID}}"
+              },
+              "properties": {
+                "allowCrossOUProvisioning": false,
+                "includeOptional": false,
+                "includeOptionalCredentials": false,
+                "maxPerPrompt": 5,
+                "assignGroup": "",
+                "assignRole": ""
+              }
+            }
+          },
+          {
+            "id": "{{PROVISIONING_PROMPT_STEP_ID}}",
+            "type": "VIEW",
+            "size": {
+              "width": 360,
+              "height": 220
+            },
+            "position": {
+              "x": 1120,
+              "y": 260
+            },
+            "data": {
+              "components": [
+                {
+                  "id": "{{ID}}",
+                  "category": "DISPLAY",
+                  "type": "IMAGE",
+                  "src": "{{ meta(application.logoUrl) }}",
+                  "alt": "Application logo",
+                  "height": "60",
+                  "width": ""
+                },
+                {
+                  "id": "{{ID}}",
+                  "category": "DISPLAY",
+                  "type": "TEXT",
+                  "align": "center",
+                  "variant": "HEADING_1",
+                  "label": "Complete your details"
+                },
+                {
+                  "id": "{{ID}}",
+                  "category": "BLOCK",
+                  "type": "BLOCK",
+                  "components": [
+                    {
+                      "id": "{{ID}}",
+                      "category": "DISPLAY",
+                      "type": "DYNAMIC_INPUT_PLACEHOLDER"
+                    },
+                    {
+                      "id": "{{ID}}",
+                      "category": "ACTION",
+                      "type": "ACTION",
+                      "variant": "PRIMARY",
+                      "eventType": "SUBMIT",
+                      "label": "Continue",
+                      "action": {
+                        "type": "NEXT",
+                        "onSuccess": "{{PROVISIONING_EXECUTOR_STEP_ID}}"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "resourceType": "WIDGET",
     "category": "COMPOSITE",
     "type": "SELF_SIGN_UP_LINK",
     "display": {

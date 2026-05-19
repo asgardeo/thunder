@@ -21,7 +21,7 @@ import userEvent from '@testing-library/user-event';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import ExecutionExtendedProperties from '../ExecutionExtendedProperties';
 import type {Resource} from '@/features/flows/models/resources';
-import {ExecutionTypes} from '@/features/flows/models/steps';
+import {ExecutionTypes, type StepData} from '@/features/flows/models/steps';
 import {IdentityProviderTypes} from '@/features/integrations/models/identity-provider';
 
 // Mock react-i18next
@@ -1316,20 +1316,26 @@ describe('ExecutionExtendedProperties', () => {
         },
         properties: {
           allowCrossOUProvisioning: false,
+          includeOptional: false,
+          includeOptionalCredentials: false,
+          maxPerPrompt: 5,
           assignGroup: '',
           assignRole: '',
         },
       },
     } as unknown as Resource;
+    const provisioningStepData = provisioningResource.data as StepData;
 
     it('should render provisioning configuration', () => {
       render(<ExecutionExtendedProperties resource={provisioningResource} onChange={mockOnChange} />);
 
       expect(screen.getByText('flows:core.executions.provisioning.description')).toBeInTheDocument();
       expect(screen.getByText('flows:core.executions.federation.allowCrossOUProvisioning.label')).toBeInTheDocument();
+      expect(screen.getByText('flows:core.executions.provisioning.includeOptional.label')).toBeInTheDocument();
       expect(
         screen.getByText('flows:core.executions.provisioning.includeOptionalCredentials.label'),
       ).toBeInTheDocument();
+      expect(screen.getByLabelText('flows:core.executions.provisioning.maxPerPrompt.label')).toBeInTheDocument();
       expect(screen.getByLabelText('flows:core.executions.provisioning.assignGroup.label')).toBeInTheDocument();
       expect(screen.getByLabelText('flows:core.executions.provisioning.assignRole.label')).toBeInTheDocument();
     });
@@ -1344,11 +1350,21 @@ describe('ExecutionExtendedProperties', () => {
       expect(mockOnChange).toHaveBeenCalledWith('data.properties.allowCrossOUProvisioning', true, provisioningResource);
     });
 
+    it('should call onChange without debounce when includeOptional checkbox is toggled', () => {
+      render(<ExecutionExtendedProperties resource={provisioningResource} onChange={mockOnChange} />);
+
+      const checkboxes = screen.getAllByRole('checkbox');
+      const includeOptionalCheckbox = checkboxes[1];
+      fireEvent.click(includeOptionalCheckbox);
+
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.includeOptional', true, provisioningResource);
+    });
+
     it('should call onChange without debounce when includeOptionalCredentials checkbox is toggled', () => {
       render(<ExecutionExtendedProperties resource={provisioningResource} onChange={mockOnChange} />);
 
       const checkboxes = screen.getAllByRole('checkbox');
-      const includeOptionalCredentialsCheckbox = checkboxes[1];
+      const includeOptionalCredentialsCheckbox = checkboxes[2];
       fireEvent.click(includeOptionalCredentialsCheckbox);
 
       expect(mockOnChange).toHaveBeenCalledWith(
@@ -1356,6 +1372,50 @@ describe('ExecutionExtendedProperties', () => {
         true,
         provisioningResource,
       );
+    });
+
+    it('should call onChange with debounce when maxPerPrompt changes', () => {
+      render(<ExecutionExtendedProperties resource={provisioningResource} onChange={mockOnChange} />);
+
+      fireEvent.change(screen.getByLabelText('flows:core.executions.provisioning.maxPerPrompt.label'), {
+        target: {value: '3'},
+      });
+
+      expect(mockOnChange).toHaveBeenCalledWith('data.properties.maxPerPrompt', 3, provisioningResource, true);
+    });
+
+    it('should fall back to 0 for malformed persisted maxPerPrompt values', () => {
+      const malformedProvisioningResource = {
+        ...provisioningResource,
+        data: {
+          ...provisioningStepData,
+          properties: {
+            ...(provisioningStepData.properties as Record<string, unknown>),
+            maxPerPrompt: 'invalid',
+          },
+        },
+      } as unknown as Resource;
+
+      render(<ExecutionExtendedProperties resource={malformedProvisioningResource} onChange={mockOnChange} />);
+
+      expect(screen.getByLabelText('flows:core.executions.provisioning.maxPerPrompt.label')).toHaveValue(0);
+    });
+
+    it('should fall back to 0 for non-finite persisted maxPerPrompt values', () => {
+      const malformedProvisioningResource = {
+        ...provisioningResource,
+        data: {
+          ...provisioningStepData,
+          properties: {
+            ...(provisioningStepData.properties as Record<string, unknown>),
+            maxPerPrompt: 'Infinity',
+          },
+        },
+      } as unknown as Resource;
+
+      render(<ExecutionExtendedProperties resource={malformedProvisioningResource} onChange={mockOnChange} />);
+
+      expect(screen.getByLabelText('flows:core.executions.provisioning.maxPerPrompt.label')).toHaveValue(0);
     });
 
     it('should call onChange with debounce when assignGroup changes', () => {
