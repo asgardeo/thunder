@@ -12,7 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@asgardeo/javascript": "^0.9.0",
+    "@thunderid/javascript": "0.0.5",
     "@langchain/anthropic": "^1.3.0",
     "@langchain/google-genai": "^2.1.0",
     "@langchain/langgraph": "^1.3.0",

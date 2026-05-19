@@ -47,8 +47,8 @@ export default function ConfigureOwner({
   onReadyChange = undefined,
 }: ConfigureOwnerProps): JSX.Element {
   const {t} = useTranslation();
-  const asgardeoUser = useThunderID().user as {id?: string} | null | undefined;
-  const currentUserId = asgardeoUser?.id ?? null;
+  const currentUser = useThunderID().user as {id?: string} | null | undefined;
+  const currentUserId = currentUser?.id ?? null;
 
   const {data: usersData, isLoading: usersLoading} = useGetUsers({limit: 100, offset: 0});
 

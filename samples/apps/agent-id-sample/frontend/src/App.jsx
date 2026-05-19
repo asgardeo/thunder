@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useAsgardeo } from "@asgardeo/react";
+import { useThunderID } from "@thunderid/react";
 import {
   Bot,
   ChevronDown,
@@ -25,31 +25,6 @@ import { buildResultsPath, readCriteria } from "./utils/routes";
 
 const AGENT_CHAT_URL = import.meta.env.VITE_AGENT_CHAT_URL || "ws://localhost:8790/chat";
 const THUNDER_BASE_URL = import.meta.env.VITE_THUNDER_BASE_URL || "";
-const ASGARDEO_ORG_NAME = getAsgardeoOrgName();
-const SIGN_UP_URL = ASGARDEO_ORG_NAME
-  ? `https://accounts.asgardeo.io/t/${encodeURIComponent(ASGARDEO_ORG_NAME)}/accounts/register`
-  : "https://accounts.asgardeo.io/accounts/register";
-
-function getAsgardeoOrgName() {
-  const configuredOrgName = import.meta.env.VITE_THUNDER_ORG_NAME?.trim();
-
-  if (configuredOrgName) {
-    return configuredOrgName;
-  }
-
-  if (!THUNDER_BASE_URL) {
-    return "";
-  }
-
-  try {
-    const pathParts = new URL(THUNDER_BASE_URL).pathname.split("/").filter(Boolean);
-    const tenantIndex = pathParts.indexOf("t");
-
-    return tenantIndex >= 0 ? pathParts[tenantIndex + 1] || "" : "";
-  } catch {
-    return "";
-  }
-}
 
 function createChatMessage(role, content) {
   return {
@@ -86,7 +61,7 @@ function PublicPrimaryNav() {
 }
 
 function LivePrimaryNav() {
-  const { isSignedIn } = useAsgardeo();
+  const { isSignedIn } = useThunderID();
 
   if (isSignedIn) {
     return <span aria-hidden="true" />;
@@ -96,7 +71,7 @@ function LivePrimaryNav() {
 }
 
 function LiveAuthHeader() {
-  const { isSignedIn, isLoading, signIn, signOut, user } = useAsgardeo();
+  const { isSignedIn, isLoading, signIn, signOut, signUpUrl, user } = useThunderID();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef(null);
   const firstName = user?.name?.givenName || "";
@@ -174,9 +149,11 @@ function LiveAuthHeader() {
       >
         Sign in
       </button>
-      <a className="primary-small" href={SIGN_UP_URL}>
-        Sign up
-      </a>
+      {signUpUrl && (
+        <a className="primary-small" href={signUpUrl}>
+          Sign up
+        </a>
+      )}
     </div>
   );
 }
@@ -213,7 +190,7 @@ function PublicFooterLinks() {
 }
 
 function LiveFooterLinks() {
-  const { isSignedIn } = useAsgardeo();
+  const { isSignedIn } = useThunderID();
 
   if (isSignedIn) {
     return null;
@@ -232,7 +209,7 @@ function SiteFooter({ authReady }) {
           </span>
           <span>Wayfinder</span>
         </Link>
-        <p>Modern travel booking flows, secured with Asgardeo.</p>
+        <p>Modern travel booking flows, secured with ThunderID.</p>
       </div>
       <FooterLinks authReady={authReady} />
     </footer>
@@ -725,7 +702,7 @@ function AgentCallbackRoute() {
 // form directly instead of the standard user credentials screen. Used by the
 // wayfinder-agent-demo skill and any bookmarkable "Sign in as Agent" link.
 function AgentSignInRoute() {
-  const { isSignedIn, signIn } = useAsgardeo();
+  const { isSignedIn, signIn } = useThunderID();
   const navigate = useNavigate();
   const triggered = useRef(false);
 
@@ -910,7 +887,7 @@ function App({ authReady }) {
         <div className="setup-banner" role="status">
           <ShieldCheck size={18} />
           Add `VITE_THUNDER_CLIENT_ID` and `VITE_THUNDER_BASE_URL` to enable live
-          Asgardeo sign in, sign up, and sign out.
+          ThunderID sign in, sign up, and sign out.
         </div>
       )}
 

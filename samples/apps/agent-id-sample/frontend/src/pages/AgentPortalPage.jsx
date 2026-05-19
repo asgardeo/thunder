@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAsgardeo } from "@asgardeo/react";
+import { useThunderID } from "@thunderid/react";
 import { Bot, Copy, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import {
   addAgentRoleAssignment,
@@ -15,7 +15,7 @@ const DEFAULT_OU_HANDLE =
   import.meta.env.VITE_THUNDER_DEFAULT_OU_HANDLE || "default";
 
 export function AgentPortalPage() {
-  const { isSignedIn, isLoading: authLoading, signIn, getAccessToken } = useAsgardeo();
+  const { isSignedIn, isLoading: authLoading, signIn, getAccessToken } = useThunderID();
 
   if (authLoading) {
     return (

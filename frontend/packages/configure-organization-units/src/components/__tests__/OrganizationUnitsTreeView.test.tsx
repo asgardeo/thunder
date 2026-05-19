@@ -49,7 +49,7 @@ vi.mock('@/api/useGetOrganizationUnits', () => ({
     },
 }));
 
-// Mock Asgardeo — stable reference to avoid useCallback churn
+// Mock ThunderID — stable reference to avoid useCallback churn
 const mockHttpRequest = vi.fn();
 const stableHttp = {request: mockHttpRequest};
 vi.mock('@thunderid/react', () => ({

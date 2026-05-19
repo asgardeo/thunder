@@ -34,7 +34,7 @@ dotenv.config({
 });
 
 // Local-dev TLS bypass: Thunder ships with a self-signed cert on localhost,
-// so fetch() and the Asgardeo JS SDK would otherwise refuse to talk to it.
+// so fetch() and the ThunderID JS SDK would otherwise refuse to talk to it.
 // We disable Node's TLS verification ONLY when the configured base URL points
 // at localhost / 127.0.0.1 to keep production builds safe.
 const __thunderBaseUrl = process.env.THUNDER_BASE_URL || "";
@@ -623,14 +623,10 @@ async function getAgentTokenViaClientCredentials(): Promise<string> {
 async function createAgent() {
     console.log("##########################################################################################################");
     console.log("##      This is an Agent Authentication Flow sample application for authenticating AI agents            ##");
-    console.log("##                         using Asgardeo and LangChain framework                                       ##");
+    console.log("##                         using ThunderID and LangChain framework                                      ##");
     console.log("##########################################################################################################");
 
     // Call Thunder's /oauth2/token directly with the client_credentials grant.
-    // We don't use AsgardeoJavaScriptClient.getAgentToken here because the V1
-    // (legacy) Asgardeo flow expects an /oauth2/flow/embedded endpoint that
-    // Thunder doesn't expose; calling /oauth2/token directly is the same wire
-    // protocol and works for both platforms.
     const agentAccessToken = await getAgentTokenViaClientCredentials();
 
     const client = new MultiServerMCPClient({
@@ -719,7 +715,7 @@ async function runAgentServer() {
 
         sendJson(socket, {
             type: "ready",
-            message: "Connected to the Asgardeo AI agent.",
+            message: "Connected to the ThunderID AI agent.",
         });
 
         let queue = Promise.resolve();

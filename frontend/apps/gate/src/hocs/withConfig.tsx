@@ -27,7 +27,7 @@ export default function withConfig<P extends object>(WrappedComponent: Component
 
     return (
       <ThunderIDProvider
-        baseUrl={getServerUrl() ?? (import.meta.env.VITE_ASGARDEO_BASE_URL as string)}
+        baseUrl={getServerUrl() ?? (import.meta.env.VITE_THUNDER_BASE_URL as string)}
         applicationId={applicationId!}
       >
         <WrappedComponent {...props} />

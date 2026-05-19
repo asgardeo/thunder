@@ -26,13 +26,13 @@ vi.mock('../RecoveryBox', () => ({
 }));
 
 // Mock useThunderID hook
-const mockUseAsgardeo = vi.fn();
+const mockUseThunderID = vi.fn();
 vi.mock('@thunderid/react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@thunderid/react')>();
   return {
     ...actual,
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    useThunderID: () => mockUseAsgardeo(),
+    useThunderID: () => mockUseThunderID(),
   };
 });
 
@@ -48,7 +48,7 @@ vi.mock('@thunderid/design', async (importOriginal) => {
 describe('Recovery', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseAsgardeo.mockReturnValue({
+    mockUseThunderID.mockReturnValue({
       isMetaLoading: false,
     });
   });
@@ -69,7 +69,7 @@ describe('Recovery', () => {
   });
 
   it('renders when isMetaLoading is true', () => {
-    mockUseAsgardeo.mockReturnValue({
+    mockUseThunderID.mockReturnValue({
       isMetaLoading: true,
     });
     render(<Recovery />);
