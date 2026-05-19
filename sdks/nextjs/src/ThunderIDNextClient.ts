@@ -90,8 +90,6 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
       ...rest
     } = decorateConfigWithNextEnv(config);
 
-    this.isInitialized = true;
-
     let resolvedOrganizationHandle: string | undefined = organizationHandle;
 
     if (!resolvedOrganizationHandle) {
@@ -100,21 +98,25 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
 
     const origin: string = await getClientOrigin();
 
-    return super.initialize(
+    const initialized: boolean = await super.initialize(
       {
+        ...rest,
         afterSignInUrl: afterSignInUrl ?? origin,
         afterSignOutUrl: afterSignOutUrl ?? origin,
         baseUrl,
         clientId,
         clientSecret,
-        enablePKCE: false,
+        enablePKCE: clientSecret == null,
         organizationHandle: resolvedOrganizationHandle,
         signInUrl,
         signUpUrl,
-        ...rest,
       } as any,
       storage,
     );
+
+    this.isInitialized = initialized;
+
+    return initialized;
   }
 
   override async reInitialize(config: Partial<T>): Promise<boolean> {
@@ -431,9 +433,22 @@ class ThunderIDNextClient<T extends ThunderIDNextConfig = ThunderIDNextConfig> e
       throw new Error('The second argument must be a string.');
     }
 
+    const config: T = this.getConfiguration();
+    const afterSignOutUrl: string = config?.afterSignOutUrl || '/';
+
     const resolvedSessionId: string = args[1] || (await getSessionId())!;
 
-    return super.signOut(resolvedSessionId);
+    try {
+      await (super.signOut as (...a: any[]) => Promise<string>)(resolvedSessionId);
+    } catch (error) {
+      const message: string = error instanceof Error ? error.message : String(error);
+
+      if (!message.includes('end_session_endpoint')) {
+        throw error;
+      }
+    }
+
+    return afterSignOutUrl;
   }
 
   override async signUp(options?: SignUpOptions): Promise<void>;
