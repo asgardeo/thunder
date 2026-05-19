@@ -227,8 +227,8 @@ jobs:
 
   build:
     name: 🛠️ Build Product
-    needs: dependency-guard
-    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
+    needs: [dependency-guard, detect-docs-changes]
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group') && (github.event_name == 'workflow_dispatch' || needs.detect-docs-changes.outputs.should-run != 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -321,8 +321,8 @@ jobs:
 
   test-frontend:
     name: 🧪 Frontend Tests (shard ${{ matrix.shard }}/4)
-    needs: dependency-guard
-    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
+    needs: [dependency-guard, detect-docs-changes]
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group') && (github.event_name == 'workflow_dispatch' || needs.detect-docs-changes.outputs.should-run != 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -401,8 +401,8 @@ jobs:
 
   upload-frontend-coverage:
     name: 📊 Upload Frontend Coverage
-    needs: test-frontend
-    if: always() && needs.test-frontend.result == 'success'
+    needs: [test-frontend, detect-docs-changes]
+    if: always() && needs.test-frontend.result == 'success' && (github.event_name == 'workflow_dispatch' || needs.detect-docs-changes.outputs.should-run != 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -454,8 +454,8 @@ jobs:
 
   build_samples:
     name: 🛠️ Build Sample Apps
-    needs: dependency-guard
-    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group') }}
+    needs: [dependency-guard, detect-docs-changes]
+    if: ${{ always() && (needs.dependency-guard.result == 'success' || needs.dependency-guard.result == 'skipped') && (github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || github.event_name == 'merge_group') && (github.event_name == 'workflow_dispatch' || needs.detect-docs-changes.outputs.should-run != 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -489,8 +489,8 @@ jobs:
 
   test-integration:
     name: 🧪 Integration Tests (${{ matrix.database }})
-    needs: build
-    if: ${{ always() && needs.build.result == 'success' }}
+    needs: [build, detect-docs-changes]
+    if: ${{ always() && needs.build.result == 'success' && (github.event_name == 'workflow_dispatch' || needs.detect-docs-changes.outputs.should-run != 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -594,8 +594,8 @@ jobs:
 
   test-e2e:
     name: 🎭 Playwright E2E Tests
-    needs: [build, build_samples]
-    if: ${{ always() && needs.build.result == 'success' && needs.build_samples.result == 'success' }}
+    needs: [build, build_samples, detect-docs-changes]
+    if: ${{ always() && needs.build.result == 'success' && needs.build_samples.result == 'success' && (github.event_name == 'workflow_dispatch' || needs.detect-docs-changes.outputs.should-run != 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:

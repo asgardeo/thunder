@@ -131,3 +131,7 @@ docs/static/api/next/postman/
 
 # Claude Code
 .claude/
+
+# Nx
+.nx/cache
+.nx/workspace-data
