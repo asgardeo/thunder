@@ -754,8 +754,8 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreation() {
 			ts.Require().NoError(err)
 			ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus)
 
-			// Wait for OTP to be sent - increased timeout for resource-constrained environments
-			time.Sleep(2 * time.Second)
+			// Wait for OTP to be sent
+			time.Sleep(1 * time.Second)
 
 			lastMessage := ts.mockServer.GetLastMessage()
 			ts.Require().NotNil(lastMessage)
@@ -881,29 +881,9 @@ func (ts *OURegistrationFlowTestSuite) TestSMSRegistrationFlowWithOUCreationDupl
 			// Wait for OTP to be sent
 			time.Sleep(1 * time.Second)
 
-			// Retry flow completion with backoff to handle resource constraints
-			// Only retry if flow doesn't complete (INCOMPLETE status expected), not on ERROR
-			err = common.RetryWithBackoff(func() error {
-				flowStep, err = common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001",
-					flowStep.ChallengeToken)
-				if err != nil {
-					return err
-				}
-				// Don't retry on ERROR status - these are permanent errors
-				if flowStep.FlowStatus == "ERROR" {
-					return nil // Stop retrying, let the test assertion handle it
-				}
-				if flowStep.FlowStatus != "INCOMPLETE" {
-					return fmt.Errorf("unexpected flow status: %s", flowStep.FlowStatus)
-				}
-				return nil
-			}, 3, 1*time.Second)
+			flowStep, err = 
+				common.CompleteFlow(flowStep.ExecutionID, inputs, "action_001", flowStep.ChallengeToken)
 			ts.Require().NoError(err)
-
-			// Wait for OTP to be sent - increased timeout for resource-constrained environments
-			if flowStep.FlowStatus == "INCOMPLETE" {
-				time.Sleep(2 * time.Second)
-			}
 			ts.Require().Equal("INCOMPLETE", flowStep.FlowStatus)
 
 			lastMessage := ts.mockServer.GetLastMessage()
