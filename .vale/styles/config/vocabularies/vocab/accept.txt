@@ -70,5 +70,13 @@ BCP
 Memorystore
 [Uu]pdatedAt
 [Cc]reatedAt
+Okta
+[Ww]alkthrough
+[Uu]serinfo
+Twilio
+Vonage
+PAR
+ACR
+JWKS
 [Aa]gentic
 [Ee]num

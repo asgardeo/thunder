@@ -127,13 +127,29 @@ On the **Customization** tab, control how your application looks and what legal 
 
 ## Configure What Goes Into Tokens
 
-On the **Token** tab, choose which user attributes each token carries and how long tokens stay valid.
+On the **Token** tab, choose which user attributes each token carries, how long tokens stay valid, and the response format for ID tokens and userinfo.
 
-**Access Token** - select the user attributes to include in the access token payload. Default attributes (`sub`, `iss`, `exp`, and others) are always included and cannot be removed. Set **Token Validity** in seconds (for example, `3600` for one hour).
+**Access Token** — select the user attributes to include in the access token payload. Default attributes (`sub`, `iss`, `exp`, and others) are always included and cannot be removed. Set **Token Validity** in seconds (for example, `3600` for one hour).
 
-**ID Token** - select the user attributes to include. Only attributes covered by the requested scopes are returned. Set **Token Validity** in seconds. The **Scopes** field shows the OIDC scopes configured for this application (for example, `openid`, `profile`, `email`).
+**ID Token** — select the user attributes to include. Only attributes covered by the requested scopes are returned. Set **Token Validity** in seconds.
 
-**User Info Attributes** - configure the attributes returned by the `/userinfo` endpoint. Enable **Use same attributes as ID Token** to mirror your ID token selection, or define a separate set.
+You can also configure the ID token response format:
+
+| Setting | Description |
+|---------|-------------|
+| **Response Type** | `JWT` (signed only, default), `JWE` (encrypted), or `NESTED_JWT` (signed then encrypted). |
+| **Encryption Algorithm** | Key-management algorithm. Required for `JWE` and `NESTED_JWT`. Options: `RSA-OAEP`, `RSA-OAEP-256`. Requires a certificate on the application. |
+| **Encryption Encoding** | Content-encryption algorithm. Required when Encryption Algorithm is set. Options: `A128CBC-HS256`, `A256GCM`. |
+
+**User Info** — configure what the `/userinfo` endpoint returns and in what format.
+
+| Setting | Description |
+|---------|-------------|
+| **User Attributes** | Attributes returned by the `/userinfo` endpoint. Enable **Use same attributes as ID Token** to mirror your ID token selection, or define a separate set. |
+| **Response Type** | `JSON` (default), `JWS` (signed), `JWE` (encrypted), or `NESTED_JWT` (signed then encrypted). |
+| **Signing Algorithm** | Required for `JWS` and `NESTED_JWT`. Options: `RS256`, `RS512`, `PS256`, `ES256`, `ES384`, `ES512`, `EdDSA`. Requires a certificate on the application. |
+| **Encryption Algorithm** | Required for `JWE` and `NESTED_JWT`. Options: `RSA-OAEP`, `RSA-OAEP-256`. Requires a certificate. |
+| **Encryption Encoding** | Required when Encryption Algorithm is set. Options: `A128CBC-HS256`, `A256GCM`. |
 
 ## Rotate the Client Secret
 
@@ -145,25 +161,30 @@ The current client secret is immediately invalidated. Any running clients using 
 
 ## Review OAuth 2.0 Configuration
 
-The **Advanced Settings** tab shows the OAuth 2.0 settings configured at creation. These are read-only.
+The **Advanced Settings** tab shows the OAuth 2.0 settings configured at creation. These are read-only in the Console.
 
 | Setting | Description |
 |---------|-------------|
-| **Grant Types** | The OAuth 2.0 flows this application can use (for example, `authorization_code`, `refresh_token`, `client_credentials`). |
+| **Grant Types** | The OAuth 2.0 flows this application can use. Supported values: `authorization_code`, `refresh_token`, `client_credentials`, `urn:ietf:params:oauth:grant-type:token-exchange`. |
 | **Response Types** | The response types the application can request (for example, `code`). |
+| **Token Endpoint Auth Method** | How the application authenticates at the token endpoint: `client_secret_basic` (default), `client_secret_post`, `private_key_jwt`, or `none` (public clients). |
 | **Public Client** | Whether this is a public client that cannot securely store a client secret. |
 | **PKCE Required** | Whether the application must send a `code_challenge` in every authorization request. Always `Yes` for public clients. |
+| **Pushed Authorization Requests** | Whether the application must submit authorization parameters via the `/oauth2/par` endpoint before starting a flow (RFC 9126). |
 
-You can also attach a **Certificate** for client authentication or token encryption.
+You can also attach a **Certificate** for client authentication (`private_key_jwt`) or token/userinfo encryption.
 
 | Certificate Type | Description |
 |-----------------|-------------|
 | `None` | No certificate configured. |
 | `JWKS` | Provide the JSON Web Key Set (JWKS) inline. |
-| `JWKS_URI` | Provide the URL of the application's JWKS endpoint. <ProductName /> fetches the public keys to verify signed requests. |
+| `JWKS_URI` | Provide the URL of the application's JWKS endpoint. <ProductName /> fetches the public keys to verify signed requests. Must use HTTPS. |
+
+For full API-level configuration — including ACR values, scope-to-claims mapping, PAR enforcement, and token signing and encryption algorithms — see [OAuth 2.0 Configuration](../protocols/oauth2).
 
 ## Related Guides
 
 - [Manage Applications](../applications/manage-applications) - Create, update, and delete applications
+- [OAuth 2.0 Configuration](../protocols/oauth2) - Full reference for OAuth 2.0 settings available via the API
 - [Flows](/docs/next/guides/guides/flows/what-is-flows) - Build and assign custom authentication and registration flows
 - [Password Recovery Setup](/docs/next/guides/guides/password-recovery-setup) - Enable and configure recovery flows for password reset
