@@ -29,7 +29,7 @@ codecov:
     # Without this, Codecov status checks can intermittently hang at
     # "Expected — Waiting for status to be reported" when CI signal is delayed.
     # See: https://about.codecov.io/blog/delay-notifications-for-flags-with-after_n_builds/
-    after_n_builds: 5
+    after_n_builds: 6
 
 flags:
   backend-unit:
@@ -44,14 +44,10 @@ flags:
     carryforward: false
     paths:
       - backend/
-  # backend-combined-sqlite:
-  #   carryforward: false
-  #   paths:
-  #     - backend/
-  # backend-combined-postgres:
-  #   carryforward: false
-  #   paths:
-  #     - backend/
+  backend-integration-redis:
+    carryforward: false
+    paths:
+      - backend/
   frontend-apps-console-unit:
     carryforward: false
     paths:
@@ -82,13 +78,26 @@ coverage:
         target: 60%
         threshold: 1%
         informational: true
-      # backend-combined:
-      #   flags:
-      #     - backend-combined-sqlite
-      #     - backend-combined-postgres
-      #   target: auto
-      #   threshold: 1%
-      #   informational: false
+      backend-combined:
+        flags:
+          - backend-unit
+          - backend-integration-sqlite
+          - backend-integration-postgres
+          - backend-integration-redis
+        target: auto
+        threshold: 1%
+        informational: false
+      combined:
+        flags:
+          - backend-unit
+          - backend-integration-sqlite
+          - backend-integration-postgres
+          - backend-integration-redis
+          - frontend-apps-console-unit
+          - frontend-apps-gate-unit
+        target: auto
+        threshold: 1%
+        informational: true
       frontend-apps-console-unit:
         flags:
           - frontend-apps-console-unit
