@@ -253,6 +253,11 @@ const sidebars: SidebarsConfig = {
           id: 'guides/guides/trusted-issuer',
           label: 'Trusted Issuer',
         },
+        {
+          type: 'doc',
+          id: 'guides/guides/resource-servers',
+          label: 'Resource Servers',
+        },
       ],
     },
 
@@ -291,11 +296,15 @@ const sidebars: SidebarsConfig = {
         },
         {
           type: 'category',
-          label: 'AI Agents and MCP',
+          label: 'Identity for AI Agents',
           collapsible: true,
           collapsed: true,
           items: [
-            {type: 'doc', id: 'use-cases/ai-agents/agent-authentication', label: 'Agent Authentication', key: 'use-cases-agent-authentication'},
+            {type: 'doc', id: 'use-cases/ai-agents/overview', label: 'Overview', key: 'ai-agents-overview'},
+            {type: 'doc', id: 'use-cases/ai-agents/protect-your-agent', label: 'Protect Your Agent'},
+            {type: 'doc', id: 'use-cases/ai-agents/connect-to-services', label: 'Connect to Services'},
+            {type: 'doc', id: 'use-cases/ai-agents/multi-agent-workflows', label: 'Multi-Agent Workflows'},
+            {type: 'doc', id: 'use-cases/ai-agents/mcp-authorization', label: 'MCP Authorization'},
           ],
         },
       ],

@@ -51,19 +51,19 @@ const cards: BranchCard[] = [
     ],
   },
   {
-    href: '/docs/next/use-cases/ai-agents/agent-authentication',
+    href: '/docs/next/use-cases/ai-agents/overview',
     animationClass: 'uc-card-3',
     icon: <MagicLinkIcon size={26} />,
     accentColor: '#8b5cf6',
     iconBackground: 'rgba(139,92,246,0.10)',
     category: 'AI & Automation',
-    title: 'AI Agents & MCP',
+    title: 'Identity for AI Agents',
     description:
-      'Secure agent-to-platform and user-to-agent access. OAuth 2.0 token issuance, scope enforcement, and MCP support.',
+      'Authenticate agents, authorize actions, secure MCP servers, and audit every interaction across single and multi-agent workflows.',
     bullets: [
-      'AI agents call protected APIs or user-owned resources',
-      'You need scoped, auditable machine-to-machine tokens',
-      'User-delegated agent actions require explicit consent',
+      'Users interact with your AI agent securely',
+      'Agents call APIs and MCP servers on their own or on behalf of users',
+      'Multi-agent workflows need trust propagation and audit trails',
     ],
   },
 ];
