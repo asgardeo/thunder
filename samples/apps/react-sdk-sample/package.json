@@ -20,7 +20,7 @@
   "devDependencies": {
     "@eslint/js": "9.39.0",
     "@types/node": "20.19.24",
-    "@types/react": "19.2.7",
+    "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-basic-ssl": "2.1.0",
     "@vitejs/plugin-react": "5.1.0",
