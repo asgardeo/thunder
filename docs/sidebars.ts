@@ -223,8 +223,8 @@ const sidebars: SidebarsConfig = {
           items: [
             {
               type: 'doc',
-              id: 'guides/guides/flows/what-is-flows',
-              label: 'What are Flows?',
+              id: 'guides/guides/flows/what-are-flows',
+              label: 'What Are Flows?',
             },
             {
               type: 'doc',
@@ -233,8 +233,18 @@ const sidebars: SidebarsConfig = {
             },
             {
               type: 'doc',
+              id: 'guides/guides/flows/flow-builder-overview',
+              label: 'Flow Builder Overview',
+            },
+            {
+              type: 'doc',
               id: 'guides/guides/flows/build-a-flow',
               label: 'Build a Flow',
+            },
+            {
+              type: 'doc',
+              id: 'guides/guides/flows/executors-reference',
+              label: 'Executors',
             },
             {
               type: 'doc',

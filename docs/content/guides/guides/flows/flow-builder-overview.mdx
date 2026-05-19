@@ -1,0 +1,100 @@
+---
+title: Flow Builder Overview
+sidebar_position: 3
+persona: iam
+description: Understand the canvas, left panel, node types, and wiring rules of the Flow Builder in the <ProductName /> Console.
+---
+
+# Flow Builder Overview
+
+The Flow Builder is the visual tool for building and configuring flows in <ProductName />. It opens when you create or edit a flow and presents two areas:
+
+- Canvas — the main workspace where the flow graph lives. You place nodes here and draw connections between them.
+- Left panel — a library organized into four sections: Widgets, Steps, Components, and Executors.
+
+
+## Canvas
+
+The canvas is the main workspace where you build and connect nodes into a directed graph. The flow always starts at a **START** node and ends at one or more **END** nodes. Between them, you place **View** nodes (UI screens) and **Executor** nodes (backend operations), then draw connections to define the execution path.
+
+See the [Node Types](./flow-concepts#node-types) for more details.
+
+**Canvas controls:**
+
+- **Zoom and pan** — scroll or pinch to zoom; drag to pan across large flows.
+- **Auto-layout** — rearranges all nodes for readability (flow settings menu).
+- **Fit view** — resize the flow to fit the view.
+- **Edge style change** — change the edge display style within the flow builder.
+
+## Left Panel
+
+The left panel is the library of building blocks. It has four sections:
+
+### Widgets
+
+A Widget is a pre-wired, reusable flow segment that combines a View node and its required Executor nodes. Drop a Widget onto the canvas and you get a complete, working authentication step — no manual wiring needed.
+
+| Widget | What It Adds |
+|--------|-------------|
+| **Username + Password** | Sign-in form + Identifier + Password executor |
+| **Continue with Google** | Google OAuth redirect + Google executor |
+
+See the [flow reference](./flow-reference#widgets) for the complete list of available widgets.
+
+### Steps
+
+Steps are standalone View nodes with no executor pre-attached. Use a Step when you need a screen connected to a non-standard executor, or when you want to wire a single view to multiple executors in sequence.
+
+| Step | Description |
+|------|-------------|
+| **Blank View** | Empty screen — add components from the panel |
+| **Username + Password** | Pre-designed sign-in form |
+
+See the [flow reference](./flow-reference#steps) for the complete list of available steps.
+
+### Components
+
+Components are individual UI elements you add inside a View node. Use them to extend an existing Step or build a custom Blank View from scratch.
+
+| Category | Components |
+|----------|-----------|
+| **Inputs** | Text Input, Password Input, etc |
+| **Display** | Text, Rich Text, Image, Icon, Divider |
+| **Interactive** | Button, Resend, Timer |
+| **Layout** | Form, Stack |
+
+See the [flow reference](./flow-reference#components) for the complete list of available components.
+
+
+### Executors
+
+The **Executors** section in the left panel lets you drop any executor directly onto the canvas and wire it manually. Use this when Widgets do not match your combination, or when you need a background executor that runs without a preceding View. 
+
+See the [Executors](./executors-reference) for the complete list of available executors and the configuration required for each.
+
+## Wiring Rules
+
+| Connection | Valid | Notes |
+|------------|-------|-------|
+| View → Executor | Yes | Triggered when the user submits the form in the View |
+| Executor (success) → View or Executor | Yes | Continues the flow on success |
+| Executor (failure) → View | Yes | Shows an error screen or retry step |
+| Executor (incomplete) → View | Yes | Routes back to collect more input; must target a View, not an Executor |
+| Any → END | Yes (from Executor success only) | Completes the flow |
+| START → Executor | Yes | Background executors that need no initial user input can follow START |
+| END → anything | No | END has no outputs |
+
+See [View and Executor Pairings](./flow-reference#view-and-executor-pairings) for more details on how to pair executors with views.
+
+:::note
+Always connect both the success and failure ports on every executor. An unconnected failure port causes the flow to end with an error and no feedback to the user.
+:::
+
+## What's Next
+
+- Start building — Follow a step-by-step walkthrough in [Build a Flow](./build-a-flow).
+
+## Related Guides
+
+- Understand the fundamentals — Learn about executors, steps, and conditions in [Flow Concepts](./flow-concepts).
+- Learn more about executor configuration in [Executors](./executors-reference).

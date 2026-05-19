@@ -1,6 +1,6 @@
 ---
 title: Flow Reference
-sidebar_position: 5
+sidebar_position: 8
 persona: iam
 description: Complete reference for all Starter Templates, Widgets, Steps, Components, and Executors available in the Console Flow Builder.
 ---
@@ -18,28 +18,6 @@ This page is a complete reference for all items available in the left panel of t
 | **AUTHENTICATION** | Sign-in flows | Users authenticate to access your application |
 | **REGISTRATION** | Sign-up flows | New users create accounts |
 | **RECOVERY** | Password reset flows | Users regain access when they forget their passwords |
-
-## Starter Templates
-
-Starter Templates are complete, ready-to-use flow blueprints. Apply a template to populate the canvas with a working flow that you can then customize.
-
-### Authentication Flows
-
-| Template | Description |
-|----------|-------------|
-| **Blank** | An empty canvas with only a START node. Build the flow from scratch. |
-| **Password Login** | A basic username and password login flow. |
-| **Password Login or Google** | Username and password login with Google as an alternative. |
-| **Password + SMS OTP** | Two-factor authentication using password and SMS OTP. |
-| **SMS OTP** | Passwordless login using SMS OTP verification. |
-| **Passkey Login** | Passwordless login using passkeys, with a registration fallback. |
-
-### Recovery Flows
-
-| Template | Description |
-|----------|-------------|
-| **Basic Password Recovery** | Email-based password recovery with a verification link. |
-| **Password Recovery with SMS OTP** | SMS one-time password verification for password reset. |
 
 ## Widgets
 
@@ -107,13 +85,13 @@ Executors are backend operation nodes. Each Executor performs one specific opera
 | **Start Passkey Registration** | Begins the passkey registration ceremony. |
 | **Finish Passkey Registration** | Completes the passkey registration ceremony. |
 | **Auth Assertion Generator** | Generates the final authentication assertion when login succeeds. |
-| **Email Executor** | Sends email for invitation and registration flows. Supports `skipDelivery` and falls back to the user entity when the recipient is missing from the flow context. |
+| **Send Email** | Sends email for invitation and registration flows. Supports `skipDelivery` and falls back to the user entity when the recipient is missing from the flow context. |
 | **Provisioning** | Creates or updates the user record in the store. |
 | **Attribute Collector** | Collects additional user attributes defined in the user type. |
 | **Authorization** | Evaluates authorization policies for the current user. |
 | **OU Creation** | Creates an organizational unit for the user. Supports an optional `parentOuId` property to control where the new organizational unit is placed in the hierarchy. |
 | **User Type Resolver** | Resolves the user type based on configured rules. |
-| **Identity Resolver** | Looks up and resolves a user identity across providers. |
+| **Identify User** | Looks up and resolves a user identity across providers. |
 | **User Consent** | Records explicit user consent for defined scopes or terms. |
 
 ## View and Executor Pairings
@@ -139,10 +117,10 @@ Some Executors run entirely in the background and do not need a preceding View t
 | **Auth Assertion Generator** | Last Executor before the END node in every authentication flow | User must be authenticated by prior Executors |
 | **Authorization** | After authentication Executors, before Auth Assertion Generator | User must be authenticated |
 | **Send SMS OTP** | Before the SMS OTP View | User's mobile number must be on record |
-| **Email Executor** | After the flow collects the recipient email | Recipient email input; `inviteLink` for invite and self-registration templates |
+| **Send Email** | After the flow collects the recipient email | Recipient email input; `inviteLink` for invite and self-registration templates |
 | **Provisioning** | After identity collection in registration flows | — |
-| **Identity Resolver** | Early in the flow, after the user submits an identifier | — |
-| **User Type Resolver** | After Identity Resolver | — |
+| **Identify User** | Early in the flow, after the user submits an identifier | — |
+| **User Type Resolver** | After Identify User | — |
 | **OU Creation** | After Provisioning in registration flows | OU name and handle inputs must be present in the flow context. Accepts an optional `parentOuId` property (see below). |
 
 ### OU Creation Properties
@@ -174,7 +152,107 @@ The **OU Creation** executor accepts the following optional node property:
 }
 ```
 
+## Configuration Patterns and Tips
+
+### Always Wire Both Output Ports
+
+Every executor has a failure path (red dot). Leaving it unconnected does not mean the flow ignores failures — it means the flow terminates with an unhandled error and the user sees nothing. Connect every failure path to either:
+
+- An **error View** that displays a descriptive message and optionally a retry button
+- A **retry loop** back to the input View (useful for OTP and password verification)
+
+### Pass the `user` Object Between Executors
+
+Most executors read from and write to the `user` context variable. The typical chain is:
+
+```
+Identify User → sets user
+  ↓
+Identifier + Password → confirms user is authenticated
+  ↓
+Authorization → enriches with granted scopes
+  ↓
+Auth Assertion Generator → issues token for user
+```
+
+Ensure executors earlier in the flow populate `user` before executors that depend on it.
+
+### Use the Incomplete Path for Progressive Profiling
+
+The Attribute Collector's incomplete path lets you collect profile data gradually across multiple sign-ins rather than demanding everything at registration. Wire a View after the incomplete path, collect the missing attributes, and the next execution of Attribute Collector will not re-prompt for fields already provided.
+
+### Test Flows with Edge Cases
+
+Common edge cases that affect flows:
+
+- **New user hitting an authentication flow** — Identity Resolver fails → branch to registration
+- **Existing user hitting a registration flow** — Provisioning fails with duplicate → branch to a "sign in instead" prompt
+- **OTP expired** — Verify SMS OTP fails → offer a resend via the **Resend** component in the View
+- **Missing phone number for SMS OTP** — Send SMS OTP fails → branch to an "add phone number" View before retrying
+
+### Use `skipDelivery` During Development
+
+When building registration flows that send welcome emails, set `skipDelivery: true` on the Email Executor during development to avoid sending real emails on every test run. Remove the flag before deploying to production.
+
+### Versioning and Rollback
+
+Every save creates a new version. If a flow change breaks behavior in production, restore the previous version from the flow's settings menu. The flow definition updates in place and takes effect immediately for new sessions — no application configuration change needed.
+
+## Executor UI Label to Internal Name Mapping
+
+The Console displays a human-readable label for each executor. When reading or writing raw flow JSON (for example, via the API or export/import), use the `name` and optional `mode` values shown below.
+
+| UI Label (Console) | Internal `name` | `mode` |
+|---|---|---|
+| Identifier + Password | `BasicAuthExecutor` | — |
+| Send SMS OTP | `SMSOTPAuthExecutor` | `send` |
+| Verify SMS OTP | `SMSOTPAuthExecutor` | `verify` |
+| OAuth | `OAuthExecutor` | — |
+| OIDC Auth | `OIDCAuthExecutor` | — |
+| GitHub | `GithubOAuthExecutor` | — |
+| Google | `GoogleOIDCAuthExecutor` | — |
+| Request Passkey | `PasskeyAuthExecutor` | `challenge` |
+| Verify Passkey | `PasskeyAuthExecutor` | `verify` |
+| Start Passkey Registration | `PasskeyAuthExecutor` | `register_start` |
+| Finish Passkey Registration | `PasskeyAuthExecutor` | `register_finish` |
+| Identify User | `IdentifyingExecutor` | `identify` |
+| Resolve User | `IdentifyingExecutor` | `resolve` |
+| Auth Assertion Generator | `AuthAssertExecutor` | — |
+| Provisioning | `ProvisioningExecutor` | — |
+| Attribute Collector | `AttributeCollector` | — |
+| Authorization | `AuthorizationExecutor` | — |
+| OU Creation | `OUExecutor` | — |
+| Resolve OU | `OUResolverExecutor` | — |
+| HTTP Request | `HTTPRequestExecutor` | — |
+| User Type Resolver | `UserTypeResolver` | — |
+| Magic Link | `MagicLinkExecutor` | — |
+| User Consent | `ConsentExecutor` | — |
+| Resolve Federated User | `FederatedAuthResolverExecutor` | — |
+| Generate Invite | `InviteExecutor` | `generate` |
+| Verify Invite | `InviteExecutor` | `verify` |
+| Send Email | `EmailExecutor` | `send` |
+| Send SMS | `SMSExecutor` | — |
+| Set Credentials | `CredentialSetter` | — |
+| Validate Attribute Uniqueness | `AttributeUniquenessValidator` | — |
+| Validate Permission | `PermissionValidator` | — |
+
+When an executor uses a `mode`, include it inside the `executor` object in the flow node definition:
+
+```json title="Example: executor node with mode"
+{
+  "type": "TASK_EXECUTION",
+  "executor": {
+    "name": "SMSOTPAuthExecutor",
+    "mode": "send"
+  },
+  "onSuccess": "next_node",
+  "onFailure": "error_prompt",
+  "onIncomplete": ""
+}
+```
+
 ## Related Guides
 
 - [Flow Concepts](./flow-concepts) - Understand how nodes, connections, and the canvas work together.
 - [Build a Flow](./build-a-flow) - Step-by-step guide to creating a flow in the <ProductName /> Console.
+- [Executors](./executors-reference) - Details and configuration guide for each executor.
