@@ -75,7 +75,7 @@ const refreshToken = async (): Promise<RefreshResult> => {
       baseUrl: config.baseUrl ?? '',
       clientId: config.clientId ?? '',
       clientSecret: config.clientSecret ?? '',
-      sessionCookieExpiryTime: config.sessionCookieExpiryTime,
+      sessionCookie: config.sessionCookie,
     });
 
     try {

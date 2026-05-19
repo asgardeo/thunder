@@ -23,8 +23,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
-	"strings"
 
 	authncm "github.com/thunder-id/thunderid/internal/authn/common"
 	"github.com/thunder-id/thunderid/internal/entityprovider"
@@ -338,12 +336,8 @@ func (p *provisioningExecutor) HasRequiredInputs(ctx *core.NodeContext,
 		return true
 	}
 
-	// Load the set of optional attrs already prompted in previous iterations so they are not
-	// re-prompted even when the user left them empty.
-	alreadyPromptedOptionalAttrs := p.getPresentedOptionalAttrs(ctx)
-
 	credRequiredMissing, credOptionalMissing, ncRequiredMissing, ncOptionalMissing :=
-		p.buildMissingInputs(ctx, allSchemaAttrs, nodeInputMap, alreadyPromptedOptionalAttrs)
+		p.buildMissingInputs(ctx, allSchemaAttrs, nodeInputMap)
 
 	// Build the full schema missing list: required non-creds first, then optional non-creds,
 	// followed by required creds, then optional creds.
@@ -366,10 +360,6 @@ func (p *provisioningExecutor) HasRequiredInputs(ctx *core.NodeContext,
 		toForward = toForward[:maxInputs]
 	}
 
-	// Record which optional schema attrs are being presented this iteration so future
-	// iterations know not to re-prompt them if the user left them empty.
-	p.storePresentedOptionalAttrs(execResp, toForward, alreadyPromptedOptionalAttrs)
-
 	execResp.Inputs = allSchemaMissing
 	if execResp.ForwardedData == nil {
 		execResp.ForwardedData = make(map[string]interface{})
@@ -386,10 +376,10 @@ func (p *provisioningExecutor) buildMissingInputs(
 	ctx *core.NodeContext,
 	schemaAttrs []entitytype.AttributeInfo,
 	nodeInputMap map[string]common.Input,
-	alreadyPromptedOptionalAttrs map[string]bool,
 ) (credRequired, credOptional, ncRequired, ncOptional []common.Input) {
 	promptOptional := p.isPromptOptionalAttributesEnabled(ctx)
 	promptOptionalCredentials := p.isPromptOptionalCredentialsEnabled(ctx)
+	presentedOptionalInputs := core.GetPresentedOptionalInputs(ctx.RuntimeData)
 
 	for _, attr := range schemaAttrs {
 		if p.isAttrSatisfied(ctx, attr.Attribute, attr.Credential) {
@@ -405,7 +395,7 @@ func (p *provisioningExecutor) buildMissingInputs(
 			if !effectiveRequired && !promptOptionalCredentials && !inNodeInputs {
 				continue
 			}
-			if !effectiveRequired && alreadyPromptedOptionalAttrs[attr.Attribute] {
+			if !effectiveRequired && core.IsOptionalInputPrompted(presentedOptionalInputs, attr.Attribute) {
 				continue
 			}
 			input := common.Input{
@@ -423,7 +413,7 @@ func (p *provisioningExecutor) buildMissingInputs(
 			if !attr.Required && !promptOptional && !inNodeInputs {
 				continue
 			}
-			if !effectiveRequired && alreadyPromptedOptionalAttrs[attr.Attribute] {
+			if !effectiveRequired && core.IsOptionalInputPrompted(presentedOptionalInputs, attr.Attribute) {
 				continue
 			}
 			input := common.Input{
@@ -508,45 +498,6 @@ func (p *provisioningExecutor) getMaxDynamicInputs(ctx *core.NodeContext) int {
 		}
 	}
 	return 0
-}
-
-// getPresentedOptionalAttrs returns the set of optional attr identifiers that have already been
-// prompted to the user in previous iterations, loaded from RuntimeData.
-func (p *provisioningExecutor) getPresentedOptionalAttrs(ctx *core.NodeContext) map[string]bool {
-	result := make(map[string]bool)
-	raw, ok := ctx.RuntimeData[common.RuntimeKeyPresentedOptionalAttrs]
-	if !ok || raw == "" {
-		return result
-	}
-	for _, id := range strings.Split(raw, " ") {
-		if id != "" {
-			result[id] = true
-		}
-	}
-	return result
-}
-
-// storePresentedOptionalAttrs accumulates the optional attrs being shown in this iteration into
-// RuntimeData so the next iteration can skip them.
-func (p *provisioningExecutor) storePresentedOptionalAttrs(
-	execResp *common.ExecutorResponse,
-	toPrompt []common.Input,
-	alreadyPresented map[string]bool,
-) {
-	for _, inp := range toPrompt {
-		if !inp.Required {
-			alreadyPresented[inp.Identifier] = true
-		}
-	}
-	if len(alreadyPresented) == 0 {
-		return
-	}
-	ids := make([]string, 0, len(alreadyPresented))
-	for id := range alreadyPresented {
-		ids = append(ids, id)
-	}
-	sort.Strings(ids)
-	execResp.RuntimeData[common.RuntimeKeyPresentedOptionalAttrs] = strings.Join(ids, " ")
 }
 
 // isAttrSatisfied returns true if the attribute has a non-empty usable value.

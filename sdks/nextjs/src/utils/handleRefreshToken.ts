@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {TokenResponse} from '@thunderid/node';
+import type {TokenResponse, SessionCookieConfig} from '@thunderid/node';
 import SessionManager, {SessionTokenPayload} from './SessionManager';
 
 /**
@@ -26,7 +26,7 @@ export interface HandleRefreshTokenConfig {
   baseUrl: string;
   clientId: string;
   clientSecret: string;
-  sessionCookieExpiryTime?: number;
+  sessionCookie?: SessionCookieConfig;
 }
 
 /**
@@ -50,7 +50,7 @@ const handleRefreshToken = async (
   sessionPayload: SessionTokenPayload,
   config: HandleRefreshTokenConfig,
 ): Promise<HandleRefreshTokenResult> => {
-  const {baseUrl, clientId, clientSecret, sessionCookieExpiryTime: configuredExpiry} = config;
+  const {baseUrl, clientId, clientSecret, sessionCookie} = config;
   const {refreshToken: storedRefreshToken, sessionId, sub, scopes, organizationId} = sessionPayload;
 
   if (!storedRefreshToken) {
@@ -99,7 +99,7 @@ const handleRefreshToken = async (
     (tokenData['scope'] as string | undefined) ??
     (Array.isArray(scopes) ? scopes.join(' ') : ((scopes as string) ?? ''));
 
-  const resolvedSessionCookieExpiry: number = SessionManager.resolveSessionCookieExpiry(configuredExpiry);
+  const resolvedSessionCookieExpiry: number = SessionManager.resolveSessionCookieExpiry(sessionCookie?.expiryTime);
 
   const newSessionToken: string = await SessionManager.createSessionToken(
     newAccessToken,

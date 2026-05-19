@@ -99,8 +99,8 @@ let capturedOnFlowChange: ((response: unknown) => void) | undefined;
 let capturedOnError: ((error: Error) => void) | undefined;
 let capturedAfterRecoveryUrl: string | undefined;
 
-vi.mock('@asgardeo/react', async () => {
-  const actual = await vi.importActual('@asgardeo/react');
+vi.mock('@thunderid/react', async () => {
+  const actual = await vi.importActual('@thunderid/react');
   return {
     ...actual,
     Recovery: ({

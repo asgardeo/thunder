@@ -52,7 +52,7 @@ const switchOrganization = async (
         | string
         | undefined;
       const config: ThunderIDNextConfig = await client.getConfiguration();
-      const sessionCookieExpiryTime: number = SessionManager.resolveSessionCookieExpiry(config.sessionCookieExpiryTime);
+      const sessionCookieExpiryTime: number = SessionManager.resolveSessionCookieExpiry(config.sessionCookie?.expiryTime);
       const expiresIn: number = parseInt(tokenResponse.expiresIn, 10);
 
       const sessionToken: string = await SessionManager.createSessionToken(

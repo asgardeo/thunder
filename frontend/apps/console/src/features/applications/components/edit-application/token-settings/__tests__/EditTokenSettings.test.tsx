@@ -24,7 +24,7 @@ import EditTokenSettings from '../EditTokenSettings';
 
 // Stable mock references — must be created via vi.hoisted so they are available
 // inside the hoisted vi.mock factory functions below. Without stable references,
-// useAsgardeo/useConfig/useLogger return new object identities on every render,
+// useThunderID/useConfig/useLogger return new object identities on every render,
 // causing fetchSchemas' useEffect to re-fire every render → infinite loop → OOM.
 const {mockHttp, mockGetServerUrl, mockLogger} = vi.hoisted(() => {
   const hoistedMockHttp = {
@@ -115,10 +115,10 @@ vi.mock('../TokenValidationSection', () => ({
   },
 }));
 
-// Mock useAsgardeo — stable mockHttp reference prevents fetchSchemas effect from
+// Mock useThunderID — stable mockHttp reference prevents fetchSchemas effect from
 // re-firing on every render (http is in the effect's dependency array).
-vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: () => ({
+vi.mock('@thunderid/react', () => ({
+  useThunderID: () => ({
     http: mockHttp,
   }),
 }));

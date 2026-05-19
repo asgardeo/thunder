@@ -152,10 +152,17 @@ setup_declarative_resources() {
                 if [[ "$value" == \[* ]]; then
                     # JSON array — expand into KEY_0, KEY_1, ...
                     idx=0
+                    _json_tmp=$(mktemp)
+                    if ! python3 -c "import json,sys; [print(x) for x in json.loads(sys.argv[1])]" "$value" > "$_json_tmp" 2>&1; then
+                        echo "Error: failed to parse JSON array for key '$key': $(cat "$_json_tmp")" >&2
+                        rm -f "$_json_tmp"
+                        exit 1
+                    fi
                     while IFS= read -r elem; do
                         export "${key}_${idx}=${elem}"
                         ((idx++))
-                    done < <(python3 -c "import json,sys; [print(x) for x in json.loads(sys.argv[1])]" "$value" 2>/dev/null)
+                    done < "$_json_tmp"
+                    rm -f "$_json_tmp"
                 else
                     export "${key}=${value}"
                 fi

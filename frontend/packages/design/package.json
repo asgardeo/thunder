@@ -75,7 +75,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@asgardeo/react": "catalog:",
+    "@thunderid/react": "workspace:^",
     "@tanstack/react-query": "catalog:",
     "@thunderid/logger": "workspace:^",
     "@thunderid/contexts": "workspace:^",

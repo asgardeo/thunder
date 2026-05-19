@@ -1,6 +1,6 @@
 {
   "name": "@thunderid/react-router",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "React Router integration for ThunderID",
   "keywords": [
     "thunderid",

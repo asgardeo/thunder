@@ -107,8 +107,8 @@ const replaceCookieInHeader = (cookieHeader: string, name: string, value: string
  *
  * Token refresh requires baseUrl, clientId, and clientSecret. These are resolved from
  * the options argument first, then from the standard ThunderID environment variables
- * (NEXT_PUBLIC_ASGARDEO_BASE_URL, NEXT_PUBLIC_ASGARDEO_CLIENT_ID,
- * ASGARDEO_CLIENT_SECRET). If none are available the refresh step is skipped silently.
+ * (NEXT_PUBLIC_THUNDERID_BASE_URL, NEXT_PUBLIC_THUNDERID_CLIENT_ID,
+ * THUNDERID_CLIENT_SECRET). If none are available the refresh step is skipped silently.
  *
  * @param handler - Optional handler function to customize middleware behavior
  * @param options - Configuration options for the middleware
@@ -222,7 +222,7 @@ const thunderIDMiddleware =
           baseUrl: resolvedConfig.baseUrl!,
           clientId: resolvedConfig.clientId!,
           clientSecret: resolvedConfig.clientSecret!,
-          sessionCookieExpiryTime: resolvedConfig.sessionCookieExpiryTime,
+          sessionCookie: resolvedConfig.sessionCookie,
         });
         // Verify the newly minted token so activeSession reflects fresh claims.
         activeSession = await SessionManager.verifySessionToken(newSessionToken);

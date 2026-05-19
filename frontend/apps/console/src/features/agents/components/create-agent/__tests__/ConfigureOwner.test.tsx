@@ -26,8 +26,8 @@ const {mockAsgardeoUser, mockUseGetUsers} = vi.hoisted(() => ({
   mockUseGetUsers: vi.fn(),
 }));
 
-vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: () => ({user: mockAsgardeoUser}),
+vi.mock('@thunderid/react', () => ({
+  useThunderID: () => ({user: mockAsgardeoUser}),
 }));
 
 vi.mock('@thunderid/configure-users', () => ({

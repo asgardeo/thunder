@@ -37,8 +37,7 @@ export {default as ThunderIDNodeClient} from './ThunderIDNodeClient';
 export {default as CookieConfig} from './constants/CookieConfig';
 
 // Models
-export type {ThunderIDNodeConfig} from './models/config';
-export type {CookieOptions} from './models/cookies';
+export type {ThunderIDNodeConfig, SessionCookieConfig} from './models/config';
 export type {default as AuthURLCallback} from './models/AuthURLCallback';
 
 // Stores

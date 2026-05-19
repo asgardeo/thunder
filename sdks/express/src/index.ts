@@ -20,15 +20,15 @@
 export {default as ThunderIDExpressClient} from './ThunderIDExpressClient';
 
 // Middleware
-export {default as thunderIDExpressAuth} from './middleware/authentication';
-export {default as protectRoute} from './middleware/protectRoute';
+export {thunderID, handleSignIn, handleSignOut} from './middleware/authentication';
+export {default as protect} from './middleware/protect';
+export {default as handleFlow} from './middleware/flow';
 
 // Models
-export type {ExpressClientConfig, ThunderIDExpressConfig, StrictExpressClientConfig, CookieOptions} from './models/config';
-export type {UnauthenticatedCallback} from './models/protectRoute';
+export type {ExpressClientConfig, ThunderIDExpressConfig, StrictExpressClientConfig} from './models/config';
 
 // Constants
-export {default as CookieConfig, SESSION_COOKIE_NAME, DEFAULT_LOGIN_PATH, DEFAULT_LOGOUT_PATH} from './constants/CookieConfig';
+export {default as CookieConfig, SESSION_COOKIE_NAME} from './constants/CookieConfig';
 
-// Re-export everything from the Node SDK
+// Re-export everything from the Node SDK (includes SessionCookieConfig, ThunderIDNodeConfig, etc.)
 export * from '@thunderid/node';

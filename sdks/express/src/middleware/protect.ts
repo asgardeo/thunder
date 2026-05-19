@@ -18,31 +18,36 @@
 
 import {logger as Logger} from '@thunderid/node';
 import express from 'express';
-import ThunderIDExpressClient from '../ThunderIDExpressClient';
-import {UnauthenticatedCallback} from '../models/protectRoute';
 import {SESSION_COOKIE_NAME} from '../constants/CookieConfig';
+import ThunderIDExpressClient from '../ThunderIDExpressClient';
 
 /**
  * Returns Express middleware that blocks unauthenticated requests.
- * Invokes `callback` when the session is missing or invalid.
+ * Requires `thunderID()` to be mounted before this middleware so that
+ * `req.thunderIDAuth` is populated.
  *
- * @param client - The initialized ThunderIDExpressClient instance.
- * @param callback - Called with the response and error message when the request is unauthenticated.
- *   Return `true` to indicate the response is handled; `false` to call `next()`.
+ * @param onUnauthenticated - Called when the session is missing or invalid.
+ *   Defaults to sending a 401 response.
  */
-const protectRoute = (
-  client: ThunderIDExpressClient,
-  callback: UnauthenticatedCallback,
+const protect = (
+  onUnauthenticated?: (res: express.Response) => void,
 ): ((req: express.Request, res: express.Response, next: express.NextFunction) => Promise<void>) => {
   return async (req: express.Request, res: express.Response, next: express.NextFunction): Promise<void> => {
+    const client: ThunderIDExpressClient | undefined = (req as any).thunderIDAuth;
     const sessionId: string | undefined = req.cookies?.[SESSION_COOKIE_NAME];
 
-    if (!sessionId) {
-      Logger.error('No session ID found in the request cookies');
-      if (callback(res, 'Unauthenticated')) {
-        return;
+    const reject = (): void => {
+      if (onUnauthenticated) {
+        onUnauthenticated(res);
+      } else {
+        res.status(401).end();
       }
-      return next();
+    };
+
+    if (!client || !sessionId) {
+      Logger.error('No session ID found in the request cookies');
+      reject();
+      return;
     }
 
     const isValid: boolean = await client.isSignedIn(sessionId);
@@ -52,11 +57,8 @@ const protectRoute = (
     }
 
     Logger.error('Invalid session ID found in the request cookies');
-    if (callback(res, 'Invalid session cookie')) {
-      return;
-    }
-    return next();
+    reject();
   };
 };
 
-export default protectRoute;
+export default protect;

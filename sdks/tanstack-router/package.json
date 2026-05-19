@@ -1,6 +1,6 @@
 {
   "name": "@thunderid/tanstack-router",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "TanStack Router integration for ThunderID",
   "keywords": [
     "thunderid",

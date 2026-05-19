@@ -224,6 +224,50 @@ func (s *EngineTestSuite) TestUpdateContextWithNodeResponse_PreservesActionOnInc
 	s.Equal("passkeyChallenge", ctx.CurrentAction)
 }
 
+func (s *EngineTestSuite) TestTrackPresentedOptionalInputs_MergesOptionalInputIdentifiers() {
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		RuntimeData: map[string]string{
+			common.RuntimeKeyPresentedOptionalInputs: "nickname",
+		},
+	}
+	nodeResp := &common.NodeResponse{
+		Status: common.NodeStatusIncomplete,
+		Type:   common.NodeResponseTypeView,
+		Inputs: []common.Input{
+			{Identifier: "given_name", Required: false},
+			{Identifier: "username", Required: true},
+		},
+	}
+
+	fe.trackPresentedOptionalInputs(ctx, nodeResp)
+
+	presented := core.ParsePresentedOptionalInputIdentifiers(
+		nodeResp.RuntimeData[common.RuntimeKeyPresentedOptionalInputs])
+	s.Contains(presented, "nickname")
+	s.Contains(presented, "given_name")
+}
+
+func (s *EngineTestSuite) TestTrackPresentedOptionalInputs_SkipsNonPromptResponses() {
+	fe := &flowEngine{}
+	ctx := &EngineContext{
+		RuntimeData: map[string]string{
+			common.RuntimeKeyPresentedOptionalInputs: "nickname",
+		},
+	}
+	nodeResp := &common.NodeResponse{
+		Status: common.NodeStatusForward,
+		Type:   common.NodeResponseTypeView,
+		Inputs: []common.Input{
+			{Identifier: "given_name", Required: false},
+		},
+	}
+
+	fe.trackPresentedOptionalInputs(ctx, nodeResp)
+
+	s.Nil(nodeResp.RuntimeData)
+}
+
 func (s *EngineTestSuite) TestResolveStepForRedirection_WithAdditionalData() {
 	fe := &flowEngine{}
 

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useAsgardeo} from '@asgardeo/react';
+import {useThunderID} from '@thunderid/react';
 import {useGetAgentType, useGetAgentTypes} from '@thunderid/configure-agent-types';
 import {useGetChildOrganizationUnits} from '@thunderid/configure-organization-units';
 import {ConfigureOrganizationUnit} from '@thunderid/configure-users';
@@ -66,7 +66,7 @@ export default function AgentCreatePage(): JSX.Element {
     isLoading: isChildOuLoading,
     error: childOuError,
   } = useGetChildOrganizationUnits(selectedSchema?.ouId, {limit: 1, offset: 0});
-  const user = useAsgardeo().user as {ouId?: string} | null | undefined;
+  const user = useThunderID().user as {ouId?: string} | null | undefined;
   const tokenOuId = user?.ouId ?? null;
   const isChildOuForbidden = (childOuError as {response?: {status?: number}} | null)?.response?.status === 403;
   const hasChildOUs = !isChildOuLoading && !childOuError && (childOuData?.totalResults ?? 0) > 0;

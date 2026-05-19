@@ -42,8 +42,8 @@ vi.mock('@thunderid/design', () => ({
 }));
 
 const mockUseAsgardeo = vi.fn();
-vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: (): {meta?: {design?: unknown}} => mockUseAsgardeo() as {meta?: {design?: unknown}},
+vi.mock('@thunderid/react', () => ({
+  useThunderID: (): {meta?: {design?: unknown}} => mockUseAsgardeo() as {meta?: {design?: unknown}},
 }));
 
 function MockChild() {
@@ -74,7 +74,7 @@ describe('withDesign', () => {
     expect(screen.getByTestId('mock-child')).toBeInTheDocument();
   });
 
-  it('passes meta.design from useAsgardeo to DesignProvider', () => {
+  it('passes meta.design from useThunderID to DesignProvider', () => {
     const mockDesign = {theme: {colors: {primary: '#ff5700'}}, layout: {}};
     mockUseAsgardeo.mockReturnValue({meta: {design: mockDesign}});
 

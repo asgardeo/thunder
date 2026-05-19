@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {EmbeddedFlowComponentType, EmbeddedFlowEventType, type ConsentPurpose} from '@asgardeo/react';
+import {EmbeddedFlowComponentType, EmbeddedFlowEventType, type ConsentPurpose} from '@thunderid/react';
 import type {JSX} from 'react';
 import BlockAdapter from './adapters/BlockAdapter';
 import ConsentAdapter from './adapters/ConsentAdapter';

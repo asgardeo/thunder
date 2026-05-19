@@ -123,8 +123,8 @@ let mockSignInRenderProps: MockSignInRenderProps = createMockSignInRenderProps()
 
 let mockSignUpRenderProps: MockSignUpRenderProps = createMockSignUpRenderProps();
 
-vi.mock('@asgardeo/react', async () => {
-  const actual = await vi.importActual('@asgardeo/react');
+vi.mock('@thunderid/react', async () => {
+  const actual = await vi.importActual('@thunderid/react');
   return {
     ...actual,
     SignIn: ({children}: {children: (props: typeof mockSignInRenderProps) => React.ReactNode}) => (

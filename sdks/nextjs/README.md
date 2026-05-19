@@ -1,4 +1,4 @@
-![ThunderID Next.js SDK](https://raw.githubusercontent.com/thunder-id/thunderid/refs/heads/main/docs/content/sdks/assets/images/%40thunderid%3Anextjs_sdk_banner.png)
+![ThunderID Next.js SDK](https://raw.githubusercontent.com/thunder-id/thunderid/refs/heads/main/docs/content/sdks/assets/images/%40thunderid_nextjs_sdk_banner.png)
 
 Next.js SDK for ThunderID. Provides authentication for Next.js applications with support for server components, server actions, and middleware.
 

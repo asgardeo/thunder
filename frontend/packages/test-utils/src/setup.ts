@@ -138,17 +138,17 @@ globalThis.ResizeObserver = class ResizeObserver {
   }
 } as unknown as typeof ResizeObserver;
 
-// Mock global for Node.js built-ins used by @asgardeo packages
+// Mock global for Node.js built-ins used by @thunderid packages
 if (typeof window !== 'undefined') {
   (window as unknown as {global: Window}).global = window;
 }
 
-// Mock @asgardeo/react to avoid buffer import issues in tests
-vi.mock('@asgardeo/react', async (importOriginal) => {
+// Mock @thunderid/react to avoid buffer import issues in tests
+vi.mock('@thunderid/react', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...(actual as object),
-    useAsgardeo: vi.fn(() => ({
+    useThunderID: vi.fn(() => ({
       http: {
         request: vi.fn(),
       },
@@ -160,7 +160,7 @@ vi.mock('@asgardeo/react', async (importOriginal) => {
       isAuthenticated: false,
       isLoading: false,
     })),
-    AsgardeoProvider: ({children}: {children: React.ReactNode}) => children,
+    ThunderIDProvider: ({children}: {children: React.ReactNode}) => children,
   };
 });
 

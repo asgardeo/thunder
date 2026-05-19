@@ -75,7 +75,7 @@
   },
   "dependencies": {},
   "peerDependencies": {
-    "@asgardeo/react": "catalog:",
+    "@thunderid/react": "workspace:^",
     "@wso2/oxygen-ui": "catalog:",
     "@wso2/oxygen-ui-icons-react": "catalog:",
     "@tanstack/react-query": "catalog:",

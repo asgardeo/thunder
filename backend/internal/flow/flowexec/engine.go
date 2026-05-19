@@ -178,6 +178,7 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 			return flowStep, nodeErr
 		}
 
+		fe.trackPresentedOptionalInputs(ctx, nodeResp)
 		fe.updateContextWithNodeResponse(ctx, nodeResp)
 
 		nextNode, continueExecution, svcErr := fe.processNodeResponse(ctx, nodeResp, &flowStep, logger)
@@ -216,6 +217,37 @@ func (fe *flowEngine) Execute(ctx *EngineContext) (FlowStep, *serviceerror.Servi
 	publishFlowCompletedEvent(ctx, flowStartTime, flowEndTime, fe.observabilitySvc)
 
 	return flowStep, nil
+}
+
+// trackPresentedOptionalInputs records the optional inputs presented in an incomplete view response
+// into the node response's runtime data so they can be skipped in subsequent execution steps.
+func (fe *flowEngine) trackPresentedOptionalInputs(ctx *EngineContext, nodeResp *common.NodeResponse) {
+	if nodeResp == nil || nodeResp.Status != common.NodeStatusIncomplete ||
+		nodeResp.Type != common.NodeResponseTypeView || len(nodeResp.Inputs) == 0 {
+		return
+	}
+
+	optionalIdentifiers := make([]string, 0, len(nodeResp.Inputs))
+	for _, input := range nodeResp.Inputs {
+		if !input.Required {
+			optionalIdentifiers = append(optionalIdentifiers, input.Identifier)
+		}
+	}
+	if len(optionalIdentifiers) == 0 {
+		return
+	}
+
+	if nodeResp.RuntimeData == nil {
+		nodeResp.RuntimeData = make(map[string]string)
+	}
+
+	raw := nodeResp.RuntimeData[common.RuntimeKeyPresentedOptionalInputs]
+	if raw == "" && ctx != nil {
+		raw = ctx.RuntimeData[common.RuntimeKeyPresentedOptionalInputs]
+	}
+
+	nodeResp.RuntimeData[common.RuntimeKeyPresentedOptionalInputs] =
+		core.MergePresentedOptionalInputIdentifiers(raw, optionalIdentifiers)
 }
 
 // setCurrentExecutionNode sets the current execution node in the context.

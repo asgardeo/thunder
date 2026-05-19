@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {EmbeddedFlowComponent} from '@asgardeo/react';
+import type {EmbeddedFlowComponent} from '@thunderid/react';
 import {render, screen, waitFor, userEvent} from '@thunderid/test-utils';
 import type {JSX} from 'react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
@@ -93,8 +93,8 @@ vi.mock('react-router', async () => ({
   useNavigate: () => mockNavigate,
 }));
 
-vi.mock('@asgardeo/react', async () => {
-  const actual = await vi.importActual<Record<string, unknown>>('@asgardeo/react');
+vi.mock('@thunderid/react', async () => {
+  const actual = await vi.importActual<Record<string, unknown>>('@thunderid/react');
 
   return {
     ...actual,

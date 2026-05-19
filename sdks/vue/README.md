@@ -1,4 +1,4 @@
-![ThunderID Vue SDK](https://raw.githubusercontent.com/thunder-id/thunderid/refs/heads/main/docs/content/sdks/assets/images/%40thunderid%3Avue_sdk_banner.png)
+![ThunderID Vue SDK](https://raw.githubusercontent.com/thunder-id/thunderid/refs/heads/main/docs/content/sdks/assets/images/%40thunderid_vue_sdk_banner.png)
 
 Vue SDK for ThunderID. Provides composables and components for authentication in Vue 3 single-page applications.
 

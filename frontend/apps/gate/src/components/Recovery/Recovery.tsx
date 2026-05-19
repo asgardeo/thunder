@@ -16,13 +16,13 @@
  * under the License.
  */
 
-import {useAsgardeo} from '@asgardeo/react';
+import {useThunderID} from '@thunderid/react';
 import {AuthPageLayout} from '@thunderid/design';
 import type {JSX} from 'react';
 import RecoveryBox from './RecoveryBox';
 
 export default function Recovery(): JSX.Element {
-  const {isMetaLoading} = useAsgardeo();
+  const {isMetaLoading} = useThunderID();
 
   return (
     <AuthPageLayout isLoading={isMetaLoading} variant="Recovery">

@@ -21,7 +21,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 
-import {EmbeddedFlowEventType, Recovery, type EmbeddedFlowComponent} from '@asgardeo/react';
+import {EmbeddedFlowEventType, Recovery, type EmbeddedFlowComponent} from '@thunderid/react';
 import {FlowComponentRenderer, AuthCardLayout, useDesign} from '@thunderid/design';
 import {useTemplateLiteralResolver} from '@thunderid/hooks';
 import {useLogger} from '@thunderid/logger/react';

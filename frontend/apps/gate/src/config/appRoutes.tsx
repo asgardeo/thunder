@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {CallbackRoute} from '@asgardeo/react-router';
+import {CallbackRoute} from '@thunderid/react-router';
 import {Navigate, type RouteProps} from 'react-router';
 import ROUTES from '../constants/routes';
 import DefaultLayout from '../layouts/DefaultLayout';

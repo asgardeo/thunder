@@ -215,12 +215,9 @@ const (
 	RuntimeKeySkipDelivery = "skipDelivery"
 	// RuntimeKeyCandidateUsers holds serialized candidate users during disambiguation in resolve mode.
 	RuntimeKeyCandidateUsers = "candidateUsers"
-	// RuntimeKeyPresentedOptionalAttrs holds a space-separated list of optional schema attribute
-	// identifiers that have already been prompted to the user. ProvisioningExecutor uses this to
-	// skip optional attrs the user has already been shown, even if they left the value empty.
-	// TODO: Revisit optional input tracking — if the flow engine gains a mechanism to detect whether
-	// an optional field was intentionally skipped, remove this key and its associated helper methods.
-	RuntimeKeyPresentedOptionalAttrs = "provisioningPresentedOptionalAttrs"
+	// RuntimeKeyPresentedOptionalInputs holds a space-separated list of optional input identifiers
+	// that have already been prompted to the user, even if the user left them empty.
+	RuntimeKeyPresentedOptionalInputs = "presentedOptionalInputs"
 	// RuntimeKeySMSOTPMobileNumber holds the resolved mobile number for SMS OTP verification.
 	// TODO: Revisit when the generic OTP executor is implemented.
 	RuntimeKeySMSOTPMobileNumber = "smsOTPMobileNumber"

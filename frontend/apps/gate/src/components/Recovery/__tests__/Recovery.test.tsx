@@ -25,14 +25,14 @@ vi.mock('../RecoveryBox', () => ({
   default: () => <div data-testid="recovery-box">RecoveryBox</div>,
 }));
 
-// Mock useAsgardeo hook
+// Mock useThunderID hook
 const mockUseAsgardeo = vi.fn();
-vi.mock('@asgardeo/react', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@asgardeo/react')>();
+vi.mock('@thunderid/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@thunderid/react')>();
   return {
     ...actual,
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    useAsgardeo: () => mockUseAsgardeo(),
+    useThunderID: () => mockUseAsgardeo(),
   };
 });
 

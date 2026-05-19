@@ -1,4 +1,4 @@
-![ThunderID TanStack Router SDK](https://raw.githubusercontent.com/thunder-id/thunderid/refs/heads/main/docs/content/sdks/assets/images/%40thunderid%3Atanstack_router_sdk_banner.png)
+![ThunderID TanStack Router SDK](https://raw.githubusercontent.com/thunder-id/thunderid/refs/heads/main/docs/content/sdks/assets/images/%40thunderid_tanstack_router_sdk_banner.png)
 
 TanStack Router integration for ThunderID. Provides protected routes and authentication utilities for TanStack Router applications.
 

@@ -64,8 +64,8 @@ vi.mock('../../api/useCreateAgent', () => ({
   }),
 }));
 
-vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: () => ({user: {id: 'current-user', ouId: 'token-ou'}}),
+vi.mock('@thunderid/react', () => ({
+  useThunderID: () => ({user: {id: 'current-user', ouId: 'token-ou'}}),
 }));
 
 vi.mock('../../contexts/AgentCreate/useAgentCreate', () => ({

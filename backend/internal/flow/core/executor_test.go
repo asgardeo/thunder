@@ -182,6 +182,22 @@ func (s *ExecutorTestSuite) TestHasRequiredInputs() {
 			false,
 			1,
 		},
+		{
+			"Optional input prompts once",
+			[]common.Input{{Identifier: "nickname", Required: false}},
+			map[string]string{},
+			map[string]string{},
+			false,
+			1,
+		},
+		{
+			"Optional input already prompted",
+			[]common.Input{{Identifier: "nickname", Required: false}},
+			map[string]string{},
+			map[string]string{common.RuntimeKeyPresentedOptionalInputs: "nickname"},
+			true,
+			0,
+		},
 	}
 
 	for _, tt := range tests {

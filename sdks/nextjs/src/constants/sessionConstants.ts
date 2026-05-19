@@ -29,10 +29,10 @@ export const REFRESH_BUFFER_SECONDS = 25;
  * Used when no explicit session cookie expiry is configured. The session cookie
  * lifetime can be overridden in two ways (evaluated in this order):
  *
- *   1. `sessionCookieExpiryTime` in `ThunderIDNodeConfig` — set programmatically
+ *   1. `sessionCookie.expiryTime` in `ThunderIDNodeConfig` — set programmatically
  *      when initialising the SDK.
- *   2. `ASGARDEO_SESSION_COOKIE_EXPIRY_TIME` environment variable — set in `.env`
- *      (e.g. `ASGARDEO_SESSION_COOKIE_EXPIRY_TIME=86400`).
+ *   2. `THUNDERID_SESSION_COOKIE_EXPIRY_TIME` environment variable — set in `.env`
+ *      (e.g. `THUNDERID_SESSION_COOKIE_EXPIRY_TIME=86400`).
  *   3. This constant — applied when neither of the above is present.
  *
  * Two independent expiry bounds apply to the session and they are generally

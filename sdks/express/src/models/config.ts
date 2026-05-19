@@ -16,46 +16,35 @@
  * under the License.
  */
 
-import {AuthClientConfig} from '@thunderid/node';
-
-/**
- * Express-specific cookie configuration options.
- */
-export interface CookieOptions {
-  /** Cookie max age in milliseconds. */
-  maxAge?: number;
-  /** Whether the cookie is HTTP-only. */
-  httpOnly?: boolean;
-  /** SameSite policy. */
-  sameSite?: string;
-  /** Whether the cookie requires HTTPS. */
-  secure?: boolean;
-}
+import {ThunderIDNodeConfig, ThunderIDRuntimeError, TokenResponse} from '@thunderid/node';
+import express from 'express';
 
 /**
  * Express-specific configuration fields.
  */
 export interface StrictExpressClientConfig {
-  /** The base URL of the Express application (e.g. `http://localhost:3000`). */
-  appURL: string;
-  /** Cookie configuration for the session cookie. */
-  cookieConfig?: CookieOptions;
-  /** Whether to apply global authentication middleware. */
-  globalAuth?: boolean;
-  /** Custom login path. Defaults to `/login`. */
-  loginPath?: string;
-  /** Custom logout path. Defaults to `/logout`. */
-  logoutPath?: string;
-  /** Additional parameters to include in the sign-in request. */
-  signInConfig?: Record<string, string | boolean>;
+  /** Called with the response and token on successful sign-in. */
+  onSignIn?: (res: express.Response, tokenResponse: TokenResponse) => void;
+  /** Called with the response on successful sign-out. */
+  onSignOut?: (res: express.Response) => void;
+  /** Called with the response and error on authentication failure. */
+  onError?: (res: express.Response, exception: ThunderIDRuntimeError) => void;
+  /** Called with the response when a protected route is accessed without a valid session. */
+  onUnauthenticated?: (res: express.Response) => void;
 }
 
 /**
  * Full configuration type for `ThunderIDExpressClient`.
  * Combines node-level auth config with Express-specific settings.
+ *
+ * `afterSignInUrl` and `afterSignOutUrl` are optional. When omitted, the SDK
+ * infers them from the first incoming request's origin combined with the path
+ * derived from those URLs (defaulting to `/login` and `/logout`).
+ *
+ * Set `mode: 'embedded'` to enable app-native embedded auth via `handleFlow()`.
+ * Defaults to `'redirect'` (standard OAuth 2.0 authorization-code flow).
  */
-export type ExpressClientConfig = Exclude<AuthClientConfig, 'afterSignInUrl' | 'afterSignOutUrl'> &
-  StrictExpressClientConfig;
+export type ExpressClientConfig = ThunderIDNodeConfig & StrictExpressClientConfig;
 
 /**
  * Configuration type for the ThunderID Express.js SDK.

@@ -19,16 +19,10 @@
 /** Session cookie name used across the Express SDK. */
 export const SESSION_COOKIE_NAME = 'THUNDERID_SESSION_ID';
 
-/** Default login route path. */
-export const DEFAULT_LOGIN_PATH = '/login';
-
-/** Default logout route path. */
-export const DEFAULT_LOGOUT_PATH = '/logout';
-
 /** Default cookie configuration values. */
 const CookieConfig = {
+  defaultExpirySeconds: 86400,
   defaultHttpOnly: true,
-  defaultMaxAge: 90000,
   defaultSameSite: 'lax' as const,
   defaultSecure: false,
 };

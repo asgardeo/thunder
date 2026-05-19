@@ -111,13 +111,13 @@ vi.mock('../../../organization-units/api/useGetChildOrganizationUnits', () => ({
   default: () => mockUseGetChildOrganizationUnits(),
 }));
 
-// Mock useAsgardeo
+// Mock useThunderID
 const mockUseAsgardeo = vi.fn();
-vi.mock('@asgardeo/react', async (importOriginal) => {
+vi.mock('@thunderid/react', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...(actual as object),
-    useAsgardeo: () => mockUseAsgardeo() as {user: {ouId?: string} | null | undefined},
+    useThunderID: () => mockUseAsgardeo() as {user: {ouId?: string} | null | undefined},
   };
 });
 

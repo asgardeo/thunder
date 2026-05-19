@@ -20,7 +20,7 @@ import {render} from '@testing-library/react';
 import {describe, it, expect, vi, beforeEach} from 'vitest';
 import withConfig from '../withConfig';
 
-// Track the baseUrl passed to AsgardeoProvider
+// Track the baseUrl passed to ThunderIDProvider
 let capturedBaseUrl: string | undefined;
 
 function MockChild() {
@@ -28,9 +28,9 @@ function MockChild() {
 }
 const AppWithConfig = withConfig(MockChild);
 
-// Mock AsgardeoProvider to capture baseUrl
-vi.mock('@asgardeo/react', () => ({
-  AsgardeoProvider: ({children, baseUrl}: {children: React.ReactNode; baseUrl: string}) => {
+// Mock ThunderIDProvider to capture baseUrl
+vi.mock('@thunderid/react', () => ({
+  ThunderIDProvider: ({children, baseUrl}: {children: React.ReactNode; baseUrl: string}) => {
     capturedBaseUrl = baseUrl;
     return <div data-testid="asgardeo-provider">{children}</div>;
   },

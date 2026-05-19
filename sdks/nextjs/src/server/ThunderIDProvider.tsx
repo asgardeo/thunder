@@ -56,7 +56,7 @@ export type ThunderIDServerProviderProps = Partial<ThunderIDProviderProps> & {
    *
    * Resolution order (first defined value wins):
    *   1. This prop — set here when mounting the provider.
-   *   2. `ASGARDEO_SESSION_COOKIE_EXPIRY_TIME` environment variable.
+   *   2. `THUNDERID_SESSION_COOKIE_EXPIRY_TIME` environment variable.
    *   3. Built-in default of 86400 seconds (24 hours).
    *
    * @example

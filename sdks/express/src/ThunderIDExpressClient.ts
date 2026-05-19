@@ -16,10 +16,10 @@
  * under the License.
  */
 
-import {ThunderIDNodeClient, ThunderIDAuthException, Storage, TokenResponse} from '@thunderid/node';
+import {ThunderIDNodeClient, ThunderIDAuthException, Storage, TokenResponse, User} from '@thunderid/node';
 import express from 'express';
 import {v4 as uuidv4} from 'uuid';
-import CookieConfig, {SESSION_COOKIE_NAME, DEFAULT_LOGIN_PATH, DEFAULT_LOGOUT_PATH} from './constants/CookieConfig';
+import CookieConfig, {SESSION_COOKIE_NAME} from './constants/CookieConfig';
 import {ExpressClientConfig} from './models/config';
 import hasErrorInURL from './utils/expressUtils';
 
@@ -32,14 +32,16 @@ class ThunderIDExpressClient<T extends ExpressClientConfig = ExpressClientConfig
 
   public override async initialize(config: T, storage?: Storage): Promise<boolean> {
     this._expressConfig = config;
+    return super.initialize(config, storage);
+  }
 
-    const nodeConfig = {
-      ...config,
-      afterSignInUrl: config.appURL + (config.loginPath || DEFAULT_LOGIN_PATH),
-      afterSignOutUrl: config.appURL + (config.logoutPath || DEFAULT_LOGOUT_PATH),
-    };
+  public get expressConfig(): ExpressClientConfig | undefined {
+    return this._expressConfig;
+  }
 
-    return super.initialize(nodeConfig as unknown as T, storage);
+  public async getUserFromRequest(req: express.Request): Promise<User | undefined> {
+    const sessionId: string | undefined = req.cookies?.[SESSION_COOKIE_NAME];
+    return this.getUser(sessionId);
   }
 
   public override async signIn(
@@ -63,14 +65,16 @@ class ThunderIDExpressClient<T extends ExpressClientConfig = ExpressClientConfig
       userId = uuidv4();
     }
 
+    const sc = this._expressConfig?.sessionCookie;
+
     const authRedirectCallback = (url: string): void => {
       if (!url) return;
 
       res.cookie(SESSION_COOKIE_NAME, userId, {
-        httpOnly: this._expressConfig?.cookieConfig?.httpOnly ?? CookieConfig.defaultHttpOnly,
-        maxAge: this._expressConfig?.cookieConfig?.maxAge ?? CookieConfig.defaultMaxAge,
-        sameSite: (this._expressConfig?.cookieConfig?.sameSite ?? CookieConfig.defaultSameSite) as any,
-        secure: this._expressConfig?.cookieConfig?.secure ?? CookieConfig.defaultSecure,
+        httpOnly: sc?.httpOnly ?? CookieConfig.defaultHttpOnly,
+        maxAge: (sc?.expiryTime ?? CookieConfig.defaultExpirySeconds) * 1000,
+        sameSite: (sc?.sameSite ?? CookieConfig.defaultSameSite) as any,
+        secure: sc?.secure ?? CookieConfig.defaultSecure,
       });
       res.redirect(url);
       if (typeof next === 'function') next();

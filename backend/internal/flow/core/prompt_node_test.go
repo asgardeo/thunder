@@ -129,6 +129,38 @@ func (s *PromptOnlyNodeTestSuite) TestExecuteWithOptionalData() {
 
 	s.Nil(err)
 	s.NotNil(resp)
+	s.Equal(common.NodeStatusIncomplete, resp.Status)
+	s.Equal(common.NodeResponseTypeView, resp.Type)
+	s.Len(resp.Inputs, 1)
+	s.Equal("nickname", resp.Inputs[0].Identifier)
+	s.False(resp.Inputs[0].Required)
+}
+
+func (s *PromptOnlyNodeTestSuite) TestExecuteWithAlreadyPromptedOptionalData() {
+	node := newPromptNode("prompt-1", map[string]interface{}{}, false, false)
+	promptNode := node.(PromptNodeInterface)
+	promptNode.SetPrompts([]common.Prompt{
+		{
+			Inputs: []common.Input{
+				{Identifier: "username", Required: true},
+				{Identifier: "nickname", Required: false},
+			},
+			Action: &common.Action{Ref: "submit", NextNode: "next"},
+		},
+	})
+
+	ctx := &NodeContext{
+		ExecutionID:   "test-flow",
+		CurrentAction: "submit",
+		UserInputs:    map[string]string{"username": "testuser"},
+		RuntimeData: map[string]string{
+			common.RuntimeKeyPresentedOptionalInputs: "nickname",
+		},
+	}
+	resp, err := node.Execute(ctx)
+
+	s.Nil(err)
+	s.NotNil(resp)
 	s.Equal(common.NodeStatusComplete, resp.Status)
 	s.Equal(common.NodeResponseType(""), resp.Type)
 }

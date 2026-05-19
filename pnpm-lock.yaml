@@ -6,12 +6,6 @@ settings:
 
 catalogs:
   default:
-    '@asgardeo/react':
-      specifier: 0.25.2
-      version: 0.25.2
-    '@asgardeo/react-router':
-      specifier: 2.0.0
-      version: 2.0.0
     '@emotion/css':
       specifier: 11.13.5
       version: 11.13.5
@@ -320,12 +314,6 @@ importers:
 
   frontend/apps/console:
     dependencies:
-      '@asgardeo/react':
-        specifier: 'catalog:'
-        version: 0.25.2(@types/react@19.2.14)(react@19.2.3)
-      '@asgardeo/react-router':
-        specifier: 'catalog:'
-        version: 2.0.0(@asgardeo/react@0.25.2(@types/react@19.2.14)(react@19.2.3))(react-router@7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
       '@dnd-kit/abstract':
         specifier: 0.4.0
         version: 0.4.0
@@ -407,6 +395,12 @@ importers:
       '@thunderid/logger':
         specifier: workspace:^
         version: link:../../packages/logger
+      '@thunderid/react':
+        specifier: workspace:^
+        version: link:../../../sdks/react
+      '@thunderid/react-router':
+        specifier: workspace:^
+        version: link:../../../sdks/react-router
       '@thunderid/utils':
         specifier: workspace:^
         version: link:../../packages/utils
@@ -561,12 +555,6 @@ importers:
 
   frontend/apps/gate:
     dependencies:
-      '@asgardeo/react':
-        specifier: 'catalog:'
-        version: 0.25.2(@types/react@19.2.14)(react@19.2.3)
-      '@asgardeo/react-router':
-        specifier: 'catalog:'
-        version: 2.0.0(@asgardeo/react@0.25.2(@types/react@19.2.14)(react@19.2.3))(react-router@7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
       '@fontsource-variable/inter':
         specifier: 5.2.8
         version: 5.2.8
@@ -594,6 +582,12 @@ importers:
       '@thunderid/logger':
         specifier: workspace:^
         version: link:../../packages/logger
+      '@thunderid/react':
+        specifier: workspace:^
+        version: link:../../../sdks/react
+      '@thunderid/react-router':
+        specifier: workspace:^
+        version: link:../../../sdks/react-router
       '@thunderid/utils':
         specifier: workspace:^
         version: link:../../packages/utils
@@ -673,15 +667,15 @@ importers:
       vite:
         specifier: npm:rolldown-vite@7.1.14
         version: rolldown-vite@7.1.14(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@24.7.2)(esbuild@0.25.12)(jiti@2.7.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.47.1)(yaml@2.8.3)
+      vite-plugin-svgr:
+        specifier: 'catalog:'
+        version: 5.2.0(rolldown-vite@7.1.14(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@24.7.2)(esbuild@0.25.12)(jiti@2.7.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.47.1)(yaml@2.8.3))(rollup@4.60.3)(typescript@5.9.3)
       vitest:
         specifier: 'catalog:'
         version: 4.1.3(@opentelemetry/api@1.9.1)(@types/node@24.7.2)(@vitest/browser-playwright@4.1.3)(@vitest/coverage-istanbul@4.1.3)(jsdom@27.0.1)(rolldown-vite@7.1.14(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0)(@types/node@24.7.2)(esbuild@0.25.12)(jiti@2.7.0)(sass-embedded@1.98.0)(sass@1.98.0)(terser@5.47.1)(yaml@2.8.3))
 
   frontend/packages/components:
     dependencies:
-      '@asgardeo/react':
-        specifier: 'catalog:'
-        version: 0.25.2(@types/react@19.2.14)(react@19.2.3)
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.5(react@19.2.3)
@@ -700,6 +694,9 @@ importers:
       '@thunderid/logger':
         specifier: workspace:^
         version: link:../logger
+      '@thunderid/react':
+        specifier: workspace:^
+        version: link:../../../sdks/react
       '@thunderid/utils':
         specifier: workspace:^
         version: link:../utils
@@ -773,9 +770,6 @@ importers:
 
   frontend/packages/configure-agent-types:
     dependencies:
-      '@asgardeo/react':
-        specifier: 'catalog:'
-        version: 0.25.2(@types/react@19.2.14)(react@19.2.3)
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.5(react@19.2.3)
@@ -788,6 +782,9 @@ importers:
       '@thunderid/logger':
         specifier: workspace:^
         version: link:../logger
+      '@thunderid/react':
+        specifier: workspace:^
+        version: link:../../../sdks/react
       '@wso2/oxygen-ui':
         specifier: 'catalog:'
         version: 0.10.1(@mui/system@7.3.11(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(@wso2/oxygen-ui-icons-react@0.10.1(react@19.2.3))(dayjs@1.11.18)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -861,9 +858,6 @@ importers:
 
   frontend/packages/configure-organization-units:
     dependencies:
-      '@asgardeo/react':
-        specifier: 'catalog:'
-        version: 0.25.2(@types/react@19.2.14)(react@19.2.3)
       '@hookform/resolvers':
         specifier: 'catalog:'
         version: 5.2.2(react-hook-form@7.65.0(react@19.2.3))(zod@4.3.6)
@@ -888,6 +882,9 @@ importers:
       '@thunderid/logger':
         specifier: workspace:^
         version: link:../logger
+      '@thunderid/react':
+        specifier: workspace:^
+        version: link:../../../sdks/react
       '@thunderid/utils':
         specifier: workspace:^
         version: link:../utils
@@ -970,9 +967,6 @@ importers:
 
   frontend/packages/configure-translations:
     dependencies:
-      '@asgardeo/react':
-        specifier: 'catalog:'
-        version: 0.25.2(@types/react@19.2.14)(react@19.2.3)
       '@monaco-editor/react':
         specifier: 'catalog:'
         version: 4.7.0(monaco-editor@0.55.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -994,6 +988,9 @@ importers:
       '@thunderid/logger':
         specifier: workspace:^
         version: link:../logger
+      '@thunderid/react':
+        specifier: workspace:^
+        version: link:../../../sdks/react
       '@wso2/oxygen-ui':
         specifier: 'catalog:'
         version: 0.10.1(@mui/system@7.3.11(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(@wso2/oxygen-ui-icons-react@0.10.1(react@19.2.3))(dayjs@1.11.18)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -1064,9 +1061,6 @@ importers:
 
   frontend/packages/configure-users:
     dependencies:
-      '@asgardeo/react':
-        specifier: 'catalog:'
-        version: 0.25.2(@types/react@19.2.14)(react@19.2.3)
       '@hookform/resolvers':
         specifier: 'catalog:'
         version: 5.2.2(react-hook-form@7.65.0(react@19.2.3))(zod@4.3.6)
@@ -1091,6 +1085,9 @@ importers:
       '@thunderid/logger':
         specifier: workspace:^
         version: link:../logger
+      '@thunderid/react':
+        specifier: workspace:^
+        version: link:../../../sdks/react
       '@wso2/oxygen-ui':
         specifier: 'catalog:'
         version: 0.10.1(@mui/system@7.3.11(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(react@19.2.3))(@types/react@19.2.14)(@wso2/oxygen-ui-icons-react@0.10.1(react@19.2.3))(dayjs@1.11.18)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -1283,9 +1280,6 @@ importers:
 
   frontend/packages/design:
     dependencies:
-      '@asgardeo/react':
-        specifier: 'catalog:'
-        version: 0.25.2(@types/react@19.2.14)(react@19.2.3)
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.5(react@19.2.3)
@@ -1295,6 +1289,9 @@ importers:
       '@thunderid/logger':
         specifier: workspace:^
         version: link:../logger
+      '@thunderid/react':
+        specifier: workspace:^
+        version: link:../../../sdks/react
       '@thunderid/utils':
         specifier: workspace:^
         version: link:../utils
@@ -1532,15 +1529,15 @@ importers:
 
   frontend/packages/i18n:
     dependencies:
-      '@asgardeo/react':
-        specifier: 'catalog:'
-        version: 0.25.2(@types/react@19.2.14)(react@19.2.3)
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.5(react@19.2.3)
       '@thunderid/contexts':
         specifier: workspace:^
         version: link:../contexts
+      '@thunderid/react':
+        specifier: workspace:^
+        version: link:../../../sdks/react
       i18next:
         specifier: 'catalog:'
         version: 25.6.0(typescript@5.9.3)
@@ -2131,19 +2128,22 @@ importers:
 
   sdks/react:
     dependencies:
-      '@thunderid/browser':
-        specifier: workspace:^
-        version: link:../browser
-      tslib:
-        specifier: 'catalog:'
-        version: 2.8.1
-    devDependencies:
       '@emotion/css':
         specifier: 'catalog:'
         version: 11.13.5
       '@floating-ui/react':
         specifier: 'catalog:'
         version: 0.27.12(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@thunderid/browser':
+        specifier: workspace:^
+        version: link:../browser
+      dompurify:
+        specifier: 3.4.0
+        version: 3.4.0
+      tslib:
+        specifier: 'catalog:'
+        version: 2.8.1
+    devDependencies:
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.0(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -2162,9 +2162,6 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.2.3(@types/react@19.2.14)
-      dompurify:
-        specifier: 3.4.0
-        version: 3.4.0
       eslint:
         specifier: 'catalog:'
         version: 9.39.4(jiti@2.7.0)
@@ -2445,28 +2442,6 @@ packages:
 
   '@asamuzakjp/nwsapi@2.3.9':
     resolution: {integrity: sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==}
-
-  '@asgardeo/browser@0.7.7':
-    resolution: {integrity: sha512-MAS1FmsA42buDmsguoLOFQBV37hLXloi/bznvv2FYpjfQnKZ+JRNvSnzDtIbOOj2jGzSuUF9w4jA2m/X6HJZ4A==}
-
-  '@asgardeo/i18n@0.4.5':
-    resolution: {integrity: sha512-p1DVVI7lNu7KeDqhRNgAuSrHvVgCbbVXc04koyiiwjDx+sJaXychuC9pwVJ2PDUnIyEp3Xgdb3KqMq+Sx4e7xA==}
-
-  '@asgardeo/javascript@0.22.0':
-    resolution: {integrity: sha512-pEiePIbL+lzgNZxP6N0EgtMZn42gOswLtOTv5SlTb7CO2vs5CPQYP4B492BaZ3wgkbDsjbHw5n1RAk6VjCxR7g==}
-
-  '@asgardeo/react-router@2.0.0':
-    resolution: {integrity: sha512-RvHol3VgjV466y7RhpmPosER89Yz1prREvjWjhu95X9e4l761+3n8bRSQR5lpP1tasAVKtVH6RzWvWoPST7+Zg==}
-    peerDependencies:
-      '@asgardeo/react': '>=0.15.0'
-      react: '>=16.8.0'
-      react-router: '>=6.30.1'
-
-  '@asgardeo/react@0.25.2':
-    resolution: {integrity: sha512-11eQoxMKswrRDGWocJeDz+Ba8T6SuYFw7W+MoO8nSi3rvP/k5HrU6j7AlIN201JQnCUApAgaw6M0vHemLuyzfQ==}
-    peerDependencies:
-      '@types/react': '>=16.8.0'
-      react: '>=16.8.0'
 
   '@babel/code-frame@7.29.0':
     resolution: {integrity: sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw==}
@@ -10393,14 +10368,8 @@ packages:
   joi@17.13.3:
     resolution: {integrity: sha512-otDA4ldcIx+ZXsKHWmp0YizCweVRZG96J10b0FevjfuncLO1oX59THoAmHkNubYJ+9gWsYsp5k8v4ib6oDv1fA==}
 
-  jose@5.10.0:
-    resolution: {integrity: sha512-s+3Al/p9g32Iq+oqXxkW//7jk2Vig6FF1CFqzVXoTUXt2qz89YWbL+OwS17NFYEvxC35n0FKeGO2LGYSxeM2Gg==}
-
   jose@5.2.0:
     resolution: {integrity: sha512-oW3PCnvyrcm1HMvGTzqjxxfnEs9EoFOFWi2HsEGhlFVOXxTE3K9GKWVMFoFw06yPUqwpvEWic1BmtUZBI/tIjw==}
-
-  jose@6.0.11:
-    resolution: {integrity: sha512-QxG7EaliDARm1O1S8BGakqncGT9s25bKL1WSf6/oa17Tkqwi8D2ZNglqCF+DsYF88/rV66Q/Q2mFAy697E1DUg==}
 
   js-base64@3.7.8:
     resolution: {integrity: sha512-hNngCeKxIUQiEUN3GPJOkz4wF/YvdUdbNL9hsBcMQTkKzboD7T/q3OYOuuPZLUE6dBxSGpwhk5mwuDud7JVAow==}
@@ -12457,11 +12426,6 @@ packages:
     resolution: {integrity: sha512-yELu4WmLPw5Mr/lmeEpox5rw3RETacE++JgHqQzd2dg+YbJuat3jH4ingc+WPZhxaoFzdv9y33G+F7Nl5O0GBg==}
     peerDependencies:
       react: ^19.2.3
-
-  react-dom@19.2.4:
-    resolution: {integrity: sha512-AXJdLo8kgMbimY95O2aKQqsz2iWi9jMgKJhRBAxECE4IFxfcazB2LmzloIoibJI3C12IlY20+KFaLv+71bUJeQ==}
-    peerDependencies:
-      react: ^19.2.4
 
   react-dom@19.2.6:
     resolution: {integrity: sha512-0prMI+hvBbPjsWnxDLxlCGyM8PN6UuWjEUCYmZhO67xIV9Xasa/r/vDnq+Xyq4Lo27g8QSbO5YzARu0D1Sps3g==}
@@ -14964,52 +14928,6 @@ snapshots:
       lru-cache: 11.3.6
 
   '@asamuzakjp/nwsapi@2.3.9': {}
-
-  '@asgardeo/browser@0.7.7':
-    dependencies:
-      '@asgardeo/javascript': 0.22.0
-      base64url: 3.0.1
-      buffer: 6.0.3
-      core-js: 3.42.0
-      crypto-browserify: 3.12.1
-      fast-sha256: 1.3.0
-      jose: 6.0.11
-      process: 0.11.10
-      randombytes: 2.1.0
-      stream-browserify: 3.0.0
-      tslib: 2.8.1
-
-  '@asgardeo/i18n@0.4.5':
-    dependencies:
-      tslib: 2.8.1
-
-  '@asgardeo/javascript@0.22.0':
-    dependencies:
-      '@asgardeo/i18n': 0.4.5
-      jose: 5.10.0
-      tslib: 2.8.1
-
-  '@asgardeo/react-router@2.0.0(@asgardeo/react@0.25.2(@types/react@19.2.14)(react@19.2.3))(react-router@7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@asgardeo/react': 0.25.2(@types/react@19.2.14)(react@19.2.3)
-      react: 19.2.3
-      react-router: 7.12.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      tslib: 2.8.1
-
-  '@asgardeo/react@0.25.2(@types/react@19.2.14)(react@19.2.3)':
-    dependencies:
-      '@asgardeo/browser': 0.7.7
-      '@asgardeo/i18n': 0.4.5
-      '@emotion/css': 11.13.5
-      '@floating-ui/react': 0.27.12(react-dom@19.2.4(react@19.2.3))(react@19.2.3)
-      '@types/react': 19.2.14
-      '@types/react-dom': 19.2.3(@types/react@19.2.14)
-      dompurify: 3.4.0
-      react: 19.2.3
-      react-dom: 19.2.4(react@19.2.3)
-      tslib: 2.8.1
-    transitivePeerDependencies:
-      - supports-color
 
   '@babel/code-frame@7.29.0':
     dependencies:
@@ -17569,26 +17487,12 @@ snapshots:
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
 
-  '@floating-ui/react-dom@2.1.8(react-dom@19.2.4(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@floating-ui/dom': 1.7.6
-      react: 19.2.3
-      react-dom: 19.2.4(react@19.2.3)
-
   '@floating-ui/react@0.27.12(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
     dependencies:
       '@floating-ui/react-dom': 2.1.8(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
       '@floating-ui/utils': 0.2.11
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
-      tabbable: 6.4.0
-
-  '@floating-ui/react@0.27.12(react-dom@19.2.4(react@19.2.3))(react@19.2.3)':
-    dependencies:
-      '@floating-ui/react-dom': 2.1.8(react-dom@19.2.4(react@19.2.3))(react@19.2.3)
-      '@floating-ui/utils': 0.2.11
-      react: 19.2.3
-      react-dom: 19.2.4(react@19.2.3)
       tabbable: 6.4.0
 
   '@floating-ui/react@0.27.19(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
@@ -24912,11 +24816,7 @@ snapshots:
       '@sideway/formula': 3.0.1
       '@sideway/pinpoint': 2.0.0
 
-  jose@5.10.0: {}
-
   jose@5.2.0: {}
-
-  jose@6.0.11: {}
 
   js-base64@3.7.8: {}
 
@@ -27637,11 +27537,6 @@ snapshots:
       strip-json-comments: 2.0.1
 
   react-dom@19.2.3(react@19.2.3):
-    dependencies:
-      react: 19.2.3
-      scheduler: 0.27.0
-
-  react-dom@19.2.4(react@19.2.3):
     dependencies:
       react: 19.2.3
       scheduler: 0.27.0

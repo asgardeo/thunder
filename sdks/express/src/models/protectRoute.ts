@@ -20,6 +20,5 @@ import express from 'express';
 
 /**
  * Callback invoked when an unauthenticated request hits a protected route.
- * Return `true` to indicate the response has been handled; `false` to call `next()`.
  */
-export type UnauthenticatedCallback = (res: express.Response, error: string) => boolean;
+export type UnauthenticatedCallback = (res: express.Response) => void;

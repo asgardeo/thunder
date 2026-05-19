@@ -250,6 +250,17 @@ export interface BaseConfig<T = unknown> extends WithPreferences, WithExtensions
   instanceId?: number;
 
   /**
+   * Authentication interaction mode.
+   *
+   * - `'redirect'` (default) — standard OAuth 2.0 authorization-code redirect flow.
+   * - `'embedded'` — app-native embedded flow; the server SDK drives the step-by-step
+   *   authentication without a browser redirect to the identity provider.
+   *
+   * @default 'redirect'
+   */
+  mode?: 'redirect' | 'embedded';
+
+  /**
    * Configuration for chaining authentication across multiple organization contexts.
    * Used when you need to authenticate a user in one organization using credentials
    * from another organization context.

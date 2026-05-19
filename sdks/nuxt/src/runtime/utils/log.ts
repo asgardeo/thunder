@@ -36,14 +36,14 @@ export function maskToken(token: string): string {
 /**
  * Create a namespaced logger for a specific SDK subsystem.
  *
- * Debug output is suppressed unless the `ASGARDEO_DEBUG` environment
+ * Debug output is suppressed unless the `THUNDERID_DEBUG` environment
  * variable is set (any truthy value).
  *
  * @example
  * ```ts
  * const log = createLogger('session');
  * log.info('Session created for', maskToken(accessToken));
- * log.debug('Full payload', payload); // only logged when ASGARDEO_DEBUG=true
+ * log.debug('Full payload', payload); // only logged when THUNDERID_DEBUG=true
  * ```
  */
 export function createLogger(subsystem: string): {
@@ -55,7 +55,7 @@ export function createLogger(subsystem: string): {
   const tag: string = `[${PREFIX}:${subsystem}]`;
   return {
     debug: (...args: unknown[]): void => {
-      if (process.env['ASGARDEO_DEBUG']) {
+      if (process.env['THUNDERID_DEBUG']) {
         console.log(tag, ...args);
       }
     },

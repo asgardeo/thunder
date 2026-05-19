@@ -19,28 +19,42 @@
 import {Config} from '@thunderid/javascript';
 
 /**
- * Configuration type for the ThunderID Node.js SDK.
- * Extends the base Config type from @thunderid/javascript with Node.js specific settings.
+ * Session cookie configuration options shared across all server-side SDKs.
  *
- * @remarks
- * This type is used to configure the Node.js SDK with settings like:
- * - Server endpoints
- * - Authentication parameters
- * - Session management options
+ * All fields are optional; unset fields fall back to the defaults defined in
+ * each framework SDK's `CookieConfig` constants.
  */
-export type ThunderIDNodeConfig = Config & {
+export interface SessionCookieConfig {
   /**
-   * Session cookie lifetime in seconds. Determines how long the session cookie
-   * remains valid in the browser after sign-in.
+   * Session lifetime in seconds. Controls both the server-side session validation
+   * window and the browser cookie max-age (multiplied by 1000 for ms).
    *
    * Resolution order (first defined value wins):
    *   1. This field — set programmatically at SDK initialisation.
-   *   2. `ASGARDEO_SESSION_COOKIE_EXPIRY_TIME` environment variable.
+   *   2. `THUNDERID_SESSION_COOKIE_EXPIRY_TIME` environment variable.
    *   3. Built-in default of 86400 seconds (24 hours).
    *
    * @example
-   * // 8-hour session cookie
-   * { sessionCookieExpiryTime: 28800 }
+   * // 8-hour session
+   * { sessionCookie: { expiryTime: 28800 } }
    */
-  sessionCookieExpiryTime?: number;
+  expiryTime?: number;
+  /** Whether the cookie is inaccessible to JavaScript. Default: `true`. */
+  httpOnly?: boolean;
+  /** SameSite policy. Default: `'lax'`. */
+  sameSite?: 'lax' | 'strict' | 'none';
+  /** Whether the cookie requires HTTPS. Default: `false` (dev-friendly). */
+  secure?: boolean;
+}
+
+/**
+ * Configuration type for the ThunderID Node.js SDK.
+ * Extends the base Config type from @thunderid/javascript with Node.js specific settings.
+ */
+export type ThunderIDNodeConfig = Config & {
+  /**
+   * Session cookie settings. Groups all cookie-related configuration in one place
+   * so that any server SDK (Node, Express, Next.js, …) inherits the same shape.
+   */
+  sessionCookie?: SessionCookieConfig;
 };

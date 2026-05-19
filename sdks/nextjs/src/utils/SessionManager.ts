@@ -51,20 +51,20 @@ class SessionManager {
    * Throws error in production if not set
    */
   private static getSecret(): Uint8Array {
-    const secret: string | undefined = process.env['ASGARDEO_SECRET'];
+    const secret: string | undefined = process.env['THUNDERID_SECRET'];
 
     if (!secret) {
       if (process.env['NODE_ENV'] === 'production') {
         throw new ThunderIDRuntimeError(
-          'ASGARDEO_SECRET environment variable is required in production',
+          'THUNDERID_SECRET environment variable is required in production',
           'session-secret-required',
           'nextjs',
-          'Set the ASGARDEO_SECRET environment variable with a secure random string',
+          'Set the THUNDERID_SECRET environment variable with a secure random string',
         );
       }
       // Use a default secret for development (not secure)
       // eslint-disable-next-line no-console
-      console.warn('Using default secret for development. Set ASGARDEO_SECRET for production!');
+      console.warn('Using default secret for development. Set THUNDERID_SECRET for production!');
       return new TextEncoder().encode('development-secret-not-for-production');
     }
 
@@ -93,8 +93,8 @@ class SessionManager {
    * Resolve the session cookie expiry time in seconds.
    *
    * Resolution order (first defined value wins):
-   *   1. `configuredExpiry` — value from `ThunderIDNodeConfig.sessionCookieExpiryTime`
-   *   2. `ASGARDEO_SESSION_COOKIE_EXPIRY_TIME` environment variable
+   *   1. `configuredExpiry` — value from `ThunderIDNodeConfig.sessionCookie?.expiryTime`
+   *   2. `THUNDERID_SESSION_COOKIE_EXPIRY_TIME` environment variable
    *   3. `DEFAULT_SESSION_COOKIE_EXPIRY_TIME` (24 hours)
    */
   static resolveSessionCookieExpiry(configuredExpiry?: number): number {
@@ -102,7 +102,7 @@ class SessionManager {
       return configuredExpiry;
     }
 
-    const envValue: string | undefined = process.env['ASGARDEO_SESSION_COOKIE_EXPIRY_TIME'];
+    const envValue: string | undefined = process.env['THUNDERID_SESSION_COOKIE_EXPIRY_TIME'];
 
     if (envValue) {
       const parsed: number = parseInt(envValue, 10);

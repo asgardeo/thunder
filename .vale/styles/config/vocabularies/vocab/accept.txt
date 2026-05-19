@@ -78,3 +78,5 @@ Vonage
 PAR
 ACR
 JWKS
+[Aa]gentic
+[Ee]num

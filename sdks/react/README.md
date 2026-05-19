@@ -1,4 +1,4 @@
-![ThunderID React SDK](https://raw.githubusercontent.com/thunder-id/thunderid/refs/heads/main/docs/content/sdks/assets/images/%40thunderid%3Areact_sdk_banner.png)
+![ThunderID React SDK](https://raw.githubusercontent.com/thunder-id/thunderid/refs/heads/main/docs/content/sdks/assets/images/%40thunderid_react_sdk_banner.png)
 
 React SDK for ThunderID. Provides hooks and components for authentication in React single-page applications.
 

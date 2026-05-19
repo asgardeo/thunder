@@ -42,8 +42,8 @@ vi.mock('@thunderid/contexts', () => ({
   }),
 }));
 
-// Mock AsgardeoProvider
-interface MockAsgardeoProviderProps {
+// Mock ThunderIDProvider
+interface MockThunderIDProviderProps {
   children: ReactNode;
   baseUrl?: string | null;
   clientId?: string | null;
@@ -51,14 +51,14 @@ interface MockAsgardeoProviderProps {
   scopes?: string[];
 }
 
-vi.mock('@asgardeo/react', () => ({
-  AsgardeoProvider: ({
+vi.mock('@thunderid/react', () => ({
+  ThunderIDProvider: ({
     children,
     baseUrl = null,
     clientId = null,
     afterSignInUrl = null,
     scopes = undefined,
-  }: MockAsgardeoProviderProps) => (
+  }: MockThunderIDProviderProps) => (
     <div
       data-testid="asgardeo-provider"
       data-base-url={baseUrl}
@@ -123,7 +123,7 @@ describe('AppWithDecorators', () => {
     mockGetTrustedIssuerScopes.mockReturnValue([]);
   });
 
-  it('renders AsgardeoProvider with config values', () => {
+  it('renders ThunderIDProvider with config values', () => {
     mockGetTrustedIssuerClientId.mockReturnValue('test-client-id');
     mockGetTrustedIssuerUrl.mockReturnValue('https://test-server.example.com');
     mockGetClientUrl.mockReturnValue('https://test-client.example.com');

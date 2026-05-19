@@ -23,7 +23,7 @@ import {Stores, Storage, TemporaryStore, TemporaryStoreValue} from './models/sto
 
 type PartialData<T> = Partial<AuthClientConfig<T> | OIDCDiscoveryApiResponse | SessionData | TemporaryStore>;
 
-export const ASGARDEO_SESSION_ACTIVE = 'thunderid-session-active';
+export const THUNDERID_SESSION_ACTIVE = 'thunderid-session-active';
 
 class StorageManager<T> {
   protected id: string;
@@ -90,7 +90,7 @@ class StorageManager<T> {
 
   protected static isLocalStorageAvailable(): boolean {
     try {
-      const testValue = '__ASGARDEO_AUTH_CORE_LOCAL_STORAGE_TEST__';
+      const testValue = '__THUNDERID_AUTH_CORE_LOCAL_STORAGE_TEST__';
 
       localStorage.setItem(testValue, testValue);
       localStorage.removeItem(testValue);
@@ -152,17 +152,17 @@ class StorageManager<T> {
   public setSessionStatus(status: string): void {
     // Using local storage to store the session status as it is required to be available across tabs.
     if (StorageManager.isLocalStorageAvailable()) {
-      localStorage.setItem(`${ASGARDEO_SESSION_ACTIVE}`, status);
+      localStorage.setItem(`${THUNDERID_SESSION_ACTIVE}`, status);
     }
   }
 
   public getSessionStatus(): string {
-    return StorageManager.isLocalStorageAvailable() ? (localStorage.getItem(`${ASGARDEO_SESSION_ACTIVE}`) ?? '') : '';
+    return StorageManager.isLocalStorageAvailable() ? (localStorage.getItem(`${THUNDERID_SESSION_ACTIVE}`) ?? '') : '';
   }
 
   public removeSessionStatus(): void {
     if (StorageManager.isLocalStorageAvailable()) {
-      localStorage.removeItem(`${ASGARDEO_SESSION_ACTIVE}`);
+      localStorage.removeItem(`${THUNDERID_SESSION_ACTIVE}`);
     }
   }
 

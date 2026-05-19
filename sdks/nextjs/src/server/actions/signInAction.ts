@@ -137,7 +137,7 @@ const signInAction = async (
         }
         const config: ThunderIDNextConfig = await client.getConfiguration();
         const sessionCookieExpiryTime: number = SessionManager.resolveSessionCookieExpiry(
-          config.sessionCookieExpiryTime,
+          config.sessionCookie?.expiryTime,
         );
 
         const sessionToken: string = await SessionManager.createSessionToken(

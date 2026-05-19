@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useAsgardeo} from '@asgardeo/react';
+import {useThunderID} from '@thunderid/react';
 import {useMutation, useQueryClient, type UseMutationResult} from '@tanstack/react-query';
 import {useConfig, useToast} from '@thunderid/contexts';
 import {getErrorMessage} from '@thunderid/utils';
@@ -30,7 +30,7 @@ interface UpdateAgentParams {
 }
 
 export default function useUpdateAgent(): UseMutationResult<Agent, Error, UpdateAgentParams> {
-  const {http} = useAsgardeo();
+  const {http} = useThunderID();
   const {getServerUrl} = useConfig();
   const queryClient = useQueryClient();
   const {t} = useTranslation('agents');

@@ -66,8 +66,8 @@ vi.mock('@/api/useDeleteOrganizationUnit', () => ({
 
 // Mock Asgardeo — stable reference to avoid useCallback churn when tree view renders
 const stableHttp = {request: vi.fn()};
-vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: () => ({http: stableHttp}),
+vi.mock('@thunderid/react', () => ({
+  useThunderID: () => ({http: stableHttp}),
 }));
 
 // Mock useOrganizationUnit hook with React state for reactivity

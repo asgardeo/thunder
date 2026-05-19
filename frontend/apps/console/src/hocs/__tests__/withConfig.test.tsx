@@ -51,8 +51,8 @@ vi.mock('@thunderid/contexts', () => ({
   }),
 }));
 
-vi.mock('@asgardeo/react', () => ({
-  AsgardeoProvider: ({
+vi.mock('@thunderid/react', () => ({
+  ThunderIDProvider: ({
     children,
     /* eslint-disable react/require-default-props */
     baseUrl,
@@ -129,7 +129,7 @@ describe('withConfig (console)', () => {
     expect(screen.getByTestId('mock-child')).toBeInTheDocument();
   });
 
-  it('wraps with AsgardeoProvider', () => {
+  it('wraps with ThunderIDProvider', () => {
     mockGetClientId.mockReturnValue('client-id');
     mockGetServerUrl.mockReturnValue('https://server.example.com');
     mockGetClientUrl.mockReturnValue('https://client.example.com');
@@ -138,7 +138,7 @@ describe('withConfig (console)', () => {
     expect(screen.getByTestId('asgardeo-provider')).toBeInTheDocument();
   });
 
-  it('passes baseUrl from getTrustedIssuerUrl to AsgardeoProvider', () => {
+  it('passes baseUrl from getTrustedIssuerUrl to ThunderIDProvider', () => {
     mockGetTrustedIssuerUrl.mockReturnValue('https://custom-server.example.com');
     mockGetTrustedIssuerClientId.mockReturnValue('client-id');
     mockGetClientUrl.mockReturnValue('https://client.example.com');
@@ -147,7 +147,7 @@ describe('withConfig (console)', () => {
     expect(capturedProviderProps.baseUrl).toBe('https://custom-server.example.com');
   });
 
-  it('passes clientId from getTrustedIssuerClientId to AsgardeoProvider', () => {
+  it('passes clientId from getTrustedIssuerClientId to ThunderIDProvider', () => {
     mockGetTrustedIssuerClientId.mockReturnValue('custom-client-id');
     mockGetTrustedIssuerUrl.mockReturnValue('https://server.example.com');
     mockGetClientUrl.mockReturnValue('https://client.example.com');
@@ -156,7 +156,7 @@ describe('withConfig (console)', () => {
     expect(capturedProviderProps.clientId).toBe('custom-client-id');
   });
 
-  it('passes afterSignInUrl from useConfig to AsgardeoProvider', () => {
+  it('passes afterSignInUrl from useConfig to ThunderIDProvider', () => {
     mockGetClientUrl.mockReturnValue('https://custom-client.example.com');
     mockGetServerUrl.mockReturnValue('https://server.example.com');
     mockGetClientId.mockReturnValue('client-id');
@@ -228,7 +228,7 @@ describe('withConfig (console)', () => {
   // --- Trusted Issuer integration ---
 
   describe('trusted issuer', () => {
-    it('passes baseUrl from getTrustedIssuerUrl to AsgardeoProvider', () => {
+    it('passes baseUrl from getTrustedIssuerUrl to ThunderIDProvider', () => {
       mockGetTrustedIssuerUrl.mockReturnValue('http://localhost:8090');
       mockGetTrustedIssuerClientId.mockReturnValue('FEDERATED_CONSOLE');
       mockGetClientUrl.mockReturnValue('http://localhost:9443/console');
@@ -238,7 +238,7 @@ describe('withConfig (console)', () => {
       expect(capturedProviderProps.baseUrl).toBe('http://localhost:8090');
     });
 
-    it('passes clientId from getTrustedIssuerClientId to AsgardeoProvider', () => {
+    it('passes clientId from getTrustedIssuerClientId to ThunderIDProvider', () => {
       mockGetTrustedIssuerUrl.mockReturnValue('http://localhost:8090');
       mockGetTrustedIssuerClientId.mockReturnValue('FEDERATED_CONSOLE');
       mockGetClientUrl.mockReturnValue('http://localhost:9443/console');
@@ -248,7 +248,7 @@ describe('withConfig (console)', () => {
       expect(capturedProviderProps.clientId).toBe('FEDERATED_CONSOLE');
     });
 
-    it('passes scopes from getTrustedIssuerScopes to AsgardeoProvider', () => {
+    it('passes scopes from getTrustedIssuerScopes to ThunderIDProvider', () => {
       mockGetTrustedIssuerUrl.mockReturnValue('http://localhost:8090');
       mockGetTrustedIssuerClientId.mockReturnValue('FEDERATED_CONSOLE');
       mockGetTrustedIssuerScopes.mockReturnValue(['openid', 'profile', 'system']);

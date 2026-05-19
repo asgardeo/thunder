@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {useAsgardeo} from '@asgardeo/react';
+import {useThunderID} from '@thunderid/react';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useConfig} from '@thunderid/contexts';
 import {useLogger} from '@thunderid/logger';
@@ -124,7 +124,7 @@ export default function EditTokenSettings({
 }: EditTokenSettingsProps) {
   const logger = useLogger('EditTokenSettings');
   const {t} = useTranslation();
-  const {http} = useAsgardeo();
+  const {http} = useThunderID();
   const {getServerUrl} = useConfig();
 
   const [userTypes, setUserTypes] = useState<ApiUserType[]>([]);

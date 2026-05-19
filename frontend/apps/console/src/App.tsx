@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import {ProtectedRoute} from '@asgardeo/react-router';
+import {ProtectedRoute} from '@thunderid/react-router';
 import {ViewAgentTypePage} from '@thunderid/configure-agent-types';
 import {
   CreateOrganizationUnitPage,

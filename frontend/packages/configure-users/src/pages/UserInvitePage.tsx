@@ -23,10 +23,10 @@ import {
   EmbeddedFlowComponentType,
   EmbeddedFlowEventType,
   InviteUser,
-  useAsgardeo,
+  useThunderID,
   type EmbeddedFlowComponent,
   type InviteUserRenderProps,
-} from '@asgardeo/react';
+} from '@thunderid/react';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {OrganizationUnitTreePicker} from '@thunderid/configure-organization-units';
 import {CopyableTextAdapter, type FlowComponent} from '@thunderid/design';
@@ -181,7 +181,7 @@ function InviteUserStepContent({
     resetFlow,
     isValid: propsIsValid,
   } = renderProps;
-  const {resolveFlowTemplateLiterals: rawResolve} = useAsgardeo();
+  const {resolveFlowTemplateLiterals: rawResolve} = useThunderID();
   const resolve = useCallback((text?: string) => (text ? rawResolve(text) : undefined), [rawResolve]);
   const {t} = useTranslation();
   const [activeActionId, setActiveActionId] = useState<string | null>(null);
@@ -774,7 +774,7 @@ function InviteUserFlowBridge({
   onOuStepDetected: () => void;
   onResetLocalState: () => void;
 }): JSX.Element {
-  const {resolveFlowTemplateLiterals: rawResolve} = useAsgardeo();
+  const {resolveFlowTemplateLiterals: rawResolve} = useThunderID();
   const resolve = useCallback((text?: string) => (text ? rawResolve(text) : undefined), [rawResolve]);
   const {t} = useTranslation();
   const components = renderProps.components as EmbeddedFlowComponent[] | undefined;

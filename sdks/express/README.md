@@ -1,4 +1,4 @@
-![ThunderID Express SDK](https://raw.githubusercontent.com/thunder-id/thunderid/refs/heads/main/docs/content/sdks/assets/images/%40thunderid%3Aexpress_sdk_banner.png)
+![ThunderID Express SDK](https://raw.githubusercontent.com/thunder-id/thunderid/refs/heads/main/docs/content/sdks/assets/images/%40thunderid_express_sdk_banner.png)
 
 Express.js SDK for ThunderID. Provides authentication middleware for Express applications.
 

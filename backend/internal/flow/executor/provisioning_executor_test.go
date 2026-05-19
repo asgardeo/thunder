@@ -2004,7 +2004,7 @@ func (suite *ProvisioningExecutorTestSuite) TestHasRequiredInputs_IncludeOptiona
 		RuntimeData: map[string]string{
 			userTypeKey: testUserType,
 			// nickname was presented in the previous iteration and the user left it blank.
-			common.RuntimeKeyPresentedOptionalAttrs: "nickname",
+			common.RuntimeKeyPresentedOptionalInputs: "nickname",
 		},
 		NodeProperties: map[string]interface{}{
 			propertyKeyDynamicInputsIncludeOptional: true,
@@ -2020,9 +2020,9 @@ func (suite *ProvisioningExecutorTestSuite) TestHasRequiredInputs_IncludeOptiona
 		"nickname must not be re-prompted once it appears in the presented list")
 }
 
-// TestHasRequiredInputs_IncludeOptionalTrue_StoresPresentedOptionals verifies that optional attrs
-// included in the prompt batch are written to RuntimeData for tracking across iterations.
-func (suite *ProvisioningExecutorTestSuite) TestHasRequiredInputs_IncludeOptionalTrue_StoresPresentedOptionals() {
+// TestHasRequiredInputs_IncludeOptionalTrue_DoesNotStorePresentedOptionals verifies that
+// presented-input tracking is now owned by the flow engine, not provisioning.
+func (suite *ProvisioningExecutorTestSuite) TestHasRequiredInputs_IncludeOptionalTrue_DoesNotStorePresentedOptionals() {
 	suite.mockEntityTypeService.On("GetAttributes", mock.Anything, mock.Anything, testUserType, true, true, false).
 		Return([]model.AttributeInfo{
 			{Attribute: attributeEmail, DisplayName: "Email", Required: true},
@@ -2041,11 +2041,8 @@ func (suite *ProvisioningExecutorTestSuite) TestHasRequiredInputs_IncludeOptiona
 
 	suite.executor.HasRequiredInputs(ctx, execResp)
 
-	stored := execResp.RuntimeData[common.RuntimeKeyPresentedOptionalAttrs]
-	assert.Contains(suite.T(), stored, "nickname",
-		"presented optional attrs must be written to RuntimeData for subsequent iterations")
-	assert.NotContains(suite.T(), stored, attributeEmail,
-		"required attrs must not be written to the presented-optionals tracking key")
+	_, ok := execResp.RuntimeData[common.RuntimeKeyPresentedOptionalInputs]
+	assert.False(suite.T(), ok, "provisioning should not write presented-input tracking directly")
 }
 
 // TestHasRequiredInputs_IncludeOptionalTrue_RequiredBeforeOptional verifies that required missing
@@ -2371,8 +2368,8 @@ func (suite *ProvisioningExecutorTestSuite) TestHasRequiredInputs_AlreadyPrompte
 		ExecutionID: "flow-123",
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
-			userTypeKey:                             testUserType,
-			common.RuntimeKeyPresentedOptionalAttrs: attributePin,
+			userTypeKey:                              testUserType,
+			common.RuntimeKeyPresentedOptionalInputs: attributePin,
 		},
 		NodeInputs: []common.Input{{Identifier: attributePin, Type: common.InputTypePassword, Required: false}},
 	}
@@ -2438,8 +2435,8 @@ func (suite *ProvisioningExecutorTestSuite) TestHasRequiredInputs_IncludeOptiona
 		ExecutionID: "flow-123",
 		UserInputs:  map[string]string{},
 		RuntimeData: map[string]string{
-			userTypeKey:                             testUserType,
-			common.RuntimeKeyPresentedOptionalAttrs: attributePin,
+			userTypeKey:                              testUserType,
+			common.RuntimeKeyPresentedOptionalInputs: attributePin,
 		},
 		NodeProperties: map[string]interface{}{
 			propertyKeyDynamicInputsIncludeOptionalCredentials: true,

@@ -60,9 +60,9 @@ A successful registration returns `201 Created` with the assigned `client_id`, `
 | `jwks_uri` | No | URL of the client's JWKS endpoint. <ProductName /> fetches public keys from this URL to verify signed requests. Required for `private_key_jwt`. Cannot be used together with `jwks`. |
 | `jwks` | No | Inline JSON Web Key Set. Required for `private_key_jwt` when a hosted JWKS endpoint is not available. Cannot be used together with `jwks_uri`. |
 | `require_pushed_authorization_requests` | No | When `true`, the client must use the `/oauth2/par` endpoint before starting an authorization flow (RFC 9126). Defaults to `false`. |
-| `userinfo_signed_response_alg` | No | Algorithm used to sign the UserInfo response. When set, the UserInfo endpoint returns a signed JWT. Supported values: `RS256`, `RS512`, `PS256`, `ES256`, `ES384`, `ES512`, `EdDSA`. |
-| `userinfo_encrypted_response_alg` | No | Key-management algorithm for UserInfo response encryption. Supported values: `RSA-OAEP`, `RSA-OAEP-256`. |
-| `userinfo_encrypted_response_enc` | No | Content-encryption algorithm for UserInfo response encryption. Required when `userinfo_encrypted_response_alg` is set. Supported values: `A128CBC-HS256`, `A256GCM`. |
+| `userinfo_signed_response_alg` | No | Algorithm used to sign the userinfo response. When set, the userinfo endpoint returns a signed JWT. Supported values: `RS256`, `RS512`, `PS256`, `ES256`, `ES384`, `ES512`, `EdDSA`. |
+| `userinfo_encrypted_response_alg` | No | Key-management algorithm for userinfo response encryption. Supported values: `RSA-OAEP`, `RSA-OAEP-256`. |
+| `userinfo_encrypted_response_enc` | No | Content-encryption algorithm for userinfo response encryption. Required when `userinfo_encrypted_response_alg` is set. Supported values: `A128CBC-HS256`, `A256GCM`. |
 | `id_token_encrypted_response_alg` | No | Key-management algorithm for ID token encryption. Supported values: `RSA-OAEP`, `RSA-OAEP-256`. |
 | `id_token_encrypted_response_enc` | No | Content-encryption algorithm for ID token encryption. Required when `id_token_encrypted_response_alg` is set. Supported values: `A128CBC-HS256`, `A256GCM`. |
 

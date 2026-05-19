@@ -16,7 +16,7 @@
  * under the License.
  */
 
-import type {EmbeddedFlowComponent} from '@asgardeo/react';
+import type {EmbeddedFlowComponent} from '@thunderid/react';
 
 /**
  * Represents a normalized embedded flow component with all optional properties

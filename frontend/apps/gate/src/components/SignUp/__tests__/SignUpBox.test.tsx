@@ -99,8 +99,8 @@ const createMockSignUpRenderProps = (overrides: Partial<MockSignUpRenderProps> =
 let mockSignUpRenderProps: MockSignUpRenderProps = createMockSignUpRenderProps();
 let capturedOnFlowChange: ((response: unknown) => void) | undefined;
 
-vi.mock('@asgardeo/react', async () => {
-  const actual = await vi.importActual('@asgardeo/react');
+vi.mock('@thunderid/react', async () => {
+  const actual = await vi.importActual('@thunderid/react');
   return {
     ...actual,
     SignUp: ({

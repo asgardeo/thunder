@@ -116,7 +116,7 @@ const handleOAuthCallbackAction = async (
           | undefined;
         const expiresIn: number = signInResult['expiresIn'] as number;
         const sessionCookieExpiryTime: number = SessionManager.resolveSessionCookieExpiry(
-          config.sessionCookieExpiryTime,
+          config.sessionCookie?.expiryTime,
         );
 
         const sessionToken: string = await SessionManager.createSessionToken(

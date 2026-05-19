@@ -27,8 +27,8 @@ const mockLocation = {
   pathname: '/dashboard',
 };
 
-vi.mock('@asgardeo/react', () => ({
-  useAsgardeo: () => ({
+vi.mock('@thunderid/react', () => ({
+  useThunderID: () => ({
     isSignedIn: mockIsSignedIn() as boolean,
   }),
 }));

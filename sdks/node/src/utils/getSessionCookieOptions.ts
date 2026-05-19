@@ -17,32 +17,10 @@
  */
 
 import CookieConfig from '../constants/CookieConfig';
-import {CookieOptions} from '../models/cookies';
+import {SessionCookieConfig} from '../models/config';
 
-/**
- * Creates a complete set of cookie options by merging provided options with defaults
- *
- * @param options - Partial cookie options to override defaults
- *
- * @returns Complete cookie options with all required fields
- *
- * @example
- * ```ts
- * // Use defaults with only maxAge override
- * const options = getSessionCookieOptions({ maxAge: 3600 });
- *
- * // Override multiple defaults
- * const options = getSessionCookieOptions({
- *   maxAge: 3600,
- *   secure: true,
- *   sameSite: 'strict'
- * });
- * ```
- */
-const getSessionCookieOptions = (options: Partial<CookieOptions>): CookieOptions => ({
-  ...options,
+const getSessionCookieOptions = (options: Partial<SessionCookieConfig>): Omit<SessionCookieConfig, 'expiryTime'> => ({
   httpOnly: options.httpOnly ?? CookieConfig.DEFAULT_HTTP_ONLY,
-  maxAge: options.maxAge ?? CookieConfig.DEFAULT_MAX_AGE,
   sameSite: options.sameSite ?? CookieConfig.DEFAULT_SAME_SITE,
   secure: options.secure ?? CookieConfig.DEFAULT_SECURE,
 });
